@@ -1,7 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAppConfig } from '@/lib/appConfigAdapters';
+import { fetchHafalanItems } from '@/lib/academicAdapters';
+import { fetchSantriList } from '@/lib/dataMasterAdapters';
+import { incrementSantriPoints } from '@/lib/gamificationAdapters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -53,12 +56,12 @@ const QuizHafalanPage = () => {
   // Load Config from hafalan_items table
   useEffect(() => {
     const loadConfig = async () => {
-        const [{ data: configData }, { data: itemsData }] = await Promise.all([
-            supabase.from('website_content').select('content').eq('key', 'quiz_hafalan_config').maybeSingle(),
-            supabase.from('hafalan_items').select('*')
+        const [configContent, itemsData] = await Promise.all([
+            fetchAppConfig('quiz_hafalan_config').catch(() => null),
+            fetchHafalanItems()
         ]);
 
-        const savedCategories = configData?.content?.categories;
+        const savedCategories = configContent?.categories;
         let categories = Array.isArray(savedCategories) && savedCategories.length > 0
             ? savedCategories
             : [];
@@ -136,13 +139,15 @@ const QuizHafalanPage = () => {
         });
         setFlattenedItems(allItems);
 
-        const { data: santriData, error: santriError } = await supabase
-          .from('santri')
-          .select('id, nama_lengkap, nama_panggilan, foto_url, avatar_path, jilid, points, status')
-          .order('nama_lengkap', { ascending: true });
+        const santriData = await fetchSantriList({
+          notDeleted: true,
+          order: 'nama_lengkap',
+          direction: 'asc',
+          limit: 200,
+        }).catch(() => null);
 
-        if (!santriError) {
-          setSantriList((santriData || []).filter((santri) => santri.status !== 'inactive'));
+        if (santriData) {
+          setSantriList(santriData.filter((santri) => santri.status !== 'inactive'));
         }
         setIsRosterLoading(false);
     };
@@ -301,21 +306,10 @@ const QuizHafalanPage = () => {
     setGameState('result');
 
     const newPoints = (Number(currentSantri.points) || 0) + 1;
-    const { error: rpcError } = await supabase.rpc('increment_santri_points', {
-      p_santri_id: currentSantri.id,
-      p_amount: 1
-    });
-
-    if (rpcError) {
-      const { error: fallbackError } = await supabase
-        .from('santri')
-        .update({ points: newPoints })
-        .eq('id', currentSantri.id);
-
-      if (fallbackError) {
-        toast({ title: "Gagal Update Poin", description: fallbackError.message, variant: "destructive" });
-        return;
-      }
+    try {
+      await incrementSantriPoints(currentSantri.id, 1);
+    } catch (err) {
+      toast({ title: "Gagal Update Poin", description: err.message, variant: "destructive" });
     }
 
     setCurrentSantri(prev => ({ ...prev, points: newPoints }));

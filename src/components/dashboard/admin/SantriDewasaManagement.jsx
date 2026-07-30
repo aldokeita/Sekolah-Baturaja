@@ -9,8 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { supabase } from '@/lib/customSupabaseClient';
-import { enableEdgeFunctions, edgeFunctionDisabledMessage } from '@/lib/featureFlags';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
@@ -20,7 +18,19 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getSessionName, getSessionNumber, getAllSessions } from '@/utils/sessionMapping';
 import { getStorageErrorMessage, resolveAvatarRecords, uploadAvatar } from '@/lib/storageAdapters';
-import { mapSantriForLegacyUi, normalizeNomorIndukQiroati, pickChangedSantriProfileFields, pickSantriProfileFields } from '@/lib/dataMasterAdapters';
+import {
+  bulkInsertSantri,
+  changeSantriCategory,
+  createSantri,
+  fetchClassList,
+  fetchSantriList,
+  mapSantriForLegacyUi,
+  moveSantriClass,
+  normalizeNomorIndukQiroati,
+  pickChangedSantriProfileFields,
+  pickSantriProfileFields,
+  updateSantri,
+} from '@/lib/dataMasterAdapters';
 import { archiveSantriAccounts } from '@/lib/santriArchiveAdapters';
 import SantriArchiveDialog from '@/components/dashboard/admin/SantriArchiveDialog';
 
@@ -257,11 +267,12 @@ const SantriDewasaManagement = () => {
     setIsLoadingData(true);
     try {
       console.log('--- INVESTIGATION: Fetching all santri (Dewasa) ---');
-      const [santriRes, classesRes, configRes] = await Promise.all([
-        supabase.from('santri').select('*'),
-        supabase.from('classes').select('id, nama_kelas, kategori, guru:id_guru(nama)'),
-        supabase.from('website_content').select('content').eq('key', 'adultSessionConfig').maybeSingle()
+      const [santriData, classesData] = await Promise.all([
+        fetchSantriList({ kategori: 'Dewasa', activeOnly: true, notDeleted: true, limit: 200 }).catch(() => null),
+        fetchClassList({ includeGuru: true }).catch(() => null),
       ]);
+      const santriRes = { data: santriData, error: santriData ? null : new Error('gagal memuat santri') };
+      const classesRes = { data: classesData, error: classesData ? null : new Error('gagal memuat kelas') };
 
       if (santriRes.data) {
           const uniqueKategoris = [...new Set(santriRes.data.map(s => s.kategori))];
@@ -381,14 +392,14 @@ const SantriDewasaManagement = () => {
 
   const confirmBulkUpload = async () => {
       if (!uploadReport?.validData) return;
-      const { error } = await supabase.from('santri').insert(uploadReport.validData);
-      if (error) {
-          toast({ title: "Gagal Menyimpan", description: error.message, variant: "destructive" });
-      } else {
+      try {
+          await bulkInsertSantri(uploadReport.validData);
           toast({ title: "Berhasil", description: `${uploadReport.validCount} data santri dewasa berhasil diimport.` });
           loadData();
           setIsReportOpen(false);
           setUploadReport(null);
+      } catch (error) {
+          toast({ title: "Gagal Menyimpan", description: error.message, variant: "destructive" });
       }
   };
 
@@ -455,11 +466,6 @@ const SantriDewasaManagement = () => {
       }
     }
 
-    if (!enableEdgeFunctions) {
-      toast({ title: "Fitur belum aktif", description: edgeFunctionDisabledMessage, variant: "destructive" });
-      return;
-    }
-
     try {
       let targetId = editingSantri?.id;
       const selectedClassId = finalFormData.id_kelas || null;
@@ -480,37 +486,19 @@ const SantriDewasaManagement = () => {
       }
 
       if (!editingSantri) {
-        const { data, error } = await supabase.functions.invoke('manage-user', {
-          body: {
-            action: 'create',
-            role: 'santri',
-            profile: profilePayload,
-            initial_password: finalFormData.password,
-          },
-        });
-        if (error) throw error;
-        if (!data?.ok || !data?.data?.user_id) throw new Error(data?.error?.message || 'Akun santri dewasa gagal dibuat.');
-        targetId = data.data.user_id;
+        const created = await createSantri({ ...profilePayload, password: finalFormData.password });
+        if (!created?.id) throw new Error('Akun santri dewasa gagal dibuat.');
+        targetId = created.id;
       } else if (Object.keys(profilePayload).length > 0) {
-        const { data, error } = await supabase.functions.invoke('manage-user', {
-          body: {
-            action: 'update',
-            role: 'santri',
-            target_user_id: targetId,
-            profile: profilePayload,
-          },
-        });
-        if (error) throw error;
-        if (!data?.ok) throw new Error(data?.error?.message || 'Data santri dewasa gagal diperbarui.');
+        await updateSantri(targetId, profilePayload);
       }
 
       if (classChanged && selectedClassId) {
-        const { error } = await supabase.rpc('move_santri_to_class', {
-          p_santri_id: targetId,
-          p_to_class_id: selectedClassId,
-          p_reason: editingSantri ? 'Perubahan kelas santri dewasa' : 'Penempatan kelas awal santri dewasa',
+        await moveSantriClass({
+          santri_id: targetId,
+          target_class_id: selectedClassId,
+          reason: editingSantri ? 'Perubahan kelas santri dewasa' : 'Penempatan kelas awal santri dewasa',
         });
-        if (error) throw error;
       }
 
       if (shouldArchiveAfterSave) {
@@ -568,18 +556,17 @@ const SantriDewasaManagement = () => {
           title: 'Migrasi ke TPQ',
           description: `Yakin ingin memindahkan ${editingSantri.nama_lengkap} ke kategori TPQ (Anak)? Santri akan dikeluarkan dari kelas Dewasa saat ini.`,
           onConfirm: async () => {
-              const { data, error } = await supabase.rpc('change_santri_category', {
-                  p_santri_id: editingSantri.id,
-                  p_target_category: 'Anak',
-                  p_reason: 'Migrasi santri dewasa ke TPQ oleh admin',
-              });
-
-              if (error) {
-                  toast({ title: "Gagal", description: error.message, variant: "destructive" });
-              } else {
-                  toast({ title: "Berhasil", description: data?.[0]?.message || "Santri berhasil dipindahkan ke kategori TPQ (Anak)." });
+              try {
+                  const result = await changeSantriCategory({
+                      santri_id: editingSantri.id,
+                      new_category: 'Anak',
+                      reason: 'Migrasi santri dewasa ke TPQ oleh admin',
+                  });
+                  toast({ title: "Berhasil", description: result?.message || "Santri berhasil dipindahkan ke kategori TPQ (Anak)." });
                   setIsFormOpen(false);
                   await loadData();
+              } catch (error) {
+                  toast({ title: "Gagal", description: error.message, variant: "destructive" });
               }
           }
       });
@@ -759,7 +746,7 @@ const SantriDewasaManagement = () => {
                 </Avatar>
                 <div className="flex-1 w-full space-y-2">
                     <div className="flex gap-2">
-                         <Button type="button" onClick={triggerPhotoUpload} variant="outline" disabled={isUploading || !enableEdgeFunctions || !editingSantri?.id} title={!enableEdgeFunctions ? edgeFunctionDisabledMessage : (!editingSantri?.id ? 'Simpan akun sebelum upload avatar.' : undefined)}>{isUploading ? 'Mengunggah...' : 'Upload Foto'}</Button>
+                         <Button type="button" onClick={triggerPhotoUpload} variant="outline" disabled={isUploading || !editingSantri?.id} title={!editingSantri?.id ? 'Simpan akun sebelum upload avatar.' : undefined}>{isUploading ? 'Mengunggah...' : 'Upload Foto'}</Button>
                          <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoUpload} className="hidden" />
                       </div>
                       <p className="text-[10px] text-muted-foreground">JPG, PNG, WebP (Max 2 MB). Simpan akun baru sebelum upload.</p>

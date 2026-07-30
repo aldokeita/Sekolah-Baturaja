@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/customSupabaseClient';
+import apiClient from '@/lib/apiClient';
 
 export const WHATSAPP_JILID_OPTIONS = Object.freeze([
   'Pra TK A', 'Pra TK B', 'Pra TK C',
@@ -32,59 +32,26 @@ export const validateWhatsAppGroupLinks = (links = {}) => {
 };
 
 export const fetchWhatsAppGroupLinks = async () => {
-  const { data, error } = await supabase
-    .from('whatsapp_group_links')
-    .select('id, jilid, group_name, whatsapp_link, is_active')
-    .order('jilid', { ascending: true });
-
-  if (error) throw error;
-  return normalizeWhatsAppGroupLinks(data);
+  const data = await apiClient.get('/api/whatsapp/groups');
+  return normalizeWhatsAppGroupLinks(data || []);
 };
 
 export const fetchWhatsAppGroupLink = async (jilid) => {
   if (!jilid) return '';
-
-  const { data, error } = await supabase
-    .from('whatsapp_group_links')
-    .select('whatsapp_link')
-    .eq('jilid', jilid)
-    .eq('is_active', true)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data?.whatsapp_link || '';
+  const data = await apiClient.get(`/api/whatsapp/groups?jilid=${encodeURIComponent(jilid)}`);
+  return (data?.[0])?.whatsapp_link || '';
 };
 
 export const saveWhatsAppGroupLinks = async (links = {}) => {
   validateWhatsAppGroupLinks(links);
-
-  const { data: { user } } = await supabase.auth.getUser();
   const normalizedEntries = Object.entries(links).map(([jilid, rawLink]) => [jilid, String(rawLink || '').trim()]);
   const activeRows = normalizedEntries
     .filter(([, link]) => Boolean(link))
-    .map(([jilid, whatsappLink]) => ({
-      jilid,
-      group_name: `Grup ${jilid}`,
-      whatsapp_link: whatsappLink,
-      is_active: true,
-      updated_by: user?.id || null,
-    }));
+    .map(([jilid, whatsappLink]) => ({ jilid, group_name: `Grup ${jilid}`, whatsapp_link: whatsappLink, is_active: true }));
   const inactiveJilid = normalizedEntries.filter(([, link]) => !link).map(([jilid]) => jilid);
 
-  if (activeRows.length) {
-    const { error } = await supabase
-      .from('whatsapp_group_links')
-      .upsert(activeRows, { onConflict: 'jilid' });
-    if (error) throw error;
-  }
-
-  if (inactiveJilid.length) {
-    const { error } = await supabase
-      .from('whatsapp_group_links')
-      .update({ is_active: false, updated_by: user?.id || null })
-      .in('jilid', inactiveJilid);
-    if (error) throw error;
-  }
+  if (activeRows.length) await apiClient.post('/api/whatsapp/groups/bulk-upsert', { rows: activeRows });
+  if (inactiveJilid.length) await apiClient.post('/api/whatsapp/groups/bulk-deactivate', { jilid_list: inactiveJilid });
 
   return fetchWhatsAppGroupLinks();
 };

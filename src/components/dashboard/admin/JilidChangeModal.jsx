@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/lib/customSupabaseClient';
 import { MessageCircle, ChevronRight, Check, AlertTriangle } from 'lucide-react';
 import { generateWhatsAppLink, resolveWhatsAppGroupLink } from '@/utils/whatsappMessages';
 import { toast } from '@/components/ui/use-toast';
@@ -12,27 +11,13 @@ import { fetchWhatsAppGroupLink } from '@/lib/whatsappGroupLinksAdapters';
 
 const JilidChangeModal = ({ isOpen, onClose, santri, direction, currentJilid, nextJilid, onConfirm, kategori = 'Anak' }) => {
     const [message, setMessage] = useState('');
-    const [hasSiblings, setHasSiblings] = useState(false);
     const [isLoadingLink, setIsLoadingLink] = useState(false);
 
     useEffect(() => {
         if (isOpen && santri) {
-            checkSiblings();
             fetchGroupLinkAndGenerateMessage();
         }
     }, [isOpen, santri, direction, nextJilid, kategori]);
-
-    const checkSiblings = async () => {
-        if (!santri?.no_hp_ortu) return;
-        const { data } = await supabase
-            .from('santri')
-            .select('id')
-            .eq('no_hp_ortu', santri.no_hp_ortu)
-            .eq('status', 'Aktif')
-            .neq('id', santri.id);
-
-        setHasSiblings(data && data.length > 0);
-    };
 
     const fetchGroupLinkAndGenerateMessage = async () => {
         setIsLoadingLink(true);

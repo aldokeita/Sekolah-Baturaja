@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchGuruList, fetchClassList } from '@/lib/dataMasterAdapters';
+import { fetchAttendance, fetchCalendarEvents } from '@/lib/attendanceAdapters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -59,25 +60,26 @@ const SalaryCalculation = () => {
 
     const fetchAllData = async () => {
         setIsLoading(true);
-        const { data: guruList } = await supabase.from('guru').select('*').order('nama');
-        const { data: classList } = await supabase.from('classes').select('id, nama_kelas, sesi, id_guru, kategori');
-
         const startDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
         const endDate = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0];
 
-        const { data: calendarData } = await supabase.from('academic_calendar').select('date').gte('date', startDate).lte('date', endDate).eq('is_holiday', true);
-        const { data: att } = await supabase.from('attendance').select('*').eq('role', 'guru').gte('attendance_date', startDate).lte('attendance_date', endDate);
+        try {
+            const [guruList, classList, calendarData, att] = await Promise.all([
+                fetchGuruList(),
+                fetchClassList(),
+                fetchCalendarEvents(startDate, endDate),
+                fetchAttendance({ role: 'guru', date_from: startDate, date_to: endDate }),
+            ]);
 
-        if (guruList && classList && att) {
-            setGurus(guruList);
-            setClasses(classList);
-            setAttendanceData(att);
-            setHolidays(new Set((calendarData || []).map(c => c.date)));
-
-            // Initialize default states based on guru roles if needed
-            // For now, we rely on manual toggles in this UI, or persistent storage if we added it to DB
+            setGurus(guruList || []);
+            setClasses(classList || []);
+            setAttendanceData(att || []);
+            setHolidays(new Set((calendarData || []).filter(c => c.is_holiday).map(c => c.date)));
+        } catch (error) {
+            toast({ title: 'Gagal memuat data bisyaroh', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     useEffect(() => {

@@ -4,7 +4,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2, Edit, Trophy, Star, Sun, Moon, Video, Users, BookCopy, MessageSquare, FileText, Library, Building, Mail, Info, Image as ImageIcon, CalendarClock, HelpCircle, Home, Heart, Save } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchSantriList, fetchGuruList } from '@/lib/dataMasterAdapters';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,6 +24,7 @@ import {
   fetchAdminAnnouncements,
   fetchAdminFeedbacks,
   fetchAdminNews,
+  fetchWebsiteContentMap,
   getPublicContentErrorMessage,
   assertNonEmptyWebsiteContentString,
   saveAnnouncement,
@@ -201,16 +202,26 @@ const ContentManagement = () => {
   }
 
   const fetchSantriAndGuru = async () => {
-    const { data: santriData } = await supabase.from('santri').select('id, nama_lengkap, foto_url').eq('status', 'Aktif').order('nama_lengkap', { ascending: true });
-    const { data: guruData } = await supabase.from('guru').select('id, nama, foto_url').order('nama', { ascending: true });
-    setSantriList(santriData || []);
-    setGuruList(guruData || []);
+    try {
+      const [santriData, guruData] = await Promise.all([
+        fetchSantriList({ status: 'Aktif' }),
+        fetchGuruList(),
+      ]);
+      setSantriList(santriData || []);
+      setGuruList(guruData || []);
+    } catch (error) {
+      toast({ title: "Gagal Memuat Data Santri/Guru", description: getPublicContentErrorMessage(error), variant: "destructive" });
+    }
   };
 
   const fetchContent = async () => {
-    const { data, error } = await supabase.from('website_content').select('key, content');
-    if (error) return;
-    const newContent = data.reduce((acc, item) => { acc[item.key] = item.content; return acc; }, {});
+    let newContent = {};
+    try {
+      newContent = { ...(await fetchWebsiteContentMap({ publicOnly: false })) };
+    } catch (error) {
+      toast({ title: "Gagal Memuat Konten", description: getPublicContentErrorMessage(error), variant: "destructive" });
+      return;
+    }
     const arrayKeys = ['heroSlides', 'brochures', 'pustaka', 'facilities', 'qiroatiVideos', 'hafalanVideos', 'waliDiscussions', 'santriOfTheMonth', 'leaderboard', 'parentingArticles', 'galleryPhotos', 'schedules', 'faqs'];
     arrayKeys.forEach(key => { if (!newContent[key] || !Array.isArray(newContent[key])) newContent[key] = []; });
     if(!newContent.quotas) newContent.quotas = { pagi: 0, siang: 0, sore: 0, dewasaPagi: 0, dewasaSiang: 0, dewasaMalam: 0 };

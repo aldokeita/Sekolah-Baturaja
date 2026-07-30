@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAllClassMutations, fetchClassList, fetchGuruByRfid, fetchSantriByRfid } from '@/lib/dataMasterAdapters';
+import { createMmqAttendance, fetchMmqAttendance, fetchMmqSchedules, saveMmqAttendance } from '@/lib/mmqAdapters';
+import { fetchHafalanProgress, fetchSantriCharacterStrengths } from '@/lib/academicAdapters';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
+import { incrementSantriPoints } from '@/lib/gamificationAdapters';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,6 +50,11 @@ import {
 import { enableGameFeatures } from '@/lib/featureFlags';
 import {
   buildSantriAttendancePayload,
+  createAttendance,
+  fetchAttendance,
+  fetchAttendanceCount,
+  fetchAttendanceDates,
+  fetchCalendarEvents,
   getAttendanceErrorMessage,
   getLocalDateString,
   getSantriAttendanceSuccessMessage,
@@ -53,6 +62,7 @@ import {
   isActiveSantri,
   isExplicitAbsentAttendance,
   normalizeRfidTag,
+  updateAttendance,
 } from '@/lib/attendanceAdapters';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
 import AttendanceProfileCard from '@/components/dashboard/shared/AttendanceProfileCard';
@@ -125,26 +135,19 @@ const getSantriMonthlyAttendanceStats = async (santriId) => {
     const lastDay = new Date(selectedYear, selectedMonth + 1, 0).getDate();
     const endInclusive = new Date(selectedYear, selectedMonth, lastDay).toLocaleDateString('en-CA');
 
-    const [attendanceResult, holidayResult] = await Promise.all([
-      supabase
-        .from('attendance')
-        .select('attendance_date, status')
-        .eq('user_id', santriId)
-        .gte('attendance_date', start)
-        .lt('attendance_date', end),
-      supabase
-        .from('academic_calendar')
-        .select('date')
-        .eq('is_holiday', true)
-        .gte('date', start)
-        .lte('date', endInclusive),
+    // date_to is inclusive on the API, so pass endInclusive rather than the
+    // exclusive `end` the old .lt() filter used.
+    const [attendanceRows, holidayRows] = await Promise.all([
+      fetchAttendance({ user_id: santriId, date_from: start, date_to: endInclusive, limit: 500 }).catch(() => null),
+      fetchCalendarEvents(start, endInclusive).catch(() => null),
     ]);
 
-    if (attendanceResult.error || holidayResult.error) {
+    if (!attendanceRows || !holidayRows) {
         return { present: 0, late: 0, absent: 0 };
     }
+    const attendanceResult = { data: attendanceRows };
 
-    const holidaySet = new Set((holidayResult.data || []).map(item => item.date));
+    const holidaySet = new Set(holidayRows.map(item => item.date));
     const activeDaysUntilToday = [];
 
     for (let day = 1; day <= lastDay; day++) {
@@ -191,21 +194,15 @@ const getSantriLearningHighlights = async (santriId) => {
         return { hafalanCount: 0, characterStrength: null, strongestHafalanCategory: null };
     }
 
-    const [progressResult, strengthResult] = await Promise.all([
-        supabase
-            .from('hafalan_progress')
-            .select('category,status,score,nilai')
-            .eq('santri_id', santriId),
-        supabase
-            .from('santri_character_strengths')
-            .select('strength_key')
-            .eq('santri_id', santriId)
-            .order('selected_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
+    const [progressRows, strengthRows] = await Promise.all([
+        fetchHafalanProgress([santriId]).catch(() => null),
+        fetchSantriCharacterStrengths(santriId).catch(() => null),
     ]);
 
-    const rows = progressResult.error ? [] : (progressResult.data || []);
+    // The old query took the most recently selected strength; the profile
+    // endpoint returns them ordered the same way, so the first row still wins.
+    const strengthResult = { data: (strengthRows || [])[0] || null };
+    const rows = progressRows || [];
     const scoredRows = rows.map((row) => {
         const rawScore = Number(row.score ?? row.nilai);
         const score = Number.isFinite(rawScore) && rawScore >= 1 && rawScore <= 4
@@ -291,25 +288,19 @@ const DigitalAttendancePage = () => {
   const inputRef = useRef(null);
 
   useEffect(() => {
+      let cancelled = false;
       const fetchConfig = async () => {
-          const { data } = await supabase.from('website_content').select('content').eq('key', 'level_config').maybeSingle();
-          if (data?.content) setLevelConfig(data.content);
+          const map = await fetchWebsiteContentMap({ keys: ['level_config'] }).catch(() => null);
+          if (!cancelled && map?.level_config) setLevelConfig(map.level_config);
       };
       fetchConfig();
 
-      const levelConfigChannel = supabase
-        .channel('digital-attendance-level-config')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'website_content', filter: 'key=eq.level_config' },
-          (payload) => {
-            if (payload.new?.content) setLevelConfig(payload.new.content);
-          }
-        )
-        .subscribe();
-
+      // The kiosk stays open all day, so poll instead of the realtime channel
+      // Supabase used to provide. A minute of staleness on level styling is fine.
+      const pollId = setInterval(fetchConfig, 60_000);
       return () => {
-        supabase.removeChannel(levelConfigChannel);
+        cancelled = true;
+        clearInterval(pollId);
       };
   }, []);
 
@@ -368,7 +359,7 @@ const DigitalAttendancePage = () => {
       // Pentashih handling
       if (lastScan?.type === 'success' && lastScan.isPentashih && lastScan.rfid === tag) {
           setIsLoading(true);
-          const { data: history } = await supabase.from('class_mutations').select(`*, santri(nama_lengkap, foto_url, jilid), from_class:from_class_id(nama_kelas, guru:id_guru(nama)), to_class:to_class_id(nama_kelas, guru:id_guru(nama))`).order('mutation_date', { ascending: false }).limit(6);
+          const history = await fetchAllClassMutations({ limit: 6 }).catch(() => []);
           setLastScan({ ...lastScan, type: 'pentashih_history', historyData: history || [] });
           setIsLoading(false); setRfidTag(''); setTimeout(forceFocus, 50); return;
       }
@@ -377,9 +368,9 @@ const DigitalAttendancePage = () => {
       if ((lastScan?.type === 'guru_info' || lastScan?.type === 'warning' || lastScan?.type === 'success') && lastScan.rfid === tag && lastScan.role === 'guru' && !lastScan.isPentashih) {
           if(!lastScan.classesData) {
              setIsLoading(true);
-             const { data: guruData } = await supabase.from('guru').select('id').eq('rfid_tag', tag).single();
+             const guruData = await fetchGuruByRfid(tag).catch(() => null);
              if(guruData) {
-                 const { data: classes } = await supabase.from('classes').select('*, santri(id, nama_lengkap, jilid, foto_url)').eq('id_guru', guruData.id).order('sesi');
+                 const classes = await fetchClassList({ id_guru: guruData.id, includeSantri: true, limit: 100 }).catch(() => []);
                  setLastScan({ ...lastScan, type: 'guru_schedule_detail', classesData: classes || [] });
              }
              setIsLoading(false);
@@ -397,8 +388,7 @@ const DigitalAttendancePage = () => {
             const timestamp = now.toISOString();
 
             if (lastScan.isMMQ) {
-                 const { error: updErr } = await supabase.from('mmq_attendance').update({ check_in_timestamp: timestamp }).eq('id', lastScan.attendanceId);
-                 if (updErr) throw updErr;
+                 await saveMmqAttendance({ id: lastScan.attendanceId, check_in_timestamp: timestamp });
                  setLastScan(prev => ({ ...prev, type: 'success', time: nowTime, message: 'Absensi MMQ diperbarui!', quote: lastScan.pendingQuote }));
             } else {
                 const levelInfo = (lastScan.role === 'santri' && lastScan.kategori !== 'Dewasa') ? getLevelInfo(lastScan.points, lastScan.gender) : null;
@@ -418,7 +408,7 @@ const DigitalAttendancePage = () => {
         const todayStr = getLocalDateString(todayDate);
 
         let user = null, userRole = '', sesiUser = '', kategori = '', guruClasses = [];
-        let { data: guruData } = await supabase.from('guru').select('*').eq('rfid_tag', tag).maybeSingle();
+        let guruData = await fetchGuruByRfid(tag).catch(() => null);
 
         // Check MMQ Schedule if it's a Guru
         if (guruData) {
@@ -429,11 +419,10 @@ const DigitalAttendancePage = () => {
             });
             user = { ...guruData, foto_url }; userRole = 'guru';
             const todayDay = todayDate.getDay();
-            const { data: mmqSchedule } = await supabase.from('mmq_schedule')
-                .select('*')
-                .eq('day_of_week', todayDay)
-                .eq('is_active', true)
-                .maybeSingle();
+            const mmqSchedules = await fetchMmqSchedules().catch(() => []);
+            const mmqSchedule = (mmqSchedules || []).find(
+                (s) => s.is_active && Number(s.day_of_week) === todayDay
+            ) || null;
 
             if (mmqSchedule) {
                 try {
@@ -459,7 +448,7 @@ const DigitalAttendancePage = () => {
                     }
 
                     if (!mmqSchedule.id) {
-                        const { data: fallbackSchedule } = await supabase.from('mmq_schedule').select('id').eq('is_active', true).limit(1).maybeSingle();
+                        const fallbackSchedule = (mmqSchedules || []).find((s) => s.is_active && s.id);
                         if (fallbackSchedule?.id) {
                             mmqSchedule.id = fallbackSchedule.id;
                         } else {
@@ -475,16 +464,12 @@ const DigitalAttendancePage = () => {
                         throw new Error("Gagal: Format ID Guru tidak valid.");
                     }
 
-                    const { data: existingMMQ, error: checkError } = await supabase.from('mmq_attendance')
-                        .select('id')
-                        .eq('schedule_id', mmqSchedule.id)
-                        .eq('guru_id', user.id)
-                        .eq('attendance_date', todayStr)
-                        .maybeSingle();
-
-                    if (checkError) {
+                    const todayMmq = await fetchMmqAttendance({ date: todayStr }).catch(() => {
                         throw new Error("Gagal memeriksa status absensi sebelumnya.");
-                    }
+                    });
+                    const existingMMQ = (todayMmq || []).find(
+                        (row) => row.schedule_id === mmqSchedule.id && row.guru_id === user.id
+                    ) || null;
 
                     const randomQuote = adultQuotes[Math.floor(Math.random() * adultQuotes.length)];
 
@@ -511,13 +496,13 @@ const DigitalAttendancePage = () => {
                         status: validStatus
                     };
 
-                    const { error: mmqError } = await supabase.from('mmq_attendance').insert(insertPayload);
-
-                    if (mmqError) {
+                    try {
+                        await createMmqAttendance(insertPayload);
+                    } catch (mmqError) {
                         let friendlyMessage = "Gagal menyimpan absensi MMQ ke database.";
-                        if (mmqError.message.includes("mmq_attendance_status_check")) {
+                        if (String(mmqError?.message || '').includes("mmq_attendance_status_check")) {
                             friendlyMessage = `Gagal: Status "${validStatus}" tidak sesuai dengan aturan database. Hubungi admin.`;
-                        } else if (mmqError.code === '23505') {
+                        } else if (mmqError?.code === '23505' || String(mmqError?.message || '').includes('duplicate')) {
                             friendlyMessage = 'Guru sudah tercatat hadir pada jadwal MMQ ini.';
                         }
                         throw new Error(friendlyMessage);
@@ -547,11 +532,12 @@ const DigitalAttendancePage = () => {
             }
 
             // Normal Guru Attendance Session Assignment
-            const { data: assignedClasses } = await supabase
-              .from('classes')
-              .select('*, santri(id, nama_lengkap, jilid, foto_url)')
-              .eq('id_guru', user.id)
-              .eq('is_active', true);
+            const assignedClasses = await fetchClassList({
+              id_guru: user.id,
+              is_active: true,
+              includeSantri: true,
+              limit: 200,
+            }).catch(() => []);
             guruClasses = assignedClasses || [];
             const assignedSessions = [...new Set(guruClasses.map(item => normalizeAttendanceSessionName(item.sesi)).filter(Boolean))];
             const matchingSessions = assignedSessions
@@ -561,15 +547,12 @@ const DigitalAttendancePage = () => {
             sesiUser = matchingSessions[0]?.sesi || '';
 
             if (!sesiUser && assignedSessions.length > 0) {
-              const { data: previousAttendance } = await supabase
-                .from('attendance')
-                .select('id, check_in_time, status, sesi')
-                .eq('user_id', user.id)
-                .eq('attendance_date', todayStr)
-                .in('sesi', assignedSessions)
-                .order('check_in_timestamp', { ascending: false })
-                .limit(1)
-                .maybeSingle();
+              const priorRows = await fetchAttendance({
+                user_id: user.id,
+                date: todayStr,
+                sesi: assignedSessions.join(','),
+              }).catch(() => []);
+              const previousAttendance = (priorRows || [])[0] || null;
 
               if (previousAttendance) {
                 setLastScan({
@@ -587,11 +570,7 @@ const DigitalAttendancePage = () => {
               }
             }
         } else {
-          let { data: santriData } = await supabase
-            .from('santri')
-            .select('id, nama_lengkap, nama_panggilan, kategori, status, foto_url, avatar_path, rfid_tag, current_class_id, sesi_mengaji, jilid, points, jenis_kelamin, class:current_class_id(id, nama_kelas, sesi, id_guru, is_active)')
-            .eq('rfid_tag', tag)
-            .maybeSingle();
+          let santriData = await fetchSantriByRfid(tag).catch(() => null);
           if (santriData) {
               const foto_url = await resolveAvatarUrl({
                   ownerType: 'santri',
@@ -613,19 +592,20 @@ const DigitalAttendancePage = () => {
 
         const isPentashih = userRole === 'guru' && ((user.roles && user.roles.includes('Pentashih')) || (user.jabatan && user.jabatan.toLowerCase().includes('pentashih')));
         if (userRole === 'guru' && !sesiUser && !isPentashih) {
-              const [classesResult, attendanceCountResult, historyResult] = await Promise.all([
+              // classesForInfo, not guruClasses: redeclaring the outer binding in
+              // this block put the `guruClasses.length` read above in its TDZ.
+              const [classesForInfo, attendanceCountResult, historyDates] = await Promise.all([
                   guruClasses.length > 0
-                    ? Promise.resolve({ data: guruClasses })
-                    : supabase.from('classes').select('*, santri(id, nama_lengkap, jilid, foto_url)').eq('id_guru', user.id).order('sesi'),
-                  supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('user_id', user.id).gte('attendance_date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
-                  supabase.from('attendance').select('attendance_date').eq('user_id', user.id).order('attendance_date', { ascending: false }).limit(30)
+                    ? Promise.resolve(guruClasses)
+                    : fetchClassList({ id_guru: user.id, includeSantri: true, limit: 200 }).catch(() => []),
+                  fetchAttendanceCount(user.id, true).catch(() => null),
+                  fetchAttendanceDates(user.id, 30).catch(() => [])
               ]);
-              const guruClasses = classesResult.data;
-              const uniqueSessions = [...new Set((guruClasses || []).map(c => c.sesi))];
+              const uniqueSessions = [...new Set((classesForInfo || []).map(c => c.sesi))];
               const scheduledSessionsCount = uniqueSessions.length;
-              const totalMonthAttendance = attendanceCountResult.count || 0;
+              const totalMonthAttendance = attendanceCountResult?.count || 0;
               const hoursTaught = (totalMonthAttendance * 1.25).toFixed(2);
-              const uniqueDates = [...new Set(historyResult.data?.map(h => h.attendance_date) || [])];
+              const uniqueDates = [...new Set((historyDates || []).map(h => h.attendance_date || h))];
               let streak = 0;
               const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - 1);
               while (true) {
@@ -633,33 +613,30 @@ const DigitalAttendancePage = () => {
                   if (uniqueDates.includes(dateStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); }
                   else { const day = checkDate.getDay(); if (day === 0 || day === 6) { checkDate.setDate(checkDate.getDate() - 1); continue; } break; }
               }
-              if ((attendanceCountResult.count || 0) > 0) streak++;
+              if (totalMonthAttendance > 0) streak++;
               const timeMap = { 'Pagi': 8, 'Siang': 14, 'Sore': 16, 'Malam': 18 };
               const sortedSessions = uniqueSessions.sort((a, b) => (timeMap[a] || 0) - (timeMap[b] || 0));
               const currentHour = new Date().getHours();
               let nextSession = sortedSessions.find(s => (timeMap[s] || 0) > currentHour);
               if (!nextSession && sortedSessions.length > 0) { nextSession = `${sortedSessions[0]} (Besok)`; } else if (!nextSession) { nextSession = "-"; } else { const startTime = sessionTimes[nextSession]?.start || ''; nextSession = `${nextSession} (${startTime})`; }
               const quote = guruQuotes[Math.floor(Math.random() * guruQuotes.length)];
-              setLastScan({ type: 'guru_info', rfid: tag, role: 'guru', name: user.nama, photo: user.foto_url, quote, classesData: guruClasses, roles: user.roles || [], jabatan: user.jabatan, gender: user.jenis_kelamin || 'Laki-laki', no_hp: user.no_hp, stats: { sessions: scheduledSessionsCount, hours: hoursTaught, streak: streak, nextSession }});
+              setLastScan({ type: 'guru_info', rfid: tag, role: 'guru', name: user.nama, photo: user.foto_url, quote, classesData: classesForInfo || [], roles: user.roles || [], jabatan: user.jabatan, gender: user.jenis_kelamin || 'Laki-laki', no_hp: user.no_hp, stats: { sessions: scheduledSessionsCount, hours: hoursTaught, streak: streak, nextSession }});
               return;
         }
 
-        let existingAttendance = null;
-        if (userRole === 'guru') {
-             const { data } = await supabase.from('attendance').select('*').eq('user_id', user.id).eq('attendance_date', todayStr).eq('sesi', sesiUser).maybeSingle();
-             existingAttendance = data;
-        } else {
-             const { data } = await supabase
-               .from('attendance')
-               .select('*')
-               .eq('user_id', user.id)
-               .eq('attendance_date', todayStr)
-               .order('check_in_timestamp', { ascending: true, nullsFirst: false })
-               .order('created_at', { ascending: true })
-               .limit(1)
-               .maybeSingle();
-             existingAttendance = data;
-        }
+        // The list endpoint returns newest-first; for santri we want the first
+        // check-in of the day, so sort ascending client-side.
+        const existingRows = await fetchAttendance({
+            user_id: user.id,
+            date: todayStr,
+            ...(userRole === 'guru' && { sesi: sesiUser }),
+        }).catch(() => []);
+        const existingAttendance = userRole === 'guru'
+            ? (existingRows || [])[0] || null
+            : [...(existingRows || [])].sort((a, b) => (
+                String(a.check_in_timestamp || a.created_at || '').localeCompare(
+                    String(b.check_in_timestamp || b.created_at || ''))
+              ))[0] || null;
 
         const isAdult = kategori === 'Dewasa';
         const randomQuote = (userRole === 'guru' || isAdult) ? (isAdult ? adultQuotes[Math.floor(Math.random() * adultQuotes.length)] : guruQuotes[Math.floor(Math.random() * guruQuotes.length)]) : motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -725,27 +702,32 @@ const DigitalAttendancePage = () => {
               status: attendanceStatusText,
               source: 'rfid',
           };
-        const attendanceMutation = shouldRestoreAbsentAttendance
-          ? supabase
-              .from('attendance')
-              .update({
-                check_in_time: newAttendance.check_in_time,
-                check_in_timestamp: newAttendance.check_in_timestamp,
-                class_id: newAttendance.class_id,
-                attended_session: newAttendance.attended_session,
-                status: newAttendance.status,
-                source: 'rfid',
-              })
-              .eq('id', existingAttendance.id)
-          : supabase.from('attendance').insert(newAttendance);
-        const { error: insertError } = await attendanceMutation;
+        let insertError = null;
+        try {
+          if (shouldRestoreAbsentAttendance) {
+            await updateAttendance(existingAttendance.id, {
+              check_in_time: newAttendance.check_in_time,
+              check_in_timestamp: newAttendance.check_in_timestamp,
+              class_id: newAttendance.class_id,
+              attended_session: newAttendance.attended_session,
+              status: newAttendance.status,
+              source: 'rfid',
+            });
+          } else {
+            await createAttendance(newAttendance);
+          }
+        } catch (err) {
+          insertError = err;
+        }
 
         if (insertError) { setLastScan({ type: 'error', message: getAttendanceErrorMessage(insertError), name: user.nama || user.nama_lengkap, photo: user.foto_url }); }
         else {
           let newPoints = user.points || 0;
           if (userRole === 'santri' && !isAdult && attendanceStatusText === 'Hadir' && !shouldRestoreAbsentAttendance) {
-            await supabase.rpc('increment_santri_points', { p_santri_id: user.id, p_amount: 1 });
-            newPoints += 1;
+            // Points are a bonus, not part of the attendance record — a failure
+            // here must not turn a saved check-in into an error screen.
+            const awarded = await incrementSantriPoints(user.id, 1).then(() => true).catch(() => false);
+            if (awarded) newPoints += 1;
           }
           const levelInfo = (userRole === 'santri' && !isAdult) ? getLevelInfo(newPoints, user.jenis_kelamin) : null;
           const [monthlyStats, learningHighlights] = userRole === 'santri'
@@ -756,15 +738,18 @@ const DigitalAttendancePage = () => {
             : [undefined, {}];
           let adultStats = null;
           if (isAdult) {
-              const { count: daysCount } = await supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
+              const totals = await fetchAttendanceCount(user.id).catch(() => null);
+              const daysCount = totals?.count || 0;
               adultStats = { daysStudied: daysCount || 1, timesStudied: daysCount || 1 };
           }
           let guruStats = null;
           if (userRole === 'guru' && !isPentashih) {
-             const { count: totalMonthAttendance } = await supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('user_id', user.id).gte('attendance_date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
-             const hoursTaught = ((totalMonthAttendance || 1) * 1.25).toFixed(2);
-             const { data: historyResult } = await supabase.from('attendance').select('attendance_date').eq('user_id', user.id).order('attendance_date', { ascending: false }).limit(30);
-             const uniqueDates = [...new Set(historyResult?.map(h => h.attendance_date) || [])];
+             const [monthTotals, historyDates] = await Promise.all([
+               fetchAttendanceCount(user.id, true).catch(() => null),
+               fetchAttendanceDates(user.id, 30).catch(() => []),
+             ]);
+             const hoursTaught = ((monthTotals?.count || 1) * 1.25).toFixed(2);
+             const uniqueDates = [...new Set((historyDates || []).map(h => h.attendance_date || h))];
               let streak = 0;
               const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - 1);
               while (true) {

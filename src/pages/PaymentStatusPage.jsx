@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/customSupabaseClient';
 import { OFFICIAL_CONTACT } from '@/lib/institutionContent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
@@ -25,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
 import { calculateAttendanceData, getHafalanProgressData, getPointsData } from '@/utils/reportUtils';
+import { fetchAllPayments, fetchPaymentDetail } from '@/lib/paymentAdapters';
 
 const PaymentStatusPage = () => {
   const { paymentId } = useParams();
@@ -44,22 +44,21 @@ const PaymentStatusPage = () => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const { data: payment, error } = await supabase
-          .from('payments')
-          .select('*, santri:santri_id(*, class:classes!santri_current_class_id_fkey(nama_kelas, id_guru, guru:id_guru(nama)))')
-          .eq('id', paymentId)
-          .single();
-
-        if (error) throw error;
+        // The detail endpoint returns the nested santri (with class and guru)
+        // that the receipt below reads.
+        const payment = await fetchPaymentDetail(paymentId);
+        if (!payment) throw new Error('Pembayaran tidak ditemukan.');
         setPaymentData(payment);
 
+        // A cart checkout writes one row per item under a shared transaction_id;
+        // the receipt lists all of them.
         if (payment.transaction_id) {
-          const { data: siblings, error: sibError } = await supabase
-            .from('payments')
-            .select('*')
-            .eq('transaction_id', payment.transaction_id);
-          if (!sibError && siblings) setRelatedPayments(siblings);
-          else setRelatedPayments([payment]);
+          try {
+            const siblings = await fetchAllPayments({ transaction_id: payment.transaction_id });
+            setRelatedPayments(siblings.length > 0 ? siblings : [payment]);
+          } catch {
+            setRelatedPayments([payment]);
+          }
         } else {
             setRelatedPayments([payment]);
         }

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchForumTopic, fetchForumReplies, createForumReply, deleteForumEntry, getForumErrorMessage } from '@/lib/forumAdapters';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,31 +25,18 @@ const ForumTopicPage = () => {
 
   const fetchTopicAndReplies = async () => {
     setLoading(true);
-    const { data: topicData, error: topicError } = await supabase
-      .from('forum_topics')
-      .select('*')
-      .eq('id', topicId)
-      .single();
-
-    if (topicError) {
-      toast({ title: 'Error', description: 'Gagal memuat topik.', variant: 'destructive' });
-      setLoading(false);
-      return;
-    }
-    setTopic(topicData);
-
-    const { data: repliesData, error: repliesError } = await supabase
-      .from('forum_replies')
-      .select('*')
-      .eq('topic_id', topicId)
-      .order('created_at', { ascending: true });
-
-    if (repliesError) {
-      toast({ title: 'Error', description: 'Gagal memuat balasan.', variant: 'destructive' });
-    } else {
+    try {
+      const [topicData, repliesData] = await Promise.all([
+        fetchForumTopic(topicId),
+        fetchForumReplies(topicId),
+      ]);
+      setTopic(topicData);
       setReplies(repliesData);
+    } catch (error) {
+      toast({ title: 'Error', description: getForumErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -65,19 +52,12 @@ const ForumTopicPage = () => {
       return;
     }
 
-    const { error } = await supabase.from('forum_replies').insert({
-      topic_id: topicId,
-      content: newReply,
-      author_id: user.id,
-      author_name: user.nama_lengkap || user.nama || 'Wali Murid',
-      author_role: user.role,
-    });
-
-    if (error) {
-      toast({ title: 'Gagal Mengirim Balasan', description: error.message, variant: 'destructive' });
-    } else {
+    try {
+      await createForumReply({ topicId, content: newReply, user });
       setNewReply('');
       fetchTopicAndReplies();
+    } catch (error) {
+      toast({ title: 'Gagal Mengirim Balasan', description: getForumErrorMessage(error), variant: 'destructive' });
     }
   };
 
@@ -89,16 +69,13 @@ const ForumTopicPage = () => {
       title: `Hapus ${type === 'topic' ? 'Topik' : 'Balasan'}`,
       description: `Anda yakin ingin menghapus ${type === 'topic' ? 'topik' : 'balasan'} ini? Tindakan ini tidak dapat dibatalkan.`,
       onConfirm: async () => {
-        const { error } = await supabase.from(table).delete().eq('id', id);
-        if (error) {
-          toast({ title: 'Gagal Menghapus', description: error.message, variant: 'destructive' });
-        } else {
+        try {
+          await deleteForumEntry({ type, id });
           toast({ title: 'Berhasil Dihapus' });
-          if (type === 'topic') {
-            navigate('/forum');
-          } else {
-            fetchTopicAndReplies();
-          }
+          if (type === 'topic') navigate('/forum');
+          else fetchTopicAndReplies();
+        } catch (error) {
+          toast({ title: 'Gagal Menghapus', description: getForumErrorMessage(error), variant: 'destructive' });
         }
       }
     });

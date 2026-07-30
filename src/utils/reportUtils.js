@@ -1,12 +1,15 @@
-import { supabase } from '../lib/customSupabaseClient';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { getSessionName } from './sessionMapping';
 import {
     fetchCharacterAssessmentItems,
+    fetchHafalanItems,
+    fetchHafalanProgress,
     fetchSantriCharacterScores,
     fetchSantriCharacterStrengths
 } from '../lib/academicAdapters';
+import { fetchAttendance, fetchCalendarEvents } from '../lib/attendanceAdapters';
+import { fetchSantriDetail } from '../lib/dataMasterAdapters';
 import {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     WidthType, AlignmentType, BorderStyle, ShadingType, Footer, PageNumber, ImageRun
@@ -36,21 +39,15 @@ export const getLogoBase64 = () => {
 
 export const calculateAttendanceData = async (santriId, startDate, endDate) => {
     try {
-        const [attRes, calRes] = await Promise.all([
-            supabase.from('attendance')
-                .select('status, attendance_date, check_in_timestamp, class_id')
-                .eq('user_id', santriId)
-                .gte('attendance_date', startDate)
-                .lte('attendance_date', endDate),
-            supabase.from('academic_calendar')
-                .select('date')
-                .eq('is_holiday', true)
+        const [attRows, calRows] = await Promise.all([
+            fetchAttendance({ user_id: santriId, date_from: startDate, date_to: endDate, limit: 500 }),
+            // The calendar endpoint needs an explicit range; holidays outside the
+            // report window can never match a date inside it.
+            fetchCalendarEvents(startDate, endDate).catch(() => [])
         ]);
 
-        if (attRes.error) throw attRes.error;
-
-        const safeData = attRes.data || [];
-        const holidays = new Set((calRes.data || []).map(c => c.date));
+        const safeData = attRows || [];
+        const holidays = new Set((calRows || []).map(c => c.date));
 
         // Compute Total Effective Days (Mon-Fri, non-holiday up to min(endDate, today))
         let totalEffectiveDays = 0;
@@ -96,12 +93,8 @@ export const calculateAttendanceData = async (santriId, startDate, endDate) => {
 
 export const getHafalanProgressData = async (santriId) => {
     try {
-        const { data: santri, error: santriError } = await supabase
-            .from('santri')
-            .select('kategori, jilid')
-            .eq('id', santriId)
-            .single();
-        if (santriError) throw santriError;
+        const santri = await fetchSantriDetail(santriId);
+        if (!santri) throw new Error('Data santri tidak ditemukan.');
         const programScope = String(santri?.kategori || '').toUpperCase() === 'PTPT' ? 'PTPT' : 'TPQ';
 
         const parseJilidToNumber = (jilidStr) => {
@@ -117,28 +110,18 @@ export const getHafalanProgressData = async (santriId) => {
         };
         const santriJilidNum = parseJilidToNumber(santri?.jilid);
 
-        const [itemsRes, progressRes] = await Promise.all([
-            supabase.from('hafalan_items')
-                .select('id,program_scope,category,jilid,item_name,item_order,is_active,created_at')
-                .eq('is_active', true)
-                .order('item_order'),
-            supabase.from('hafalan_progress')
-                .select('id,santri_id,item_id,category,item_name,status,score,created_at,updated_at')
-                .eq('santri_id', santriId)
+        const [rawItems, progressRows] = await Promise.all([
+            fetchHafalanItems(),
+            fetchHafalanProgress([santriId])
         ]);
-
-        if (itemsRes.error) throw itemsRes.error;
-        if (progressRes.error) throw progressRes.error;
-
-        const rawItems = itemsRes.data || [];
         const scopedItems = rawItems.filter(item => {
             if (!item.program_scope) return true;
             if (programScope === 'PTPT') return String(item.program_scope).toUpperCase() === 'PTPT';
             return String(item.program_scope).toUpperCase() === 'TPQ';
         });
 
-        const progressByItemId = new Map((progressRes.data || []).filter(item => item.item_id).map(item => [item.item_id, item]));
-        const progressByName = new Map((progressRes.data || []).map(item => [`${item.category}-${item.item_name}`, item]));
+        const progressByItemId = new Map((progressRows || []).filter(item => item.item_id).map(item => [item.item_id, item]));
+        const progressByName = new Map((progressRows || []).map(item => [`${item.category}-${item.item_name}`, item]));
 
         let allItems = (scopedItems.length > 0 ? scopedItems : rawItems).map(item => {
             const progress = progressByItemId.get(item.id) || progressByName.get(`${item.category}-${item.item_name}`);
@@ -207,16 +190,10 @@ export const getHafalanProgressData = async (santriId) => {
 
 export const getPointsData = async (santriId) => {
     try {
-        const { data, error } = await supabase
-            .from('santri')
-            .select('points')
-            .eq('id', santriId)
-            .single();
-
-        if (error) throw error;
+        const santri = await fetchSantriDetail(santriId);
 
         return {
-            totalPoints: data.points || 0,
+            totalPoints: santri?.points || 0,
             pointsBreakdown: []
         };
     } catch (error) {

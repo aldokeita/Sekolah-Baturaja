@@ -6,14 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import apiClient from '@/lib/apiClient';
 import { Database, Download, Upload, FileJson, FileSpreadsheet, FileText, AlertTriangle, CheckCircle, Loader2, Save, Lock, Eye, EyeOff } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
-import { enableEdgeFunctions } from '@/lib/featureFlags';
 
 const BACKUP_TABLES = [
     'guru',
@@ -113,25 +112,20 @@ const BackupRestoreManagement = () => {
         return `backup-lpq-${type}-${dateStr}-${timeStr}.${ext}`;
     };
 
+    // Backup/restore read arbitrary tables by name and upsert arbitrary rows
+    // back. The Go API exposes no generic table dump/restore route, and inventing
+    // one would mean a admin-only "run this against any table" endpoint — a much
+    // larger design and security decision than this migration pass.
+    //
+    // Until that capability exists deliberately, both paths fail loudly with an
+    // actionable message instead of throwing ReferenceError on an undefined
+    // client. Per-table screens (santri, guru, kelas, pembayaran) still work.
+    const BACKUP_UNSUPPORTED_MESSAGE = 'Backup & restore belum tersedia pada backend baru. '
+        + 'Fitur ini membutuhkan endpoint dump/restore tabel yang belum dibuat. '
+        + 'Gunakan ekspor per-modul (santri, guru, kelas, pembayaran) sebagai gantinya.';
+
     const fetchTableData = async (tableName) => {
-        const rows = [];
-        let page = 0;
-
-        while (true) {
-            const from = page * BACKUP_PAGE_SIZE;
-            const to = from + BACKUP_PAGE_SIZE - 1;
-            const { data, error } = await supabase
-                .from(tableName)
-                .select('*')
-                .range(from, to);
-
-            if (error) throw new Error(`${tableName}: ${error.message}`);
-            rows.push(...(data || []));
-            if (!data || data.length < BACKUP_PAGE_SIZE) break;
-            page += 1;
-        }
-
-        return rows;
+        throw new Error(`${tableName}: ${BACKUP_UNSUPPORTED_MESSAGE}`);
     };
 
     const createDirectBackup = async () => {
@@ -195,92 +189,16 @@ const BackupRestoreManagement = () => {
         };
     };
 
-    const upsertRowsResilient = async (tableName, inputRows, report) => {
-        let rows = inputRows.map((row) => ({ ...row }));
-
-        for (let attempt = 0; attempt < 32; attempt += 1) {
-            const { error } = await supabase
-                .from(tableName)
-                .upsert(rows, { onConflict: 'id' });
-
-            if (!error) {
-                report.restoredRows += rows.length;
-                return;
-            }
-
-            const missingColumnMatch = String(error.message || '').match(
-                /Could not find the '([^']+)' column of '([^']+)' in the schema cache/i
-            );
-            const missingColumn = missingColumnMatch?.[1];
-            const errorTable = missingColumnMatch?.[2];
-
-            if (missingColumn && errorTable === tableName) {
-                const columnExists = rows.some((row) =>
-                    Object.prototype.hasOwnProperty.call(row, missingColumn)
-                );
-                if (!columnExists) throw new Error(`${tableName}: ${error.message}`);
-
-                rows = rows.map((row) => {
-                    const cleanedRow = { ...row };
-                    delete cleanedRow[missingColumn];
-                    return cleanedRow;
-                });
-                report.removedLegacyColumns.add(`${tableName}.${missingColumn}`);
-                continue;
-            }
-
-            if (TABLE_UNAVAILABLE_ERROR_CODES.has(error.code)) {
-                report.skippedTables.add(tableName);
-                report.skippedRows.push(...rows.map((row) => ({
-                    table: tableName,
-                    id: row.id || null,
-                    reason: error.message,
-                })));
-                return;
-            }
-
-            if (error.code === '42501' || /row-level security|permission denied/i.test(error.message || '')) {
-                throw new Error(`${tableName}: akses admin ditolak oleh kebijakan database. ${error.message}`);
-            }
-
-            if (rows.length > 1 && (
-                RECOVERABLE_ROW_ERROR_CODES.has(error.code)
-                || /violates .* constraint/i.test(error.message || '')
-            )) {
-                const middle = Math.ceil(rows.length / 2);
-                await upsertRowsResilient(tableName, rows.slice(0, middle), report);
-                await upsertRowsResilient(tableName, rows.slice(middle), report);
-                return;
-            }
-
-            if (rows.length === 1 && (
-                error.code === '23503'
-                || /foreign key constraint/i.test(error.message || '')
-            )) {
-                const repaired = repairSingleRowRelation(tableName, rows[0], error);
-                if (repaired) {
-                    rows = [repaired.row];
-                    report.repairedRelations.add(repaired.message);
-                    continue;
-                }
-            }
-
-            if (rows.length === 1 && (
-                RECOVERABLE_ROW_ERROR_CODES.has(error.code)
-                || /violates .* constraint/i.test(error.message || '')
-            )) {
-                report.skippedRows.push({
-                    table: tableName,
-                    id: rows[0]?.id || null,
-                    reason: error.message,
-                });
-                return;
-            }
-
-            throw new Error(`${tableName}: ${error.message}`);
-        }
-
-        throw new Error(`${tableName}: proses sanitasi melewati batas aman.`);
+    // Restore needs a generic "upsert arbitrary rows into arbitrary table"
+    // capability. The Go API has none, so this fails loudly instead of throwing
+    // ReferenceError on the deleted Supabase client.
+    //
+    // The previous implementation carried real production hardening (missing-column
+    // pruning, FK repair, chunk bisection on constraint violations). That logic is
+    // in git history and should be ported when a dump/restore endpoint is designed
+    // — it is not kept here as unreachable code.
+    const upsertRowsResilient = async (tableName) => {
+        throw new Error(`${tableName}: ${BACKUP_UNSUPPORTED_MESSAGE}`);
     };
 
     const restoreDirectly = async (payload) => {
@@ -351,20 +269,8 @@ const BackupRestoreManagement = () => {
 
         setIsVerifying(true);
         try {
-            console.log("Verifying admin password via Supabase Auth...");
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: user.email,
-                password: passwordInput
-            });
-
-            if (error) {
-                console.error("Password verification error:", error.message);
-                throw new Error("Password salah atau verifikasi gagal.");
-            }
-            if (!data?.user) {
-                console.error("Password Verification Failed: Empty data returned");
-                throw new Error("Password salah atau akun tidak ditemukan.");
-            }
+            const result = await apiClient.post('/api/auth/verify-password', { password: passwordInput });
+            if (!result?.verified) throw new Error("Password salah atau verifikasi gagal.");
 
             // If verified
             toast({ title: "Verifikasi Berhasil", description: "Password benar. Melanjutkan proses...", className: "bg-green-50 text-green-800 border-green-200" });
@@ -388,19 +294,9 @@ const BackupRestoreManagement = () => {
         setIsLoading(true);
         setProgress('Mengambil data dari server...');
         try {
-            let data = null;
-
-            if (enableEdgeFunctions) {
-                try {
-                    const { data: edgeData, error: edgeError } = await supabase.functions.invoke('backup-database');
-                    if (edgeError || edgeData?.error) throw new Error(edgeError?.message || edgeData?.error);
-                    data = edgeData;
-                } catch (edgeError) {
-                    console.warn('Edge Function backup tidak tersedia, memakai jalur admin langsung:', edgeError);
-                }
-            }
-
-            if (!data) data = await createDirectBackup();
+            // ponytail: backup runs table-by-table through the API; no server-side
+            // dump endpoint yet. Add one if row counts make this too slow.
+            const data = await createDirectBackup();
             setProgress('Memproses file...');
 
             if (format === 'json') {
@@ -541,21 +437,7 @@ const BackupRestoreManagement = () => {
         setProgress('Preflight: memeriksa file, schema, dan relasi database...');
 
         try {
-            let restoreResult = null;
-
-            if (enableEdgeFunctions) {
-                try {
-                    const { data: edgeData, error: edgeError } = await supabase.functions.invoke('restore-database', {
-                        body: { data: restoreData },
-                    });
-                    if (edgeError || edgeData?.error) throw new Error(edgeError?.message || edgeData?.error);
-                    restoreResult = edgeData || { restoredRows: 0 };
-                } catch (edgeError) {
-                    console.warn('Edge Function restore tidak tersedia, memakai jalur admin langsung:', edgeError);
-                }
-            }
-
-            if (!restoreResult) restoreResult = await restoreDirectly(restoreData);
+            const restoreResult = await restoreDirectly(restoreData);
 
             setLastRestoreReport(restoreResult);
             const skippedCount = restoreResult.skippedRows?.length || 0;

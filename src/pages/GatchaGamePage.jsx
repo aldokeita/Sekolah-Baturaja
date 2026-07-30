@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAppConfig } from '@/lib/appConfigAdapters';
+import { fetchSantriList } from '@/lib/dataMasterAdapters';
+import { incrementSantriPoints } from '@/lib/gamificationAdapters';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Gamepad2, Star, Sparkles, Crown, UserCheck, Gift, RefreshCw, CheckCircle2, Monitor, Smartphone, Sun, Moon, MessageCircle } from 'lucide-react';
@@ -36,11 +38,9 @@ const GatchaGamePage = () => {
   // Initial Config Load
   useEffect(() => {
     const loadConfig = async () => {
-      const {
-        data
-      } = await supabase.from('website_content').select('content').eq('key', 'gatcha_config').maybeSingle();
-      if (data?.content) {
-        setConfig(data.content);
+      const content = await fetchAppConfig('gatcha_config').catch(() => null);
+      if (content) {
+        setConfig(content);
       } else {
         // Defaults
         setConfig({
@@ -60,15 +60,18 @@ const GatchaGamePage = () => {
     };
     const loadRoster = async () => {
       setIsRosterLoading(true);
-      const { data, error } = await supabase
-        .from('santri')
-        .select('id, nama_lengkap, nama_panggilan, foto_url, avatar_path, jilid, points, status')
-        .order('nama_lengkap', { ascending: true });
-
-      if (!error) {
+      try {
+        const data = await fetchSantriList({
+          notDeleted: true,
+          order: 'nama_lengkap',
+          limit: 200,
+        });
         setSantriList((data || []).filter((santri) => santri.status !== 'inactive'));
+      } catch {
+        // Roster stays empty; the UI already renders an empty-state.
+      } finally {
+        setIsRosterLoading(false);
       }
-      setIsRosterLoading(false);
     };
 
     loadConfig();
@@ -145,14 +148,7 @@ const GatchaGamePage = () => {
       if (reward.type === 'points' && currentPlayer) {
         const amount = Number.parseInt(reward.value, 10) || 0;
         const nextPoints = (Number(currentPlayer.points) || 0) + amount;
-        const { error: rpcError } = await supabase.rpc('increment_santri_points', {
-          p_santri_id: currentPlayer.id,
-          p_amount: amount
-        });
-
-        if (rpcError) {
-          await supabase.from('santri').update({ points: nextPoints }).eq('id', currentPlayer.id);
-        }
+        await incrementSantriPoints(currentPlayer.id, amount);
 
         setCurrentPlayer(prev => ({
           ...prev,

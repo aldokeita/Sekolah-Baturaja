@@ -1,3 +1,4 @@
+import apiClient from '@/lib/apiClient';
 import {
     evaluateAttendanceWindow,
     getJakartaDateString,
@@ -68,4 +69,121 @@ export const getAttendanceErrorMessage = (error) => {
         return 'Anda tidak memiliki akses untuk mencatat absensi santri ini.';
     }
     return message || 'Absensi gagal dicatat.';
+};
+
+// --- Query functions ---
+
+export const createAttendance = async (payload) => {
+    return apiClient.post('/api/attendance', payload);
+};
+
+export const updateAttendance = async (id, payload) => {
+    return apiClient.put(`/api/attendance/${id}`, payload);
+};
+
+// Clearing check-in time and stamping the correction columns needs a dedicated
+// route: the generic update endpoint takes only non-empty scalars, so it cannot
+// express "set these back to NULL". corrected_by is taken from the JWT server
+// side rather than the request body.
+export const markAttendanceAbsent = async (id, correctionReason) => {
+    return apiClient.put(`/api/attendance/${id}/absent`, {
+        correction_reason: correctionReason || undefined,
+    });
+};
+
+export const fetchAttendance = async (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.user_id) params.set('user_id', filters.user_id);
+    if (filters.role) params.set('role', filters.role);
+    if (filters.class_id) params.set('class_id', filters.class_id);
+    if (Array.isArray(filters.class_ids) && filters.class_ids.length > 0) {
+        params.set('class_ids', filters.class_ids.join(','));
+    }
+    if (filters.sesi) params.set('sesi', filters.sesi);
+    if (Array.isArray(filters.sesi_in) && filters.sesi_in.length > 0) {
+        params.set('sesi_in', filters.sesi_in.join(','));
+    }
+    if (filters.date) params.set('date', filters.date);
+    if (filters.date_from) params.set('date_from', filters.date_from);
+    if (filters.date_to) params.set('date_to', filters.date_to);
+    if (filters.limit) params.set('limit', String(filters.limit));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const data = await apiClient.get(`/api/attendance${qs}`);
+    return data || [];
+};
+
+export const fetchTodayAttendance = async (classId) => {
+    const params = new URLSearchParams();
+    if (classId) params.set('class_id', classId);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const data = await apiClient.get(`/api/attendance/today${qs}`);
+    return data || [];
+};
+
+export const fetchAttendanceDates = async (userId, limit) => {
+    const params = new URLSearchParams();
+    if (userId) params.set('user_id', userId);
+    if (limit) params.set('limit', String(limit));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const data = await apiClient.get(`/api/attendance/dates${qs}`);
+    return data || [];
+};
+
+export const fetchAttendanceCount = async (userId, currentMonth = false) => {
+    const params = new URLSearchParams();
+    if (userId) params.set('user_id', userId);
+    if (currentMonth) params.set('current_month', 'true');
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return apiClient.get(`/api/attendance/count${qs}`);
+};
+
+export const fetchAttendanceRecap = async (userId, dateFrom, dateTo) => {
+    const params = new URLSearchParams();
+    if (userId) params.set('user_id', userId);
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo) params.set('date_to', dateTo);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return apiClient.get(`/api/attendance/recap${qs}`);
+};
+
+// The endpoint only returns holidays, as bare date strings. Callers read
+// `.date` / `.is_holiday`, so shape the rows here instead of at each call site.
+// Accepts either (from, to) or ({ startDate, endDate }) — both spellings are in use.
+export const fetchCalendarEvents = async (dateFrom, dateTo) => {
+    const from = typeof dateFrom === 'object' && dateFrom !== null
+        ? (dateFrom.startDate || dateFrom.date_from)
+        : dateFrom;
+    const to = typeof dateFrom === 'object' && dateFrom !== null
+        ? (dateFrom.endDate || dateFrom.date_to)
+        : dateTo;
+
+    const params = new URLSearchParams();
+    if (from) params.set('date_from', from);
+    if (to) params.set('date_to', to);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const data = await apiClient.get(`/api/attendance/calendar${qs}`);
+    return (data || []).map((row) => (
+        typeof row === 'string' ? { date: row, is_holiday: true } : row
+    ));
+};
+
+export const selfCheckIn = async (payload) => {
+    return apiClient.post('/api/attendance/self-checkin', payload);
+};
+
+export const fetchGuruAttendanceStats = async (dateFrom, dateTo) => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo) params.set('date_to', dateTo);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return apiClient.get(`/api/attendance/guru-stats${qs}`);
+};
+
+export const fetchSantriAttendanceStats = async (guruId, dateFrom, dateTo) => {
+    const params = new URLSearchParams();
+    if (guruId) params.set('guru_id', guruId);
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo) params.set('date_to', dateTo);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return apiClient.get(`/api/attendance/santri-stats${qs}`);
 };

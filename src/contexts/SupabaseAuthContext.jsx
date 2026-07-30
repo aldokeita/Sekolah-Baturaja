@@ -1,10 +1,18 @@
-
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { supabase, isSupabaseConfigured, supabaseConfigurationMessage } from '@/lib/customSupabaseClient';
-import { enableEdgeFunctions, edgeFunctionDisabledMessage } from '@/lib/featureFlags';
+import apiClient, { clearTokens } from '@/lib/apiClient';
 import { useToast } from '@/hooks/use-toast';
 
 const AuthContext = createContext(undefined);
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+// Normalise profile from /api/auth/me to match field names components expect
+const normalizeUser = (data) => ({
+  ...data,
+  nama_lengkap: data.display_name || '',
+  nama: data.display_name || '',
+  nama_panggilan: data.display_name || '',
+});
 
 export const AuthProvider = ({ children }) => {
   const { toast } = useToast();
@@ -15,10 +23,10 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
-  // Ref to track current user ID without stale closure issues in onAuthStateChange
   const userIdRef = useRef(null);
 
   const clearAuthState = useCallback(() => {
+    clearTokens();
     setSession(null);
     setUser(null);
     setProfile(null);
@@ -27,273 +35,90 @@ export const AuthProvider = ({ children }) => {
     userIdRef.current = null;
   }, []);
 
-  const loadUserProfile = useCallback(async (userId) => {
+  const loadUserProfile = useCallback(async () => {
     setProfileLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('id, role, display_name, status')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) throw new Error('Profil akun belum tersedia. Hubungi administrator.');
-      if (data.status !== 'active') throw new Error('Akun belum aktif. Hubungi administrator.');
-
-      setProfile(data);
-      setRole(data.role);
-      userIdRef.current = userId;
-      return { profile: data, error: null };
+      const data = await apiClient.get('/api/auth/me');
+      const normalized = normalizeUser(data);
+      setUser(normalized);
+      setProfile(normalized);
+      setRole(normalized.role);
+      userIdRef.current = normalized.id;
+      return { profile: normalized, error: null };
     } catch (error) {
-      setProfile(null);
-      setRole(null);
-      userIdRef.current = null;
-      console.error('[AuthContext] Failed to load user profile:', error.message);
+      clearAuthState();
       return { profile: null, error };
     } finally {
       setProfileLoading(false);
     }
-  }, []);
+  }, [clearAuthState]);
 
-  const handleSession = useCallback(async (currentSession) => {
-    try {
-      setSession(currentSession);
-      const currentUser = currentSession?.user ?? null;
-      setUser(currentUser);
-
-      if (currentUser) {
-        console.log('[AuthContext] Auth session detected', { id: currentUser.id });
-        return await loadUserProfile(currentUser.id);
-      } else {
-        console.log('[AuthContext] Auth state updated: No user session');
-        setProfile(null);
-        setRole(null);
-        return { profile: null, error: null };
-      }
-    } catch (error) {
-      console.error('[AuthContext] Error handling session:', error);
-      setProfile(null);
-      setRole(null);
-      return { profile: null, error };
-    } finally {
-      setLoading(false);
-    }
-  }, [loadUserProfile]);
-
+  // Restore session from localStorage on mount
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      console.warn('[AuthContext] Supabase is not configured. Auth session loading is skipped.');
-      clearAuthState();
-      setLoading(false);
-      return undefined;
-    }
-
-    const getSession = async () => {
+    const restore = async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) { setLoading(false); return; }
       try {
-        console.log('[AuthContext] Initializing auth session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        await handleSession(session);
-      } catch (error) {
-        console.error('[AuthContext] Failed to get initial session:', error);
+        const data = await apiClient.get('/api/auth/me');
+        const normalized = normalizeUser(data);
+        setUser(normalized);
+        setProfile(normalized);
+        setRole(normalized.role);
+        setSession({ access_token: token });
+        userIdRef.current = normalized.id;
+      } catch {
+        clearAuthState();
+      } finally {
         setLoading(false);
       }
     };
+    restore();
 
-    getSession();
+    // Listen for forced logout (token refresh failed in apiClient)
+    const onLogout = () => clearAuthState();
+    window.addEventListener('auth:logout', onLogout);
+    return () => window.removeEventListener('auth:logout', onLogout);
+  }, [clearAuthState]);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log(`[AuthContext] Auth event triggered: ${event}`);
-
-        // Silent session-only updates — these events fire when the user
-        // switches back to the tab or Supabase auto-refreshes the token.
-        // They must NOT trigger a full profile re-fetch because that sets
-        // profileLoading=true, which causes ProtectedRoute to flash its
-        // loading spinner and the user perceives an unwanted "reload".
-        if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
-          return;
-        }
-
-        // SIGNED_IN also fires on tab return when Supabase recovers the
-        // session. Use userIdRef (not stale closure) to compare the
-        // current logged-in user with the event user.
-        const incomingUserId = currentSession?.user?.id ?? null;
-        if (event === 'SIGNED_IN' && userIdRef.current && userIdRef.current === incomingUserId) {
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
-          return;
-        }
-
-        await handleSession(currentSession);
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [clearAuthState, handleSession]);
-
-  const signUp = useCallback(async (email, password, options) => {
-    if (!isSupabaseConfigured) {
-      const error = new Error(supabaseConfigurationMessage);
-      toast({
-        variant: "destructive",
-        title: "Supabase belum dikonfigurasi",
-        description: error.message,
-      });
-      return { error };
-    }
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options,
-    });
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Sign up Failed",
-        description: error.message || "Something went wrong",
-      });
-    }
-
-    return { error };
-  }, [toast]);
-
-  const signIn = useCallback(async (email, password) => {
-    if (!isSupabaseConfigured) {
-      const error = new Error(supabaseConfigurationMessage);
-      toast({
-        variant: "destructive",
-        title: "Supabase belum dikonfigurasi",
-        description: error.message,
-      });
-      return { error, user: null };
-    }
-
-    const { error, data } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Sign in Failed",
-        description: error.message || "Something went wrong",
-      });
-    }
-
-    if (data?.session) {
-      const profileResult = await handleSession(data.session);
-      if (profileResult?.error) {
-        return { error: profileResult.error, user: null };
-      }
-    }
-
-    return { error, user: data?.user };
-  }, [handleSession, toast]);
-
-  // Handles email auth for staff and Nomor Induk Qiroati auth for santri.
   const signInWithUsername = useCallback(async (rawUsername, rawPassword) => {
     try {
       const username = rawUsername.trim();
       const password = rawPassword.trim();
-      console.log('[AuthContext] Login attempt started');
 
-      if (!isSupabaseConfigured) {
-        throw new Error(supabaseConfigurationMessage);
-      }
-
-      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username);
-
-      // Step 1: Standard Auth for admin, guru, and pentashih email accounts.
-      if (isEmail) {
-        console.log('[AuthContext] Input is email, attempting standard auth...');
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: username,
-          password: password,
-        });
-
-        if (error) {
-          throw new Error('Email atau Password Salah');
-        }
-
-        if (data?.session && data?.user) {
-          const profileResult = await handleSession(data.session);
-          if (profileResult?.error) throw profileResult.error;
-          return { user: data.user, error: null };
-        }
-      }
-
-      if (!enableEdgeFunctions) {
-        throw new Error(edgeFunctionDisabledMessage);
-      }
-
-      // Step 2: Santri login with Nomor Induk Qiroati through an Edge Function.
-      console.log('[AuthContext] Attempting santri login via Edge Function...');
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('signin-with-nomor-induk', {
-        body: {
-          username,
-          password,
-        },
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
       });
 
-      if (functionError) {
-        throw new Error(functionError.message || 'Login santri belum tersedia.');
-      }
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Username atau password salah.');
 
-      if (!functionData?.ok || !functionData?.data?.session) {
-        throw new Error(functionData?.error?.message || 'Username santri atau password salah.');
-      }
+      apiClient.setTokens(json);
+      setSession(json);
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: functionData.data.session.access_token,
-        refresh_token: functionData.data.session.refresh_token,
-      });
-
-      if (sessionError) {
-        throw new Error('Gagal membuat session login santri.');
-      }
-
-      if (sessionData?.session && sessionData?.user) {
-        const profileResult = await handleSession(sessionData.session);
-        if (profileResult?.error) throw profileResult.error;
-        return { user: sessionData.user, error: null };
-      }
-
-      throw new Error('Nomor Induk Qiroati atau password salah.');
-
+      const profileResult = await loadUserProfile();
+      if (profileResult.error) throw profileResult.error;
+      return { user: profileResult.profile, error: null };
     } catch (error) {
-      console.error('Login Error:', error.message);
       return { user: null, error };
     }
-  }, [handleSession]);
+  }, [loadUserProfile]);
+
+  // signIn kept for backward compatibility (email login = same flow)
+  const signIn = useCallback(async (email, password) => {
+    return signInWithUsername(email, password);
+  }, [signInWithUsername]);
+
+  // signUp not used in this app (admin creates users), kept for interface parity
+  const signUp = useCallback(async () => {
+    return { error: new Error('Pendaftaran mandiri tidak tersedia. Hubungi administrator.') };
+  }, []);
 
   const signOut = useCallback(async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      clearAuthState();
-
-      if (error) {
-        console.warn('[AuthContext] Supabase signout note:', error.message);
-      }
-      console.log('[AuthContext] User signed out successfully');
-    } catch (error) {
-      console.error('[AuthContext] Error signing out:', error);
-      toast({
-        variant: "destructive",
-        title: "Logout Failed",
-        description: error.message || "Something went wrong",
-      });
-      return { error };
-    }
+    clearAuthState();
     return { error: null };
-  }, [clearAuthState, toast]);
+  }, [clearAuthState]);
 
   const value = useMemo(() => ({
     user,
@@ -306,7 +131,7 @@ export const AuthProvider = ({ children }) => {
     signIn,
     signInWithUsername,
     signOut,
-    refreshProfile: user ? () => loadUserProfile(user.id) : async () => ({ profile: null, error: null }),
+    refreshProfile: loadUserProfile,
   }), [user, session, profile, role, loading, profileLoading, signUp, signIn, signInWithUsername, signOut, loadUserProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

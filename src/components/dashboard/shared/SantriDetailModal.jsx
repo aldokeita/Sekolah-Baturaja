@@ -10,7 +10,7 @@ import {
   BookOpen, Printer, Sparkles, Star, ShieldCheck, CheckCircle2,
   TrendingUp, BarChart2, HeartHandshake, UserCheck, GraduationCap
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAttendance } from '@/lib/attendanceAdapters';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,13 @@ import {
   generateRaporDOCX
 } from '@/utils/reportUtils';
 import { getSessionName } from '@/utils/sessionMapping';
-import { fetchSantriNotes, getAcademicErrorMessage, saveSantriNote } from '@/lib/academicAdapters';
+import {
+  fetchJilidHistoryForSantri,
+  fetchSantriNotes,
+  getAcademicErrorMessage,
+  saveSantriNote,
+} from '@/lib/academicAdapters';
+import { fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import SantriDevelopmentProfile from '@/components/dashboard/shared/SantriDevelopmentProfile';
 
 const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }) => {
@@ -70,13 +76,11 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
 
     // Fetch full santri data (including nama_ibu which may not be passed via props)
     const [santriFullData, setSantriFullData] = useState(null);
+    // The detail endpoint returns the whole santri row, so the guardian fields
+    // are already in it — no narrower projection needed.
     const fetchSantriFullData = useCallback(async () => {
         if (!santri?.id) return;
-        const { data } = await supabase
-            .from('santri')
-            .select('id, nama_ibu, nama_ayah, nama_wali, no_hp_ortu')
-            .eq('id', santri.id)
-            .maybeSingle();
+        const data = await fetchSantriDetail(santri.id).catch(() => null);
         if (data) setSantriFullData(data);
     }, [santri?.id]);
 
@@ -85,17 +89,13 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
 
     const fetchJilidHistory = useCallback(async () => {
         if (!santri?.id) return;
-        const { data } = await supabase
-            .from('jilid_history')
-            .select('changed_at')
-            .eq('santri_id', santri.id)
-            .order('changed_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+        // Endpoint returns rows ordered changed_at DESC, so the first is latest.
+        const rows = await fetchJilidHistoryForSantri(santri.id).catch(() => []);
+        const latest = rows?.[0] || null;
 
         let startDate = new Date(santri.created_at || Date.now());
-        if (data?.changed_at) {
-            startDate = new Date(data.changed_at);
+        if (latest?.changed_at) {
+            startDate = new Date(latest.changed_at);
         }
 
         setLastPromotedDate(startDate);
@@ -833,13 +833,8 @@ const AttendanceMatrixPanel = ({ santriId }) => {
         const startDate = `${year}-${String(month).padStart(2,'0')}-01`;
         const endDay = new Date(year, month, 0).getDate();
         const endDate = `${year}-${String(month).padStart(2,'0')}-${String(endDay).padStart(2,'0')}`;
-        supabase.from('attendance')
-            .select('attendance_date, status')
-            .eq('user_id', santriId)
-            .gte('attendance_date', startDate)
-            .lte('attendance_date', endDate)
-            .order('attendance_date')
-            .then(({ data }) => {
+        fetchAttendance({ user_id: santriId, date_from: startDate, date_to: endDate })
+            .then((data) => {
                 setRecords(data || []);
                 setLoading(false);
             });

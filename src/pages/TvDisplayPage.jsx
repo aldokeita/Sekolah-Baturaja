@@ -1,6 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchGuruByRfid, fetchClassList, fetchSantriList } from '@/lib/dataMasterAdapters';
+import { createAttendance, updateAttendance, fetchTodayAttendance } from '@/lib/attendanceAdapters';
+import { fetchAppConfigs } from '@/lib/appConfigAdapters';
+import apiClient from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -221,7 +224,7 @@ const TvDisplayPage = () => {
         let user = null, userRole = '', sesiUser = '';
 
         // Check Guru
-        let { data: guruData } = await supabase.from('guru').select('*').eq('rfid_tag', tag).maybeSingle();
+        let guruData = await fetchGuruByRfid(tag).catch(() => null);
         if (guruData) {
             user = guruData; userRole = 'guru';
             const hour = new Date().getHours();
@@ -231,11 +234,7 @@ const TvDisplayPage = () => {
             else sesiUser = 'Malam';
         } else {
             // Check Santri
-            let { data: santriData } = await supabase
-                .from('santri')
-                .select('id, nama_lengkap, nama_panggilan, kategori, status, foto_url, avatar_path, rfid_tag, current_class_id, sesi_mengaji, jilid, points, class:current_class_id(id, nama_kelas, sesi)')
-                .eq('rfid_tag', tag)
-                .maybeSingle();
+            let santriData = await apiClient.get(`/api/santri/by-rfid/${encodeURIComponent(tag)}`).catch(() => null);
             if (santriData) {
                 const foto_url = await resolveAvatarUrl({
                     ownerType: 'santri',
@@ -252,7 +251,8 @@ const TvDisplayPage = () => {
         if (!user) return;
 
         // Check existing attendance
-        const { data: existing } = await supabase.from('attendance').select('id, status').eq('user_id', user.id).eq('attendance_date', today).maybeSingle();
+        const existingList = await fetchTodayAttendance().catch(() => []);
+        const existing = (existingList || []).find(r => r.user_id === user.id) || null;
         const shouldRestoreAbsentAttendance = userRole === 'santri'
             && existing
             && isExplicitAbsentAttendance(existing.status);
@@ -289,24 +289,21 @@ const TvDisplayPage = () => {
                     source: 'rfid',
                 };
             if (shouldRestoreAbsentAttendance) {
-                await supabase
-                    .from('attendance')
-                    .update({
-                        check_in_time: payload.check_in_time,
-                        check_in_timestamp: payload.check_in_timestamp,
-                        class_id: payload.class_id,
-                        attended_session: payload.attended_session,
-                        status: payload.status,
-                        source: 'rfid',
-                    })
-                    .eq('id', existing.id);
+                await updateAttendance(existing.id, {
+                    check_in_time: payload.check_in_time,
+                    check_in_timestamp: payload.check_in_timestamp,
+                    class_id: payload.class_id,
+                    attended_session: payload.attended_session,
+                    status: payload.status,
+                    source: 'rfid',
+                });
                 setDailyAttendance(prev => prev.map(record => (
                     record.user_id === user.id
                         ? { ...record, check_in_time: payload.check_in_time, class_id: payload.class_id, status: payload.status }
                         : record
                 )));
             } else {
-                await supabase.from('attendance').insert(payload);
+                await createAttendance(payload);
                 setDailyAttendance(prev => [...prev, { user_id: user.id, check_in_time: payload.check_in_time, class_id: payload.class_id, status: payload.status }]);
             }
         }
@@ -329,36 +326,18 @@ const TvDisplayPage = () => {
         const fetchData = async () => {
             const today = getLocalDateString();
             try {
-                const { data: cfg } = await supabase.from('website_content').select('content').eq('key', 'tv_config').maybeSingle();
-                if(cfg?.content) setConfig(prev => ({...prev, ...cfg.content}));
+                const configs = await fetchAppConfigs(['tv_config', 'level_config', 'logoUrl']).catch(() => ({}));
+                if (configs.tv_config) setConfig(prev => ({...prev, ...configs.tv_config}));
+                if (configs.level_config) setLevelConfig(configs.level_config);
+                if (typeof configs.logoUrl === 'string' && configs.logoUrl.trim()) setLogoUrl(configs.logoUrl.trim());
 
-                const { data: lvlCfg } = await supabase.from('website_content').select('content').eq('key', 'level_config').maybeSingle();
-                if(lvlCfg?.content) setLevelConfig(lvlCfg.content);
-
-                const { data: logoContent } = await supabase.from('website_content').select('content').eq('key', 'logoUrl').maybeSingle();
-                if (typeof logoContent?.content === 'string' && logoContent.content.trim()) {
-                    setLogoUrl(logoContent.content.trim());
-                }
-
-                const [classesRes, santriRes, attendanceRes] = await Promise.all([
-                    supabase
-                        .from('classes')
-                        .select('id, nama_kelas, sesi, kategori, sort_order, is_active, guru:id_guru(nama)')
-                        .eq('is_active', true)
-                        .order('sort_order', { ascending: true, nullsFirst: false }),
-                    supabase
-                        .from('santri')
-                        .select('id, nama_lengkap, nama_panggilan, nomor_induk_qiroati, kategori, status, foto_url, avatar_path, current_class_id, sesi_mengaji, jilid, points, jenis_kelamin')
-                        .eq('status', 'Aktif')
-                        .order('nama_lengkap', { ascending: true }),
-                    supabase.from('attendance').select('*').eq('attendance_date', today),
+                const [classesList, santriList, attendanceList] = await Promise.all([
+                    fetchClassList({ is_active: true }),
+                    fetchSantriList({ status: 'Aktif' }),
+                    fetchTodayAttendance(),
                 ]);
 
-                if (classesRes.error) throw classesRes.error;
-                if (santriRes.error) throw santriRes.error;
-                if (attendanceRes.error) throw attendanceRes.error;
-
-                const santriWithAvatars = await Promise.all((santriRes.data || []).map(async (item) => {
+                const santriWithAvatars = await Promise.all((santriList || []).map(async (item) => {
                     const foto_url = await resolveAvatarUrl({
                         ownerType: 'santri',
                         ownerId: item.id,
@@ -372,12 +351,12 @@ const TvDisplayPage = () => {
                     };
                 }));
 
-                const classes = classesRes.data || [];
+                const classes = classesList || [];
                 const santri = santriWithAvatars;
 
                 if (classes && santri) {
                     setSantriList(santri);
-                    setDailyAttendance(attendanceRes.data || []);
+                    setDailyAttendance(attendanceList || []);
 
                     const sessionPriority = { 'Pagi': 1, 'Siang': 2, 'Sore': 3, 'Malam': 4 };
                     const sortedClasses = classes.sort((a, b) => (sessionPriority[a.sesi] || 99) - (sessionPriority[b.sesi] || 99));

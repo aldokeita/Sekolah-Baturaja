@@ -1,30 +1,26 @@
-import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/customSupabaseClient';
+import apiClient from '@/lib/apiClient';
 
 export const LOGIN_SECURITY_CONSENT_KEY = 'lpq_login_security_notice_v1';
 
-const parseSafeResponse = async (response) => {
-  const text = await response.text();
-  if (!text) return {};
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { message: text.slice(0, 300) };
-  }
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+export const fetchLoginLogs = async ({ page = 0, pageSize = 15, searchTerm = '' } = {}) => {
+  const params = new URLSearchParams({ page, limit: pageSize });
+  if (searchTerm) params.set('search', searchTerm);
+  return apiClient.get(`/api/login-logs?${params}`);
 };
+
+export const deleteLoginLog = async (id) => {
+  await apiClient.delete(`/api/login-logs/${id}`);
+};
+
 export const recordLoginAttempt = async ({ username, status, device }) => {
-  if (!supabaseUrl || !supabaseAnonKey || !username) return false;
-
-  const headers = {
-    apikey: supabaseAnonKey,
-    'Content-Type': 'application/json',
-  };
-  if (status === 'success') {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session?.access_token) headers.Authorization = `Bearer ${data.session.access_token}`;
-  }
-
+  if (!username) return false;
   try {
-    const response = await fetch(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/record-login-attempt`, {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = apiClient.getToken();
+    if (status === 'success' && token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(`${API_URL}/api/auth/login-attempt`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -33,8 +29,7 @@ export const recordLoginAttempt = async ({ username, status, device }) => {
         device,
       }),
     });
-    const body = await parseSafeResponse(response);
-    return response.ok && body?.ok !== false;
+    return res.ok;
   } catch {
     return false;
   }

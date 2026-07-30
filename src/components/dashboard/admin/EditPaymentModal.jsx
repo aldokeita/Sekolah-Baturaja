@@ -6,9 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, AlertTriangle } from 'lucide-react';
-import { MONTH_NAMES, getPaymentErrorMessage, monthNameToNumber, validatePaymentAmount } from '@/lib/paymentAdapters';
+import { MONTH_NAMES, getPaymentErrorMessage, monthNameToNumber, updatePayment, validatePaymentAmount } from '@/lib/paymentAdapters';
 
 const monthsList = MONTH_NAMES;
 
@@ -90,20 +89,15 @@ const EditPaymentModal = ({ isOpen, onClose, payment, onUpdate }) => {
     const handleConfirmUpdate = async () => {
         setIsSubmitting(true);
         try {
-            const { error } = await supabase
-                .from('payments')
-                .update({
-                    jumlah: formData.jumlah,
-                    tanggal_pembayaran: formData.tanggal_pembayaran,
-                    metode_pembayaran: formData.metode_pembayaran,
-                    bulan: monthNameToNumber(formData.bulan),
-                    catatan: formData.catatan,
-                    tahun: Number(formData.tahun),
-                    status: 'paid',
-                })
-                .eq('id', payment.id);
-
-            if (error) throw error;
+            await updatePayment(payment.id, {
+                jumlah: Number(formData.jumlah),
+                tanggal_pembayaran: formData.tanggal_pembayaran,
+                metode_pembayaran: formData.metode_pembayaran,
+                bulan: monthNameToNumber(formData.bulan),
+                catatan: formData.catatan,
+                tahun: Number(formData.tahun),
+                status: 'paid',
+            });
 
             toast({ title: "Berhasil", description: "Data pembayaran berhasil diperbarui." });
             onUpdate(); // Trigger refresh in parent

@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { upsertAppConfig, fetchAppConfig } from '@/lib/appConfigAdapters';
+import { fetchSantriList } from '@/lib/dataMasterAdapters';
+import { incrementSantriPoints } from '@/lib/gamificationAdapters';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -86,30 +88,23 @@ const RandomNamePage = () => {
             setIsLoadingData(true);
             try {
                 // 1. Fetch Santri
-                const { data: santriData, error: santriError } = await supabase
-                    .from('santri')
-                    .select('id, nama_lengkap, foto_url, avatar_path, points, jilid, jenis_kelamin')
-                    .eq('status', 'Aktif')
-                    .eq('kategori', 'Anak');
-
-                if (santriError) throw santriError;
+                const santriData = await fetchSantriList({
+                    status: 'Aktif',
+                    kategori: 'Anak',
+                    limit: 200,
+                });
                 const resolvedSantri = await resolveAvatarRecords(santriData || [], {
                     ownerType: 'santri',
                 });
                 setSantriList(resolvedSantri);
 
-                // 2. Fetch Settings using website_content instead of hallucinated table
-                const { data: settingsData, error: settingsError } = await supabase
-                    .from('website_content')
-                    .select('id, content')
-                    .eq('key', 'random_name_settings')
-                    .maybeSingle();
-
-                if (!settingsError && settingsData?.content) {
+                // 2. Fetch Settings from the website_content-backed config store
+                const settings = await fetchAppConfig('random_name_settings').catch(() => null);
+                const settingsContent = settings?.content;
+                if (settingsContent) {
                     setPointSettings({
-                        id: settingsData.id,
-                        additions: settingsData.content.addition_buttons || [1, 3, 10],
-                        deductions: settingsData.content.deduction_buttons || [-1, -3, -5]
+                        additions: settingsContent.addition_buttons || [1, 3, 10],
+                        deductions: settingsContent.deduction_buttons || [-1, -3, -5]
                     });
                 }
             } catch (error) {
@@ -152,23 +147,7 @@ const RandomNamePage = () => {
                 deduction_buttons: pointSettings.deductions
             };
 
-            if (!pointSettings.id) {
-                const { error } = await supabase.from('website_content').insert({
-                    key: 'random_name_settings',
-                    content: contentPayload
-                });
-                if (error) throw error;
-            } else {
-                // Update
-                const { error } = await supabase
-                    .from('website_content')
-                    .update({
-                        content: contentPayload,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', pointSettings.id);
-                if (error) throw error;
-            }
+            await upsertAppConfig('random_name_settings', contentPayload);
             toast({ title: "Berhasil", description: "Pengaturan poin disimpan." });
             setSettingsOpen(false);
         } catch (error) {
@@ -226,17 +205,9 @@ const RandomNamePage = () => {
         setIsUpdatingPoints(true);
         try {
             const previousPoints = Number(finalSelected.points) || 0;
-            const { data, error } = await supabase.rpc('increment_santri_points', {
-                p_santri_id: finalSelected.id,
-                p_amount: amount
-            });
+            await incrementSantriPoints(finalSelected.id, amount);
 
-            if (error) throw error;
-
-            const updatedPoints = Number(data);
-            if (!Number.isInteger(updatedPoints) || updatedPoints < 0) {
-                throw new Error('Nilai poin terbaru tidak valid. Silakan muat ulang halaman.');
-            }
+            const updatedPoints = previousPoints + amount;
             const appliedAmount = updatedPoints - previousPoints;
 
             const updatedSantri = { ...finalSelected, points: updatedPoints };

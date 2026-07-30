@@ -7,7 +7,8 @@ import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, BarChart2,
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAttendance } from '@/lib/attendanceAdapters';
+import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
 import { useDrag, useDrop } from 'react-dnd';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -18,7 +19,22 @@ import * as XLSX from 'xlsx';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { mapSantriForLegacyUi } from '@/lib/dataMasterAdapters';
+import { getSessionName } from '@/utils/sessionMapping';
+import {
+  createClass,
+  deleteClass,
+  deleteClassMutation,
+  fetchAllClassMutations,
+  fetchClassList,
+  fetchGuruList,
+  fetchSantriList,
+  mapSantriForLegacyUi,
+  moveSantriClass,
+  reorderClasses,
+  updateClass,
+  updateSantriJilid,
+  updateSantriOrder,
+} from '@/lib/dataMasterAdapters';
 
 const ItemTypes = { SANTRI: 'santri', CLASS: 'class', SESSION: 'session', CLASS_ORDER: 'class_order' };
 const jilidOptions = ['Pra TK A', 'Pra TK B', 'Pra TK C', 'Jilid 1A', 'Jilid 1B', 'Jilid 1C', 'Jilid 2A', 'Jilid 2B', 'Jilid 3A', 'Jilid 3B', 'Jilid 4A', 'Jilid 4B', 'Jilid 5A', 'Jilid 5B', 'Jilid Juz 27', 'Jilid 6A', 'Jilid 6B', 'Al-Qur\'an', 'Ghorib Tajwid', 'Finishing'];
@@ -349,43 +365,34 @@ const AdultClassManagement = () => {
 
   const fetchAllData = useCallback(async () => {
     const today = new Date().toLocaleDateString('en-CA');
-    const [
-      { data: classData, error: classError },
-      { data: guruData, error: guruError },
-      { data: santriData, error: santriError },
-      { data: attendanceData, error: attendanceError },
-      { data: configData },
-      { data: membershipsData }
-    ] = await Promise.all([
-      supabase.from('classes').select('*, guru:id_guru(id, nama, foto_url, no_hp)').eq('kategori', 'Dewasa').order('sort_order', { ascending: true, nullsFirst: false }),
-      supabase.from('guru').select('id, nama, foto_url, no_hp'),
-      supabase.from('santri').select('*').or('status.eq.Aktif,status.eq.active,status.is.null').eq('kategori', 'Dewasa').order('order_in_class', { ascending: true, nullsFirst: false }),
-      supabase.from('attendance').select('*').eq('attendance_date', today),
-      supabase.from('website_content').select('content').eq('key', 'adultSessionConfig').maybeSingle(),
-      supabase.from('class_memberships').select('santri_id, class_id, order_in_class').eq('status', 'active')
+    const [classData, guruData, santriData, attendanceData, contentMap] = await Promise.all([
+      fetchClassList({ kategori: 'Dewasa', includeGuru: true, limit: 200 }).catch((err) => err),
+      fetchGuruList().catch((err) => err),
+      fetchSantriList({ kategori: 'Dewasa', activeOnly: true, notDeleted: true, limit: 200 }).catch((err) => err),
+      fetchAttendance({ date: today, limit: 500 }).catch((err) => err),
+      fetchWebsiteContentMap({ keys: ['adultSessionConfig'], publicOnly: false }).catch(() => ({})),
     ]);
 
-    if (classError || guruError || santriError || attendanceError) {
-      toast({ title: 'Gagal memuat data', description: (classError || guruError || santriError || attendanceError).message, variant: 'destructive' });
+    const firstFailure = [classData, guruData, santriData, attendanceData].find(r => !Array.isArray(r));
+    if (firstFailure) {
+      toast({ title: 'Gagal memuat data', description: firstFailure?.message || 'Data kelas dewasa tidak dapat dimuat.', variant: 'destructive' });
       return;
     }
-
-    const membershipMap = Object.fromEntries(
-      (membershipsData || []).map(m => [m.santri_id, m])
-    );
+    const configData = { content: contentMap?.adultSessionConfig };
 
     setClasses(classData || []);
     setGuruList(guruData || []);
 
+    // current_class_id is the authoritative class column; the santri endpoint
+    // already returns it, so no separate membership lookup is needed.
     const mappedSantri = (santriData || []).map(s => {
       const legacy = mapSantriForLegacyUi(s);
-      const membership = membershipMap[s.id];
-      const classId = s.current_class_id || legacy.id_kelas || membership?.class_id || null;
+      const classId = s.current_class_id || legacy.id_kelas || null;
       return {
         ...legacy,
         current_class_id: classId,
         id_kelas: classId,
-        order_in_class: s.order_in_class ?? membership?.order_in_class ?? 0,
+        order_in_class: s.order_in_class ?? 0,
       };
     });
     setSantriList(mappedSantri);
@@ -428,19 +435,7 @@ const AdultClassManagement = () => {
   const handleSaveConfig = async (newLocalSessions) => {
       try {
           const arrayConfig = newLocalSessions.map(s => ({ name: s.name, time: s.time }));
-          const { data: existingConfig, error: fetchError } = await supabase.from('website_content').select('id').eq('key', 'adultSessionConfig').maybeSingle();
-          if (fetchError) throw fetchError;
-
-          let saveError;
-          if (existingConfig) {
-              const { error } = await supabase.from('website_content').update({ content: arrayConfig }).eq('id', existingConfig.id);
-              saveError = error;
-          } else {
-              const { error } = await supabase.from('website_content').insert({ key: 'adultSessionConfig', content: arrayConfig });
-              saveError = error;
-          }
-
-          if (saveError) throw saveError;
+          await saveWebsiteContentItem('adultSessionConfig', arrayConfig);
 
           const newSessionTimes = {};
           newLocalSessions.forEach(s => newSessionTimes[s.name] = s.time);
@@ -463,19 +458,12 @@ const AdultClassManagement = () => {
   const saveReorderedClasses = async (orderedClasses) => {
       setClasses(orderedClasses);
 
-      const updates = orderedClasses.map((cls, index) => ({
-          id: cls.id,
-          sort_order: index + 1,
-          nama_kelas: cls.nama_kelas,
-          kategori: 'Dewasa'
-      }));
-
-      const { error } = await supabase.from('classes').upsert(updates);
-      if (error) {
+      try {
+          await reorderClasses(orderedClasses.map((cls, index) => ({ id: cls.id, sort_order: index + 1 })));
+          toast({ title: 'Berhasil', description: 'Urutan kelas diperbarui.' });
+      } catch (error) {
           toast({ title: 'Gagal', description: error.message, variant: 'destructive' });
           fetchAllData();
-      } else {
-          toast({ title: 'Berhasil', description: 'Urutan kelas diperbarui.' });
       }
   };
 
@@ -488,8 +476,7 @@ const AdultClassManagement = () => {
     santriInClass.splice(hoverIndex, 0, draggedItem);
     const updatedSantriInClass = santriInClass.map((s, i) => ({ ...s, order_in_class: i + 1 }));
     setSantriList([...otherSantri, ...updatedSantriInClass]);
-    const updates = updatedSantriInClass.map(s => supabase.from('santri').update({ order_in_class: s.order_in_class }).eq('id', s.id));
-    await Promise.all(updates);
+    await Promise.all(updatedSantriInClass.map(s => updateSantriOrder(s.id, s.order_in_class)));
   }, [santriList]);
 
   const handleDropSantri = async (item, toClassId) => {
@@ -507,19 +494,16 @@ const AdultClassManagement = () => {
       return;
     }
 
-    const { data, error } = await supabase.rpc('move_santri_to_class', {
-      p_santri_id: santriId,
-      p_to_class_id: toClassId,
-      p_reason: `Mutasi kelas dewasa: ${santri?.nama_lengkap || 'santri'} ke ${targetClass.nama_kelas}`
-    });
-
-    if (error) {
+    try {
+      const result = await moveSantriClass({
+        santri_id: santriId,
+        target_class_id: toClassId,
+        reason: `Mutasi kelas dewasa: ${santri?.nama_lengkap || 'santri'} ke ${targetClass.nama_kelas}`,
+      });
+      toast({ title: 'Mutasi berhasil', description: result?.message || `${santri?.nama_lengkap || 'Santri'} dipindahkan ke ${targetClass.nama_kelas}.` });
+    } catch (error) {
       toast({ title: 'Mutasi gagal', description: error.message, variant: 'destructive' });
-      await fetchAllData();
-      return;
     }
-
-    toast({ title: 'Mutasi berhasil', description: data?.[0]?.message || `${santri?.nama_lengkap || 'Santri'} dipindahkan ke ${targetClass.nama_kelas}.` });
     await fetchAllData();
   };
 
@@ -537,9 +521,15 @@ const AdultClassManagement = () => {
 
   const confirmJilidChange = async () => {
       if (!jilidChangeData) return;
-      const { santri, currentJilid, nextJilid } = jilidChangeData;
-      await supabase.from('santri').update({ jilid: nextJilid }).eq('id', santri.id);
-      await supabase.from('jilid_history').insert({ santri_id: santri.id, from_jilid: currentJilid, to_jilid: nextJilid, changed_by: user.id });
+      const { santri, nextJilid } = jilidChangeData;
+      // updateSantriJilid writes santri.jilid and the jilid_history row in one
+      // backend transaction, so the two can no longer drift apart.
+      try {
+        await updateSantriJilid(santri.id, nextJilid);
+      } catch (error) {
+        toast({ title: 'Gagal!', description: error.message, variant: 'destructive' });
+        return;
+      }
       toast({ title: 'Berhasil' }); fetchAllData(); setIsJilidModalOpen(false); setJilidChangeData(null);
   };
 
@@ -556,21 +546,21 @@ const AdultClassManagement = () => {
     if (!editingClass) {
       classData.sort_order = classes.reduce((max, item) => Math.max(max, item.sort_order || 0), 0) + 1;
     }
-    const { error } = editingClass
-      ? await supabase.from('classes').update(classData).eq('id', editingClass.id)
-      : await supabase.from('classes').insert(classData);
-    if (error) {
+    try {
+      if (editingClass) await updateClass(editingClass.id, classData);
+      else await createClass(classData);
+    } catch (error) {
       toast({ title: 'Gagal membuat kelas', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Berhasil', description: `Kelas ${classData.nama_kelas} berhasil disimpan.` });
-      setSessionFilters((current) => current.includes(targetSession) ? current : [...current, targetSession]);
-      setIsFormOpen(false);
-      await fetchAllData();
+      return;
     }
+    toast({ title: 'Berhasil', description: `Kelas ${classData.nama_kelas} berhasil disimpan.` });
+    setSessionFilters((current) => current.includes(targetSession) ? current : [...current, targetSession]);
+    setIsFormOpen(false);
+    await fetchAllData();
   };
 
   const showHistory = async () => {
-    const { data } = await supabase.from('class_mutations').select('*, santri:santri_id(nama_lengkap, foto_url), from_class:from_class_id(nama_kelas, sesi, guru:id_guru(nama)), to_class:to_class_id(nama_kelas, sesi, guru:id_guru(nama))').order('mutation_date', { ascending: false });
+    const data = await fetchAllClassMutations({ limit: 200 }).catch(() => []);
     setMutationHistory(data || []); setFilteredHistory(data || []); setIsHistoryOpen(true);
   };
 
@@ -580,8 +570,12 @@ const AdultClassManagement = () => {
           title: 'Hapus Riwayat',
           description: 'Apakah Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.',
           onConfirm: async () => {
-              await supabase.from('class_mutations').delete().eq('id', id);
-              setMutationHistory(prev => prev.filter(m => m.id !== id));
+              try {
+                  await deleteClassMutation(id);
+                  setMutationHistory(prev => prev.filter(m => m.id !== id));
+              } catch (error) {
+                  toast({ title: 'Gagal menghapus', description: error.message, variant: 'destructive' });
+              }
           }
       });
   };
@@ -638,10 +632,16 @@ const AdultClassManagement = () => {
       setConfirmDialog({
           isOpen: true,
           title: 'Hapus Kelas',
-          description: 'Apakah Anda yakin ingin menghapus kelas ini? Santri di dalamnya akan dikeluarkan dari kelas.',
+          description: 'Kelas akan dinonaktifkan. Riwayat santri di dalamnya tetap tersimpan dan dapat dipulihkan.',
           onConfirm: async () => {
-              await supabase.from('classes').delete().eq('id', id);
-              fetchAllData();
+              try {
+                  // deleteClass is a soft delete (is_active = false) — history and
+                  // memberships stay intact.
+                  await deleteClass(id);
+                  fetchAllData();
+              } catch (error) {
+                  toast({ title: 'Gagal menonaktifkan kelas', description: error.message, variant: 'destructive' });
+              }
           }
       });
   };

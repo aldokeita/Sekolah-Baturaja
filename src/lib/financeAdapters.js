@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/customSupabaseClient';
+import apiClient from '@/lib/apiClient';
 
 export const expenseCategories = [
     'Operasional',
@@ -98,100 +98,46 @@ export const normalizeExpensePayload = (formData, userId) => {
     };
 };
 
+// Expenses live under /api/payments/expenses — that is where the Go handler
+// mounts them, there is no top-level /api/expenses route.
 export const fetchExpensesByPeriod = async ({ year, month = 'all' }) => {
     const { startDate, endDate } = getPeriodDateRange({ year, month });
-    const { data, error } = await supabase
-        .from('expenses')
-        .select('id,tanggal_pengeluaran,kategori,deskripsi,jumlah,created_at,updated_at,deleted_at')
-        .is('deleted_at', null)
-        .gte('tanggal_pengeluaran', startDate)
-        .lte('tanggal_pengeluaran', endDate)
-        .order('tanggal_pengeluaran', { ascending: false })
-        .order('created_at', { ascending: false });
-
-    if (error) throw error;
+    const params = new URLSearchParams({ date_from: startDate, date_to: endDate });
+    const data = await apiClient.get(`/api/payments/expenses?${params.toString()}`);
     return data || [];
 };
 
 export const createExpense = async (formData, userId) => {
-    const payload = {
-        ...normalizeExpensePayload(formData, userId),
-        created_by: userId || null
-    };
-
-    const { data, error } = await supabase
-        .from('expenses')
-        .insert(payload)
-        .select('id,tanggal_pengeluaran,kategori,deskripsi,jumlah')
-        .single();
-
-    if (error) throw error;
-    return data;
+    // created_by/updated_by are stamped server-side from the JWT.
+    const { updated_by: _ignored, ...payload } = normalizeExpensePayload(formData, userId);
+    return apiClient.post('/api/payments/expenses', payload);
 };
 
 export const updateExpense = async (id, formData, userId) => {
-    const payload = normalizeExpensePayload(formData, userId);
-    const { data, error } = await supabase
-        .from('expenses')
-        .update(payload)
-        .eq('id', id)
-        .is('deleted_at', null)
-        .select('id,tanggal_pengeluaran,kategori,deskripsi,jumlah')
-        .single();
-
-    if (error) throw error;
-    return data;
+    const { updated_by: _ignored, ...payload } = normalizeExpensePayload(formData, userId);
+    return apiClient.put(`/api/payments/expenses/${id}`, payload);
 };
 
-export const softDeleteExpense = async (id, userId) => {
-    const { error } = await supabase
-        .from('expenses')
-        .update({
-            deleted_at: new Date().toISOString(),
-            updated_by: userId || null
-        })
-        .eq('id', id)
-        .is('deleted_at', null);
-
-    if (error) throw error;
+// The endpoint soft-deletes (sets deleted_at), matching the previous behaviour.
+export const softDeleteExpense = async (id) => {
+    await apiClient.delete(`/api/payments/expenses/${id}`);
 };
 
-const sumAmounts = (rows) => rows.reduce((totalCents, row) => {
-    const cents = Math.round(Number(row.jumlah || 0) * 100);
-    return totalCents + cents;
-}, 0) / 100;
-
+// Totals are summed in Postgres now, so the client no longer pages through
+// every payment row. Returns the same shape the dashboards already read.
 export const fetchCashflowSummary = async ({ year, month = 'all' }) => {
     const selectedYear = Number(year);
-    const selectedMonth = month === 'all' ? 'all' : Number(month);
+    const params = new URLSearchParams({ year: String(selectedYear) });
+    params.set('month', month === 'all' ? 'all' : String(Number(month)));
 
-    let paymentsQuery = supabase
-        .from('payments')
-        .select('jumlah,bulan,tahun,status,deleted_at')
-        .eq('tahun', selectedYear)
-        .eq('status', 'paid')
-        .is('deleted_at', null);
-
-    if (selectedMonth !== 'all') {
-        paymentsQuery = paymentsQuery.eq('bulan', selectedMonth);
-    }
-
-    const [paymentsResult, expenses] = await Promise.all([
-        paymentsQuery,
-        fetchExpensesByPeriod({ year: selectedYear, month: selectedMonth })
-    ]);
-
-    if (paymentsResult.error) throw paymentsResult.error;
-
-    const totalPemasukan = sumAmounts(paymentsResult.data || []);
-    const totalPengeluaran = sumAmounts(expenses);
+    const summary = await apiClient.get(`/api/payments/cashflow?${params.toString()}`);
 
     return {
-        totalPemasukan,
-        totalPengeluaran,
-        saldoBersih: Math.round((totalPemasukan - totalPengeluaran) * 100) / 100,
-        paymentCount: (paymentsResult.data || []).length,
-        expenseCount: expenses.length
+        totalPemasukan: Number(summary?.totalPemasukan || 0),
+        totalPengeluaran: Number(summary?.totalPengeluaran || 0),
+        saldoBersih: Number(summary?.saldoBersih || 0),
+        paymentCount: Number(summary?.paymentCount || 0),
+        expenseCount: Number(summary?.expenseCount || 0)
     };
 };
 

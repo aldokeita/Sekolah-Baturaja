@@ -14,7 +14,7 @@ import {
   RefreshCw,
   Loader2,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import '@/styles/public-parenting.css';
 
 /* ---------- Animation Variants ---------- */
@@ -183,17 +183,12 @@ const ParentingPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from('website_content')
-        .select('content')
-        .eq('key', 'parentingArticles')
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        setError('Gagal memuat artikel parenting. Silakan coba lagi.');
-        console.error('Error fetching parenting articles:', fetchError);
-      } else if (data) {
-        setArticles(data.content || []);
+      const contentMap = await fetchWebsiteContentMap({ keys: ['parentingArticles'], publicOnly: true });
+      const raw = contentMap.parentingArticles;
+      if (raw) {
+        setArticles(Array.isArray(raw) ? raw : []);
+      } else {
+        // key not found — no articles yet
       }
     } catch (err) {
       setError('Terjadi kesalahan tak terduga.');

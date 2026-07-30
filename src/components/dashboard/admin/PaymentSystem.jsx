@@ -10,7 +10,6 @@ import { Search, Printer, Book, Wallet, Shirt, WalletCards as IdCard, BookOpen, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { supabase } from '@/lib/customSupabaseClient';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -18,7 +17,11 @@ import { Separator } from "@/components/ui/separator";
 import { toPng } from 'html-to-image';
 import {
   MONTH_NAMES,
-  PAYMENT_HISTORY_SELECT,
+  createPaymentsBatch,
+  deletePaymentsBulk,
+  checkPaymentDuplicates,
+  fetchAllPayments,
+  fetchAllSantri,
   formatSantriCategory,
   getPaymentErrorMessage,
   getSharedDefaultSppAmount,
@@ -205,13 +208,9 @@ const PaymentSystem = () => {
     let active = true;
 
     const fetchSantri = async () => {
-      const { data, error } = await supabase
-        .from('santri')
-        .select('id, nomor_induk_qiroati, nama_lengkap, nama_panggilan, kategori, status, foto_url, avatar_path, rfid_tag, default_spp_amount, no_hp_ortu')
-        .eq('status', 'Aktif')
-        .order('nama_lengkap');
-      if (error) toast({ title: "Error", description: "Gagal memuat data santri.", variant: "destructive" });
-      else {
+      try {
+        // Every active santri is selectable here, so walk all pages.
+        const data = await fetchAllSantri({ status: 'Aktif', order: 'nama_lengkap' });
         const santriWithAvatars = await Promise.all((data || []).map(async (santri) => ({
           ...santri,
           foto_url: await resolveAvatarUrl({
@@ -222,6 +221,8 @@ const PaymentSystem = () => {
           }),
         })));
         if (active) setSantriList(santriWithAvatars);
+      } catch {
+        toast({ title: "Error", description: "Gagal memuat data santri.", variant: "destructive" });
       }
     };
     fetchSantri();
@@ -300,13 +301,15 @@ const PaymentSystem = () => {
   };
 
   const loadPaymentHistory = async (santriId) => {
-    const { data, error } = await supabase
-      .from('payments')
-      .select(PAYMENT_HISTORY_SELECT)
-      .eq('santri_id', santriId)
-      .order('tanggal_pembayaran', { ascending: false });
-    if (error) toast({ title: "Error", description: "Gagal memuat riwayat pembayaran.", variant: "destructive" });
-    else setPaymentHistory(data || []);
+    try {
+      const data = await fetchAllPayments({ santri_id: santriId });
+      // The endpoint orders by created_at; this panel shows newest payment date first.
+      setPaymentHistory([...data].sort((a, b) => (
+        new Date(b.tanggal_pembayaran || 0) - new Date(a.tanggal_pembayaran || 0)
+      )));
+    } catch {
+      toast({ title: "Error", description: "Gagal memuat riwayat pembayaran.", variant: "destructive" });
+    }
   };
 
   const initiateAddToCart = (item) => {
@@ -317,19 +320,16 @@ const PaymentSystem = () => {
       if (selectedSantri.length === 0) return false;
       const santriIds = selectedSantri.map(s => s.id);
       const monthNumbers = config.months.map(monthNameToNumber).filter(Boolean);
-      const { data, error } = await supabase
-        .from('payments')
-        .select('id, santri_id, bulan, tahun')
-        .in('santri_id', santriIds)
-        .eq('tahun', config.year)
-        .in('bulan', monthNumbers)
-        .eq('status', 'paid')
-        .is('deleted_at', null);
-      if (error) {
+      try {
+        return await checkPaymentDuplicates({
+          santriIds,
+          months: monthNumbers,
+          year: config.year,
+        });
+      } catch {
         toast({ title: "Error", description: "Gagal memeriksa duplikasi pembayaran.", variant: "destructive" });
         return false;
       }
-      return (data || []).length > 0;
   };
 
   const addToCart = async (item, config = null) => {
@@ -399,8 +399,7 @@ const PaymentSystem = () => {
                 }
             }
         }
-        const { data, error } = await supabase.from('payments').insert(newPayments).select('id');
-        if (error) throw error;
+        const data = await createPaymentsBatch(newPayments);
         if (selectedSantri.length === 1) loadPaymentHistory(selectedSantri[0].id);
 
         toast({ title: "Pembayaran Berhasil!", description: `Pembayaran untuk ${selectedSantri.length} santri telah lunas.` });
@@ -409,7 +408,7 @@ const PaymentSystem = () => {
         for (const item of cart) { if (item.monthly) { totalAmount += (item.amount * item.months.length); } else { totalAmount += (item.amount * item.quantity); } }
         totalAmount = totalAmount * selectedSantri.length;
         const qrCodeLoginUrl = `${window.location.origin}/login`;
-        setReceiptData({ items: cart, total: totalAmount, santri: selectedSantri, qrCodeUrl: qrCodeLoginUrl, timestamp: new Date(), method: paymentMethod, transactionId: transactionId, paymentId: data[0].id });
+        setReceiptData({ items: cart, total: totalAmount, santri: selectedSantri, qrCodeUrl: qrCodeLoginUrl, timestamp: new Date(), method: paymentMethod, transactionId: transactionId, paymentId: data?.[0]?.id });
         setIsReceiptOpen(true);
         setCart([]);
     } catch (error) {
@@ -418,12 +417,13 @@ const PaymentSystem = () => {
   };
 
   const handleDeleteHistory = async () => {
-    const { error } = await supabase.from('payments').delete().in('id', selectedHistory);
-    if (error) { toast({ title: 'Gagal Menghapus', description: getPaymentErrorMessage(error), variant: 'destructive' }); }
-    else {
-        toast({ title: 'Riwayat Dihapus', description: `${selectedHistory.length} data pembayaran telah berhasil dihapus.` });
-        if (selectedSantri.length === 1) loadPaymentHistory(selectedSantri[0].id);
-        setSelectedHistory([]);
+    try {
+      await deletePaymentsBulk(selectedHistory);
+      toast({ title: 'Riwayat Dihapus', description: `${selectedHistory.length} data pembayaran telah berhasil dihapus.` });
+      if (selectedSantri.length === 1) loadPaymentHistory(selectedSantri[0].id);
+      setSelectedHistory([]);
+    } catch (err) {
+      toast({ title: 'Gagal Menghapus', description: getPaymentErrorMessage(err), variant: 'destructive' });
     }
   };
 

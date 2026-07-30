@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAttendance, fetchCalendarEvents } from '@/lib/attendanceAdapters';
+import { fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Percent, Calendar as CalendarIcon, Clock, Sparkles } from 'lucide-react';
@@ -54,18 +55,14 @@ const SantriAbsensiRecap = () => {
         setIsLoading(true);
 
         try {
-            const [attendanceRes, calendarRes, santriRes] = await Promise.all([
-                supabase.from('attendance')
-                    .select('id, user_id, attendance_date, check_in_timestamp, check_in_time, status, role, class_id, sesi, attended_session')
-                    .eq('user_id', user.id)
-                    .order('attendance_date', { ascending: true }),
-                supabase.from('academic_calendar').select('date').eq('is_holiday', true),
-                supabase
-                    .from('santri')
-                    .select('id, nama_lengkap, sesi_mengaji, current_class_id, foto_url, kategori, status, class:current_class_id(sesi, nama_kelas)')
-                    .eq('id', user.id)
-                    .single()
+            const [attendanceData, calendarData, santriData] = await Promise.all([
+                fetchAttendance({ user_id: user.id }),
+                fetchCalendarEvents({ startDate: '2020-01-01', endDate: '2099-12-31' }),
+                fetchSantriDetail(user.id)
             ]);
+            const attendanceRes = { data: attendanceData, error: null };
+            const calendarRes = { data: calendarData, error: null };
+            const santriRes = { data: santriData, error: null };
 
             if (attendanceRes.error) {
                 console.error("[DEBUG] Error fetching attendance:", attendanceRes.error);

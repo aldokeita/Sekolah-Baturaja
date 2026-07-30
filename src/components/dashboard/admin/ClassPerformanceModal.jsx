@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAttendance, fetchCalendarEvents } from '@/lib/attendanceAdapters';
+import { fetchSantriList } from '@/lib/dataMasterAdapters';
+import { fetchJilidHistoryForSantriList } from '@/lib/academicAdapters';
 import { Users, TrendingUp, Activity, History, Clock, ArrowUpCircle, CalendarDays, Check, X, Search, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -53,13 +55,12 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
     const fetchClassStats = async () => {
         try {
             // 1. Fetch Active Santri
-            const { data: santriList, error: santriError } = await supabase
-                .from('santri')
-                .select('id, nama_lengkap, jilid, foto_url, avatar_path, created_at')
-                .eq('current_class_id', classItem.id)
-                .eq('status', 'Aktif');
+            const santriList = await fetchSantriList({
+                classId: classItem.id,
+                status: 'Aktif',
+                limit: 200,
+            });
 
-            if (santriError) throw santriError;
             const resolvedSantriList = await resolveAvatarRecords(santriList, { ownerType: 'santri' });
 
             if (resolvedSantriList.length > 0) {
@@ -71,14 +72,10 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                 resolvedSantriList.forEach(s => { counts[s.jilid] = (counts[s.jilid] || 0) + 1; });
                 setJilidData(Object.keys(counts).map(key => ({ name: key, value: counts[key] })));
 
-                // 2. Fetch Jilid History for these santri
-                const { data: history, error: historyError } = await supabase
-                    .from('jilid_history')
-                    .select('*, santri:santri_id(id, nama_lengkap, foto_url, avatar_path)')
-                    .in('santri_id', santriIds)
-                    .order('changed_at', { ascending: false });
-
-                if (historyError) throw historyError;
+                // 2. Fetch Jilid History for these santri. The batch endpoint
+                // returns the nested `santri` object and orders by changed_at
+                // DESC, so the .find() below still yields the latest change.
+                const history = await fetchJilidHistoryForSantriList(santriIds);
 
                 const resolvedHistory = await Promise.all((history || []).map(async (entry) => ({
                     ...entry,
@@ -109,14 +106,13 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                 setStagnationData([]);
             }
 
-            // 4. Fetch Attendance
-            const { data: attendanceList, error: attError } = await supabase
-                .from('attendance')
-                .select('attendance_date, status')
-                .eq('class_id', classItem.id)
-                .order('attendance_date', { ascending: true });
-
-            if (attError) throw attError;
+            // 4. Fetch Attendance. Only the last 7 dates are charted, but the
+            // grouping happens client-side, so pull the max page the endpoint
+            // allows rather than assuming the class has few records.
+            const attendanceList = await fetchAttendance({
+                class_id: classItem.id,
+                limit: 500,
+            });
 
             if (attendanceList) {
                 const grouped = {};
@@ -149,12 +145,7 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
         setIsDetailedLoading(true);
         try {
             // First get santri IDs for this class
-            const { data: santriList, error: santriError } = await supabase
-                .from('santri')
-                .select('id, nama_lengkap, foto_url, avatar_path')
-                .eq('current_class_id', classItem.id);
-
-            if (santriError) throw santriError;
+            const santriList = await fetchSantriList({ classId: classItem.id, limit: 200 });
             const resolvedSantriList = await resolveAvatarRecords(santriList, { ownerType: 'santri' });
 
             if (resolvedSantriList.length === 0) {
@@ -165,14 +156,11 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
 
             const santriMap = {};
             resolvedSantriList.forEach(s => { santriMap[s.id] = s; });
-            const santriIds = resolvedSantriList.map(s => s.id);
 
-            let query = supabase.from('attendance')
-                .select('*')
-                .in('user_id', santriIds);
-
-            const { data: attData, error: attError } = await query;
-            if (attError) throw attError;
+            // Previously passed `user_ids`, which fetchAttendance never supported —
+            // the filter was dropped and every santri's rows came back. class_id is
+            // the filter the endpoint actually has and matches this roster.
+            const attData = await fetchAttendance({ class_id: classItem.id, limit: 500 });
 
             const mappedData = (attData || []).map(record => ({
                 ...record,
@@ -197,15 +185,10 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
         const endDate = `${historyYear}-${String(historyMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
         try {
-            // 1. Fetch Calendar Data for Holidays only
-            const { data: calendarData, error: calError } = await supabase
-                .from('academic_calendar')
-                .select('date')
-                .gte('date', startDate)
-                .lte('date', endDate)
-                .eq('is_holiday', true);
-
-            if (calError) throw calError;
+            // 1. Fetch Calendar Data for Holidays only. The endpoint returns
+            // holidays exclusively, and the adapter normalizes each row to
+            // { date, is_holiday }.
+            const calendarData = await fetchCalendarEvents(startDate, endDate);
 
             const holidaySet = new Set((calendarData || []).map(c => c.date));
 
@@ -223,25 +206,22 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
             const uniqueActiveDays = activeDays;
 
             // 3. Get Santri in this class
-            const { data: santriList, error: santriError } = await supabase
-                .from('santri')
-                .select('id, nama_lengkap, foto_url, avatar_path')
-                .eq('current_class_id', classItem.id)
-                .eq('status', 'Aktif')
-                .order('nama_lengkap');
+            const santriList = await fetchSantriList({
+                classId: classItem.id,
+                status: 'Aktif',
+                order: 'nama_lengkap',
+                limit: 200,
+            });
 
-            if (santriError) throw santriError;
             const resolvedSantriList = await resolveAvatarRecords(santriList, { ownerType: 'santri' });
 
-            // 4. Get Attendance data
-            const { data: attendance, error: attError } = await supabase
-                .from('attendance')
-                .select('user_id, attendance_date, status')
-                .eq('class_id', classItem.id)
-                .gte('attendance_date', startDate)
-                .lte('attendance_date', endDate);
-
-            if (attError) throw attError;
+            // 4. Get Attendance data for the month
+            const attendance = await fetchAttendance({
+                class_id: classItem.id,
+                date_from: startDate,
+                date_to: endDate,
+                limit: 500,
+            });
 
             const today = new Date();
             today.setHours(0, 0, 0, 0);

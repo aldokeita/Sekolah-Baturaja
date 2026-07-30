@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/lib/customSupabaseClient';
 import {
   Users, BookOpen, Award, Calendar, Phone, ShieldCheck,
   GraduationCap, AlertTriangle, Trophy, BarChart3, FileSpreadsheet,
@@ -13,6 +12,8 @@ import {
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { resolveAvatarRecord, resolveAvatarRecords } from '@/lib/storageAdapters';
+import { fetchAllSantri, fetchClassList, fetchGuruDetail } from '@/lib/dataMasterAdapters';
+import { fetchJilidHistoryForSantriList } from '@/lib/academicAdapters';
 import ClassManagement from '@/components/dashboard/admin/ClassManagement';
 import * as XLSX from 'xlsx';
 
@@ -55,53 +56,43 @@ const PentashihDashboard = () => {
 
     setIsLoading(true);
     try {
-      const [guruRes, classesRes, santriRes, membershipsRes, jilidHistoryRes] = await Promise.all([
-        supabase
-          .from('guru')
-          .select('id, nama, foto_url, rfid_tag, no_hp, jabatan')
-          .eq('id', user.id)
-          .maybeSingle(),
-        supabase
-          .from('classes')
-          .select('id, nama_kelas, sesi, kategori, is_active, id_guru, guru:id_guru(id, nama, no_hp)')
-          .or('is_active.eq.true,is_active.is.null'),
-        supabase
-          .from('santri')
-          .select('id, nomor_induk_qiroati, nama_lengkap, nama_panggilan, kategori, jenis_kelamin, jilid, current_class_id, sesi_mengaji, status, foto_url, avatar_path, created_at, updated_at')
-          .or('status.eq.Aktif,status.eq.active,status.is.null'),
-        supabase
-          .from('class_memberships')
-          .select('santri_id, class_id')
-          .eq('status', 'active'),
-        supabase
-          .from('jilid_history')
-          .select('santri_id, changed_at')
-          .order('changed_at', { ascending: false }),
+      // include_guru returns the teacher as flat guru_* columns; fetchClassList
+      // rebuilds the nested `guru` object this view reads. is_active is NOT NULL
+      // in the schema, so the old "or is_active is null" arm never matched.
+      const [guruProfile, classes, santri] = await Promise.all([
+        fetchGuruDetail(user.id),
+        fetchClassList({ is_active: true, includeGuru: true, limit: 200 }),
+        // activeOnly matches status Aktif/active OR NULL, which is what the old
+        // .or('status.eq.Aktif,status.eq.active,status.is.null') filter did.
+        fetchAllSantri({ activeOnly: true, notDeleted: true }),
       ]);
 
-      if (guruRes.error) throw guruRes.error;
+      const resolvedGuru = await resolveAvatarRecord(guruProfile, { ownerType: 'guru' });
+      const resolvedSantri = await resolveAvatarRecords(santri || [], { ownerType: 'santri' });
 
-      const resolvedGuru = await resolveAvatarRecord(guruRes.data, { ownerType: 'guru' });
-      const resolvedSantri = await resolveAvatarRecords(santriRes.data || [], { ownerType: 'santri' });
+      // Jilid history is keyed by santri, so it needs the roster first.
+      const jilidHistoryRows = await fetchJilidHistoryForSantriList(
+        resolvedSantri.map(s => s.id)
+      ).catch(() => []);
 
-      const membershipMap = Object.fromEntries(
-        (membershipsRes.data || []).map(m => [m.santri_id, m.class_id])
-      );
+      const classMap = Object.fromEntries((classes || []).map(c => [c.id, c]));
 
-      const classMap = Object.fromEntries(
-        (classesRes.data || []).map(c => [c.id, c])
-      );
-
-      // Map last jilid test / change date per santri
+      // Rows arrive ordered by changed_at DESC, so the first hit per santri is
+      // their most recent change.
       const jilidHistoryMap = {};
-      (jilidHistoryRes.data || []).forEach(h => {
+      jilidHistoryRows.forEach(h => {
         if (!jilidHistoryMap[h.santri_id]) {
           jilidHistoryMap[h.santri_id] = h.changed_at;
         }
       });
 
       const mappedSantri = resolvedSantri.map(s => {
-        const classId = s.current_class_id || membershipMap[s.id] || null;
+        // current_class_id only. The old query also fell back to an active
+        // class_memberships row, but the backend has no memberships endpoint and
+        // treats current_class_id as the authoritative placement (see
+        // activeSantriByClass in classes.go), so the fallback is dropped rather
+        // than backed by an invented route.
+        const classId = s.current_class_id || null;
         const cls = classId ? classMap[classId] : null;
         const lastTestDate = jilidHistoryMap[s.id] || s.updated_at || s.created_at || null;
         const untestedInfo = calculateUntestedDuration(lastTestDate);
@@ -120,7 +111,7 @@ const PentashihDashboard = () => {
       });
 
       setGuruData(resolvedGuru || null);
-      setClassList(classesRes.data || []);
+      setClassList(classes);
       setSantriList(mappedSantri);
     } catch (error) {
       toast({ title: 'Gagal memuat data pentashih', description: error.message, variant: 'destructive' });

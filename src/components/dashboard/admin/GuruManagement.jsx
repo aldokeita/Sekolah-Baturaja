@@ -7,18 +7,22 @@ import { Plus, Edit, Trash2, Search, Upload, Eye, EyeOff, UserCheck, Filter, Mai
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/lib/customSupabaseClient';
-import { enableEdgeFunctions, edgeFunctionDisabledMessage } from '@/lib/featureFlags';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from '@/components/ui/card';
 import BirthdayNotificationModal from '@/components/dashboard/shared/BirthdayNotificationModal';
 import * as XLSX from 'xlsx';
-import { getOperationalRoleFromGuruForm, pickGuruProfileFields } from '@/lib/dataMasterAdapters';
+import {
+  createGuru,
+  deleteGuru,
+  fetchGuruList,
+  getOperationalRoleFromGuruForm,
+  pickGuruProfileFields,
+  updateGuru,
+} from '@/lib/dataMasterAdapters';
 import { getStorageErrorMessage, resolveAvatarRecords, uploadAvatar } from '@/lib/storageAdapters';
 import { getBirthdaysThisMonth } from '@/lib/birthdayUtils';
-import { invokeAuthenticatedEdgeFunction } from '@/lib/edgeFunctionAdapters';
 
 const AVAILABLE_ROLES = ['Pengajar', 'Pentashih', 'Staff Operasional', 'Admin'];
 
@@ -40,15 +44,7 @@ const GuruManagement = () => {
 
   const fetchGuru = useCallback(async () => {
     try {
-        console.log("Fetching guru data from database...");
-        const { data, error } = await supabase
-          .from('guru')
-          .select('id, nama, email, no_hp, alamat, foto_url, avatar_path, rfid_tag, jabatan, roles, is_notulen, jenis_kelamin, tanggal_lahir, status_guru, status, created_at')
-          .order('nama');
-        if (error) {
-            console.error("Database Error fetching guru:", error);
-            throw new Error(error.message);
-        }
+        const data = await fetchGuruList();
         setGuruList(await resolveAvatarRecords(data, { ownerType: 'guru' }));
     } catch (err) {
         console.error("Full fetchGuru Error:", err);
@@ -98,32 +94,12 @@ const GuruManagement = () => {
   };
 
   const handleDelete = async (guruToDelete) => {
-    if (!enableEdgeFunctions) {
-      toast({ title: "Fitur belum aktif", description: edgeFunctionDisabledMessage, variant: "destructive" });
-      return;
-    }
-
     if (window.confirm(`Yakin ingin menonaktifkan ${guruToDelete.nama}? Akun login akan dinonaktifkan tanpa hard delete.`)) {
       try {
-          const operationalRole = (guruToDelete.roles || []).includes('Pentashih') ? 'pentashih' : 'guru';
-          const { data, error: edgeError } = await supabase.functions.invoke('manage-user', {
-            body: { action: 'deactivate', role: operationalRole, target_user_id: guruToDelete.id }
-          });
-          if (edgeError || !data?.ok) {
-            toast({ title: "Gagal Hapus User Login", description: edgeError?.message || data?.error?.message || 'Akun gagal dinonaktifkan.', variant: "destructive" });
-            return;
-          }
-
-          const { error: profileError } = await supabase.from('guru').update({ status: 'inactive' }).eq('id', guruToDelete.id);
-          if (profileError) {
-              console.error("Database Delete Error:", profileError);
-              throw new Error(profileError.message);
-          }
-
+          await deleteGuru(guruToDelete.id);
           toast({ title: "Berhasil!", description: "Akun guru/pentashih telah dinonaktifkan." });
           fetchGuru();
       } catch (err) {
-          console.error("Full handleDelete Error:", err);
           toast({ title: "Gagal Hapus Data Guru", description: err.message, variant: "destructive" });
       }
     }
@@ -134,11 +110,7 @@ const GuruManagement = () => {
         toast({ title: "Memproses Backup", description: "Sedang menyiapkan data untuk diekspor..." });
         console.log("Starting Backup to Excel for Guru...");
 
-        const { data: allGuru, error } = await supabase.from('guru').select('*').order('nama');
-        if (error) {
-            console.error("Backup DB Fetch Error:", error);
-            throw new Error(error.message);
-        }
+        const allGuru = await fetchGuruList();
 
         if (!allGuru || allGuru.length === 0) {
             toast({ title: "Data Kosong", description: "Tidak ada data guru untuk diekspor.", variant: "destructive" });
@@ -213,13 +185,7 @@ const GuruManagement = () => {
           setPreviewImage(finalUrl);
 
           if (editingGuru) {
-              const { error: updateError } = await supabase
-                .from('guru')
-                .update({ avatar_path: path })
-                .eq('id', editingGuru.id);
-              if (updateError) {
-                  throw new Error("Gagal menyimpan referensi foto ke database.");
-              }
+              await updateGuru(editingGuru.id, { avatar_path: path });
               toast({ title: "Foto Tersimpan", description: "Foto profil berhasil diperbarui secara otomatis." });
               fetchGuru();
           } else {
@@ -264,60 +230,19 @@ const GuruManagement = () => {
     }
 
     setIsSubmitting(true);
-    let userId = editingGuru?.id;
-    const requiresAuthEdgeFunction = true;
-    const requiresPasswordReset = Boolean(editingGuru && formData.password);
-    if ((requiresAuthEdgeFunction || requiresPasswordReset) && !enableEdgeFunctions) {
-        toast({ title: "Fitur belum aktif", description: edgeFunctionDisabledMessage, variant: "destructive" });
-        setIsSubmitting(false);
-        return;
-    }
+    const isPasswordChange = Boolean(editingGuru && formData.password);
 
     try {
+        const profile = pickGuruProfileFields(formData, operationalRole);
         if (!editingGuru) {
-          const { data, error } = await supabase.functions.invoke('manage-user', {
-            body: {
-              action: 'create',
-              role: operationalRole,
-              profile: pickGuruProfileFields(formData, operationalRole),
-              initial_password: formData.password,
-            },
-          });
-          if (error) throw error;
-          if (!data?.ok || !data?.data?.user_id) {
-            throw new Error(data?.error?.message || 'Akun guru/pentashih gagal dibuat.');
-          }
-          userId = data.data.user_id;
+          await createGuru({ role: operationalRole, profile, password: formData.password });
         } else {
-          const { data, error } = await supabase.functions.invoke('manage-user', {
-            body: {
-              action: 'update',
-              role: operationalRole,
-              target_user_id: userId,
-              profile: pickGuruProfileFields(formData, operationalRole),
-            },
-          });
-          if (error) throw error;
-          if (!data?.ok) {
-            throw new Error(data?.error?.message || 'Data akun guru gagal diperbarui.');
-          }
+          // Password goes in the same partial update — the backend hashes it before
+          // it reaches the DB, so there's no separate reset call anymore.
+          await updateGuru(editingGuru.id, isPasswordChange ? { ...profile, password: formData.password } : profile);
         }
 
-        if (!userId) {
-            throw new Error("ID Pengguna tidak valid setelah operasi otentikasi.");
-        }
-
-        if (requiresPasswordReset) {
-          const resetData = await invokeAuthenticatedEdgeFunction('reset-user-password', {
-            target_user_id: userId,
-            new_password: formData.password,
-          });
-          if (!resetData?.ok) {
-            throw new Error(resetData?.error?.message || 'Password Auth guru gagal direset.');
-          }
-        }
-
-        toast({ title: "Berhasil!", description: requiresPasswordReset ? "Data dan password Auth guru berhasil diperbarui." : "Data guru berhasil disimpan." });
+        toast({ title: "Berhasil!", description: isPasswordChange ? "Data dan password guru berhasil diperbarui." : "Data guru berhasil disimpan." });
         setIsDialogOpen(false);
         fetchGuru();
     } catch (err) {
@@ -453,7 +378,7 @@ const GuruManagement = () => {
                 </td>
                 <td className="p-3"><div className="flex flex-col"><span className="text-xs" style={{ color: 'hsl(var(--admin-text-primary))' }}>{guru.email}</span><span className="text-xs" style={{ color: 'hsl(var(--admin-text-muted))' }}>{guru.no_hp}</span></div></td>
                 <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--admin-text-muted))' }}>{guru.rfid_tag || '-'}</td>
-                <td className="p-3"><div className="flex gap-1"><Button onClick={() => handleEdit(guru)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full" style={{ color: 'hsl(var(--admin-text-muted))' }}><Edit className="w-4 h-4" /></Button><Button onClick={() => handleDelete(guru)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full text-red-500 hover:text-red-600 hover:bg-red-50" disabled={!enableEdgeFunctions} title={!enableEdgeFunctions ? edgeFunctionDisabledMessage : undefined}><Trash2 className="w-4 h-4" /></Button></div></td>
+                <td className="p-3"><div className="flex gap-1"><Button onClick={() => handleEdit(guru)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full" style={{ color: 'hsl(var(--admin-text-muted))' }}><Edit className="w-4 h-4" /></Button><Button onClick={() => handleDelete(guru)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full text-red-500 hover:text-red-600 hover:bg-red-50" title="Nonaktifkan akun guru"><Trash2 className="w-4 h-4" /></Button></div></td>
             </tr>
           ))}
           </tbody>

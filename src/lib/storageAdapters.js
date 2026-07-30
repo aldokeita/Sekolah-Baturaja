@@ -1,5 +1,4 @@
-import { supabase, supabaseAnonKey, supabaseUrl } from '@/lib/customSupabaseClient';
-import { enableEdgeFunctions, edgeFunctionDisabledMessage } from '@/lib/featureFlags';
+import apiClient from '@/lib/apiClient';
 
 const AVATAR_BUCKET = 'avatars';
 const WEBSITE_ASSETS_BUCKET = 'website-assets';
@@ -150,133 +149,44 @@ const formatRemoteError = (body, fallback) => {
   return parts.join(' ') || fallback;
 };
 
-const invokeSignedUploadFunction = async (body) => {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase belum dikonfigurasi untuk upload Storage.');
-  }
-
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) throw new Error('Gagal membaca sesi login untuk upload avatar.');
-
-  const accessToken = sessionData?.session?.access_token;
-  if (!accessToken) {
-    throw new Error('Sesi login tidak tersedia. Silakan login ulang sebelum upload avatar.');
-  }
-
-  const endpoint = `${supabaseUrl.replace(/\/$/, '')}/functions/v1/generate-signed-upload-url`;
-  let response;
-
-  try {
-    response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        apikey: supabaseAnonKey,
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (error) {
-    throw new Error(`Gagal menghubungi Edge Function upload: ${error?.message || 'network error'}`);
-  }
-
-  const responseBody = await parseSafeResponseBody(response);
-  if (!response.ok) {
-    throw new Error(`Edge Function generate-signed-upload-url gagal (${response.status}): ${formatRemoteError(responseBody, 'request ditolak')}`);
-  }
-
-  return responseBody?.data || responseBody;
-};
-
-const uploadViaSignedUrl = async ({ bucket, path, file, purpose }) => {
-  if (!enableEdgeFunctions) throw new Error(edgeFunctionDisabledMessage);
-
-  const signedUpload = await invokeSignedUploadFunction({
-    bucket,
-    path,
-    content_type: file.type,
-    size: file.size,
-    purpose,
-  });
-
-  const signedUrl = signedUpload?.signed_url || signedUpload?.signedUrl;
-  if (!signedUrl) throw new Error('Signed URL upload tidak tersedia dari Edge Function.');
-
-  const response = await fetch(normalizeLocalSignedUrl(signedUrl), {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  });
-
-  if (!response.ok) {
-    const responseBody = await parseSafeResponseBody(response);
-    throw new Error(`Upload file ke Storage gagal (${response.status}): ${formatRemoteError(responseBody, 'request ditolak')}`);
-  }
-  return signedUpload.path || path;
-};
-
-const uploadDirectlyToStorage = async ({ bucket, path, file }) => {
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: true,
-      contentType: file.type,
-    });
-  if (error) throw error;
-  return path;
-};
-
-const normalizeLocalSignedUrl = (signedUrl) => {
-  try {
-    const configuredUrl = import.meta.env.VITE_SUPABASE_URL;
-    const targetUrl = new URL(signedUrl);
-    if (configuredUrl && targetUrl.hostname === 'kong') {
-      const publicBaseUrl = new URL(configuredUrl);
-      targetUrl.protocol = publicBaseUrl.protocol;
-      targetUrl.hostname = publicBaseUrl.hostname;
-      targetUrl.port = publicBaseUrl.port;
-    }
-    return targetUrl.toString();
-  } catch {
-    return signedUrl;
-  }
-};
-
-export const createSignedAvatarUrl = async (path, expiresIn = 3600) => {
+// GET /api/files/signed requires BOTH bucket and path (400 otherwise) and
+// responds with `{ signed_url }` — not `{ url }`, and not wrapped in `data`.
+export const createSignedAvatarUrl = async (path, _expiresIn = 3600) => {
   if (!path) return null;
-  const { data, error } = await supabase.storage.from(AVATAR_BUCKET).createSignedUrl(path, expiresIn);
-  if (error) return null;
-  return data?.signedUrl || null;
+  const qs = new URLSearchParams({ bucket: AVATAR_BUCKET, path });
+  try {
+    const data = await apiClient.get(`/api/files/signed?${qs.toString()}`);
+    return data?.signed_url || null;
+  } catch { return null; }
 };
 
 export const uploadAvatar = async ({ ownerType, ownerId, file }) => {
   const webpFile = await compressAvatarToWebp(file);
   const path = getAvatarPath({ ownerType, ownerId });
-  let storedPath;
-  try {
-    storedPath = await uploadDirectlyToStorage({ bucket: AVATAR_BUCKET, path, file: webpFile });
-  } catch (directError) {
-    if (!enableEdgeFunctions) throw directError;
-    try {
-      storedPath = await uploadViaSignedUrl({
-        bucket: AVATAR_BUCKET,
-        path,
-        file: webpFile,
-        purpose: `${ownerType}-avatar`,
-      });
-    } catch (edgeError) {
-      throw new Error(`${getStorageErrorMessage(directError)} Edge Function upload juga gagal: ${getStorageErrorMessage(edgeError)}`);
-    }
-  }
-  const signedUrl = await createSignedAvatarUrl(storedPath);
-  return { path: storedPath, signedUrl };
+  const formData = new FormData();
+  formData.append('file', webpFile);
+  // The handler reads `path` and 400s without it; it also derives ownership from
+  // the path, so this is what authorizes the write.
+  formData.append('path', path);
+  const token = apiClient.getToken();
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_URL}/api/upload/avatar`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Upload avatar gagal'); }
+  const data = await res.json();
+  const signedUrl = await createSignedAvatarUrl(data.path || path);
+  return { path: data.path || path, signedUrl };
 };
 
 export const deleteAvatar = async ({ ownerType, ownerId }) => {
   const path = getAvatarPath({ ownerType, ownerId });
-  const { error } = await supabase.storage.from(AVATAR_BUCKET).remove([path]);
-  if (error) throw error;
+  // DELETE /api/files requires BOTH bucket and path (400 otherwise).
+  const qs = new URLSearchParams({ bucket: AVATAR_BUCKET, path });
+  await apiClient.delete(`/api/files?${qs.toString()}`);
+  avatarUrlCache.delete(`${AVATAR_BUCKET}:${path}`);
   return { path };
 };
 
@@ -353,15 +263,18 @@ export const getWebsiteAssetPath = ({ folder = 'general', key, file }) => {
 export const uploadWebsiteAsset = async ({ folder, key, file }) => {
   validateWebsiteAssetFile(file);
   const path = getWebsiteAssetPath({ folder, key, file });
-  const { error } = await supabase.storage
-    .from(WEBSITE_ASSETS_BUCKET)
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: Boolean(key),
-      contentType: file.type,
-    });
-  if (error) throw error;
-
-  const { data } = supabase.storage.from(WEBSITE_ASSETS_BUCKET).getPublicUrl(path);
-  return { path, publicUrl: data.publicUrl };
+  const formData = new FormData();
+  formData.append('file', file);
+  // Same as the avatar upload: the handler reads `path`, not folder/key.
+  formData.append('path', path);
+  const token = apiClient.getToken();
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const res = await fetch(`${API_URL}/api/upload/asset`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Upload aset gagal'); }
+  const data = await res.json();
+  return { path: data.path || path, publicUrl: `${API_URL}/files/website-assets/${data.path || path}` };
 };

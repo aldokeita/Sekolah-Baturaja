@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Helmet } from 'react-helmet';
-import { supabase } from '@/lib/customSupabaseClient';
 import { Image as ImageIcon, AlertTriangle, RefreshCw, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import '@/styles/public-gallery.css';
 
 /* ── Size assignment (deterministic mosaic rhythm) ──────────────────── */
@@ -253,19 +253,10 @@ const GalleryPage = () => {
     setLoading(true);
     setError(false);
     try {
-      const { data, error: fetchErr } = await supabase
-        .from('website_content')
-        .select('content')
-        .eq('key', 'galleryPhotos')
-        .maybeSingle();
+      const contentMap = await fetchWebsiteContentMap({ keys: ['galleryPhotos'], publicOnly: true });
+      const galleryPhotos = contentMap.galleryPhotos;
 
-      if (fetchErr) throw fetchErr;
-
-      if (data?.content && Array.isArray(data.content)) {
-        setPhotos(data.content);
-      } else {
-        setPhotos([]);
-      }
+      setPhotos(Array.isArray(galleryPhotos) ? galleryPhotos : []);
     } catch {
       setError(true);
     } finally {

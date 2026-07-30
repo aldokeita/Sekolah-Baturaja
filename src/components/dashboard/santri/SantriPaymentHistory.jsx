@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Receipt } from 'lucide-react';
-import { PAYMENT_HISTORY_SELECT, monthNumberToName } from '@/lib/paymentAdapters';
+import { fetchAllPayments, monthNumberToName } from '@/lib/paymentAdapters';
 
 const SantriPaymentHistory = () => {
     const { user } = useAuth();
@@ -16,14 +15,12 @@ const SantriPaymentHistory = () => {
             if (!user?.id) return;
             setIsLoading(true);
             try {
-                const { data, error: fetchError } = await supabase
-                    .from('payments')
-                    .select(PAYMENT_HISTORY_SELECT)
-                    .eq('santri_id', user.id)
-                    .order('tanggal_pembayaran', { ascending: false });
-
-                if (fetchError) throw fetchError;
-                setPayments(data || []);
+                const data = await fetchAllPayments({ santri_id: user.id });
+                // The endpoint orders by created_at; this screen shows newest
+                // payment date first.
+                setPayments([...data].sort((a, b) => (
+                    new Date(b.tanggal_pembayaran || 0) - new Date(a.tanggal_pembayaran || 0)
+                )));
             } catch (err) {
                 setError(err.message);
             } finally {

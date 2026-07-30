@@ -5,8 +5,8 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, Video, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { supabase } from '@/lib/customSupabaseClient';
 import { toast } from '@/components/ui/use-toast';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 
 const WaliDiscussionPage = () => {
     const [discussions, setDiscussions] = useState([]);
@@ -15,19 +15,18 @@ const WaliDiscussionPage = () => {
     useEffect(() => {
         const fetchDiscussions = async () => {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('website_content')
-                .select('content')
-                .eq('key', 'waliDiscussions')
-                .single();
-
-            if (error && error.code !== 'PGRST116') {
+            try {
+                const contentMap = await fetchWebsiteContentMap({ keys: ['waliDiscussions'], publicOnly: true });
+                const raw = contentMap.waliDiscussions;
+                if (Array.isArray(raw)) {
+                    const sortedDiscussions = [...raw].sort((a, b) => new Date(b.date) - new Date(a.date));
+                    setDiscussions(sortedDiscussions);
+                }
+            } catch {
                 toast({ title: "Error", description: "Gagal memuat jadwal diskusi.", variant: "destructive" });
-            } else if (data && data.content) {
-                const sortedDiscussions = data.content.sort((a, b) => new Date(b.date) - new Date(a.date));
-                setDiscussions(sortedDiscussions);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchDiscussions();
     }, []);

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { supabase, isSupabaseConfigured } from '@/lib/customSupabaseClient';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import GlassSurface from '@/components/reactbits/GlassSurface/GlassSurface';
 import '@/styles/navbar.css';
 
@@ -98,13 +98,16 @@ const Navbar = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return undefined;
     let mounted = true;
     const fetchLogo = async () => {
-      const { data } = await supabase.from('website_content').select('content').eq('key', 'logoUrl').maybeSingle();
-      if (mounted && data?.content) {
-        setLogoFailed(false);
-        setLogoUrl(data.content);
+      try {
+        const map = await fetchWebsiteContentMap({ keys: ['logoUrl'] });
+        if (mounted && map.logoUrl) {
+          setLogoFailed(false);
+          setLogoUrl(map.logoUrl);
+        }
+      } catch {
+        // Keep the bundled fallback logo — a missing remote logo is not worth a toast.
       }
     };
     fetchLogo();

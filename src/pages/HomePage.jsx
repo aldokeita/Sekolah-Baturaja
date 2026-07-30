@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { toast } from '@/components/ui/use-toast';
-import { supabase, isSupabaseConfigured } from '@/lib/customSupabaseClient';
+import { publicFetch } from '@/lib/apiClient';
 import {
   fetchPublishedAnnouncements,
   fetchPublishedNews,
@@ -46,28 +46,16 @@ const HomePage = () => {
       setLoading(true);
       setContentError('');
       try {
-        if (!isSupabaseConfigured) {
-          setContent(defaultContent);
-          return;
-        }
-
-        const [santriResult, guruResult, contentResult, newsResult, announcementResult] = await Promise.all([
-          supabase.from('santri').select('id', { count: 'exact', head: true }).eq('status', 'Aktif'),
-          supabase.from('guru').select('id', { count: 'exact', head: true }),
-          supabase.from('website_content').select('key, content').eq('is_public', true),
+        const [santriCount, guruCount, contentMap, newsResult, announcementResult] = await Promise.all([
+          publicFetch('/api/santri/count').then(d => d?.total || 0).catch(() => 0),
+          publicFetch('/api/guru/count').then(d => d?.total || 0).catch(() => 0),
+          publicFetch('/api/content/website').then(d => d || {}).catch(() => ({})),
           fetchPublishedNews({ limit: 4 }),
           fetchPublishedAnnouncements({ limit: 4 }),
         ]);
 
         if (!mounted) return;
-        if (contentResult.error) throw contentResult.error;
-
-        const contentMap = (contentResult.data || []).reduce((acc, item) => {
-          acc[item.key] = item.content;
-          return acc;
-        }, {});
-
-        setStats({ santri: santriResult.count || 0, guru: guruResult.count || 0 });
+        setStats({ santri: santriCount, guru: guruCount });
         setContent(mergeHomepageContent(contentMap));
         setNews(newsResult);
         setAnnouncements(announcementResult);
@@ -80,22 +68,7 @@ const HomePage = () => {
 
     fetchHomepageData();
 
-    let channel;
-    if (isSupabaseConfigured) {
-      channel = supabase
-        .channel('website_content_homepage_reactbits')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'website_content' }, (payload) => {
-          if (payload.new?.key && payload.new.is_public !== false) {
-            setContent((previous) => mergeHomepageContent({ ...previous, [payload.new.key]: payload.new.content }));
-          }
-        })
-        .subscribe();
-    }
-
-    return () => {
-      mounted = false;
-      if (channel) supabase.removeChannel(channel);
-    };
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {

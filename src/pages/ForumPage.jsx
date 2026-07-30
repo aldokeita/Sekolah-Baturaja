@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchForumTopics, createForumTopic, getForumErrorMessage } from '@/lib/forumAdapters';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,17 +26,13 @@ const ForumPage = () => {
 
   const fetchTopics = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('forum_topics')
-      .select('*, replies:forum_replies(count)')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      toast({ title: 'Error', description: 'Gagal memuat topik forum.', variant: 'destructive' });
-    } else {
-      setTopics(data.map(t => ({...t, reply_count: t.replies[0]?.count || 0})));
+    try {
+      setTopics(await fetchForumTopics());
+    } catch (error) {
+      toast({ title: 'Error', description: getForumErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCreateTopic = async (e) => {
@@ -51,21 +47,18 @@ const ForumPage = () => {
       return;
     }
 
-    const { error } = await supabase.from('forum_topics').insert({
-      title: newTopic.title,
-      content: newTopic.content,
-      author_id: user.id,
-      author_name: user.nama_lengkap || user.nama || 'Wali Murid',
-      author_role: user.role,
-    });
-
-    if (error) {
-      toast({ title: 'Gagal Membuat Topik', description: error.message, variant: 'destructive' });
-    } else {
+    try {
+      await createForumTopic({
+        title: newTopic.title,
+        content: newTopic.content,
+        author: user,
+      });
       toast({ title: 'Berhasil!', description: 'Topik baru telah dibuat.' });
       setNewTopic({ title: '', content: '' });
       setIsModalOpen(false);
       fetchTopics();
+    } catch (error) {
+      toast({ title: 'Gagal Membuat Topik', description: getForumErrorMessage(error), variant: 'destructive' });
     }
   };
 

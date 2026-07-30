@@ -13,9 +13,9 @@ import {
   Heart,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/lib/customSupabaseClient';
 import { OFFICIAL_FACILITIES, OFFICIAL_WEBSITE } from '@/lib/institutionContent';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import '@/styles/public-facilities.css';
 
 /* ---------- Animation Variants ---------- */
@@ -160,16 +160,11 @@ const FacilitiesPage = () => {
     setLoading(true);
     setError(false);
     try {
-      const { data, error: fetchErr } = await supabase
-        .from('website_content')
-        .select('content')
-        .eq('key', 'facilities')
-        .maybeSingle();
+      const contentMap = await fetchWebsiteContentMap({ keys: ['facilities'], publicOnly: true });
+      const raw = contentMap.facilities;
 
-      if (fetchErr) throw fetchErr;
-
-      if (data?.content && Array.isArray(data.content) && data.content.length > 0) {
-        setFacilities(data.content);
+      if (Array.isArray(raw) && raw.length > 0) {
+        setFacilities(raw);
       } else {
         setFacilities(defaultFacilities);
       }

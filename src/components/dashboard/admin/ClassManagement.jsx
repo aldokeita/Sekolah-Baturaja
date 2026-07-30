@@ -7,7 +7,8 @@ import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, Clock, Bar
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchAttendance } from '@/lib/attendanceAdapters';
+import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
 import { useDrag, useDrop } from 'react-dnd';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -21,7 +22,21 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { motion } from 'framer-motion';
 import AdultClassManagement from './AdultClassManagement';
 import { getSessionName, getSessionNumber, getAllSessions } from '@/utils/sessionMapping';
-import { mapClassForLegacyUi, mapSantriForLegacyUi } from '@/lib/dataMasterAdapters';
+import {
+  createClass,
+  deleteClass,
+  deleteClassMutation,
+  fetchAllClassMutations,
+  fetchClassList,
+  fetchGuruList,
+  fetchSantriList,
+  mapClassForLegacyUi,
+  mapSantriForLegacyUi,
+  moveSantriClass,
+  reorderClasses,
+  updateClass,
+  updateSantriJilid
+} from '@/lib/dataMasterAdapters';
 import { resolveAvatarRecord, resolveAvatarRecords } from '@/lib/storageAdapters';
 
 const ItemTypes = {
@@ -395,36 +410,20 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const fetchAllData = useCallback(async () => {
     const today = new Date().toLocaleDateString('en-CA');
     try {
-        const [
-          { data: classData, error: classError },
-          { data: guruData, error: guruError },
-          { data: rawSantriData, error: santriError },
-          { data: attendanceData, error: attendanceError },
-          { data: configData },
-          { data: membershipsData }
-        ] = await Promise.all([
-          supabase
-            .from('classes')
-            .select('id, nama_kelas, id_guru, sesi, kategori, sort_order, is_active, guru:id_guru(id, nama, foto_url, no_hp)')
-            .order('sort_order', { ascending: true, nullsFirst: false }),
-          supabase.from('guru').select('id, nama, foto_url, no_hp, roles, status'),
-          supabase
-            .from('santri')
-            .select('id, nomor_induk_qiroati, nama_lengkap, nama_panggilan, nama_ibu, nama_ayah, nama_wali, kategori, jenis_kelamin, tanggal_lahir, tempat_lahir, alamat, no_hp_ortu, foto_url, avatar_path, rfid_tag, current_class_id, sesi_mengaji, jilid, status, points, order_in_class, created_at')
-            .order('order_in_class', { ascending: true, nullsFirst: false }),
-          supabase.from('attendance').select('*').eq('attendance_date', today),
-          supabase.from('website_content').select('content').eq('key', configKey).maybeSingle(),
-          supabase.from('class_memberships').select('santri_id, class_id, order_in_class').eq('status', 'active')
+        const [classData, guruData, rawSantriData, attendanceData, contentMap] = await Promise.all([
+          fetchClassList({ includeGuru: true, limit: 200 }).catch((err) => err),
+          fetchGuruList().catch((err) => err),
+          fetchSantriList({ activeOnly: true, notDeleted: true, limit: 200 }).catch((err) => err),
+          fetchAttendance({ date: today, limit: 500 }).catch((err) => err),
+          fetchWebsiteContentMap({ keys: [configKey], publicOnly: false }).catch(() => ({})),
         ]);
 
-        if (classError || guruError || santriError || attendanceError) {
-          toast({ title: 'Gagal memuat data', description: (classError || guruError || santriError || attendanceError).message, variant: 'destructive' });
+        const firstFailure = [classData, guruData, rawSantriData, attendanceData].find(r => !Array.isArray(r));
+        if (firstFailure) {
+          toast({ title: 'Gagal memuat data', description: firstFailure?.message || 'Data kelas tidak dapat dimuat.', variant: 'destructive' });
           return;
         }
-
-        const membershipMap = Object.fromEntries(
-          (membershipsData || []).map(m => [m.santri_id, m])
-        );
+        const configData = { content: contentMap?.[configKey] };
 
         const resolvedGuruData = await resolveAvatarRecords(guruData, { ownerType: 'guru' });
         const resolvedSantriData = await resolveAvatarRecords(rawSantriData, { ownerType: 'santri' });
@@ -444,13 +443,14 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
         const filteredSantri = resolvedSantriData.map(s => {
           const legacy = mapSantriForLegacyUi(s);
-          const membership = membershipMap[s.id];
-          const classId = s.current_class_id || legacy.id_kelas || membership?.class_id || null;
+          // santri.current_class_id is the authoritative placement column, so the
+          // class_memberships fallback the Supabase version needed is gone.
+          const classId = s.current_class_id || legacy.id_kelas || null;
           return {
             ...legacy,
             current_class_id: classId,
             id_kelas: classId,
-            order_in_class: s.order_in_class ?? membership?.order_in_class ?? 0,
+            order_in_class: s.order_in_class ?? 0,
           };
         }).filter(s => {
             const isMatch = kategori === 'Anak' ? (!s.kategori || s.kategori.toLowerCase() === 'anak' || s.kategori.toLowerCase() === 'tpq') : s.kategori === kategori;
@@ -496,20 +496,9 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const handleSaveConfig = async (newLocalSessions) => {
       try {
           const arrayConfig = newLocalSessions.map(s => ({ name: s.name, time: s.time }));
-          const { data: existingConfig, error: fetchError } = await supabase.from('website_content').select('id').eq('key', configKey).maybeSingle();
-
-          if (fetchError) throw fetchError;
-
-          let saveError;
-          if (existingConfig) {
-              const { error } = await supabase.from('website_content').update({ content: arrayConfig }).eq('id', existingConfig.id);
-              saveError = error;
-          } else {
-              const { error } = await supabase.from('website_content').insert({ key: configKey, content: arrayConfig });
-              saveError = error;
-          }
-
-          if (saveError) throw saveError;
+          // saveWebsiteContentItem upserts on key, so the read-then-insert-or-update
+          // dance the Supabase client needed is gone.
+          await saveWebsiteContentItem(configKey, arrayConfig);
 
           const newSessionTimes = {};
           newLocalSessions.forEach(s => newSessionTimes[s.name] = s.time);
@@ -539,16 +528,14 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const saveReorderedClasses = async (orderedClasses) => {
       setClasses(orderedClasses);
 
-      const updates = orderedClasses.map((cls, index) =>
-        supabase.from('classes').update({ sort_order: index + 1 }).eq('id', cls.id)
-      );
-      const results = await Promise.all(updates);
-      const firstError = results.find(result => result.error)?.error;
-      if (firstError) {
-          toast({ title: 'Gagal', description: firstError.message, variant: 'destructive' });
-          fetchAllData();
-      } else {
+      try {
+          // One transactional call instead of N per-class updates, so a partial
+          // failure can't leave the order half-applied.
+          await reorderClasses(orderedClasses.map(cls => cls.id));
           toast({ title: 'Berhasil', description: 'Urutan kelas diperbarui.' });
+      } catch (err) {
+          toast({ title: 'Gagal', description: err.message, variant: 'destructive' });
+          fetchAllData();
       }
   };
 
@@ -595,26 +582,24 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         title: 'Nonaktifkan Kelas',
         description: 'Kelas akan dinonaktifkan. Kelas yang masih memiliki membership aktif tidak akan diubah agar data santri tetap konsisten.',
         onConfirm: async () => {
-            const { count, error: membershipError } = await supabase
-              .from('class_memberships')
-              .select('id', { count: 'exact', head: true })
-              .eq('class_id', id)
-              .eq('status', 'active');
-            if (membershipError) {
-              toast({ title: 'Gagal memeriksa kelas', description: membershipError.message, variant: 'destructive' });
-              return;
-            }
-            if (count > 0) {
+            // Roster count comes from santriList, which the backend populates from
+            // santri.current_class_id — the same column the class filters read.
+            const occupants = santriList.filter(s => s.current_class_id === id).length;
+            if (occupants > 0) {
               toast({
                 title: 'Kelas masih berisi santri',
-                description: 'Pindahkan santri melalui operasi backend atomik sebelum menonaktifkan kelas.',
+                description: `Masih ada ${occupants} santri di kelas ini. Pindahkan mereka terlebih dahulu.`,
                 variant: 'destructive'
               });
               return;
             }
-            const { error } = await supabase.from('classes').update({ is_active: false }).eq('id', id);
-            if (error) toast({ title: 'Gagal menonaktifkan', description: error.message, variant: 'destructive' });
-            else { toast({ title: 'Berhasil!', description: 'Kelas telah dinonaktifkan.' }); fetchAllData(); }
+            try {
+              await deleteClass(id);
+              toast({ title: 'Berhasil!', description: 'Kelas telah dinonaktifkan.' });
+              fetchAllData();
+            } catch (error) {
+              toast({ title: 'Gagal menonaktifkan', description: error.message, variant: 'destructive' });
+            }
         }
     });
   };
@@ -635,23 +620,19 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
     }
 
     const targetClass = classes.find(c => c.id === toClassId);
-    const { data, error } = await supabase.rpc('move_santri_to_class', {
-      p_santri_id: item.santriId,
-      p_to_class_id: toClassId,
-      p_reason: `Mutasi kelas melalui dashboard admin${targetClass ? ` ke ${targetClass.nama_kelas}` : ''}`,
-    });
-
-    if (error) {
+    try {
+      const result = await moveSantriClass({
+        santri_id: item.santriId,
+        target_class_id: toClassId,
+        reason: `Mutasi kelas melalui dashboard admin${targetClass ? ` ke ${targetClass.nama_kelas}` : ''}`,
+      });
+      toast({
+        title: 'Berhasil!',
+        description: result?.message || 'Mutasi kelas selesai.',
+      });
+    } catch (error) {
       toast({ title: 'Gagal memindahkan santri', description: error.message, variant: 'destructive' });
-      fetchAllData();
-      return;
     }
-
-    const result = Array.isArray(data) ? data[0] : data;
-    toast({
-      title: result?.changed ? 'Berhasil!' : 'Data disinkronkan',
-      description: result?.message || 'Mutasi kelas selesai.',
-    });
     fetchAllData();
   };
 
@@ -669,10 +650,15 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
   const confirmJilidChange = async () => {
       if (!jilidChangeData) return;
-      const { santri, currentJilid, nextJilid } = jilidChangeData;
-      const { error: updateError } = await supabase.from('santri').update({ jilid: nextJilid }).eq('id', santri.id);
-      if (updateError) { toast({ title: 'Gagal!', description: updateError.message, variant: 'destructive' }); return; }
-      await supabase.from('jilid_history').insert({ santri_id: santri.id, from_jilid: currentJilid, to_jilid: nextJilid, changed_by: user.id });
+      const { santri, nextJilid } = jilidChangeData;
+      // updateSantriJilid writes santri.jilid and the jilid_history row in one
+      // backend transaction, so the two can't drift apart.
+      try {
+        await updateSantriJilid(santri.id, nextJilid);
+      } catch (error) {
+        toast({ title: 'Gagal!', description: error.message, variant: 'destructive' });
+        return;
+      }
       toast({ title: 'Berhasil!', description: `Jilid santri diubah ke ${nextJilid}.` });
       fetchAllData(); setIsJilidModalOpen(false); setJilidChangeData(null);
   };
@@ -689,17 +675,20 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
       classData.sort_order = classes.reduce((max, c) => Math.max(max, c.sort_order || c.order || 0), 0) + 1;
       classData.is_active = true;
     }
-    const { error } = editingClass
-      ? await supabase.from('classes').update(classData).eq('id', editingClass.id)
-      : await supabase.from('classes').insert(classData);
-    if (error) toast({ title: 'Gagal menyimpan', description: error.message, variant: 'destructive' });
-    else { toast({ title: 'Berhasil!', description: 'Data kelas berhasil disimpan.' }); setIsFormOpen(false); fetchAllData(); }
+    try {
+      if (editingClass) await updateClass(editingClass.id, classData);
+      else await createClass(classData);
+      toast({ title: 'Berhasil!', description: 'Data kelas berhasil disimpan.' });
+      setIsFormOpen(false);
+      fetchAllData();
+    } catch (error) {
+      toast({ title: 'Gagal menyimpan', description: error.message, variant: 'destructive' });
+    }
   };
 
   const showHistory = async () => {
-    const { data, error } = await supabase.from('class_mutations').select('*, santri:santri_id(id, nama_lengkap, foto_url, avatar_path), from_class:from_class_id(nama_kelas, sesi, guru:id_guru(nama)), to_class:to_class_id(nama_kelas, sesi, guru:id_guru(nama))').order('mutation_date', { ascending: false });
-    if (error) { toast({ title: 'Gagal memuat riwayat', description: error.message, variant: 'destructive'}); }
-    else {
+    try {
+      const data = await fetchAllClassMutations({ limit: 200 });
       const resolvedHistory = await Promise.all((data || []).map(async (entry) => ({
         ...entry,
         santri: await resolveAvatarRecord(entry.santri, { ownerType: 'santri' }),
@@ -707,6 +696,8 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
       setMutationHistory(resolvedHistory);
       setFilteredHistory(resolvedHistory);
       setIsHistoryOpen(true);
+    } catch (error) {
+      toast({ title: 'Gagal memuat riwayat', description: error.message, variant: 'destructive'});
     }
   };
 
@@ -716,9 +707,13 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         title: 'Hapus Riwayat',
         description: 'Apakah Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.',
         onConfirm: async () => {
-            const { error } = await supabase.from('class_mutations').delete().eq('id', id);
-            if (error) toast({ title: 'Gagal menghapus', variant: 'destructive' });
-            else { toast({ title: 'Berhasil', description: 'Riwayat berhasil dihapus.' }); setMutationHistory(prev => prev.filter(m => m.id !== id)); }
+            try {
+              await deleteClassMutation(id);
+              toast({ title: 'Berhasil', description: 'Riwayat berhasil dihapus.' });
+              setMutationHistory(prev => prev.filter(m => m.id !== id));
+            } catch (error) {
+              toast({ title: 'Gagal menghapus', description: error.message, variant: 'destructive' });
+            }
         }
     });
   };

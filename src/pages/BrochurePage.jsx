@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
 import { Download, Eye, FileText, Image as ImageIcon, X, Loader2, RefreshCw, BookOpen } from 'lucide-react';
 import '@/styles/public-brochure.css';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 
 /* ---------- Helpers ---------- */
 const IMAGE_EXTS = /\.(jpg|jpeg|png|webp|gif|svg|bmp|avif)(\?.*)?$/i;
@@ -324,17 +324,13 @@ const BrochurePage = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from('website_content')
-        .select('key, content')
-        .in('key', ['brochures', 'pustaka']);
+      const contentMap = await fetchWebsiteContentMap({
+        keys: ['brochures', 'pustaka'],
+        publicOnly: true,
+      });
 
-      if (fetchError) {
-        throw new Error(fetchError.message || 'Gagal memuat data brosur');
-      }
-
-      const brochureData = data?.find((d) => d.key === 'brochures')?.content || [];
-      const pustakaData = data?.find((d) => d.key === 'pustaka')?.content || [];
+      const brochureData = contentMap.brochures || [];
+      const pustakaData = contentMap.pustaka || [];
 
       setBrochures(Array.isArray(brochureData) ? brochureData : []);
       setPustaka(Array.isArray(pustakaData) ? pustakaData : []);

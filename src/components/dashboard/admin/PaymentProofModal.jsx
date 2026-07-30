@@ -6,8 +6,7 @@ import { Loader2, Download, Printer, MessageSquare } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { toast } from '@/components/ui/use-toast';
 import QRCode from 'qrcode';
-import { supabase } from '@/lib/customSupabaseClient';
-import { PAYMENT_DETAIL_SELECT, formatPaymentPeriod } from '@/lib/paymentAdapters';
+import { fetchPaymentDetail, formatPaymentPeriod } from '@/lib/paymentAdapters';
 import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicContentAdapters';
 import { DEFAULT_WHATSAPP_TEMPLATES, fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 import { OFFICIAL_CONTACT } from '@/lib/institutionContent';
@@ -30,13 +29,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
 
             setIsLoadingPayment(true);
             try {
-                const { data, error } = await supabase
-                    .from('payments')
-                    .select(PAYMENT_DETAIL_SELECT)
-                    .eq('id', payment.id)
-                    .maybeSingle();
-
-                if (error) throw error;
+                const data = await fetchPaymentDetail(payment.id);
                 if (!data) throw new Error('Record pembayaran tidak ditemukan.');
                 setCompletePayment(data);
             } catch (error) {

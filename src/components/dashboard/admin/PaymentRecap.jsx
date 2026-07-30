@@ -4,14 +4,19 @@ import { PieChart, Pie, Cell, Sector } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Search, Calendar, TrendingUp, PieChart as PieChartIcon, ListChecks, DollarSign } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MONTH_NAMES, monthNumberToName, selectedMonthToNumber } from '@/lib/paymentAdapters';
+import {
+  MONTH_NAMES,
+  fetchAllPayments,
+  fetchAllSantri,
+  monthNumberToName,
+  selectedMonthToNumber,
+} from '@/lib/paymentAdapters';
 import { resolveAvatarRecords } from '@/lib/storageAdapters';
 
 const months = MONTH_NAMES;
@@ -77,21 +82,12 @@ const PaymentRecap = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const { data: paymentData, error: paymentError } = await supabase
-          .from('payments')
-          .select('id, santri_id, jumlah, tanggal_pembayaran, catatan, bulan, tahun, status')
-          .eq('status', 'paid')
-          .is('deleted_at', null)
-          .order('tanggal_pembayaran', { ascending: false });
-
-        const { data: santriData, error: santriError } = await supabase
-          .from('santri')
-          .select('id, nama_lengkap, status, sesi_mengaji, foto_url, avatar_path, rfid_tag');
-
-        if (paymentError || santriError) {
-          toast({ title: "Error", description: "Gagal memuat data.", variant: "destructive" });
-          return;
-        }
+        // This screen aggregates the whole paid history client-side, so walk
+        // every page rather than taking only the first one.
+        const [paymentData, santriData] = await Promise.all([
+          fetchAllPayments({ status: 'paid' }),
+          fetchAllSantri(),
+        ]);
 
         const resolvedSantri = await resolveAvatarRecords(santriData, { ownerType: 'santri' });
         setAllPayments(paymentData || []);

@@ -4,14 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { buildJakartaTimestamp, formatTimestamp, determineAttendanceStatus, calculateTimeDifference } from '@/utils/AttendanceStatusLogic';
 import AttendanceStatusIcon from './AttendanceStatusIcon';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { updateAttendance, createAttendance, markAttendanceAbsent } from '@/lib/attendanceAdapters';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Clock, Calendar, CheckCircle, XCircle } from 'lucide-react';
 
 const AttendanceDetailsModal = ({ isOpen, onClose, details, onSuccess }) => {
-  const { role, user } = useAuth();
+  const { role } = useAuth();
   const { toast } = useToast();
   const [timeInput, setTimeInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,12 +59,11 @@ const AttendanceDetailsModal = ({ isOpen, onClose, details, onSuccess }) => {
       const newStatus = determineAttendanceStatus(checkInTimestamp, details.sessionStartTime);
 
       if (details.id && details.status !== 'Tidak Hadir') {
-        const { error } = await supabase.from('attendance').update({
+        await updateAttendance(details.id, {
           check_in_time: timeInput,
           check_in_timestamp: checkInTimestamp,
           status: newStatus
-        }).eq('id', details.id);
-        if (error) throw error;
+        });
         toast({ title: "Berhasil", description: "Waktu kehadiran berhasil diperbarui" });
       } else {
         const newAttendance = {
@@ -78,8 +77,7 @@ const AttendanceDetailsModal = ({ isOpen, onClose, details, onSuccess }) => {
           attended_session: details.attended_session || details.sesi,
           status: newStatus
         };
-        const { error } = await supabase.from('attendance').insert(newAttendance);
-        if (error) throw error;
+        await createAttendance(newAttendance);
         toast({ title: "Berhasil", description: "Kehadiran berhasil dikonfirmasi" });
       }
 
@@ -96,18 +94,7 @@ const AttendanceDetailsModal = ({ isOpen, onClose, details, onSuccess }) => {
     if (!isAuthorized || !details?.id) return;
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('attendance')
-        .update({
-          check_in_time: null,
-          check_in_timestamp: null,
-          status: 'Tidak Hadir',
-          source: 'correction',
-          correction_reason: 'Ditandai tidak hadir dari rekap absensi.',
-          corrected_by: user?.id ?? null,
-        })
-        .eq('id', details.id);
-      if (error) throw error;
+      await markAttendanceAbsent(details.id, 'Ditandai tidak hadir dari rekap absensi.');
       toast({ title: "Berhasil", description: "Status absensi diubah menjadi Tidak Hadir" });
       if (onSuccess) onSuccess();
       onClose();

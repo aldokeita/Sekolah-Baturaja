@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
 import {
   User,
   Clock,
@@ -13,6 +12,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import '@/styles/public-parenting.css';
 
 /* ---------- Animation Variants ---------- */
@@ -157,25 +157,21 @@ const ParentingArticlePage = () => {
   useEffect(() => {
     const fetchArticle = async () => {
       setLoading(true);
-      const { data, error: fetchError } = await supabase
-        .from('website_content')
-        .select('content')
-        .eq('key', 'parentingArticles')
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        setError('Gagal memuat artikel. Silakan coba lagi.');
-        console.error(fetchError);
-      } else if (data) {
-        const articles = data.content || [];
+      try {
+        const contentMap = await fetchWebsiteContentMap({
+          keys: ['parentingArticles'],
+          publicOnly: true,
+        });
+        const articles = Array.isArray(contentMap.parentingArticles) ? contentMap.parentingArticles : [];
         const foundArticle = articles.find((a) => String(a.id) === articleId);
         if (foundArticle) {
           setArticle(foundArticle);
         } else {
           setError('Artikel tidak ditemukan.');
         }
-      } else {
-        setError('Artikel tidak ditemukan.');
+      } catch (err) {
+        setError('Gagal memuat artikel. Silakan coba lagi.');
+        console.error(err);
       }
       setLoading(false);
     };

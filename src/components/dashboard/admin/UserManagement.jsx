@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Edit, Trash2, Search, Key } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchGuruList, fetchSantriList, updateGuru, updateSantri } from '@/lib/dataMasterAdapters';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const UserManagement = () => {
@@ -25,14 +25,15 @@ const UserManagement = () => {
       setAdminUser({ id: authUser.id, name: 'Admin', username: 'admin', role: 'admin', email: authUser.email });
     }
 
-    const { data: guruData, error: guruError } = await supabase.from('guru').select('id, nama, email, password');
-    const { data: santriData, error: santriError } = await supabase.from('santri').select('id, nama_lengkap, nama_panggilan, password, kategori');
-
-    if (guruError || santriError) {
-      toast({ title: 'Gagal memuat pengguna', variant: 'destructive' });
-      return;
+    try {
+      const [guruData, santriData] = await Promise.all([
+        fetchGuruList(),
+        fetchSantriList({ limit: 200 }),
+      ]);
+      setUsers({ guru: guruData || [], santri: santriData || [] });
+    } catch (error) {
+      toast({ title: 'Gagal memuat pengguna', description: error.message, variant: 'destructive' });
     }
-    setUsers({ guru: guruData || [], santri: santriData || [] });
   };
 
   const handleEdit = (user, type) => {
@@ -47,12 +48,14 @@ const UserManagement = () => {
     const resetField = table === 'santri' ? 'nama_panggilan' : 'email';
 
     if(window.confirm(`Anda yakin ingin mereset login untuk pengguna ini? Username & Password akan dikosongkan.`)){
-        const { error } = await supabase.from(table).update({ [resetField]: null, password: null }).eq('id', id);
-        if (error) {
-            toast({ title: "Gagal", description: error.message, variant: "destructive" });
-        } else {
+        try {
+            const payload = { [resetField]: null, password: null };
+            if (table === 'santri') await updateSantri(id, payload);
+            else await updateGuru(id, payload);
             toast({ title: "Berhasil!", description: `Login untuk ${displayName} berhasil direset.` });
             loadUsers();
+        } catch (error) {
+            toast({ title: "Gagal", description: error.message, variant: "destructive" });
         }
     }
   }
@@ -81,13 +84,14 @@ const UserManagement = () => {
         return;
     }
 
-    const { error } = await supabase.from(formData.table).update(payload).eq('id', editingUser.id);
-    if (error) {
-      toast({ title: "Gagal!", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      if (formData.table === 'santri') await updateSantri(editingUser.id, payload);
+      else await updateGuru(editingUser.id, payload);
       toast({ title: "Berhasil!", description: `Data login berhasil diperbarui.` });
       loadUsers();
       setIsDialogOpen(false);
+    } catch (error) {
+      toast({ title: "Gagal!", description: error.message, variant: "destructive" });
     }
     setEditingUser(null);
   };

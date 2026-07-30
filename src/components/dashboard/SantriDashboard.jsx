@@ -3,7 +3,6 @@ import React, { lazy, Suspense, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BarChart3, BookOpen, CheckCircle as CheckCircleFull, Edit, Mic, PlayCircle, Send, Star, Upload, Users, Video } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +25,8 @@ import {
   createMurojaahSubmission,
   DEVELOPMENT_SCORE_OPTIONS,
   fetchHafalanItems,
+  fetchHafalanProgress,
+  fetchMurojaahSubmissions,
   getAcademicErrorMessage,
   getDevelopmentScoreMeta,
   getHafalanProgramScope,
@@ -34,6 +35,9 @@ import {
   PTPT_TAHFIZH_TARGETS,
   progressStatusToComplete
 } from '@/lib/academicAdapters';
+import { fetchSantriDetail, fetchSantriList, updateSantri } from '@/lib/dataMasterAdapters';
+import { fetchAttendance } from '@/lib/attendanceAdapters';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { deleteAvatar, getStorageErrorMessage, resolveAvatarUrl, uploadAvatar } from '@/lib/storageAdapters';
 import { getSessionName } from '@/utils/sessionMapping';
 import { resolveSantriLevel } from '@/lib/santriLevel';
@@ -42,17 +46,17 @@ import AvatarPreviewDialog from '@/components/dashboard/shared/AvatarPreviewDial
 const SantriLevelScene = lazy(() => import('@/components/dashboard/santri/SantriLevelScene'));
 
 /**
- * SANTRI AUTHENTICATION FLOW DOCUMENTATION:
+ * SANTRI AUTHENTICATION FLOW:
  *
- * 1. Login Trigger: Santri inputs `nama_panggilan` (as username) and `nomor_induk_qiroati` (as password) in LoginPage.jsx.
+ * 1. Login Trigger: Santri inputs `nomor_induk_qiroati` or `nama_panggilan` as username, plus their password.
  * 2. Auth Context: LoginPage calls `signInWithUsername(username, password)` from SupabaseAuthContext.jsx.
- * 3. Auth Call: The context invokes the `signin-with-nomor-induk` Edge Function.
- * 4. Database Logic:
- *    - The function checks the `santri` table.
- *    - It first tries email + password (for Santri Dewasa).
- *    - It falls back to `nama_panggilan` + `nomor_induk_qiroati` (for Santri Anak/TPQ).
- *    - If successful, it generates and returns a custom JWT containing `user_metadata` (role: 'santri', kategori: 'Anak'/'Dewasa').
- * 5. Session Set: SupabaseAuthContext receives the tokens and calls `supabase.auth.setSession()`.
+ * 3. Auth Call: The context POSTs to `/api/auth/login` on the Go backend.
+ * 4. Backend Logic (internal/handler/auth.go):
+ *    - `resolveUser` checks the `santri` table by nomor_induk_qiroati or nama_panggilan (active only).
+ *    - Falls back to `guru` + `user_profiles` by email for admin/guru/pentashih.
+ *    - A santri whose password is still the plain nomor_induk self-heals to a bcrypt hash on first login.
+ *    - On success it returns an access/refresh token pair carrying the user id and role.
+ * 5. Session Set: apiClient stores the tokens and attaches the access token to every request.
  * 6. Dashboard Access: SantriDashboard reads `user.id` from `useAuth()` to load their profile, attendance, and progress.
  */
 
@@ -324,10 +328,16 @@ const EditProfileDialog = ({ isOpen, onOpenChange, santri, onUpdate }) => {
     const handleSave = async () => {
         setIsSaving(true);
         const { nama_panggilan, password, points, jilid, sesi_mengaji, nomor_induk_qiroati, class: classObj, id_kelas, ...allowedData } = formData;
-        const { error } = await supabase.from('santri').update(allowedData).eq('id', santri.id);
-        setIsSaving(false);
-        if (error) toast({ title: "Gagal", description: error.message, variant: "destructive" });
-        else { toast({ title: "Berhasil", description: "Profil berhasil diperbarui." }); onUpdate(); onOpenChange(false); }
+        try {
+            await updateSantri(santri.id, allowedData);
+            toast({ title: "Berhasil", description: "Profil berhasil diperbarui." });
+            onUpdate();
+            onOpenChange(false);
+        } catch (error) {
+            toast({ title: "Gagal", description: error.message, variant: "destructive" });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -383,12 +393,14 @@ const SantriDashboard = ({ isAdult = false }) => {
   const initializeData = useCallback(async () => {
     if (!user) return;
 
-    const [santriResult, itemsResult, videosResult, levelConfigResult] = await Promise.all([
-        supabase.from('santri').select('*, class:current_class_id(*, guru:id_guru(nama))').eq('id', user.id).single(),
+    const [santriDetail, itemsResult, contentMap] = await Promise.all([
+        fetchSantriDetail(user.id).catch(() => null),
         fetchHafalanItems(),
-        supabase.from('website_content').select('content').eq('key', 'hafalanVideos').maybeSingle(),
-        supabase.from('website_content').select('content').eq('key', 'level_config').maybeSingle()
+        fetchWebsiteContentMap({ keys: ['hafalanVideos', 'level_config'], publicOnly: false }).catch(() => ({}))
     ]);
+    const santriResult = { data: santriDetail };
+    const videosResult = { data: { content: contentMap?.hafalanVideos } };
+    const levelConfigResult = { data: { content: contentMap?.level_config } };
 
         if (santriResult.data) {
         const foto_url = await resolveAvatarUrl({
@@ -402,11 +414,14 @@ const SantriDashboard = ({ isAdult = false }) => {
 
         const todayStr = new Date().toLocaleDateString('en-CA');
 
-        const [hafalanData, submissionsData, attendanceData] = await Promise.all([
-            supabase.from('hafalan_progress').select('*').eq('santri_id', santri.id),
-            supabase.from('murojaah_submissions').select('id,santri_id,type,content,recording_path,status,feedback,submitted_at,reviewed_at,created_at').eq('santri_id', santri.id).order('created_at', { ascending: false }),
-            supabase.from('attendance').select('*').eq('attendance_date', todayStr).eq('user_id', santri.id)
+        const [hafalanRows, submissionRows, attendanceRows] = await Promise.all([
+            fetchHafalanProgress([santri.id]).catch(() => null),
+            fetchMurojaahSubmissions({ santriId: santri.id }).catch(() => null),
+            fetchAttendance({ user_id: santri.id, date: todayStr }).catch(() => null)
         ]);
+        const hafalanData = { data: hafalanRows };
+        const submissionsData = { data: submissionRows };
+        const attendanceData = { data: attendanceRows };
 
         if (hafalanData.data) setHafalan(hafalanData.data);
         if (submissionsData.data) setMurojaahSubmissions(submissionsData.data);
@@ -420,24 +435,23 @@ const SantriDashboard = ({ isAdult = false }) => {
         }
 
         if (santri.current_class_id) {
-            const { data: classMemberships } = await supabase
-                .from('class_memberships')
-                .select('santri:santri_id(id,nama_lengkap,foto_url,avatar_path,jilid)')
-                .eq('class_id', santri.current_class_id)
-                .eq('status', 'active');
-            const { data: friendsAttendance } = await supabase.from('attendance').select('*').eq('attendance_date', todayStr).eq('class_id', santri.current_class_id);
-            if (classMemberships) {
-                const classmatesWithAvatars = await Promise.all(classMemberships.map(async (item) => {
-                    if (!item.santri) return null;
-                    const friendAvatar = await resolveAvatarUrl({
+            // Classmates come from santri.current_class_id, the same column the
+            // class roster endpoints treat as authoritative.
+            const [classmateRows, friendsAttendance] = await Promise.all([
+                fetchSantriList({ classId: santri.current_class_id, activeOnly: true, notDeleted: true, limit: 200 }).catch(() => null),
+                fetchAttendance({ class_id: santri.current_class_id, date: todayStr, limit: 200 }).catch(() => null)
+            ]);
+            if (classmateRows) {
+                const classmatesWithAvatars = await Promise.all(classmateRows.map(async (mate) => ({
+                    ...mate,
+                    foto_url: await resolveAvatarUrl({
                         ownerType: 'santri',
-                        ownerId: item.santri.id,
-                        avatarPath: item.santri.avatar_path,
-                        fallbackUrl: item.santri.foto_url,
-                    });
-                    return { ...item.santri, foto_url: friendAvatar };
-                }));
-                setClassmates(classmatesWithAvatars.filter(Boolean));
+                        ownerId: mate.id,
+                        avatarPath: mate.avatar_path,
+                        fallbackUrl: mate.foto_url,
+                    }),
+                })));
+                setClassmates(classmatesWithAvatars);
             }
             if (friendsAttendance) setClassmatesAttendance(friendsAttendance);
         }

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trash2, Upload, Music, Settings as SettingsIcon } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { uploadMusicFile, fetchMusicFiles, addMusicFileRecord, deleteMusicFile, getMediaPlayerErrorMessage } from '@/lib/mediaPlayerAdapters';
 import { toast } from '@/components/ui/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
@@ -52,16 +52,11 @@ const MediaPlayerSettings = ({
     }, [isOpen]);
 
     const fetchPlaylist = async () => {
-        const { data, error } = await supabase
-            .from('music_files')
-            .select('*')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
-        if (error) {
+        try {
+            setPlaylist(await fetchMusicFiles());
+        } catch {
             setPlaylist([]);
-            return;
         }
-        setPlaylist(data || []);
     };
 
     const handleFileChange = (e) => {
@@ -83,35 +78,23 @@ const MediaPlayerSettings = ({
         setUploading(true);
         try {
             const fileExt = selectedFile.name.split('.').pop();
-            const fileName = `${crypto.randomUUID()}.${fileExt}`;
-            const filePath = `playlist/${fileName}`;
-
-            // 1. Upload to Storage
-            const { error: uploadError } = await supabase.storage.from('music-files').upload(filePath, selectedFile);
-            if (uploadError) throw uploadError;
-
-            // 2. Get Public URL
-            const { data: { publicUrl } } = supabase.storage.from('music-files').getPublicUrl(filePath);
-
-            // 3. Save to DB
-            const { error: dbError } = await supabase.from('music_files').insert({
+            const filePath = `playlist/${crypto.randomUUID()}.${fileExt}`;
+            const { publicUrl } = await uploadMusicFile({ file: selectedFile, filePath });
+            await addMusicFileRecord({
                 title,
                 artist: artist || 'Unknown Artist',
                 filename: selectedFile.name,
-                storage_path: filePath,
-                file_url: publicUrl
+                storagePath: filePath,
+                fileUrl: publicUrl,
             });
-
-            if (dbError) throw dbError;
-
-            toast({ title: "Berhasil", description: "Lagu berhasil ditambahkan." });
+            toast({ title: 'Berhasil', description: 'Lagu berhasil ditambahkan.' });
             setSelectedFile(null);
             setTitle('');
             setArtist('');
             fetchPlaylist();
-            if(onUpdate) onUpdate();
+            if (onUpdate) onUpdate();
         } catch (error) {
-            toast({ title: "Gagal", description: error.message || "Gagal mengupload lagu.", variant: "destructive" });
+            toast({ title: 'Gagal', description: getMediaPlayerErrorMessage(error), variant: 'destructive' });
         } finally {
             setUploading(false);
         }
@@ -130,14 +113,12 @@ const MediaPlayerSettings = ({
         if (!trackId) return;
 
         try {
-            const { error } = await supabase.from('music_files').update({ is_active: false }).eq('id', trackId);
-            if (error) throw error;
-
-            toast({ title: "Terhapus", description: "Lagu dihapus dari playlist." });
+            await deleteMusicFile(trackId);
+            toast({ title: 'Terhapus', description: 'Lagu dihapus dari playlist.' });
             fetchPlaylist();
-            if(onUpdate) onUpdate();
+            if (onUpdate) onUpdate();
         } catch (error) {
-            toast({ title: "Gagal", description: error.message, variant: "destructive" });
+            toast({ title: 'Gagal', description: getMediaPlayerErrorMessage(error), variant: 'destructive' });
         } finally {
             setDeleteConfirmation({ isOpen: false, trackId: null, trackName: '' });
         }

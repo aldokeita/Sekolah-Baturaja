@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchGuruByRfid, fetchClassList, fetchSantriByRfid } from '@/lib/dataMasterAdapters';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Fingerprint, Search, CheckCircle, XCircle, AlertTriangle, Clock, HelpCircle, Smartphone } from 'lucide-react';
@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/use-toast';
 import {
     buildSantriAttendancePayload,
+    createAttendance,
+    fetchAttendance,
     getAttendanceErrorMessage,
     getLocalDateString,
     getSantriAttendanceSuccessMessage,
@@ -16,6 +18,7 @@ import {
     isActiveSantri,
     isExplicitAbsentAttendance,
     normalizeRfidTag,
+    updateAttendance,
 } from '@/lib/attendanceAdapters';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
 import {
@@ -157,16 +160,12 @@ const DigitalAttendance = () => {
             const today = getLocalDateString();
 
             let user = null, userRole = '', sesiUser = '';
-            let { data: guruData } = await supabase.from('guru').select('*').eq('rfid_tag', tag).maybeSingle();
+            let guruData = await fetchGuruByRfid(tag).catch(() => null);
 
             if (guruData) {
                 user = guruData; userRole = 'guru';
                 const now = new Date();
-                const { data: assignedClasses } = await supabase
-                    .from('classes')
-                    .select('sesi')
-                    .eq('id_guru', user.id)
-                    .eq('is_active', true);
+                const assignedClasses = await fetchClassList({ id_guru: user.id, is_active: true }).catch(() => []);
                 const assignedSessions = [...new Set((assignedClasses || []).map(item => normalizeAttendanceSessionName(item.sesi)).filter(Boolean))];
                 const matchingSessions = assignedSessions
                     .map(sesi => ({ sesi, window: evaluateAttendanceWindow({ timestamp: now, dateStr: today, sesi, sessionTimes }) }))
@@ -175,17 +174,17 @@ const DigitalAttendance = () => {
                 sesiUser = matchingSessions[0]?.sesi || '';
 
                 if (!sesiUser) {
-                     const { data: previousAttendance } = assignedSessions.length > 0
-                         ? await supabase
-                             .from('attendance')
-                             .select('check_in_time, status, sesi')
-                             .eq('user_id', user.id)
-                             .eq('attendance_date', today)
-                             .in('sesi', assignedSessions)
-                             .order('check_in_timestamp', { ascending: false })
-                             .limit(1)
-                             .maybeSingle()
-                         : { data: null };
+                     // The list endpoint already orders by check_in_timestamp DESC,
+                     // so the first row is the latest — same as the old limit(1).
+                     const previousRows = assignedSessions.length > 0
+                         ? await fetchAttendance({
+                             user_id: user.id,
+                             date: today,
+                             sesi_in: assignedSessions,
+                             limit: 1,
+                         }).catch(() => [])
+                         : [];
+                     const previousAttendance = previousRows?.[0] || null;
 
                      if (previousAttendance) {
                          setLastScan({
@@ -202,11 +201,9 @@ const DigitalAttendance = () => {
                      return;
                 }
             } else {
-                let { data: santriData } = await supabase
-                    .from('santri')
-                    .select('id, nama_lengkap, nama_panggilan, kategori, status, foto_url, avatar_path, rfid_tag, current_class_id, sesi_mengaji, jilid, points, jenis_kelamin, class:current_class_id(id, nama_kelas, sesi, id_guru, is_active)')
-                    .eq('rfid_tag', tag)
-                    .maybeSingle();
+                // by-rfid returns the joined class as flat class_* columns and the
+                // adapter rebuilds the nested `class` object getSantriSession reads.
+                let santriData = await fetchSantriByRfid(tag).catch(() => null);
                 if (santriData) {
                     const foto_url = await resolveAvatarUrl({
                         ownerType: 'santri',
@@ -227,21 +224,24 @@ const DigitalAttendance = () => {
 
             if (!user) { setLastScan({ type: 'error', message: 'RFID tidak dikenal. Tidak ada absensi yang dibuat.', name: 'Tidak Dikenal' }); return; }
 
-            let existingAttendanceQuery = supabase
-                .from('attendance')
-                .select('id, check_in_time, check_in_timestamp, status')
-                .eq('user_id', user.id)
-                .eq('attendance_date', today);
+            // Guru are scoped to the session being recorded; santri match any
+            // session that day. The earliest record of the day wins, so sort
+            // ascending here — the endpoint returns newest first.
+            const existingRecords = await fetchAttendance({
+                user_id: user.id,
+                date: today,
+                ...(userRole === 'guru' ? { sesi: sesiUser } : {}),
+                limit: 500,
+            }).catch(() => []);
 
-            if (userRole === 'guru') {
-                existingAttendanceQuery = existingAttendanceQuery.eq('sesi', sesiUser);
-            }
-
-            const { data: existingAttendance } = await existingAttendanceQuery
-                .order('check_in_timestamp', { ascending: true, nullsFirst: false })
-                .order('created_at', { ascending: true })
-                .limit(1)
-                .maybeSingle();
+            const existingAttendance = [...(existingRecords || [])].sort((a, b) => {
+                const aTs = a.check_in_timestamp;
+                const bTs = b.check_in_timestamp;
+                if (aTs && bTs && aTs !== bTs) return aTs < bTs ? -1 : 1;
+                if (aTs && !bTs) return -1;
+                if (!aTs && bTs) return 1;
+                return String(a.created_at || '').localeCompare(String(b.created_at || ''));
+            })[0] || null;
 
             const shouldRestoreAbsentAttendance = userRole === 'santri'
                 && existingAttendance
@@ -289,23 +289,19 @@ const DigitalAttendance = () => {
                     status: checkInStatus.status || 'Hadir',
                     source: 'rfid',
                 };
-            const attendanceMutation = shouldRestoreAbsentAttendance
-                ? supabase
-                    .from('attendance')
-                    .update({
+            try {
+                if (shouldRestoreAbsentAttendance) {
+                    await updateAttendance(existingAttendance.id, {
                         check_in_time: newAttendance.check_in_time,
                         check_in_timestamp: newAttendance.check_in_timestamp,
                         class_id: newAttendance.class_id,
                         attended_session: newAttendance.attended_session,
                         status: newAttendance.status,
                         source: 'rfid',
-                    })
-                    .eq('id', existingAttendance.id)
-                : supabase.from('attendance').insert(newAttendance);
-            const { error: insertError } = await attendanceMutation;
-
-            if (insertError) { setLastScan({ type: 'error', message: getAttendanceErrorMessage(insertError), name: user.nama || user.nama_lengkap, photo: user.foto_url });
-            } else {
+                    });
+                } else {
+                    await createAttendance(newAttendance);
+                }
                 setLastScan({
                     type: 'success',
                     message: userRole === 'santri'
@@ -316,6 +312,8 @@ const DigitalAttendance = () => {
                     time: newAttendance.check_in_time,
                     status: newAttendance.status,
                 });
+            } catch (insertError) {
+                setLastScan({ type: 'error', message: getAttendanceErrorMessage(insertError), name: user.nama || user.nama_lengkap, photo: user.foto_url });
             }
         } finally {
             setIsLoading(false);

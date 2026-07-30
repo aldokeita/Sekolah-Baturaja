@@ -9,9 +9,9 @@ import {
 import SplitText from '@/components/reactbits/SplitText/SplitText';
 import GradientText from '@/components/reactbits/GradientText/GradientText';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/lib/customSupabaseClient';
 import { OFFICIAL_WEBSITE } from '@/lib/institutionContent';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import '@/styles/public-qiroati.css';
 
 /* ---------- Animation Variants ---------- */
@@ -103,19 +103,18 @@ const QiroatiMethodPage = () => {
 
   useEffect(() => {
     const fetchVideos = async () => {
-      const { data, error } = await supabase
-        .from('website_content')
-        .select('content')
-        .eq('key', 'qiroatiVideos')
-        .maybeSingle();
-
       const defaultVideos = [];
 
-      if (error && error.code !== 'PGRST116') {
+      try {
+        const contentMap = await fetchWebsiteContentMap({
+          keys: ['qiroatiVideos'],
+          publicOnly: true,
+        });
+        const raw = contentMap.qiroatiVideos;
+        setVideos(Array.isArray(raw) ? raw : defaultVideos);
+      } catch (error) {
         console.error('Error fetching videos:', error);
         setVideos(defaultVideos);
-      } else {
-        setVideos(data?.content || defaultVideos);
       }
     };
 

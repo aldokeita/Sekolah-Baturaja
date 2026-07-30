@@ -1,5 +1,7 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { createAttendance, fetchAttendance, fetchCalendarEvents, updateAttendance } from '@/lib/attendanceAdapters';
+import { fetchClassList, fetchGuruDetail, fetchGuruList } from '@/lib/dataMasterAdapters';
+import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
@@ -65,24 +67,27 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
     const fetchData = async () => {
         setIsLoading(true);
 
-        let attQuery = supabase.from('attendance').select('*').eq('role', 'guru');
-        let guruQuery = supabase.from('guru').select('id, nama, foto_url, no_hp');
-        const classQuery = supabase.from('classes').select('id, nama_kelas, sesi, id_guru, kategori');
-        const overridesQuery = supabase.from('website_content').select('content').eq('key', 'guru_session_overrides').maybeSingle();
-
-        if (role === 'guru' && user) {
-             attQuery = attQuery.eq('user_id', user.id);
-             guruQuery = guruQuery.eq('id', user.id);
-        }
-
-        const { data: att } = await attQuery;
-        const { data: guruList } = await guruQuery;
-        const { data: classList } = await classQuery;
-        const { data: overrides } = await overridesQuery;
-
         const startDate = `${selectedYear}-01-01`;
         const endDate = `${selectedYear}-12-31`;
-        const { data: calendarData } = await supabase.from('academic_calendar').select('date').gte('date', startDate).lte('date', endDate).eq('is_holiday', true);
+        const isOwnRecap = role === 'guru' && Boolean(user);
+
+        const [att, guruList, classList, contentMap, calendarData] = await Promise.all([
+            fetchAttendance({
+                role: 'guru',
+                ...(isOwnRecap ? { user_id: user.id } : {}),
+                date_from: startDate,
+                date_to: endDate,
+                limit: 500,
+            }).catch(() => null),
+            (isOwnRecap
+                ? fetchGuruDetail(user.id).then(guru => (guru ? [guru] : []))
+                : fetchGuruList()
+            ).catch(() => null),
+            fetchClassList().catch(() => null),
+            fetchWebsiteContentMap({ keys: ['guru_session_overrides'], publicOnly: false }).catch(() => ({})),
+            fetchCalendarEvents(startDate, endDate).catch(() => []),
+        ]);
+        const overrides = { content: contentMap?.guru_session_overrides };
 
         if (att && guruList && classList) {
             const resolvedGuruList = await resolveAvatarRecords(guruList, { ownerType: 'guru' });
@@ -126,16 +131,14 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
         }
 
         try {
-            // Save to attendance table
-            let mutation;
             if (record?.id) {
-                mutation = await supabase.from('attendance').update({
+                await updateAttendance(record.id, {
                     check_in_time: attendanceTime || null,
                     check_in_timestamp: checkInTs,
                     status: newStatus
-                }).eq('id', record.id).select('id').single();
+                });
             } else {
-                mutation = await supabase.from('attendance').insert({
+                await createAttendance({
                     user_id: guruId,
                     role: 'guru',
                     attendance_date: dateStr,
@@ -143,10 +146,8 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
                     check_in_timestamp: checkInTs,
                     sesi: normalizedSession,
                     status: newStatus
-                }).select('id').single();
+                });
             }
-
-            if (mutation.error) throw mutation.error;
 
             toast({
                 title: "Berhasil",
@@ -178,17 +179,13 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
         if (!sessionEditGuru) return;
         const newOverrides = { ...overriddenSessions, [sessionEditGuru.id]: tempSessions };
 
-        const { error } = await supabase.from('website_content').upsert(
-            { key: 'guru_session_overrides', content: newOverrides },
-            { onConflict: 'key' }
-        );
-
-        if (error) {
-            toast({ title: "Gagal Menyimpan", description: error.message, variant: "destructive" });
-        } else {
+        try {
+            await saveWebsiteContentItem({ key: 'guru_session_overrides', content: newOverrides, isPublic: false });
             toast({ title: "Berhasil", description: "Jadwal sesi guru diperbarui manual." });
             setOverriddenSessions(newOverrides);
             setIsSessionEditOpen(false);
+        } catch (error) {
+            toast({ title: "Gagal Menyimpan", description: error.message, variant: "destructive" });
         }
     };
 

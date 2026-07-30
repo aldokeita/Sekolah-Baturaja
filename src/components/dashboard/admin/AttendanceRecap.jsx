@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchClassList, fetchSantriPage } from '@/lib/dataMasterAdapters';
+import { fetchAttendance, fetchAttendanceDates, fetchCalendarEvents } from '@/lib/attendanceAdapters';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -34,11 +35,11 @@ export const SantriRecapDetailModal = ({ santri, isOpen, onClose }) => {
         if (!santri) return;
         const fetchDetail = async () => {
             try {
-                const { data, error } = await supabase.from('attendance').select('attendance_date').eq('user_id', santri.id).order('attendance_date');
-                if (error) throw error;
+                const dates = await fetchAttendanceDates(santri.id, 2000);
+                const data = (dates || []).map((d) => ({ attendance_date: d }));
 
-                setAttendance(data || []);
-                const years = [...new Set((data || []).map(a => parseInt(a.attendance_date.split('-')[0])))].sort((a,b) => b-a);
+                setAttendance(data);
+                const years = [...new Set(data.map(a => parseInt(a.attendance_date.split('-')[0])))].sort((a,b) => b-a);
                 const currentYear = new Date().getFullYear();
                 if (!years.includes(currentYear)) years.unshift(currentYear);
                 setAvailableYears(years);
@@ -140,92 +141,73 @@ const AttendanceRecap = () => {
         const endDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
         try {
-            let classQuery = supabase.from('classes').select('id, nama_kelas, sesi, id_guru, is_active').eq('is_active', true);
-            if (role === 'guru') {
-                classQuery = classQuery.eq('id_guru', user?.id);
-            }
-
             const calendarStartDate = `${selectedYear}-01-01`;
             const calendarEndDate = `${selectedYear}-12-31`;
-            const [classResult, calendarResult] = await Promise.all([
-                classQuery,
-                supabase.from('academic_calendar').select('date, is_holiday').gte('date', calendarStartDate).lte('date', calendarEndDate).eq('is_holiday', true),
+            const [classData, calendarEvents] = await Promise.all([
+                fetchClassList({ is_active: true }),
+                fetchCalendarEvents(calendarStartDate, calendarEndDate),
             ]);
-            const { data: classData, error: classError } = classResult;
-            const { data: calendarData, error: calError } = calendarResult;
+            const calendarData = (calendarEvents || []).filter((c) => c.is_holiday);
+            const scopedClasses = role === 'guru'
+                ? (classData || []).filter((item) => item.id_guru === user?.id)
+                : (classData || []);
 
-            if (classError || calError) throw new Error('Gagal mengambil konfigurasi rekap absensi');
-
-            const from = (currentPage - 1) * PAGE_SIZE;
-            const to = from + PAGE_SIZE - 1;
             const normalizedSearch = debouncedSearch.replace(/[%_,().]/g, ' ').trim();
-            let santriQuery = supabase
-                .from('santri')
-                .select('id, nama_lengkap, sesi_mengaji, current_class_id, foto_url, avatar_path, kategori, status', { count: 'exact' })
-                .is('deleted_at', null)
-                .or('status.is.null,status.ilike.aktif,status.ilike.active');
+            const santriFilters = {
+                notDeleted: true,
+                activeOnly: true,
+                order: 'nama',
+                page: currentPage - 1,
+                limit: PAGE_SIZE,
+            };
 
-            if (activeTab === 'dewasa') santriQuery = santriQuery.ilike('kategori', 'Dewasa');
-            else santriQuery = santriQuery.or('kategori.is.null,kategori.neq.Dewasa');
+            if (activeTab === 'dewasa') santriFilters.kategori = 'Dewasa';
+            else santriFilters.excludeKategori = 'Dewasa';
 
             if (selectedClass !== 'all') {
-                santriQuery = santriQuery.eq('current_class_id', selectedClass);
+                santriFilters.classId = selectedClass;
             } else if (role === 'guru') {
-                const classIds = (classData || []).map((item) => item.id);
+                const classIds = scopedClasses.map((item) => item.id);
                 if (classIds.length === 0) {
                     setAttendanceData([]);
                     setAllUsers([]);
                     setTotalUsers(0);
-                    setClasses(classData || []);
-                    setHolidays(new Set((calendarData || []).map(c => c.date)));
+                    setClasses(scopedClasses);
+                    setHolidays(new Set(calendarData.map(c => c.date)));
                     return;
                 }
-                santriQuery = santriQuery.in('current_class_id', classIds);
+                santriFilters.classIds = classIds;
             }
 
             if (selectedSession !== 'all') {
-                santriQuery = santriQuery.in('sesi_mengaji', [
-                    String(getSessionNumber(selectedSession)),
-                    selectedSession,
-                ]);
+                santriFilters.sesi = [String(getSessionNumber(selectedSession)), selectedSession];
             }
+            if (normalizedSearch) santriFilters.search = normalizedSearch;
 
-            if (normalizedSearch) santriQuery = santriQuery.ilike('nama_lengkap', `%${normalizedSearch}%`);
-            santriQuery = santriQuery.order('nama_lengkap', { ascending: true }).range(from, to);
-
-            const { data: santri, error: sanError, count } = await santriQuery;
+            const { data: santri, total: count } = await fetchSantriPage(santriFilters);
             const santriIds = (santri || []).map((item) => item.id);
-            const attendanceResult = santriIds.length > 0
-                ? await supabase
-                    .from('attendance')
-                    .select('*')
-                    .in('user_id', santriIds)
-                    .gte('attendance_date', startDate)
-                    .lte('attendance_date', endDate)
-                    .range(0, 4999)
-                : { data: [], error: null };
-            const { data: attendance, error: attError } = attendanceResult;
-
-            if (attError || sanError) {
-                throw new Error("Gagal mengambil data dari database");
-            }
+            const allAttendance = santriIds.length > 0
+                ? await fetchAttendance({ date_from: startDate, date_to: endDate })
+                : [];
+            const santriIdSet = new Set(santriIds);
+            const attendance = (allAttendance || []).filter((row) => santriIdSet.has(row.user_id));
 
             const resolvedSantri = await resolveAvatarRecords(santri, { ownerType: 'santri' });
 
             setAttendanceData(attendance || []);
             setAllUsers(resolvedSantri.map(s => ({ ...s, id_kelas: s.current_class_id, name: s.nama_lengkap, role: 'santri', kategori: s.kategori })));
             setTotalUsers(count || 0);
-            setClasses(classData || []);
+            setClasses(scopedClasses);
 
             const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
             if (currentPage > totalPages) setCurrentPage(totalPages);
 
             // Auto-select class for guru if they have one and 'all' is selected
-            if (role === 'guru' && classData && classData.length > 0 && selectedClass === 'all') {
-                setSelectedClass(classData[0].id);
+            if (role === 'guru' && scopedClasses.length > 0 && selectedClass === 'all') {
+                setSelectedClass(scopedClasses[0].id);
             }
 
-            const holidaySet = new Set((calendarData || []).map(c => c.date));
+            const holidaySet = new Set(calendarData.map(c => c.date));
             setHolidays(holidaySet);
 
             const years = [selectedYear, new Date().getFullYear()];

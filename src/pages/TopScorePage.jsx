@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { createAttendance, fetchAttendance } from '@/lib/attendanceAdapters';
+import { fetchSantriList, fetchSantriByRfid } from '@/lib/dataMasterAdapters';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -38,13 +39,13 @@ const TopScorePage = () => {
     useEffect(() => {
         const fetchTopScores = async () => {
             try {
-                const { data, error } = await supabase
-                    .from('santri')
-                    .select('id, nama_lengkap, points, foto_url, sesi_mengaji, jilid')
-                    .order('points', { ascending: false })
-                    .limit(10);
-
-                if (error) throw error;
+                const data = await fetchSantriList({
+                    activeOnly: true,
+                    notDeleted: true,
+                    order: 'points',
+                    direction: 'desc',
+                    limit: 10,
+                });
                 setStudents(data || []);
             } catch (err) {
                 console.error("Error fetching top scores:", err);
@@ -66,13 +67,9 @@ const TopScorePage = () => {
 
         try {
             // Find student by RFID
-            const { data: student, error: studentError } = await supabase
-                .from('santri')
-                .select('*')
-                .eq('rfid_tag', cleanTag)
-                .single();
+            const student = await fetchSantriByRfid(cleanTag).catch(() => null);
 
-            if (studentError || !student) {
+            if (!student) {
                 toast({
                     title: "Kartu Tidak Dikenal",
                     description: "Data santri tidak ditemukan untuk kartu ini.",
@@ -84,14 +81,13 @@ const TopScorePage = () => {
             const today = new Date().toISOString().split('T')[0];
 
             // Check if already present today
-            const { data: existingAttendance } = await supabase
-                .from('attendance')
-                .select('id')
-                .eq('user_id', student.id)
-                .eq('attendance_date', today)
-                .maybeSingle();
+            const existingAttendance = await fetchAttendance({
+                user_id: student.id,
+                date: today,
+                limit: 1,
+            }).catch(() => []);
 
-            if (existingAttendance) {
+            if (existingAttendance.length > 0) {
                 toast({
                     title: "Sudah Absen",
                     description: `${student.nama_lengkap} sudah melakukan absensi hari ini.`,
@@ -101,7 +97,7 @@ const TopScorePage = () => {
             }
 
             // Insert attendance
-            const { error: insertError } = await supabase.from('attendance').insert({
+            await createAttendance({
                 user_id: student.id,
                 role: 'santri',
                 attendance_date: today,
@@ -110,8 +106,6 @@ const TopScorePage = () => {
                 sesi: student.sesi_mengaji || 'Pagi',
                 class_id: student.id_kelas
             });
-
-            if (insertError) throw insertError;
 
             toast({
                 title: "Absensi Berhasil!",

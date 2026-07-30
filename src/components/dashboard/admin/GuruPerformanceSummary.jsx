@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchClassList, fetchGuruList, fetchSantriList } from '@/lib/dataMasterAdapters';
+import { fetchAttendance, fetchCalendarEvents } from '@/lib/attendanceAdapters';
+import { fetchHafalanProgress } from '@/lib/academicAdapters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
@@ -73,9 +75,7 @@ const GuruPerformanceSummary = () => {
   useEffect(() => {
     const fetchGurus = async () => {
       try {
-        const { data, error } = await supabase.from('guru').select('id, nama').order('nama', { ascending: true });
-        if (error) throw error;
-        setGurus(data || []);
+        setGurus(await fetchGuruList());
       } catch (err) {
         console.error("Error fetching gurus:", err);
         toast({ title: "Error", description: "Gagal mengambil daftar guru.", variant: "destructive" });
@@ -97,10 +97,7 @@ const GuruPerformanceSummary = () => {
       setIsLoading(true);
       try {
         // 1. Get Classes assigned to Guru
-        const { data: classes, error: classesError } = await supabase.from('classes')
-          .select('id, nama_kelas, sesi')
-          .eq('id_guru', selectedGuru);
-        if (classesError) throw classesError;
+        const classes = await fetchClassList({ id_guru: selectedGuru });
 
         const classIds = classes?.map(c => c.id) || [];
         const classMap = {};
@@ -116,13 +113,8 @@ const GuruPerformanceSummary = () => {
         const endDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${lastDay}`;
 
         // Fetch Holidays to exclude from expected sessions
-        const { data: calendarData } = await supabase
-            .from('academic_calendar')
-            .select('date')
-            .gte('date', startDate)
-            .lte('date', endDate)
-            .eq('is_holiday', true);
-        const holidaySet = new Set(calendarData?.map(c => c.date) || []);
+        const calendarData = await fetchCalendarEvents(startDate, endDate).catch(() => []);
+        const holidaySet = new Set((calendarData || []).map(c => c.date));
 
         // Calculate past active session days in the selected month
         let pastSessionDays = 0;
@@ -139,15 +131,18 @@ const GuruPerformanceSummary = () => {
             }
         }
 
-        // 2. Fetch Guru Attendance (Sesi Terlaksana)
-        const { data: guruAtt, error: guruAttError } = await supabase.from('attendance')
-          .select('id, attendance_date, sesi, status, class_id')
-          .eq('user_id', selectedGuru)
-          .eq('role', 'guru')
-          .gte('attendance_date', startDate)
-          .lte('attendance_date', endDate)
-          .like('status', 'Hadir%');
-        if (guruAttError) throw guruAttError;
+        // 2. Fetch Guru Attendance (Sesi Terlaksana). The "Hadir%" prefix match
+        // stays client-side — the API has no status filter, and a month of one
+        // guru's rows is small enough that filtering here is cheaper than adding
+        // a query param used by exactly one screen.
+        const guruAttRows = await fetchAttendance({
+          user_id: selectedGuru,
+          role: 'guru',
+          date_from: startDate,
+          date_to: endDate,
+          limit: 500,
+        });
+        const guruAtt = (guruAttRows || []).filter(a => String(a.status || '').startsWith('Hadir'));
 
         let totalSessions = 0;
         const sesiCounts = {};
@@ -168,10 +163,12 @@ const GuruPerformanceSummary = () => {
         let avgAttendance = 0;
         if (classIds.length > 0) {
           // Get total active santri per class to calculate total expected sessions
-          const { data: santriList } = await supabase.from('santri')
-            .select('id, current_class_id')
-            .in('current_class_id', classIds)
-            .eq('status', 'Aktif');
+          const santriList = await fetchSantriList({
+            classIds,
+            activeOnly: true,
+            notDeleted: true,
+            limit: 200,
+          });
 
           const classSantriCount = {};
           santriList?.forEach(s => {
@@ -182,13 +179,13 @@ const GuruPerformanceSummary = () => {
           const todayStr = new Date().toISOString().split('T')[0];
           const queryEndDate = endDate < todayStr ? endDate : todayStr;
 
-          const { data: santriAtt, error: santriAttError } = await supabase.from('attendance')
-            .select('id, attendance_date, status, class_id')
-            .eq('role', 'santri')
-            .in('class_id', classIds)
-            .gte('attendance_date', startDate)
-            .lte('attendance_date', queryEndDate);
-          if (santriAttError) throw santriAttError;
+          const santriAtt = await fetchAttendance({
+            role: 'santri',
+            class_ids: classIds,
+            date_from: startDate,
+            date_to: queryEndDate,
+            limit: 500,
+          });
 
           const classAttData = {};
           let totalPresentGlobal = 0;
@@ -231,21 +228,18 @@ const GuruPerformanceSummary = () => {
         let progressByStudent = [];
         let avgProgress = 0;
         if (classIds.length > 0) {
-          const { data: santriList, error: santriError } = await supabase.from('santri')
-            .select('id, nama_lengkap, current_class_id')
-            .in('current_class_id', classIds)
-            .eq('status', 'Aktif');
-          if (santriError) throw santriError;
+          const santriList = await fetchSantriList({
+            classIds,
+            status: 'Aktif',
+            limit: 200,
+          });
 
           const santriIds = santriList?.map(s => s.id) || [];
           const santriMap = {};
           santriList?.forEach(s => santriMap[s.id] = { name: s.nama_lengkap, className: classMap[s.current_class_id] });
 
           if (santriIds.length > 0) {
-            const { data: progressData, error: progError } = await supabase.from('hafalan_progress')
-              .select('id, santri_id, hafal')
-              .in('santri_id', santriIds);
-            if (progError) throw progError;
+            const progressData = await fetchHafalanProgress(santriIds);
 
             const santriProgMap = {};
             let totalHafalGlobal = 0;

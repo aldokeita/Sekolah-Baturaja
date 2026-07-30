@@ -5,11 +5,11 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase, isSupabaseConfigured } from '@/lib/customSupabaseClient';
+import { LOGIN_SECURITY_CONSENT_KEY, recordLoginAttempt } from '@/lib/loginSecurityAdapters';
 import TextType from '@/components/reactbits/TextType/TextType';
 import { useTheme } from '@/contexts/ThemeContext';
 import '@/styles/public-login.css';
-import { LOGIN_SECURITY_CONSENT_KEY, recordLoginAttempt } from '@/lib/loginSecurityAdapters';
+import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 
 /* Lazy load DarkVeil to avoid blocking initial render */
 const DarkVeil = lazy(() => import('@/components/reactbits/DarkVeil/DarkVeil'));
@@ -121,28 +121,9 @@ const LoginPage = () => {
 
   /* --- Fetch dynamic logo --- */
   useEffect(() => {
-    if (!isSupabaseConfigured) return undefined;
-
-    const fetchLogo = async () => {
-      const { data } = await supabase
-        .from('website_content')
-        .select('content')
-        .eq('key', 'logoUrl')
-        .maybeSingle();
-      if (data?.content) setLogoUrl(data.content);
-    };
-    fetchLogo();
-
-    const channel = supabase
-      .channel('website_content_login_logo')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'website_content', filter: 'key=eq.logoUrl' },
-        (payload) => setLogoUrl(payload.new?.content || '/logo-lpq-al-fath-maulana.webp'),
-      )
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
+    fetchWebsiteContentMap({ keys: ['logoUrl'], publicOnly: false })
+      .then((map) => { if (map.logoUrl) setLogoUrl(map.logoUrl); })
+      .catch(() => {});
   }, []);
 
   /* --- Form Validation --- */

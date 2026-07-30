@@ -8,8 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { supabase } from '@/lib/customSupabaseClient';
-import { enableEdgeFunctions, edgeFunctionDisabledMessage } from '@/lib/featureFlags';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
@@ -19,7 +17,19 @@ import { Badge } from "@/components/ui/badge";
 import BirthdayNotificationModal from '@/components/dashboard/shared/BirthdayNotificationModal';
 import { motion } from 'framer-motion';
 import { getSessionName, getSessionNumber, getAllSessions } from '@/utils/sessionMapping';
-import { mapSantriForLegacyUi, normalizeNomorIndukQiroati, pickChangedSantriProfileFields, pickSantriProfileFields } from '@/lib/dataMasterAdapters';
+import {
+  changeSantriCategory,
+  createSantri,
+  fetchClassList,
+  fetchSantriList,
+  fetchSantriPage,
+  mapSantriForLegacyUi,
+  moveSantriClass,
+  normalizeNomorIndukQiroati,
+  pickChangedSantriProfileFields,
+  pickSantriProfileFields,
+  updateSantri,
+} from '@/lib/dataMasterAdapters';
 import { getStorageErrorMessage, resolveAvatarUrl, uploadAvatar } from '@/lib/storageAdapters';
 import { getBirthdaysThisMonth } from '@/lib/birthdayUtils';
 import { archiveSantriAccounts, getFunctionErrorMessage } from '@/lib/santriArchiveAdapters';
@@ -43,14 +53,7 @@ const jilidOptions = [
 
 const ptptTargetOptions = ['Juz 1', 'Juz 2', 'Juz 28', 'Juz 29', 'Juz 30'];
 
-const SANTRI_BASE_SELECT = 'id, nomor_induk_qiroati, nama_lengkap, nama_panggilan, kategori, jenis_kelamin, tanggal_lahir, tempat_lahir, alamat, no_hp_ortu, foto_url, avatar_path, rfid_tag, current_class_id, sesi_mengaji, jilid, status, points, order_in_class, created_at, updated_at, deleted_at';
-const SANTRI_EXTENDED_SELECT = `${SANTRI_BASE_SELECT}, tanggal_pendaftaran, nama_ayah, nama_ibu, no_kk, no_nik, berkas_foto, berkas_akta, berkas_kk, berkas_form, link_qiroati, default_spp_amount`;
-
 const getSelectedClassId = (input) => input?.current_class_id || input?.id_kelas || null;
-
-const isMissingSantriExtendedColumn = (error) =>
-  error?.code === '42703' ||
-  /column santri\.(tanggal_pendaftaran|nama_ayah|nama_ibu|no_kk|no_nik|berkas_foto|berkas_akta|berkas_kk|berkas_form|link_qiroati) does not exist/i.test(error?.message || '');
 
 const BULK_IMPORT_COLUMNS = [
   'Nama Lengkap',
@@ -535,90 +538,57 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
     setIsLoadingData(true);
     setFetchError(null);
     try {
-      const from = (currentPage - 1) * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-      const normalizedSearch = debouncedSearch.replace(/[%_,().]/g, ' ').trim();
-      const categoryValues = currentTab === 'ptpt' ? ['PTPT', 'ptpt'] : ['Anak', 'anak', 'TPQ', 'tpq'];
-      const sortColumn = ['nama_lengkap', 'tanggal_pendaftaran', 'jenis_kelamin', 'jilid', 'sesi_mengaji'].includes(sortConfig.key)
-        ? sortConfig.key
-        : 'nama_lengkap';
-
-      const fetchSantri = async (selectColumns = SANTRI_EXTENDED_SELECT) => {
-        let query = supabase
-          .from('santri')
-          .select(selectColumns, { count: 'exact' })
-          .is('deleted_at', null)
-          .in('kategori', categoryValues)
-          .or('status.is.null,status.ilike.aktif,status.ilike.active');
-
-        if (normalizedSearch) {
-          query = query.or(`nama_lengkap.ilike.%${normalizedSearch}%,nama_panggilan.ilike.%${normalizedSearch}%,nama_ayah.ilike.%${normalizedSearch}%,rfid_tag.ilike.%${normalizedSearch}%`);
-        }
-        if (filters.sesi !== 'all') query = query.in('sesi_mengaji', [String(getSessionNumber(filters.sesi)), filters.sesi]);
-        if (filters.jilid !== 'all') query = query.eq('jilid', filters.jilid);
-        if (filters.rfid === 'assigned') query = query.not('rfid_tag', 'is', null).neq('rfid_tag', '');
-        if (filters.rfid === 'unassigned') query = query.or('rfid_tag.is.null,rfid_tag.eq.');
-
-        return query
-          .order(sortColumn, { ascending: sortConfig.direction === 'ascending', nullsFirst: false })
-          .range(from, to);
+      const santriFilters = {
+        kategoriIn: currentTab === 'ptpt' ? ['PTPT'] : ['Anak', 'TPQ'],
+        activeOnly: true,
+        notDeleted: true,
+        search: debouncedSearch.replace(/[%_,().]/g, ' ').trim() || undefined,
+        sesi: filters.sesi !== 'all'
+          ? [String(getSessionNumber(filters.sesi)), filters.sesi]
+          : undefined,
+        jilid: filters.jilid !== 'all' ? filters.jilid : undefined,
+        rfid: filters.rfid !== 'all' ? filters.rfid : undefined,
+        sort: sortConfig.key,
+        sortDir: sortConfig.direction === 'ascending' ? 'asc' : 'desc',
+        page: currentPage - 1,
+        limit: PAGE_SIZE,
       };
 
-      const [santriRes, classesRes, birthdayRes] = await Promise.all([
-        fetchSantri(),
-        supabase.from('classes').select('id, nama_kelas, guru:id_guru(nama)'),
-        supabase
-          .from('santri')
-          .select('id, nama_lengkap, tanggal_lahir, no_hp_ortu, foto_url, avatar_path')
-          .is('deleted_at', null)
-          .or('status.is.null,status.ilike.aktif,status.ilike.active')
+      const [santriRes, classes, birthdayPool] = await Promise.all([
+        fetchSantriPage(santriFilters),
+        fetchClassList(),
+        fetchSantriList({ activeOnly: true, notDeleted: true, limit: 200 }),
       ]);
 
-      const resolvedSantriRes = isMissingSantriExtendedColumn(santriRes.error)
-        ? await fetchSantri(SANTRI_BASE_SELECT)
-        : santriRes;
+      const mappedSantri = await Promise.all((santriRes.data || []).map(async (item) => {
+          const foto_url = await resolveAvatarUrl({
+              ownerType: 'santri',
+              ownerId: item.id,
+              avatarPath: item.avatar_path,
+              fallbackUrl: item.foto_url,
+          });
+          return mapSantriForLegacyUi({ ...item, foto_url });
+      }));
+      setSantriList(mappedSantri);
+      setTotalSantri(santriRes.total || 0);
 
-      if (resolvedSantriRes.error) {
-          console.error("Query execution error for santri:", resolvedSantriRes.error);
-          setFetchError(resolvedSantriRes.error.message);
-          toast({ title: "Gagal Memuat Data Santri", description: resolvedSantriRes.error.message, variant: "destructive" });
-      } else {
-          const mappedSantri = await Promise.all((resolvedSantriRes.data || []).map(async (item) => {
-              const foto_url = await resolveAvatarUrl({
-                  ownerType: 'santri',
-                  ownerId: item.id,
-                  avatarPath: item.avatar_path,
-                  fallbackUrl: item.foto_url,
-              });
-              return mapSantriForLegacyUi({ ...item, foto_url });
-          }));
-          setSantriList(mappedSantri);
-          setTotalSantri(resolvedSantriRes.count || 0);
+      const totalPages = Math.max(1, Math.ceil((santriRes.total || 0) / PAGE_SIZE));
+      if (currentPage > totalPages) setCurrentPage(totalPages);
 
-          const totalPages = Math.max(1, Math.ceil((resolvedSantriRes.count || 0) / PAGE_SIZE));
-          if (currentPage > totalPages) setCurrentPage(totalPages);
-      }
+      const birthdaysThisMonth = getBirthdaysThisMonth(birthdayPool || []);
+      const resolvedBirthdays = await Promise.all(birthdaysThisMonth.map(async (item) => ({
+        ...item,
+        foto_url: await resolveAvatarUrl({
+          ownerType: 'santri',
+          ownerId: item.id,
+          avatarPath: item.avatar_path,
+          fallbackUrl: item.foto_url,
+        }),
+      })));
+      setBirthdayStudents(resolvedBirthdays);
 
-      if (!birthdayRes.error) {
-        const birthdaysThisMonth = getBirthdaysThisMonth(birthdayRes.data || []);
-        const resolvedBirthdays = await Promise.all(birthdaysThisMonth.map(async (item) => ({
-          ...item,
-          foto_url: await resolveAvatarUrl({
-            ownerType: 'santri',
-            ownerId: item.id,
-            avatarPath: item.avatar_path,
-            fallbackUrl: item.foto_url,
-          }),
-        })));
-        setBirthdayStudents(resolvedBirthdays);
-      }
-
-      if (classesRes.error) {
-          toast({ title: "Error", description: "Gagal memuat data kelas.", variant: "destructive" });
-      } else {
-          const tpqClasses = (classesRes.data || []).filter(c => !c.kategori || c.kategori.toLowerCase() === 'anak' || c.kategori.toLowerCase() === 'ptpt');
-          setClassesList(tpqClasses);
-      }
+      const tpqClasses = (classes || []).filter(c => !c.kategori || c.kategori.toLowerCase() === 'anak' || c.kategori.toLowerCase() === 'ptpt');
+      setClassesList(tpqClasses);
 
       const mappedSessions = getAllSessions().map(s => s.name);
       setSessionOptions(mappedSessions);
@@ -655,27 +625,21 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
 
   const handleDownloadData = async () => {
     try {
-      const normalizedSearch = filters.search.replace(/[%_,().]/g, ' ').trim();
-      const categoryValues = subCategory === 'ptpt' ? ['PTPT', 'ptpt'] : ['Anak', 'anak', 'TPQ', 'tpq'];
-      let query = supabase
-        .from('santri')
-        .select(SANTRI_EXTENDED_SELECT)
-        .is('deleted_at', null)
-        .in('kategori', categoryValues)
-        .or('status.is.null,status.ilike.aktif,status.ilike.active');
+      const data = await fetchSantriList({
+        kategoriIn: subCategory === 'ptpt' ? ['PTPT'] : ['Anak', 'TPQ'],
+        activeOnly: true,
+        notDeleted: true,
+        search: filters.search.replace(/[%_,().]/g, ' ').trim() || undefined,
+        sesi: filters.sesi !== 'all'
+          ? [String(getSessionNumber(filters.sesi)), filters.sesi]
+          : undefined,
+        jilid: filters.jilid !== 'all' ? filters.jilid : undefined,
+        rfid: filters.rfid !== 'all' ? filters.rfid : undefined,
+        order: 'nama',
+        limit: 200,
+      });
 
-      if (normalizedSearch) {
-        query = query.or(`nama_lengkap.ilike.%${normalizedSearch}%,nama_panggilan.ilike.%${normalizedSearch}%,nama_ayah.ilike.%${normalizedSearch}%,rfid_tag.ilike.%${normalizedSearch}%`);
-      }
-      if (filters.sesi !== 'all') query = query.in('sesi_mengaji', [String(getSessionNumber(filters.sesi)), filters.sesi]);
-      if (filters.jilid !== 'all') query = query.eq('jilid', filters.jilid);
-      if (filters.rfid === 'assigned') query = query.not('rfid_tag', 'is', null).neq('rfid_tag', '');
-      if (filters.rfid === 'unassigned') query = query.or('rfid_tag.is.null,rfid_tag.eq.');
-
-      const { data, error } = await query.order('nama_lengkap').range(0, 4999);
-      if (error) throw error;
-
-      const dataToExport = (data || []).map(mapSantriForLegacyUi).map(s => ({
+      const dataToExport = (data || []).map(s => ({
           'Nama Lengkap': s.nama_lengkap, 'Nama Panggilan': s.nama_panggilan, 'Jilid': s.jilid, 'Tempat Lahir': s.tempat_lahir,
           'Tanggal Lahir': s.tanggal_lahir, 'Jenis Kelamin': s.jenis_kelamin, 'Alamat': s.alamat, 'Sesi': getSessionName(s.sesi_mengaji),
           'Tanggal Masuk': s.tanggal_pendaftaran, 'Nama Ibu': s.nama_ibu, 'Nama Ayah': s.nama_ayah, 'No. HP Wali': s.no_hp_ortu,
@@ -704,15 +668,8 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
 
     try {
         const { path, signedUrl } = await uploadAvatar({ ownerType: 'santri', ownerId: editingSantri.id, file });
-        const { data, error } = await supabase
-            .from('santri')
-            .update({ avatar_path: path })
-            .eq('id', editingSantri.id)
-            .select('id, avatar_path, foto_url')
-            .maybeSingle();
-
-        if (error) throw error;
-        if (!data) throw new Error('Avatar terunggah, tetapi referensi profil santri tidak tersimpan.');
+        const saved = await updateSantri(editingSantri.id, { avatar_path: path });
+        if (!saved) throw new Error('Avatar terunggah, tetapi referensi profil santri tidak tersimpan.');
 
         const finalUrl = signedUrl || formData.foto_url || '';
         setFormData(prev => ({ ...prev, avatar_path: path, foto_url: finalUrl }));
@@ -787,26 +744,12 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
       let targetId = editingSantri?.id;
 
       if (!editingSantri) {
-        if (!enableEdgeFunctions) {
-          toast({ title: "Fitur belum aktif", description: edgeFunctionDisabledMessage, variant: "destructive" });
-          return;
-        }
-        const { data, error } = await supabase.functions.invoke('manage-user', {
-          body: {
-            action: 'create',
-            role: 'santri',
-            profile: pickSantriProfileFields(finalFormData),
-            initial_password: finalFormData.password,
-          },
+        const created = await createSantri({
+          ...pickSantriProfileFields(finalFormData),
+          ...(finalFormData.password ? { password: finalFormData.password } : {}),
         });
-
-        if (error) {
-          throw new Error(await getFunctionErrorMessage(error, 'Akun santri gagal dibuat.'));
-        }
-        if (!data?.ok || !data?.data?.user_id) {
-          throw new Error(data?.error?.message || 'Akun santri gagal dibuat.');
-        }
-        targetId = data.data.user_id;
+        if (!created?.id) throw new Error('Akun santri gagal dibuat.');
+        targetId = created.id;
       }
 
       const profilePayload = editingSantri
@@ -831,51 +774,19 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
         return;
       }
 
-      const needsAuthEdgeFunction = shouldArchiveAfterSave;
-      if (needsAuthEdgeFunction && !enableEdgeFunctions) {
-        toast({ title: "Fitur belum aktif", description: edgeFunctionDisabledMessage, variant: "destructive" });
-        return;
-      }
-
-      if (editingSantri && Object.prototype.hasOwnProperty.call(profilePayload, 'nomor_induk_qiroati')) {
-        if (!enableEdgeFunctions) {
-          toast({ title: "Fitur belum aktif", description: edgeFunctionDisabledMessage, variant: "destructive" });
-          return;
-        }
-
-        const { data, error } = await supabase.functions.invoke('manage-user', {
-          body: {
-            action: 'update',
-            role: 'santri',
-            target_user_id: targetId,
-            profile: { nomor_induk_qiroati: profilePayload.nomor_induk_qiroati },
-          },
-        });
-
-        if (error) throw new Error(await getFunctionErrorMessage(error, 'Login santri gagal disinkronkan.'));
-        if (!data?.ok) throw new Error(data?.error?.message || 'Login santri gagal disinkronkan.');
-        delete profilePayload.nomor_induk_qiroati;
-      }
-
+      // nomor_induk_qiroati is a plain santri column now — the Go backend reads it
+      // directly at login, so it no longer needs a separate auth-alias sync step.
       if (Object.keys(profilePayload).length > 0) {
-        const { data: savedSantri, error } = await supabase
-          .from('santri')
-          .update(profilePayload)
-          .eq('id', targetId)
-          .select('id')
-          .maybeSingle();
-
-        if (error) throw error;
-        if (!savedSantri) throw new Error('Data santri tidak tersimpan karena tidak ada row yang diperbarui.');
+        const savedSantri = await updateSantri(targetId, profilePayload);
+        if (!savedSantri?.id) throw new Error('Data santri tidak tersimpan karena tidak ada row yang diperbarui.');
       }
 
       if (classChanged) {
-        const { error: classError } = await supabase.rpc('move_santri_to_class', {
-          p_santri_id: targetId,
-          p_to_class_id: selectedClassId,
-          p_reason: editingSantri ? 'Perubahan kelas dari Data Santri' : 'Penempatan kelas awal dari Data Santri',
+        await moveSantriClass({
+          santri_id: targetId,
+          target_class_id: selectedClassId,
+          reason: editingSantri ? 'Perubahan kelas dari Data Santri' : 'Penempatan kelas awal dari Data Santri',
         });
-        if (classError) throw classError;
       }
 
       if (shouldArchiveAfterSave) {
@@ -912,11 +823,6 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
       title: 'Pindahkan ke Arsip',
       description: `${selectedSantri.size} santri akan dinonaktifkan dan dipindahkan ke arsip. Kelas, hafalan, karakter, absensi, pembayaran, dan seluruh riwayat tetap tersimpan serta dapat dipulihkan kapan saja.`,
       onConfirm: async () => {
-        if (!enableEdgeFunctions) {
-          toast({ title: "Fitur belum aktif", description: edgeFunctionDisabledMessage, variant: "destructive" });
-          return;
-        }
-
         try {
           await archiveSantriAccounts(idsToDelete, 'Dipindahkan ke arsip dari Data Santri');
           await loadData(subCategory);
@@ -940,11 +846,6 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
       onConfirm: async () => {
         const idsToUpdate = Array.from(selectedSantri);
 
-        if (!enableEdgeFunctions) {
-          toast({ title: "Fitur belum aktif", description: edgeFunctionDisabledMessage, variant: "destructive" });
-          return;
-        }
-
         try {
           await archiveSantriAccounts(idsToUpdate, 'Dinonaktifkan dari Data Santri');
           await loadData(subCategory);
@@ -961,13 +862,11 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
   const getMigrationLabel = (targetCategory) => targetCategory === 'Anak' ? 'TPQ' : targetCategory;
 
   const migrateSantriCategory = async (santriId, targetCategory, reason) => {
-      const { data, error } = await supabase.rpc('change_santri_category', {
-          p_santri_id: santriId,
-          p_target_category: targetCategory,
-          p_reason: reason,
+      return changeSantriCategory({
+          santri_id: santriId,
+          new_category: targetCategory,
+          reason,
       });
-      if (error) throw error;
-      return data?.[0];
   };
 
   const handleMigration = async (targetCategory) => {

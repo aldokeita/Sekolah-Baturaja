@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/customSupabaseClient';
+import apiClient from '@/lib/apiClient';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2, ArrowRightLeft, School, User, Clock, CheckCircle, AlertCircle, RefreshCw, Sparkles, ChevronRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -30,11 +30,7 @@ const StudentTransferModal = ({ isOpen, onClose, santri, onTransferSuccess }) =>
         setIsLoading(true);
         setLoadError(null);
         try {
-            const { data, error } = await supabase.rpc('list_guru_transfer_destinations', {
-                p_santri_id: santri.id,
-            });
-
-            if (error) throw error;
+            const data = await apiClient.get(`/api/santri/${santri.id}/transfer-destinations`);
             setClasses((data || []).map((item) => ({
                 ...item,
                 guru: item.guru_nama ? { nama: item.guru_nama } : null,
@@ -64,13 +60,11 @@ const StudentTransferModal = ({ isOpen, onClose, santri, onTransferSuccess }) =>
         setIsSubmitting(true);
         try {
             const targetClass = classes.find(c => c.id === selectedClassId);
-            const { error } = await supabase.rpc('move_santri_to_class_by_guru', {
-                p_santri_id: santri.id,
-                p_to_class_id: selectedClassId,
-                p_reason: `Mutasi kelas ke ${targetClass?.nama_kelas || 'kelas tujuan'}`
+            await apiClient.post('/api/santri/move-class', {
+                santri_id: santri.id,
+                target_class_id: selectedClassId,
+                reason: `Mutasi kelas ke ${targetClass?.nama_kelas || 'kelas tujuan'}`
             });
-
-            if (error) throw error;
 
             toast({ title: 'Transfer Berhasil', description: `${santri.nama_lengkap} berhasil dipindahkan ke kelas ${targetClass?.nama_kelas}.` });
             onTransferSuccess();

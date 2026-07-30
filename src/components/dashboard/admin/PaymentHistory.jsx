@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
 import { Trash2, Search, AlertTriangle, Edit, FileText, Download, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -11,13 +10,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import EditPaymentModal from './EditPaymentModal';
 import PaymentProofModal from './PaymentProofModal';
 import { AnimatePresence, motion } from 'framer-motion';
-import { PAYMENT_DETAIL_SELECT, getPaymentErrorMessage, monthNumberToName } from '@/lib/paymentAdapters';
+import {
+    deletePaymentsBulk,
+    fetchAllPayments,
+    fetchPaymentsPage,
+    getPaymentErrorMessage,
+    monthNumberToName,
+} from '@/lib/paymentAdapters';
 import DataPagination from '@/components/dashboard/shared/DataPagination';
 import * as XLSX from 'xlsx';
 
 const PAGE_SIZE = 50;
-const BACKUP_PAGE_SIZE = 1000;
-const PAYMENT_DETAIL_INNER_SELECT = PAYMENT_DETAIL_SELECT.replace('santri:santri_id(', 'santri:santri_id!inner(');
 
 const DeleteConfirmationDialog = ({ open, onOpenChange, onConfirm, count }) => (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -67,31 +70,18 @@ const PaymentHistory = () => {
         setError(null);
 
         try {
-            const from = (currentPage - 1) * PAGE_SIZE;
-            const to = from + PAGE_SIZE - 1;
             const normalizedSearch = debouncedSearch.replace(/[%_,().]/g, ' ').trim();
-            let query = supabase
-                .from('payments')
-                .select(normalizedSearch ? PAYMENT_DETAIL_INNER_SELECT : PAYMENT_DETAIL_SELECT, { count: 'exact' })
-                .order('created_at', { ascending: false });
+            const filters = { page: currentPage, limit: PAGE_SIZE };
+            if (normalizedSearch) filters.search = normalizedSearch;
+            if (filter.year !== 'all') filters.tahun = filter.year;
+            if (filter.month !== 'all') filters.bulan = filter.month + 1;
 
-            if (normalizedSearch) query = query.ilike('santri.nama_lengkap', `%${normalizedSearch}%`);
-            if (filter.year !== 'all') query = query.eq('tahun', filter.year);
-            if (filter.month !== 'all') query = query.eq('bulan', filter.month + 1);
-
-            const { data, count, error: queryError } = await query.range(from, to);
-
-            if (queryError) {
-                setError(queryError.message);
-                toast({ title: 'Query Error', description: queryError.message, variant: 'destructive' });
-                setPayments([]);
-                return;
-            }
+            const { data, total } = await fetchPaymentsPage(filters);
 
             setPayments(data || []);
-            setTotalPayments(count || 0);
+            setTotalPayments(total || 0);
 
-            const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
+            const totalPages = Math.max(1, Math.ceil((total || 0) / PAGE_SIZE));
             if (currentPage > totalPages) setCurrentPage(totalPages);
 
         } catch (err) {
@@ -139,13 +129,13 @@ const PaymentHistory = () => {
 
     const handleDelete = async () => {
         const idsToDelete = Array.from(selectedPayments);
-        const { error } = await supabase.from('payments').delete().in('id', idsToDelete);
-        if (error) {
-            toast({ title: 'Gagal Menghapus', description: getPaymentErrorMessage(error), variant: 'destructive' });
-        } else {
+        try {
+            await deletePaymentsBulk(idsToDelete);
             toast({ title: 'Berhasil', description: `${selectedPayments.size} riwayat pembayaran telah dihapus.` });
             setSelectedPayments(new Set());
             fetchPayments();
+        } catch (err) {
+            toast({ title: 'Gagal Menghapus', description: getPaymentErrorMessage(err), variant: 'destructive' });
         }
     };
 
@@ -170,23 +160,11 @@ const PaymentHistory = () => {
     const handleBackup = async () => {
         setIsBackingUp(true);
         try {
-            const allPayments = [];
-            let page = 0;
-
-            while (true) {
-                const from = page * BACKUP_PAGE_SIZE;
-                const to = from + BACKUP_PAGE_SIZE - 1;
-                const { data, error: backupError } = await supabase
-                    .from('payments')
-                    .select(PAYMENT_DETAIL_SELECT)
-                    .order('created_at', { ascending: true })
-                    .range(from, to);
-
-                if (backupError) throw backupError;
-                allPayments.push(...(data || []));
-                if (!data || data.length < BACKUP_PAGE_SIZE) break;
-                page += 1;
-            }
+            // fetchAllPayments walks every page; the endpoint returns newest
+            // first, so reverse to keep the backup in chronological order.
+            // fetchAllPayments walks every page (the endpoint caps limit at 200).
+            // It returns newest-first; the backup sheet is oldest-first.
+            const allPayments = (await fetchAllPayments()).reverse();
 
             if (allPayments.length === 0) {
                 toast({ title: 'Backup kosong', description: 'Belum ada riwayat pembayaran untuk dicadangkan.' });

@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import apiClient from '@/lib/apiClient';
+import { fetchMusicFiles, fetchOrInitMediaPlayerSettings, syncPlaybackState, updatePlaybackPosition, updateShuffleEnabled } from '@/lib/mediaPlayerAdapters';
 
 export const useMediaPlayer = () => {
     const [playlist, setPlaylist] = useState([]);
@@ -18,54 +19,34 @@ export const useMediaPlayer = () => {
 
     // Fetch Playlist
     const fetchPlaylist = useCallback(async () => {
-        const { data, error } = await supabase
-            .from('music_files')
-            .select('*')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
-        if (error) {
+        try {
+            const tracks = await fetchMusicFiles();
+            setPlaylist(tracks);
+            setCurrentTrackIndex((prev) => (tracks.length > 0 && prev === -1 ? 0 : prev));
+        } catch {
             setPlaylist([]);
             setCurrentTrackIndex(-1);
-            return;
         }
-        const tracks = data || [];
-        setPlaylist(tracks);
-        setCurrentTrackIndex((prev) => (tracks.length > 0 && prev === -1 ? 0 : prev));
     }, [currentTrackIndex]);
 
     useEffect(() => {
         fetchPlaylist();
 
-        // Fetch saved settings from Supabase
+        // Fetch saved settings
         const fetchSettings = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
+        const user = await apiClient.get('/api/auth/me').catch(() => null);
             if (!user) return;
-
-            const { data, error } = await supabase
-                .from('media_player_settings')
-                .select('*')
-                .eq('user_id', user.id)
-                .maybeSingle();
-
-            if (data) {
-                setSettingsId(data.id);
-                // Prefer DB settings if they exist
-                if (data.shuffle_enabled !== null) setIsShuffle(data.shuffle_enabled);
-                // Notice: We use playback_position instead of the reserved current_time keyword
-                if (data.playback_position) {
-                    audioRef.current.currentTime = data.playback_position;
-                    setProgress(data.playback_position);
+            try {
+                const settings = await fetchOrInitMediaPlayerSettings(user.id);
+                if (settings) {
+                    setSettingsId(settings.id);
+                    if (settings.shuffle_enabled !== null) setIsShuffle(settings.shuffle_enabled);
+                    if (settings.playback_position) {
+                        audioRef.current.currentTime = settings.playback_position;
+                        setProgress(settings.playback_position);
+                    }
                 }
-            } else if (!error) {
-                // Initialize default settings for user
-                const { data: newSettings } = await supabase
-                    .from('media_player_settings')
-                    .insert([{ user_id: user.id, playback_position: 0 }])
-                    .select()
-                    .single();
-
-                if (newSettings) setSettingsId(newSettings.id);
-            }
+            } catch { /* non-critical, silently ignore */ }
         };
         fetchSettings();
 
@@ -95,19 +76,11 @@ export const useMediaPlayer = () => {
 
     // Sync progress to DB periodically (throttled)
     useEffect(() => {
-        const syncInterval = setInterval(async () => {
+        const syncInterval = setInterval(() => {
             if (settingsId && isPlaying) {
-                await supabase
-                    .from('media_player_settings')
-                    .update({
-                        playback_position: Math.floor(progress), // Used corrected column name
-                        is_playing: isPlaying,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', settingsId);
+                syncPlaybackState(settingsId, { position: progress, isPlaying });
             }
-        }, 10000); // Sync every 10 seconds
-
+        }, 10000);
         return () => clearInterval(syncInterval);
     }, [progress, isPlaying, settingsId]);
 
@@ -151,11 +124,8 @@ export const useMediaPlayer = () => {
         audioRef.current.currentTime = time;
         setProgress(time);
 
-        // Immediate sync on explicit seek
         if (settingsId) {
-            supabase.from('media_player_settings')
-                .update({ playback_position: Math.floor(time) })
-                .eq('id', settingsId);
+            updatePlaybackPosition(settingsId, time);
         }
     };
 
@@ -226,7 +196,7 @@ export const useMediaPlayer = () => {
         setIsShuffle(newVal);
         localStorage.setItem('mp_shuffle', newVal);
         if (settingsId) {
-            supabase.from('media_player_settings').update({ shuffle_enabled: newVal }).eq('id', settingsId);
+            updateShuffleEnabled(settingsId, newVal);
         }
     };
 

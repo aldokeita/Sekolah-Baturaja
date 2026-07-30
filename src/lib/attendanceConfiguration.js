@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/customSupabaseClient';
 import { DEFAULT_SESSION_TIMES } from '@/utils/AttendanceStatusLogic';
+import { fetchAppConfig, upsertAppConfig } from '@/lib/appConfigAdapters';
 
 export const ATTENDANCE_CONFIGURATION_KEY = 'attendance_session_config';
 
@@ -77,27 +77,16 @@ export const getAttendanceSessionTimes = (value) => {
   }]));
 };
 
+// Stored as a website_content row, so it goes through the app-config endpoint
+// like every other runtime config key. normalize* already fills in defaults for
+// a missing row, which is what the old maybeSingle() path relied on.
 export const fetchAttendanceConfiguration = async () => {
-  const { data, error } = await supabase
-    .from('website_content')
-    .select('content')
-    .eq('key', ATTENDANCE_CONFIGURATION_KEY)
-    .maybeSingle();
-  if (error) throw error;
-  return normalizeAttendanceConfiguration(data?.content);
+  const content = await fetchAppConfig(ATTENDANCE_CONFIGURATION_KEY);
+  return normalizeAttendanceConfiguration(content);
 };
 
 export const saveAttendanceConfiguration = async (value) => {
   const configuration = validateAttendanceConfiguration(value);
-  const { data, error } = await supabase
-    .from('website_content')
-    .upsert({
-      key: ATTENDANCE_CONFIGURATION_KEY,
-      content: configuration,
-      is_public: true,
-    }, { onConflict: 'key' })
-    .select('content')
-    .single();
-  if (error) throw error;
-  return normalizeAttendanceConfiguration(data.content);
+  const saved = await upsertAppConfig(ATTENDANCE_CONFIGURATION_KEY, configuration);
+  return normalizeAttendanceConfiguration(saved);
 };

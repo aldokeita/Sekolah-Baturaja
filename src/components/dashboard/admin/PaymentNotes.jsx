@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchClassList } from '@/lib/dataMasterAdapters';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Trash2, Download } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
-import { PAYMENT_DETAIL_SELECT, getPaymentErrorMessage, monthNameToNumber, monthNumberToName } from '@/lib/paymentAdapters';
+import {
+  deletePayment,
+  fetchAllPayments,
+  fetchAllSantri,
+  fetchPaymentStatusSummary,
+  getPaymentErrorMessage,
+  monthNameToNumber,
+  monthNumberToName,
+} from '@/lib/paymentAdapters';
 
 const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 const currentYear = new Date().getFullYear();
@@ -22,42 +30,28 @@ const PaymentStatusTable = () => {
   const fetchStatus = async () => {
     setIsLoading(true);
     const selectedMonthNumber = monthNameToNumber(selectedMonth);
-    const { data: santri, error: santriError } = await supabase
-      .from('santri')
-      .select('id, nama_lengkap, current_class_id')
-      .eq('status', 'Aktif')
-      .order('nama_lengkap');
-    if (santriError) {
-      toast({ title: 'Error', description: 'Gagal mengambil data santri.', variant: 'destructive' });
+    try {
+      const [santri, statusRows, classes] = await Promise.all([
+        fetchAllSantri({ status: 'Aktif', order: 'nama_lengkap' }),
+        fetchPaymentStatusSummary(selectedMonthNumber, selectedYear),
+        fetchClassList()
+      ]);
+
+      const classMap = new Map((classes || []).map(c => [c.id, c.nama_kelas]));
+      const statusMap = new Map((statusRows || []).map(row => [row.santri_id, row.status]));
+      const combinedData = (santri || []).map(s => ({
+        ...s,
+        class_name: classMap.get(s.current_class_id) || '-',
+        periode: `${selectedMonth} ${selectedYear}`,
+        status: statusMap.get(s.id) === 'Lunas' ? 'Lunas' : 'Belum Lunas',
+      }));
+
+      setStatusData(combinedData);
+    } catch (err) {
+      toast({ title: 'Error', description: getPaymentErrorMessage(err), variant: 'destructive' });
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    const [{ data: statusRows, error: statusError }, { data: classes, error: classError }] = await Promise.all([
-      supabase
-        .from('payment_status_summary')
-        .select('santri_id, class_id, bulan, tahun, status')
-        .eq('bulan', selectedMonthNumber)
-        .eq('tahun', selectedYear),
-      supabase.from('classes').select('id, nama_kelas')
-    ]);
-    if (statusError || classError) {
-      toast({ title: 'Error', description: 'Gagal mengambil status pembayaran.', variant: 'destructive' });
-      setIsLoading(false);
-      return;
-    }
-
-    const classMap = new Map((classes || []).map(c => [c.id, c.nama_kelas]));
-    const statusMap = new Map((statusRows || []).map(row => [row.santri_id, row.status]));
-    const combinedData = santri.map(s => ({
-      ...s,
-      class_name: classMap.get(s.current_class_id) || '-',
-      periode: `${selectedMonth} ${selectedYear}`,
-      status: statusMap.get(s.id) === 'Lunas' ? 'Lunas' : 'Belum Lunas',
-    }));
-
-    setStatusData(combinedData);
-    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -134,17 +128,17 @@ const PaymentNotes = () => {
 
   const fetchPayments = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from('payments')
-      .select(PAYMENT_DETAIL_SELECT)
-      .order('tanggal_pembayaran', { ascending: false });
-
-    if (error) {
-      toast({ title: 'Error', description: 'Gagal mengambil riwayat pembayaran.', variant: 'destructive' });
-    } else {
-      setPayments(data || []);
+    try {
+      const data = await fetchAllPayments();
+      // Endpoint orders by created_at; this table shows newest payment date first.
+      setPayments([...data].sort((a, b) => (
+        new Date(b.tanggal_pembayaran || 0) - new Date(a.tanggal_pembayaran || 0)
+      )));
+    } catch (err) {
+      toast({ title: 'Error', description: getPaymentErrorMessage(err), variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleDeletePayment = async (paymentId) => {
@@ -153,12 +147,12 @@ const PaymentNotes = () => {
       title: 'Hapus Pembayaran',
       description: 'Anda yakin ingin menghapus riwayat pembayaran ini? Aksi ini tidak dapat dibatalkan.',
       onConfirm: async () => {
-        const { error } = await supabase.from('payments').delete().eq('id', paymentId);
-        if (error) {
-          toast({ title: 'Gagal Menghapus', description: getPaymentErrorMessage(error), variant: 'destructive' });
-        } else {
+        try {
+          await deletePayment(paymentId);
           toast({ title: 'Berhasil', description: 'Riwayat pembayaran telah dihapus.' });
           fetchPayments();
+        } catch (err) {
+          toast({ title: 'Gagal Menghapus', description: getPaymentErrorMessage(err), variant: 'destructive' });
         }
       }
     });

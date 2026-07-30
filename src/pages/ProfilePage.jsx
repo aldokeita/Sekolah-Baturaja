@@ -20,8 +20,7 @@ import {
   Award,
   GraduationCap,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
-import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
+import { fetchWebsiteContentMap, fetchPublicTeachers } from '@/lib/publicContentAdapters';
 import {
   OFFICIAL_CONTACT,
   OFFICIAL_FACILITIES,
@@ -93,19 +92,9 @@ const ProfilePage = () => {
 
     const fetchData = async () => {
       try {
-        const fetchActiveGuru = async () => {
-          const result = await supabase
-            .from('guru')
-            .select('id, nama, jabatan, foto_url, roles, jenis_kelamin, status')
-            .eq('status', 'active')
-            .order('nama');
-
-          return result.error ? { data: null, error: result.error } : result;
-        };
-
-        const [contentMap, guruResult] = await Promise.all([
+        const [contentMap, teachers] = await Promise.all([
           fetchWebsiteContentMap({ publicOnly: true }).catch(() => ({})),
-          fetchActiveGuru(),
+          fetchPublicTeachers().catch(() => []),
         ]);
 
         if (!mounted) return;
@@ -123,8 +112,8 @@ const ProfilePage = () => {
         }
 
         // Set guru list
-        if (guruResult?.data) {
-          setGuruList(guruResult.data);
+        if (Array.isArray(teachers) && teachers.length > 0) {
+          setGuruList(teachers);
         }
       } catch (err) {
         if (mounted) {

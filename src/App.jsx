@@ -37,9 +37,7 @@ import RandomNamePage from '@/pages/RandomNamePage';
 import TopScorePage from '@/pages/TopScorePage';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { verifyDatabaseSchema } from '@/utils/verifyDatabaseSchema';
-import { AlertTriangle, X } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/lib/customSupabaseClient';
+import { publicFetch } from '@/lib/apiClient';
 import { enableDeferredFeatures, enableGameFeatures } from '@/lib/featureFlags';
 
 const RouteLogger = () => {
@@ -59,35 +57,18 @@ const DynamicLogo = ({ className = '', width = 48, height = 48 }) => {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return undefined;
     let cancelled = false;
-
     const fetchLogo = async () => {
       try {
-        const { data } = await supabase
-          .from('website_content')
-          .select('content')
-          .eq('key', 'logoUrl')
-          .maybeSingle();
-        if (!cancelled && data?.content && data.content !== '/logo-lpq-al-fath-maulana.webp') {
-          // Preload the dynamic logo in background before crossfading
+        const data = await publicFetch('/api/content/website?keys=logoUrl');
+        const url = data?.logoUrl;
+        if (!cancelled && url && url !== '/logo-lpq-al-fath-maulana.webp') {
           const img = new Image();
-          img.onload = () => {
-            if (!cancelled) {
-              setDynamicUrl(data.content);
-              setReady(true);
-            }
-          };
-          img.onerror = () => {
-            // Keep local logo on failure — never show empty
-          };
-          img.src = data.content;
+          img.onload = () => { if (!cancelled) { setDynamicUrl(url); setReady(true); } };
+          img.src = url;
         }
-      } catch {
-        // Supabase offline or error — keep local logo
-      }
+      } catch { /* keep local logo */ }
     };
-
     fetchLogo();
     return () => { cancelled = true; };
   }, []);
@@ -115,46 +96,6 @@ const DynamicLogo = ({ className = '', width = 48, height = 48 }) => {
         />
       )}
     </span>
-  );
-};
-
-const DatabaseHealthCheck = () => {
-  const { role } = useAuth();
-  const [dbErrors, setDbErrors] = useState([]);
-  const [isVisible, setIsVisible] = useState(true);
-
-  useEffect(() => {
-    const checkDb = async () => {
-      if (role === 'admin' && isSupabaseConfigured) {
-        const report = await verifyDatabaseSchema();
-        console.log('Database Health Report:', report);
-        if (report.status === 'error') {
-          setDbErrors(report.errors);
-        }
-      }
-    };
-    checkDb();
-  }, [role]);
-
-  if (!isVisible || dbErrors.length === 0 || role !== 'admin') return null;
-
-  return (
-    <div className="bg-red-500 text-white p-4 fixed top-0 left-0 w-full z-[999] flex justify-between items-start shadow-md">
-      <div>
-        <div className="flex items-center gap-2 font-bold mb-1">
-          <AlertTriangle className="w-5 h-5" />
-          Database Schema / RLS Issues Detected
-        </div>
-        <ul className="list-disc list-inside text-sm ml-6">
-          {dbErrors.map((err, i) => (
-            <li key={i}>{err}</li>
-          ))}
-        </ul>
-      </div>
-      <button onClick={() => setIsVisible(false)} className="p-1 hover:bg-red-600 rounded">
-        <X className="w-5 h-5" />
-      </button>
-    </div>
   );
 };
 
@@ -200,7 +141,6 @@ function App() {
       <AuthProvider>
         <DndProvider backend={HTML5Backend}>
           <Router>
-            <DatabaseHealthCheck />
             <RouteLogger />
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
               <Routes>

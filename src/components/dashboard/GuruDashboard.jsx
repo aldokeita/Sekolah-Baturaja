@@ -15,7 +15,8 @@ import MmqSection from '@/components/dashboard/guru/MmqSection';
 import GuruAttendanceRecap from '@/components/dashboard/admin/GuruAttendanceRecap';
 import AttendanceDetailsModal from '@/components/dashboard/shared/AttendanceDetailsModal';
 import AttendanceStatusIcon from '@/components/dashboard/shared/AttendanceStatusIcon';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchGuruDetail, updateGuru, updateSantriJilid } from '@/lib/dataMasterAdapters';
+import { fetchAttendance } from '@/lib/attendanceAdapters';
 import { Mic, Check, Send, Trash2, Edit, Upload, Users, CheckCircle, Bell, X, MessageSquare as MessageSquareWarning, RefreshCw, BookText, ChevronUp, ChevronDown, Eye, EyeOff, Gamepad2, StickyNote, CalendarCheck, Sparkles, Star, Shuffle, UserCheck, AlertCircle, Cake, Loader2, PlusCircle, PlayCircle, CheckCircle2, ArrowRightLeft } from 'lucide-react';
 import JilidChangeModal from '@/components/dashboard/admin/JilidChangeModal';
 import { validatePassword, cn } from '@/lib/utils';
@@ -75,11 +76,7 @@ const EditGuruProfileModal = ({ isOpen, onOpenChange, guruData, onProfileUpdate,
         try {
           const { path, signedUrl } = await uploadAvatar({ ownerType: 'guru', ownerId: formData.id, file });
           const finalUrl = signedUrl || formData.foto_url || '';
-          const { error: profileError } = await supabase
-            .from('guru')
-            .update({ avatar_path: path, foto_url: null })
-            .eq('id', formData.id);
-          if (profileError) throw profileError;
+          await updateGuru(formData.id, { avatar_path: path, foto_url: null });
           setFormData(prev => ({...prev, foto_url: finalUrl, avatar_path: path }));
           toast({ title: "Foto Berhasil Diupload", description: "Foto profil tersimpan di Storage dan tetap tampil setelah refresh." });
           onProfileUpdate();
@@ -89,11 +86,7 @@ const EditGuruProfileModal = ({ isOpen, onOpenChange, guruData, onProfileUpdate,
         setIsUploading(true);
         try {
           await deleteAvatar({ ownerType: 'guru', ownerId: formData.id });
-          const { error: profileError } = await supabase
-            .from('guru')
-            .update({ avatar_path: null, foto_url: null })
-            .eq('id', formData.id);
-          if (profileError) throw profileError;
+          await updateGuru(formData.id, { avatar_path: null, foto_url: null });
           setFormData(prev => ({ ...prev, foto_url: '', avatar_path: null }));
           toast({ title: "Foto Dihapus", description: "Foto profil Anda telah dihapus dari Storage." });
           onProfileUpdate();
@@ -115,9 +108,14 @@ const EditGuruProfileModal = ({ isOpen, onOpenChange, guruData, onProfileUpdate,
             passwordUpdated = await updateUserPassword(password);
         }
         if(!passwordUpdated) { toast({ title: "Gagal Ganti Password", variant: "destructive"}); return; }
-        const { error } = await supabase.from('guru').update(updateData).eq('id', id);
-        if (error) { toast({ title: "Gagal Memperbarui Profil", description: error.message, variant: "destructive"}); }
-        else { toast({ title: "Berhasil!", description: "Profil Anda telah diperbarui."}); onProfileUpdate(); onOpenChange(false); }
+        try {
+            await updateGuru(id, updateData);
+            toast({ title: "Berhasil!", description: "Profil Anda telah diperbarui."});
+            onProfileUpdate();
+            onOpenChange(false);
+        } catch (error) {
+            toast({ title: "Gagal Memperbarui Profil", description: error.message, variant: "destructive"});
+        }
     };
 
     return (
@@ -202,7 +200,7 @@ const GuruDashboard = () => {
   const fetchGuruData = useCallback(async () => {
     if (user?.id) {
         setIsLoading(true);
-        const { data: guru } = await supabase.from('guru').select('*').eq('id', user.id).single();
+        const guru = await fetchGuruDetail(user.id).catch(() => null);
         if(guru) {
             const foto_url = await resolveAvatarUrl({
                 ownerType: 'guru',
@@ -242,10 +240,11 @@ const GuruDashboard = () => {
             if (classList.length > 0) {
                 const classIds = classList.map(c => c.id);
                 // Fetch attendance records specifically for the guru's classes
-                const { data: attendanceRes } = await supabase.from('attendance')
-                    .select('*')
-                    .in('class_id', classIds)
-                    .eq('attendance_date', todayStr);
+                const attendanceRes = await fetchAttendance({
+                    class_ids: classIds,
+                    date: todayStr,
+                    limit: 500,
+                }).catch(() => null);
 
                 if (attendanceRes) {
                     setDailyAttendance(attendanceRes);
@@ -369,10 +368,15 @@ const GuruDashboard = () => {
 
   const confirmJilidChange = async () => {
       if (!jilidChangeData) return;
-      const { santri, currentJilid, nextJilid } = jilidChangeData;
-      const { error: updateError } = await supabase.from('santri').update({ jilid: nextJilid }).eq('id', santri.id);
-      if (updateError) { toast({ title: 'Gagal!', description: updateError.message, variant: 'destructive' }); return; }
-      await supabase.from('jilid_history').insert({ santri_id: santri.id, from_jilid: currentJilid, to_jilid: nextJilid, changed_by: user.id });
+      const { santri, nextJilid } = jilidChangeData;
+      // updateSantriJilid writes santri.jilid and the jilid_history row in one
+      // backend transaction, so the two calls this used to make can't half-apply.
+      try {
+        await updateSantriJilid(santri.id, nextJilid);
+      } catch (error) {
+        toast({ title: 'Gagal!', description: error.message, variant: 'destructive' });
+        return;
+      }
       toast({ title: 'Berhasil!', description: `Jilid santri diubah ke ${nextJilid}.` });
       setMyClasses(prev => prev.map(cls => ({ ...cls, santri: cls.santri.map(s => s.id === santri.id ? {...s, jilid: nextJilid} : s) })));
       setIsJilidModalOpen(false); setJilidChangeData(null);

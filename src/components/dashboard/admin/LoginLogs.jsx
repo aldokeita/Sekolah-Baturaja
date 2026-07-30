@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchLoginLogs, deleteLoginLog } from '@/lib/loginSecurityAdapters';
 import { toast } from '@/components/ui/use-toast';
 import { CheckCircle, XCircle, User, MapPin, Smartphone, Clock, Trash2, LogIn, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,34 +18,14 @@ const LoginLogs = () => {
     const fetchLogs = useCallback(async (reset = false, overridePage) => {
         setLoading(true);
         const targetPage = reset ? 0 : (overridePage ?? page);
-
         try {
-            let query = supabase
-                .from('login_logs')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .range(targetPage * ITEMS_PER_PAGE, (targetPage + 1) * ITEMS_PER_PAGE - 1);
-
-            if (searchTerm) {
-                query = query.or(`username_attempt.ilike.%${searchTerm}%,ip_address.ilike.%${searchTerm}%`);
-            }
-
-            const { data, error } = await query;
-
-            if (error) throw error;
-
+            const data = await fetchLoginLogs({ page: targetPage, pageSize: ITEMS_PER_PAGE, searchTerm });
             setLogs(prev => {
-                if (reset) return data || [];
-                const newItems = (data || []).filter(d => !prev.some(p => p.id === d.id));
-                return [...prev, ...newItems];
+                if (reset) return data;
+                return [...prev, ...data.filter(d => !prev.some(p => p.id === d.id))];
             });
-
-            if (!data || data.length < ITEMS_PER_PAGE) {
-                setHasMore(false);
-            } else {
-                setHasMore(true);
-                if (!reset) setPage(targetPage + 1);
-            }
+            if (data.length < ITEMS_PER_PAGE) setHasMore(false);
+            else { setHasMore(true); if (!reset) setPage(targetPage + 1); }
         } catch (err) {
             toast({ title: 'Gagal memuat log', description: err.message, variant: 'destructive' });
         }
@@ -71,12 +51,12 @@ const LoginLogs = () => {
             title: 'Hapus Log Login',
             description: 'Apakah Anda yakin ingin menghapus catatan log ini? Tindakan ini tidak dapat dibatalkan.',
             onConfirm: async () => {
-                const { error } = await supabase.from('login_logs').delete().eq('id', logId);
-                if (error) {
-                    toast({ title: 'Gagal Hapus Log', description: error.message, variant: 'destructive'});
-                } else {
-                    toast({ title: 'Berhasil', description: 'Log berhasil dihapus.'});
+                try {
+                    await deleteLoginLog(logId);
+                    toast({ title: 'Berhasil', description: 'Log berhasil dihapus.' });
                     setLogs(prev => prev.filter(log => log.id !== logId));
+                } catch (error) {
+                    toast({ title: 'Gagal Hapus Log', description: error.message, variant: 'destructive' });
                 }
             }
         });

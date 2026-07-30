@@ -19,7 +19,7 @@ import CalendarManagement from './admin/CalendarManagement';
 import SalaryCalculation from './admin/SalaryCalculation';
 import BackupRestoreManagement from './admin/BackupRestoreManagement';
 import MMQManagement from './admin/MMQManagement';
-import { supabase } from '@/lib/customSupabaseClient';
+import { fetchSantriCount, fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import { enableBackupRestore, enableGameFeatures } from '@/lib/featureFlags';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -70,17 +70,13 @@ const AdminDashboard = () => {
         const currentMonth = today.getMonth() + 1;
         const currentYear = today.getFullYear();
 
-        const santriQuery = supabase.from('santri').select('*', { count: 'exact', head: true }).in('status', ['Aktif', 'active']);
-        const [santriResult, financeSummary] = await Promise.all([
-          withTimeout(santriQuery, 10000),
+        const [santriCount, financeSummary] = await Promise.all([
+          fetchSantriCount().then(d => d?.total || 0),
           fetchCashflowSummary({ year: currentYear, month: currentMonth })
         ]);
 
-        const { count: santriCount, error: santriErr } = santriResult;
-        if (santriErr) throw new Error(`Santri query failed: ${santriErr.message}`);
-
         setStats({
-          totalSantri: santriCount || 0,
+          totalSantri: santriCount,
           totalPemasukanBulanIni: financeSummary.totalPemasukan,
           totalPengeluaranBulanIni: financeSummary.totalPengeluaran
         });
@@ -103,7 +99,7 @@ const AdminDashboard = () => {
     try {
       switch (category) {
         case 'santri':
-          const { data: fullSantri } = await supabase.from('santri').select('*, class:classes!santri_current_class_id_fkey(nama_kelas, id_guru)').eq('id', item.id).single();
+          const fullSantri = await fetchSantriDetail(item.id).catch(() => null);
           if (fullSantri) {
             setSelectedSantri(await resolveAvatarRecord(fullSantri, { ownerType: 'santri' }));
             setIsSantriModalOpen(true);
@@ -125,7 +121,7 @@ const AdminDashboard = () => {
           break;
         case 'hafalan':
           if (item.santri?.id) {
-             const { data: santriFromHafalan } = await supabase.from('santri').select('*, class:classes!santri_current_class_id_fkey(nama_kelas, id_guru)').eq('id', item.santri.id).single();
+             const santriFromHafalan = await fetchSantriDetail(item.santri.id).catch(() => null);
              if (santriFromHafalan) {
                 setSelectedSantri(await resolveAvatarRecord(santriFromHafalan, { ownerType: 'santri' }));
                 setIsSantriModalOpen(true);
