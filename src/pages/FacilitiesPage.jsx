@@ -147,7 +147,7 @@ const ErrorState = ({ onRetry }) => (
 /*            MAIN COMPONENT                */
 /* ======================================== */
 
-/* ---------- Default Facilities (fallback when Supabase has no data) ---------- */
+/* ---------- Default Facilities (fallback when backend has no data) ---------- */
 const defaultFacilities = OFFICIAL_FACILITIES;
 
 const FacilitiesPage = () => {

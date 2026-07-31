@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchAttendance, fetchCalendarEvents } from '@/lib/attendanceAdapters';
 import { fetchSantriDetail } from '@/lib/dataMasterAdapters';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Percent, Calendar as CalendarIcon, Clock, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';

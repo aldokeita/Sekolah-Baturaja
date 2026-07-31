@@ -11,7 +11,7 @@ import {
   TrendingUp, BarChart2, HeartHandshake, UserCheck, GraduationCap
 } from 'lucide-react';
 import { fetchAttendance } from '@/lib/attendanceAdapters';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

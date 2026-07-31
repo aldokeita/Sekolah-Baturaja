@@ -1,6 +1,6 @@
 
 import React, { lazy, Suspense, useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BarChart3, BookOpen, CheckCircle as CheckCircleFull, Edit, Mic, PlayCircle, Send, Star, Upload, Users, Video } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -49,7 +49,7 @@ const SantriLevelScene = lazy(() => import('@/components/dashboard/santri/Santri
  * SANTRI AUTHENTICATION FLOW:
  *
  * 1. Login Trigger: Santri inputs `nomor_induk_qiroati` or `nama_panggilan` as username, plus their password.
- * 2. Auth Context: LoginPage calls `signInWithUsername(username, password)` from SupabaseAuthContext.jsx.
+ * 2. Auth Context: LoginPage calls `signInWithUsername(username, password)` from AuthContext.jsx.
  * 3. Auth Call: The context POSTs to `/api/auth/login` on the Go backend.
  * 4. Backend Logic (internal/handler/auth.go):
  *    - `resolveUser` checks the `santri` table by nomor_induk_qiroati or nama_panggilan (active only).

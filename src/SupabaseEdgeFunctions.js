@@ -1,2 +1,0 @@
-// Supabase Edge Functions are deprecated in the local storage version.
-// This file is kept empty to avoid build errors if referenced elsewhere by build tools.

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { db } from '@/lib/localDatabase';
 import { OFFICIAL_CTA_BACKGROUND } from '@/lib/institutionContent';
 
 const CallToAction = () => {
@@ -10,18 +9,8 @@ const CallToAction = () => {
     const [opacity, setOpacity] = useState(0.5);
 
     useEffect(() => {
-        const fetchContent = () => {
-            const { data } = db.query('website_content', item => ['ctaBackgroundUrl', 'ctaBackgroundOverlayOpacity'].includes(item.key));
-            const contentMap = data.reduce((acc, item) => {
-                acc[item.key] = item.content;
-                return acc;
-            }, {});
-
-            setBackgroundUrl(contentMap.ctaBackgroundUrl || OFFICIAL_CTA_BACKGROUND);
-            setOpacity(parseFloat(contentMap.ctaBackgroundOverlayOpacity) || 0.5);
-        };
-        fetchContent();
-        // Removed realtime subscription for local version
+        setBackgroundUrl(OFFICIAL_CTA_BACKGROUND);
+        setOpacity(0.5);
     }, []);
 
     return (

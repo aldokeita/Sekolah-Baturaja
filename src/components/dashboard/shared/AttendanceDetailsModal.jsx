@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { motion, AnimatePresence } from 'framer-motion';
 import { buildJakartaTimestamp, formatTimestamp, determineAttendanceStatus, calculateTimeDifference } from '@/utils/AttendanceStatusLogic';
 import AttendanceStatusIcon from './AttendanceStatusIcon';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { updateAttendance, createAttendance, markAttendanceAbsent } from '@/lib/attendanceAdapters';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';

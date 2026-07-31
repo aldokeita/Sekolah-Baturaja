@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Helmet } from 'react-helmet';
 import useWindowSize from '@/hooks/useWindowSize';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { doaHarian, bacaanShalat, suratPendek } from '@/data/islamicContent';
 import { useTheme } from '@/contexts/ThemeContext';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';

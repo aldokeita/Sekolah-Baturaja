@@ -11,7 +11,7 @@ import { fetchAttendance } from '@/lib/attendanceAdapters';
 import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
 import { useDrag, useDrop } from 'react-dnd';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import SantriDetailModal from '../shared/SantriDetailModal';
 import JilidChangeModal from './JilidChangeModal';
@@ -444,7 +444,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         const filteredSantri = resolvedSantriData.map(s => {
           const legacy = mapSantriForLegacyUi(s);
           // santri.current_class_id is the authoritative placement column, so the
-          // class_memberships fallback the Supabase version needed is gone.
+          // class_memberships fallback no longer needed — current_class_id is authoritative.
           const classId = s.current_class_id || legacy.id_kelas || null;
           return {
             ...legacy,
@@ -497,7 +497,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
       try {
           const arrayConfig = newLocalSessions.map(s => ({ name: s.name, time: s.time }));
           // saveWebsiteContentItem upserts on key, so the read-then-insert-or-update
-          // dance the Supabase client needed is gone.
+          // read-then-upsert pattern the old client needed is gone.
           await saveWebsiteContentItem(configKey, arrayConfig);
 
           const newSessionTimes = {};

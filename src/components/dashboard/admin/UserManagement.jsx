@@ -5,7 +5,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Edit, Trash2, Search, Key } from 'lucide-react';
 import { fetchGuruList, fetchSantriList, updateGuru, updateSantri } from '@/lib/dataMasterAdapters';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const UserManagement = () => {
   const { user: authUser } = useAuth();

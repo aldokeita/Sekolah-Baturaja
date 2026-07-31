@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import apiClient from '@/lib/apiClient';
 import { Database, Download, Upload, FileJson, FileSpreadsheet, FileText, AlertTriangle, CheckCircle, Loader2, Save, Lock, Eye, EyeOff } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -191,7 +191,7 @@ const BackupRestoreManagement = () => {
 
     // Restore needs a generic "upsert arbitrary rows into arbitrary table"
     // capability. The Go API has none, so this fails loudly instead of throwing
-    // ReferenceError on the deleted Supabase client.
+    // ponytail: backup runs client-side via Go API; no server-side dump endpoint yet.
     //
     // The previous implementation carried real production hardening (missing-column
     // pruning, FK repair, chunk bisection on constraint violations). That logic is

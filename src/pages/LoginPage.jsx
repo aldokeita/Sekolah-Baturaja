@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { LOGIN_SECURITY_CONSENT_KEY, recordLoginAttempt } from '@/lib/loginSecurityAdapters';
@@ -53,8 +53,8 @@ const mapErrorMessage = (error) => {
   if (!error) return null;
   const msg = error.message?.toLowerCase() || '';
 
-  if (msg.includes('supabase belum dikonfigurasi')) {
-    return error.message;
+  if (msg.includes('server tidak dapat dihubungi') || msg.includes('failed to fetch')) {
+    return 'Server tidak dapat dihubungi. Periksa koneksi internet Anda.';
   }
   if (msg.includes('fetch') || msg.includes('network')) {
     return 'Koneksi ke server gagal. Periksa koneksi internet Anda.';

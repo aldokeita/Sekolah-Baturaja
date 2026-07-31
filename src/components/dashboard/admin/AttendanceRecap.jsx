@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import AttendanceStatusIcon from '../shared/AttendanceStatusIcon';
 import AttendanceDetailsModal from '../shared/AttendanceDetailsModal';
 import { DEFAULT_SESSION_TIMES, buildSessionStartTimestamp, resolveAttendanceRecordStatus, calculateTimeDifference } from '@/utils/AttendanceStatusLogic';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { resolveAvatarRecords } from '@/lib/storageAdapters';
 import DataPagination from '@/components/dashboard/shared/DataPagination';
 import { getAllSessions, getSessionNumber } from '@/utils/sessionMapping';

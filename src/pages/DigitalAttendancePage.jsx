@@ -296,7 +296,7 @@ const DigitalAttendancePage = () => {
       fetchConfig();
 
       // The kiosk stays open all day, so poll instead of the realtime channel
-      // Supabase used to provide. A minute of staleness on level styling is fine.
+      // The old realtime channel A minute of staleness on level styling is fine.
       const pollId = setInterval(fetchConfig, 60_000);
       return () => {
         cancelled = true;

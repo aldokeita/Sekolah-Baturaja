@@ -9,7 +9,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Save, Trash2, CalendarOff, CalendarCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { deleteCalendarEvent, fetchCalendarEvents, getAcademicErrorMessage, saveCalendarEvent } from '@/lib/academicAdapters';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const months = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',

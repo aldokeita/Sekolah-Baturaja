@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider, useAuth } from '@/contexts/SupabaseAuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -50,7 +50,7 @@ const RouteLogger = () => {
 
 /* ------------------------------------------------------------------ */
 /* Dynamic logo crossfade helper                                      */
-/* Shows the official local logo first, then crossfades to a Supabase logo. */
+/* Shows the official local logo first, then crossfades to the remote logo. */
 /* ------------------------------------------------------------------ */
 const DynamicLogo = ({ className = '', width = 48, height = 48 }) => {
   const [dynamicUrl, setDynamicUrl] = useState(null);
@@ -104,7 +104,7 @@ const DeferredFeaturePage = () => (
     <div className="max-w-md text-center space-y-3">
       <h1 className="text-2xl font-bold text-foreground">Fitur belum diaktifkan</h1>
       <p className="text-muted-foreground">
-        Fitur ini akan diaktifkan setelah Supabase baru dan Edge Function tersedia.
+        Fitur ini belum tersedia.
       </p>
     </div>
   </div>

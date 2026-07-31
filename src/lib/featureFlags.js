@@ -9,4 +9,4 @@ export const enableBackupRestore = import.meta.env.VITE_ENABLE_BACKUP_RESTORE !=
 export const enableGameFeatures = import.meta.env.VITE_ENABLE_GAME_FEATURES !== 'false';
 
 export const edgeFunctionDisabledMessage =
-  'Fitur ini akan diaktifkan setelah Supabase baru dan Edge Function tersedia.';
+  'Fitur ini belum tersedia.';
