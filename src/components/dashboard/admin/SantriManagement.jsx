@@ -16,7 +16,6 @@ import { validatePassword } from '@/lib/utils';
 import { Badge } from "@/components/ui/badge";
 import BirthdayNotificationModal from '@/components/dashboard/shared/BirthdayNotificationModal';
 import { motion } from 'framer-motion';
-import { getSessionName, getSessionNumber, getAllSessions } from '@/utils/sessionMapping';
 import {
   changeSantriCategory,
   createSantri,
@@ -39,32 +38,19 @@ import DataPagination from '@/components/dashboard/shared/DataPagination';
 
 const PAGE_SIZE = 10;
 
-const jilidOptions = [
-    'Pra TK A', 'Pra TK B', 'Pra TK C',
-    'Jilid 1A', 'Jilid 1B', 'Jilid 1C',
-    'Jilid 2A', 'Jilid 2B',
-    'Jilid 3A', 'Jilid 3B',
-    'Jilid 4A', 'Jilid 4B',
-    'Jilid 5A', 'Jilid 5B',
-    'Jilid Juz 27',
-    'Jilid 6A', 'Jilid 6B',
-    'Al-Qur\'an', 'Ghorib Tajwid', 'Finishing'
-];
-
-const ptptTargetOptions = ['Juz 1', 'Juz 2', 'Juz 28', 'Juz 29', 'Juz 30'];
 
 const getSelectedClassId = (input) => input?.current_class_id || input?.id_kelas || null;
 
 const BULK_IMPORT_COLUMNS = [
   'Nama Lengkap',
   'Nama Panggilan',
-  'Jilid',
+  'NISN',
   'Tempat Lahir',
   'Tgl Lahir',
   'Jenis Kelamin',
   'Alamat',
-  'Sesi',
-  'Tgl Masuk',
+  'NIS',
+  'Angkatan',
   'Nama Ibu',
   'Nama Ayah',
   'No HP Ortu',
@@ -323,18 +309,18 @@ const UploadReportModal = ({ isOpen, onClose, report, onConfirm }) => {
                         <thead className="bg-slate-100 border-b">
                             <tr>
                                 <th className="p-2">Nama Lengkap</th>
-                                <th className="p-2">Jilid</th>
+                                <th className="p-2">NISN</th>
                                 <th className="p-2">Jenis Kelamin</th>
-                                <th className="p-2">Sesi</th>
+                                <th className="p-2">Angkatan</th>
                             </tr>
                         </thead>
                         <tbody>
                             {report.validData.slice(0, 5).map((d, i) => (
                                 <tr key={i} className="border-b last:border-0">
                                     <td className="p-2">{d.nama_lengkap}</td>
-                                    <td className="p-2">{d.jilid}</td>
+                                    <td className="p-2">{d.nisn}</td>
                                     <td className="p-2">{d.jenis_kelamin}</td>
-                                    <td className="p-2">{getSessionName(d.sesi_mengaji)}</td>
+                                    <td className="p-2">{d.angkatan}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -354,8 +340,7 @@ const UploadReportModal = ({ isOpen, onClose, report, onConfirm }) => {
   );
 };
 
-const SantriManagement = ({ subCategory = 'tpq' }) => {
-  const academicLevelOptions = subCategory === 'ptpt' ? ptptTargetOptions : jilidOptions;
+const SantriManagement = () => {
   const { user } = useAuth();
   const [santriList, setSantriList] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -408,7 +393,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
     dataRows.forEach((row, idx) => {
         if (!row || row.length === 0 || row.every(c => !c)) return;
 
-        const santri = { kategori: subCategory === 'ptpt' ? 'PTPT' : 'Anak', status: 'Aktif', points: 0 };
+        const santri = { kategori: 'Anak', status: 'Aktif', points: 0 };
         const rowName = row[0] || 'Baris Tidak Bernama';
 
         try {
@@ -419,8 +404,8 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
             // 2. Nama Panggilan
             santri.nama_panggilan = row[1] || santri.nama_lengkap.split(' ')[0];
 
-            // 3. Jilid
-            santri.jilid = row[2] || 'Pra TK A';
+            // 3. NISN
+            santri.nisn = row[2] ? String(row[2]).trim() : null;
 
             // 4. Tempat Lahir
             santri.tempat_lahir = row[3];
@@ -444,17 +429,11 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
             // 7. Alamat
             santri.alamat = row[6];
 
-            // 8. Sesi
-            santri.sesi_mengaji = row[7] ? getSessionNumber(row[7]) : getSessionNumber('Pagi');
+            // 8. NIS
+            santri.nis = row[7] ? String(row[7]).trim() : null;
 
-            // 9. Tgl Masuk (MM-DD-YYYY)
-            if (row[8]) {
-                const parsedEntryDate = parseDateInput(row[8]);
-                if (!parsedEntryDate) throw new Error(`Format Tgl Masuk tidak valid: "${row[8]}". Gunakan format MM-DD-YYYY`);
-                santri.tanggal_pendaftaran = parsedEntryDate;
-            } else {
-                santri.tanggal_pendaftaran = new Date().toISOString().split('T')[0];
-            }
+            // 9. Angkatan (2024/2025)
+            santri.angkatan = row[8] ? String(row[8]).trim() : null;
 
             // 10. Nama Ibu
             santri.nama_ibu = row[9];
@@ -493,9 +472,9 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
   };
 
   const [classesList, setClassesList] = useState([]);
-  const [sessionOptions, setSessionOptions] = useState([]);
 
-  const [filters, setFilters] = useState({ search: '', sesi: 'all', jilid: 'all', rfid: 'all' });
+
+  const [filters, setFilters] = useState({ search: '', rfid: 'all' });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [uploadReport, setUploadReport] = useState(null);
@@ -515,10 +494,10 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
   const [totalSantri, setTotalSantri] = useState(0);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [formData, setFormData] = useState({
-    nama_lengkap: '', nama_panggilan: '', nomor_induk_qiroati: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '', tanggal_pendaftaran: '',
+    nama_lengkap: '', nama_panggilan: '', nomor_induk_qiroati: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
     nama_ayah: '', nama_ibu: '', pekerjaan_ayah: '', pekerjaan_ibu: '', alamat_ortu: '',
-    no_hp_ortu: '', alamat: '', status: 'Aktif', foto_url: '', password: '', sesi_mengaji: '', rfid_tag: '',
-    jilid: subCategory === 'ptpt' ? 'Juz 30' : 'Pra TK A', no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false, link_qiroati: '', default_spp_amount: '', id_kelas: null, points: 0, kategori: subCategory === 'ptpt' ? 'PTPT' : 'Anak'
+    no_hp_ortu: '', alamat: '', status: 'Aktif', foto_url: '', password: '', rfid_tag: '',
+    no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false, link_qiroati: '', default_spp_amount: '', id_kelas: null, points: 0, kategori: 'Anak'
   });
 
   useEffect(() => {
@@ -533,21 +512,16 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
   useEffect(() => {
     setCurrentPage(1);
     setSelectedSantri(new Set());
-  }, [subCategory, filters.sesi, filters.jilid, filters.rfid, debouncedSearch, sortConfig]);
+  }, [filters.rfid, debouncedSearch, sortConfig]);
 
-  const loadData = useCallback(async (currentTab = subCategory) => {
+  const loadData = useCallback(async () => {
     setIsLoadingData(true);
     setFetchError(null);
     try {
       const santriFilters = {
-        kategoriIn: currentTab === 'ptpt' ? ['PTPT'] : ['Anak', 'TPQ'],
         activeOnly: true,
         notDeleted: true,
         search: debouncedSearch.replace(/[%_,().]/g, ' ').trim() || undefined,
-        sesi: filters.sesi !== 'all'
-          ? [String(getSessionNumber(filters.sesi)), filters.sesi]
-          : undefined,
-        jilid: filters.jilid !== 'all' ? filters.jilid : undefined,
         rfid: filters.rfid !== 'all' ? filters.rfid : undefined,
         sort: sortConfig.key,
         sortDir: sortConfig.direction === 'ascending' ? 'asc' : 'desc',
@@ -588,12 +562,9 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
       })));
       setBirthdayStudents(resolvedBirthdays);
 
-      const tpqClasses = (classes || []).filter(c => !c.kategori || c.kategori.toLowerCase() === 'anak' || c.kategori.toLowerCase() === 'ptpt');
-      setClassesList(tpqClasses);
+      setClassesList(classes || []);
 
-      const mappedSessions = getAllSessions().map(s => s.name);
-      setSessionOptions(mappedSessions);
-      setFormData(prev => editingSantri ? prev : ({...prev, sesi_mengaji: mappedSessions[0] || ''}));
+
 
     } catch (err) {
       console.error('Unexpected error during loadData:', err);
@@ -602,11 +573,11 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
     } finally {
       setIsLoadingData(false);
     }
-  }, [currentPage, debouncedSearch, filters.jilid, filters.rfid, filters.sesi, sortConfig, subCategory]);
+  }, [currentPage, debouncedSearch, filters.rfid, sortConfig]);
 
   useEffect(() => {
-    loadData(subCategory);
-  }, [loadData, subCategory]);
+    loadData();
+  }, [loadData]);
 
   const classGuruMap = useMemo(() => {
     return classesList.reduce((acc, cls) => {
@@ -627,30 +598,25 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
   const handleDownloadData = async () => {
     try {
       const data = await fetchSantriList({
-        kategoriIn: subCategory === 'ptpt' ? ['PTPT'] : ['Anak', 'TPQ'],
         activeOnly: true,
         notDeleted: true,
         search: filters.search.replace(/[%_,().]/g, ' ').trim() || undefined,
-        sesi: filters.sesi !== 'all'
-          ? [String(getSessionNumber(filters.sesi)), filters.sesi]
-          : undefined,
-        jilid: filters.jilid !== 'all' ? filters.jilid : undefined,
         rfid: filters.rfid !== 'all' ? filters.rfid : undefined,
         order: 'nama',
         limit: 200,
       });
 
       const dataToExport = (data || []).map(s => ({
-          'Nama Lengkap': s.nama_lengkap, 'Nama Panggilan': s.nama_panggilan, 'Jilid': s.jilid, 'Tempat Lahir': s.tempat_lahir,
-          'Tanggal Lahir': s.tanggal_lahir, 'Jenis Kelamin': s.jenis_kelamin, 'Alamat': s.alamat, 'Sesi': getSessionName(s.sesi_mengaji),
-          'Tanggal Masuk': s.tanggal_pendaftaran, 'Nama Ibu': s.nama_ibu, 'Nama Ayah': s.nama_ayah, 'No. HP Wali': s.no_hp_ortu,
+          'Nama Lengkap': s.nama_lengkap, 'Nama Panggilan': s.nama_panggilan, 'NISN': s.nisn, 'NIS': s.nis, 'Tempat Lahir': s.tempat_lahir,
+          'Tanggal Lahir': s.tanggal_lahir, 'Jenis Kelamin': s.jenis_kelamin, 'Alamat': s.alamat, 'Angkatan': s.angkatan,
+          'Nama Ibu': s.nama_ibu, 'Nama Ayah': s.nama_ayah, 'No. HP Wali': s.no_hp_ortu,
           'Pekerjaan Ayah': s.pekerjaan_ayah, 'Pekerjaan Ibu': s.pekerjaan_ibu, 'Alamat Orang Tua': s.alamat_ortu || s.alamat,
-          'No. KK': s.no_kk, 'No. NIK': s.no_nik, 'No. Induk Qiroati': s.nomor_induk_qiroati, 'Status': s.status, 'RFID': s.rfid_tag, 'Kategori': s.kategori
+          'No. KK': s.no_kk, 'No. NIK': s.no_nik, 'Status': s.status, 'RFID': s.rfid_tag
       }));
       const worksheet = XLSX.utils.json_to_sheet(dataToExport);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, `Data Murid ${subCategory.toUpperCase()}`);
-      XLSX.writeFile(workbook, `Data_Santri_${subCategory.toUpperCase()}.xlsx`);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Data Murid');
+      XLSX.writeFile(workbook, 'Data_Murid.xlsx');
     } catch (error) {
       toast({ title: 'Export gagal', description: error.message || 'Data murid tidak dapat diekspor.', variant: 'destructive' });
     }
@@ -701,24 +667,29 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const finalFormData = { ...formData, kategori: subCategory === 'ptpt' ? 'PTPT' : 'Anak' };
+    const finalFormData = { ...formData, kategori: 'Anak' };
     finalFormData.nomor_induk_qiroati = normalizeNomorIndukQiroati(finalFormData.nomor_induk_qiroati);
-
-    // Ensure we save the numeric equivalent for sesi to match backend constraints
-    if (finalFormData.sesi_mengaji) {
-        finalFormData.sesi_mengaji = getSessionNumber(finalFormData.sesi_mengaji);
-    }
 
     const requiredFields = [
       ['nama_lengkap', 'Nama lengkap'],
       ['tanggal_lahir', 'Tanggal lahir'],
       ['jenis_kelamin', 'Jenis kelamin'],
-      ['jilid', subCategory === 'ptpt' ? 'Target tahfizh' : 'Jilid'],
-      ['sesi_mengaji', 'Sesi'],
     ];
     const missingField = requiredFields.find(([field]) => !String(finalFormData[field] ?? '').trim());
     if (missingField) {
         toast({ title: "Gagal", description: `${missingField[1]} wajib diisi.`, variant: "destructive"});
+        return;
+    }
+
+    const nisn = String(finalFormData.nisn ?? '').trim();
+    if (nisn && !/^\d{10}$/.test(nisn)) {
+        toast({ title: "NISN Tidak Valid", description: "NISN harus 10 digit angka.", variant: "destructive" });
+        return;
+    }
+
+    const angkatan = String(finalFormData.angkatan ?? '').trim();
+    if (angkatan && !/^\d{4}\/\d{4}$/.test(angkatan)) {
+        toast({ title: "Angkatan Tidak Valid", description: "Angkatan harus berformat 2024/2025.", variant: "destructive" });
         return;
     }
 
@@ -801,7 +772,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
           ? "Data murid tersimpan dan dipindahkan ke arsip."
           : (editingSantri ? "Data murid berhasil diperbarui" : "Murid baru berhasil ditambahkan"),
       });
-      await loadData(subCategory);
+      await loadData();
       window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
       setIsFormOpen(false);
       resetForm();
@@ -812,7 +783,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
 
   const handleEdit = (santri) => {
     setEditingSantri(santri);
-    setFormData({...santri, points: santri.points || 0, sesi_mengaji: getSessionName(santri.sesi_mengaji)});
+    setFormData({...santri, points: santri.points || 0});
     setIsFormOpen(true);
   };
 
@@ -827,7 +798,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
       onConfirm: async () => {
         try {
           await archiveSantriAccounts(idsToDelete, 'Dipindahkan ke arsip dari Data Murid');
-          await loadData(subCategory);
+          await loadData();
           window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
           setSelectedSantri(new Set());
           toast({ title: "Masuk arsip", description: "Murid terpilih telah diarsipkan tanpa menghapus riwayatnya." });
@@ -850,7 +821,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
 
         try {
           await archiveSantriAccounts(idsToUpdate, 'Dinonaktifkan dari Data Murid');
-          await loadData(subCategory);
+          await loadData();
           window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
           setSelectedSantri(new Set());
           toast({ title: "Murid dinonaktifkan", description: "Data dipindahkan ke arsip dan dapat dipulihkan kapan saja." });
@@ -871,74 +842,6 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
       });
   };
 
-  const handleMigration = async (targetCategory) => {
-      if (!editingSantri) return;
-      const targetLabel = getMigrationLabel(targetCategory);
-
-      setConfirmDialog({
-          isOpen: true,
-          title: `Migrasi ke ${targetLabel}`,
-          description: `Yakin ingin memindahkan ${editingSantri.nama_lengkap} ke kategori ${targetLabel}? Murid akan dikeluarkan dari kelas saat ini.`,
-          onConfirm: async () => {
-              try {
-                  const result = await migrateSantriCategory(
-                      editingSantri.id,
-                      targetCategory,
-                      `Migrasi ke ${targetLabel} melalui Edit Data Murid`,
-                  );
-                  toast({ title: 'Migrasi berhasil', description: result?.message || `${editingSantri.nama_lengkap} dipindahkan ke kategori ${targetLabel}.` });
-                  setIsFormOpen(false);
-                  setEditingSantri(null);
-                  await loadData(subCategory);
-              } catch (error) {
-                  toast({ title: 'Migrasi gagal', description: error.message, variant: 'destructive' });
-              }
-          }
-      });
-  };
-
-  const handleBulkMigration = (targetCategory) => {
-      if (selectedSantri.size === 0) return;
-      const targetLabel = getMigrationLabel(targetCategory);
-      const selectedIds = Array.from(selectedSantri);
-
-      setConfirmDialog({
-          isOpen: true,
-          title: `Migrasi ${selectedIds.length} Murid ke ${targetLabel}`,
-          description: `Kelas aktif seluruh murid terpilih akan dilepas sebelum dipindahkan ke kategori ${targetLabel}.`,
-          onConfirm: async () => {
-              let migrated = 0;
-              const failures = [];
-
-              for (const santriId of selectedIds) {
-                  try {
-                      await migrateSantriCategory(
-                          santriId,
-                          targetCategory,
-                          `Migrasi massal ke ${targetLabel} dari tabel Data Murid`,
-                      );
-                      migrated += 1;
-                  } catch (error) {
-                      failures.push(error?.message || 'Migrasi gagal');
-                  }
-              }
-
-              await loadData(subCategory);
-              setSelectedSantri(new Set());
-              window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
-
-              if (failures.length > 0) {
-                  toast({
-                      title: 'Migrasi selesai sebagian',
-                      description: `${migrated} berhasil, ${failures.length} gagal. ${failures[0]}`,
-                      variant: 'destructive',
-                  });
-              } else {
-                  toast({ title: 'Migrasi berhasil', description: `${migrated} murid dipindahkan ke kategori ${targetLabel}.` });
-              }
-          },
-      });
-  };
 
   const toggleSelect = (id) => {
     const newSelection = new Set(selectedSantri);
@@ -954,10 +857,10 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
 
   const resetForm = () => {
     setFormData({
-      nama_lengkap: '', nama_panggilan: '', nomor_induk_qiroati: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '', tanggal_pendaftaran: '',
+      nama_lengkap: '', nama_panggilan: '', nomor_induk_qiroati: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
       nama_ayah: '', nama_ibu: '', pekerjaan_ayah: '', pekerjaan_ibu: '', alamat_ortu: '',
-      no_hp_ortu: '', alamat: '', status: 'Aktif', foto_url: '', password: '', sesi_mengaji: sessionOptions[0] || 'Pagi', rfid_tag: '',
-      jilid: subCategory === 'ptpt' ? 'Juz 30' : 'Pra TK A', no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false, link_qiroati: '', id_kelas: null, points: 0, kategori: subCategory === 'ptpt' ? 'PTPT' : 'Anak'
+      no_hp_ortu: '', alamat: '', status: 'Aktif', foto_url: '', password: '', rfid_tag: '',
+      no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false, link_qiroati: '', id_kelas: null, points: 0, kategori: 'Anak'
     });
     setEditingSantri(null);
   };
@@ -1006,8 +909,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
 
   const sortedAndFilteredSantri = useMemo(() => {
     let sortableItems = [...santriList];
-    if (filters.sesi !== 'all') sortableItems = sortableItems.filter(s => getSessionName(s.sesi_mengaji) === filters.sesi);
-    if (filters.jilid !== 'all') sortableItems = sortableItems.filter(s => s.jilid === filters.jilid);
+
     if (filters.rfid !== 'all') {
         sortableItems = sortableItems.filter(s => filters.rfid === 'assigned' ? !!s.rfid_tag : !s.rfid_tag);
     }
@@ -1044,8 +946,8 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
                 <Users />
              </div>
              <div className="admin-panel-header-text">
-                <h2>Manajemen Murid ({subCategory.toUpperCase()})</h2>
-                <p>Kelola data santri, {subCategory === 'ptpt' ? 'target tahfizh' : 'jilid'}, dan status aktif.</p>
+                <h2>Manajemen Murid</h2>
+                <p>Kelola data murid, kelas, dan status aktif.</p>
              </div>
           </div>
 
@@ -1068,19 +970,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
 
             {selectedSantri.size > 0 && (
                 <div className="admin-bulk-bar">
-                    {subCategory === 'ptpt' && (
-                        <button onClick={() => handleBulkMigration('Anak')} className="admin-bulk-btn">
-                            <ArrowRightLeft className="w-3.5 h-3.5"/> Ke TPQ
-                        </button>
-                    )}
-                    {subCategory !== 'ptpt' && (
-                        <button onClick={() => handleBulkMigration('PTPT')} className="admin-bulk-btn">
-                            <ArrowRightLeft className="w-3.5 h-3.5"/> Ke PTPT
-                        </button>
-                    )}
-                    <button onClick={() => handleBulkMigration('Dewasa')} className="admin-bulk-btn">
-                        <ArrowRightLeft className="w-3.5 h-3.5"/> Ke Dewasa
-                    </button>
+
                     <button onClick={() => handleBulkStatusChange('Nonaktif')} className="admin-bulk-btn admin-bulk-btn--deactivate">
                         <XCircle className="w-3.5 h-3.5"/> Non-Aktif
                     </button>
@@ -1113,14 +1003,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
                 />
             </div>
             <div className="admin-filter-selects">
-                <Select value={filters.sesi} onValueChange={val => setFilters(f => ({...f, sesi: val}))}>
-                    <SelectTrigger><SelectValue placeholder="Sesi" /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">Semua Sesi</SelectItem>{sessionOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={filters.jilid} onValueChange={val => setFilters(f => ({...f, jilid: val}))}>
-                    <SelectTrigger><SelectValue placeholder={subCategory === 'ptpt' ? 'Target Tahfizh' : 'Jilid'} /></SelectTrigger>
-                    <SelectContent><SelectItem value="all">Semua {subCategory === 'ptpt' ? 'Target' : 'Jilid'}</SelectItem>{academicLevelOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent>
-                </Select>
+
                 <Select value={filters.rfid} onValueChange={val => setFilters(f => ({...f, rfid: val}))}>
                     <SelectTrigger><SelectValue placeholder="RFID" /></SelectTrigger>
                     <SelectContent><SelectItem value="all">Semua RFID</SelectItem><SelectItem value="assigned">Ada RFID</SelectItem><SelectItem value="unassigned">Tanpa RFID</SelectItem></SelectContent>
@@ -1131,7 +1014,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
       {fetchError && (
         <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl mb-4 flex items-center justify-between">
           <p className="font-medium">Gagal memuat data murid: <span className="font-normal">{fetchError}</span></p>
-          <Button variant="outline" size="sm" onClick={() => loadData(subCategory)}>Coba Lagi</Button>
+          <Button variant="outline" size="sm" onClick={() => loadData()}>Coba Lagi</Button>
         </div>
       )}
 
@@ -1149,11 +1032,10 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
               <th className="p-3 w-10"><Checkbox onCheckedChange={toggleSelectAll} checked={sortedAndFilteredSantri.length > 0 && selectedSantri.size === sortedAndFilteredSantri.length} /></th>
               <th className="p-3 text-left w-12 text-xs font-semibold text-muted-foreground uppercase tracking-wider">No.</th>
               <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('nama_lengkap')}><div className="flex items-center">Nama <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
-              <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('tanggal_pendaftaran')}><div className="flex items-center">Tgl Masuk <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
+              <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('nisn')}><div className="flex items-center">NISN <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
               <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('jenis_kelamin')}><div className="flex items-center">L/P <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
               <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('guru_pengampu')}><div className="flex items-center">Guru Pengampu <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
-              <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('jilid')}><div className="flex items-center">{subCategory === 'ptpt' ? 'Target' : 'Jilid'} <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
-              <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('sesi_mengaji')}><div className="flex items-center">Sesi <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
+              <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('angkatan')}><div className="flex items-center">Angkatan <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
               <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Berkas</th>
               <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aksi</th>
             </tr>
@@ -1193,11 +1075,10 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
                         </div>
                     </div>
                 </td>
-                <td className="p-3 text-sm text-muted-foreground">{new Date(santri.tanggal_pendaftaran).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: '2-digit'})}</td>
+                <td className="p-3 text-sm font-mono text-muted-foreground">{santri.nisn || '-'}</td>
                 <td className="p-3"><Badge variant="outline" className={santri.jenis_kelamin === 'Laki-laki' ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-pink-50 text-pink-700 border-pink-200"}>{santri.jenis_kelamin === 'Laki-laki' ? 'L' : 'P'}</Badge></td>
                 <td className="p-3 text-sm font-medium text-foreground">{classGuruMap[santri.current_class_id || santri.id_kelas] || <span className="text-muted-foreground italic text-xs">Belum ada</span>}</td>
-                <td className="p-3"><Badge variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200">{santri.jilid}</Badge></td>
-                <td className="p-3"><span className="text-xs font-medium px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">{getSessionName(santri.sesi_mengaji)}</span></td>
+                <td className="p-3"><Badge variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200">{santri.angkatan || '-'}</Badge></td>
                 <td className="p-3"><div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-900 border"><FileCheck className={`w-4 h-4 ${santri.berkas_foto && santri.berkas_akta && santri.berkas_kk && santri.berkas_form ? 'text-green-500' : 'text-slate-300'}`} /></div></td>
                 <td className="p-3"><Button onClick={() => handleEdit(santri)} size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 rounded-full"><Edit className="w-4 h-4" /></Button></td>
               </tr>
@@ -1225,7 +1106,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader><DialogTitle>{editingSantri ? `Edit Data Murid ${subCategory.toUpperCase()}` : `Tambah Murid ${subCategory.toUpperCase()} Baru`}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingSantri ? 'Edit Data Murid' : 'Tambah Murid Baru'}</DialogTitle></DialogHeader>
 
           <form onSubmit={handleSubmit} className="admin-edit-shell">
             <div className="admin-edit-body">
@@ -1258,7 +1139,9 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
                         <div className="admin-edit-field"><label>Jenis Kelamin</label><Select value={formData.jenis_kelamin} onValueChange={val => setFormData({ ...formData, jenis_kelamin: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Laki-laki">Laki-laki</SelectItem><SelectItem value="Perempuan">Perempuan</SelectItem></SelectContent></Select></div>
                         <div className="admin-edit-field"><label>Tempat Lahir</label><Input type="text" value={formData.tempat_lahir || ''} onChange={(e) => setFormData({ ...formData, tempat_lahir: e.target.value })} /></div>
                         <div className="admin-edit-field"><label>Tanggal Lahir</label><Input type="date" value={formData.tanggal_lahir || ''} onChange={(e) => setFormData({ ...formData, tanggal_lahir: e.target.value })} required /></div>
-                        <div className="admin-edit-field"><label>Tanggal Masuk</label><Input type="date" value={formData.tanggal_pendaftaran || ''} onChange={(e) => setFormData({ ...formData, tanggal_pendaftaran: e.target.value })} /></div>
+                        <div className="admin-edit-field"><label>Angkatan</label><Input type="text" placeholder="2024/2025" value={formData.angkatan || ''} onChange={(e) => setFormData({ ...formData, angkatan: e.target.value })} /></div>
+                        <div className="admin-edit-field"><label>NISN</label><Input type="text" inputMode="numeric" maxLength={10} placeholder="10 digit" value={formData.nisn || ''} onChange={(e) => setFormData({ ...formData, nisn: e.target.value })} /></div>
+                        <div className="admin-edit-field"><label>NIS</label><Input type="text" value={formData.nis || ''} onChange={(e) => setFormData({ ...formData, nis: e.target.value })} /></div>
                     </div>
                 </div>
 
@@ -1285,8 +1168,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
                         <div className="admin-edit-field"><label>No. Induk Qiroati</label><Input type="text" value={formData.nomor_induk_qiroati || ''} onChange={handleQiroatiIdChange} required={!editingSantri} /></div>
                         <div className="admin-edit-field"><label>RFID Tag</label><Input type="text" value={formData.rfid_tag || ''} onChange={(e) => setFormData({ ...formData, rfid_tag: e.target.value })} /></div>
                         <div className="admin-edit-field"><label>Status</label><Select value={formData.status} onValueChange={val => setFormData({ ...formData, status: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Aktif">Aktif</SelectItem><SelectItem value="Nonaktif">Non-Aktif</SelectItem></SelectContent></Select></div>
-                        <div className="admin-edit-field"><label>Sesi Mengaji</label><Select value={formData.sesi_mengaji} onValueChange={val => setFormData({ ...formData, sesi_mengaji: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{sessionOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-                        <div className="admin-edit-field"><label>{subCategory === 'ptpt' ? 'Target Tahfizh' : 'Jilid'}</label><Select value={formData.jilid} onValueChange={val => setFormData({ ...formData, jilid: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{academicLevelOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select></div>
+
                         <div className="admin-edit-field"><label>Kelas Aktif <span className="normal-case text-[10px]" style={{ color: 'hsl(var(--admin-text-muted))' }}>(untuk Absensi)</span></label><Select value={getSelectedClassId(formData) || undefined} onValueChange={val => setFormData({ ...formData, current_class_id: val, id_kelas: val })}><SelectTrigger><SelectValue placeholder="Pilih kelas aktif" /></SelectTrigger><SelectContent>{classesList.map(cls => <SelectItem key={cls.id} value={cls.id}>{cls.nama_kelas}{cls.guru?.nama ? ` - ${cls.guru.nama}` : ''}</SelectItem>)}</SelectContent></Select></div>
                         <div className="admin-edit-field"><label>Link Qiroati</label><Input type="text" value={formData.link_qiroati || ''} onChange={(e) => setFormData({ ...formData, link_qiroati: e.target.value })} /></div>
                         <div className="admin-edit-field">
@@ -1323,22 +1205,7 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
             </div>
 
             <div className="admin-edit-footer">
-                {editingSantri && (
-                    <div className="flex flex-wrap gap-2">
-                        {subCategory === 'ptpt' ? (
-                            <Button type="button" variant="outline" className="border-cyan-200 text-cyan-700 hover:bg-cyan-50 hover:text-cyan-800" onClick={() => handleMigration('Anak')}>
-                                <ArrowRightLeft className="w-4 h-4 mr-2"/> Migrasi ke TPQ
-                            </Button>
-                        ) : (
-                            <Button type="button" variant="outline" className="border-cyan-200 text-cyan-700 hover:bg-cyan-50 hover:text-cyan-800" onClick={() => handleMigration('PTPT')}>
-                                <ArrowRightLeft className="w-4 h-4 mr-2"/> Migrasi ke PTPT
-                            </Button>
-                        )}
-                        <Button type="button" variant="outline" className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200" onClick={() => handleMigration('Dewasa')}>
-                            <ArrowRightLeft className="w-4 h-4 mr-2"/> Migrasi ke Dewasa
-                        </Button>
-                    </div>
-                )}
+
                 <div className="admin-edit-footer-actions">
                     <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Batal</Button>
                     <Button type="submit">{editingSantri ? 'Simpan Perubahan' : 'Tambah Murid'}</Button>
@@ -1348,15 +1215,14 @@ const SantriManagement = ({ subCategory = 'tpq' }) => {
         </DialogContent>
       </Dialog>
 
-      <BulkUploadModal isOpen={isBulkUploadOpen} onClose={() => setIsBulkUploadOpen(false)} onUpload={handleDataProcessing} category={subCategory === 'ptpt' ? 'PTPT' : 'Anak'} />
+      <BulkUploadModal isOpen={isBulkUploadOpen} onClose={() => setIsBulkUploadOpen(false)} onUpload={handleDataProcessing} category="Anak" />
       <UploadReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} report={uploadReport} onConfirm={confirmBulkUpload} />
       <BirthdayNotificationModal isOpen={isBirthdayModalOpen} onClose={() => setIsBirthdayModalOpen(false)} students={birthdayStudents} />
       <SantriArchiveDialog
         open={isArchiveOpen}
         onOpenChange={setIsArchiveOpen}
-        categories={subCategory === 'ptpt' ? ['PTPT'] : ['Anak', 'TPQ']}
-        title={`Arsip Murid ${subCategory.toUpperCase()}`}
-        onRestored={() => loadData(subCategory)}
+        title="Arsip Murid"
+        onRestored={() => loadData()}
       />
 
       <ConfirmationDialog

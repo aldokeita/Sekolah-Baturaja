@@ -60,6 +60,7 @@ var santriInsertable = map[string]bool{
 	"no_nik": true, "berkas_foto": true, "berkas_akta": true, "berkas_kk": true,
 	"berkas_form": true, "link_qiroati": true, "default_spp_amount": true,
 	"pekerjaan_ayah": true, "pekerjaan_ibu": true, "alamat_ortu": true,
+	"nisn": true, "nis": true, "angkatan": true,
 	"status": true, "points": true, "order_in_class": true, "password": true,
 	"email": true,
 }

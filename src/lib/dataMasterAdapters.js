@@ -49,6 +49,9 @@ export const pickSantriProfileFields = (input) => {
 
   return {
     nomor_induk_qiroati: nomorInduk,
+    nisn: input.nisn?.trim() || null,
+    nis: input.nis?.trim() || null,
+    angkatan: input.angkatan?.trim() || null,
     nama_lengkap: input.nama_lengkap?.trim(),
     nama_panggilan: input.nama_panggilan?.trim() || null,
     kategori: input.kategori || 'Anak',

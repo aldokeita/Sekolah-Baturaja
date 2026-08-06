@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { Users, DollarSign, TrendingDown, Fingerprint, Tv, Gamepad2, Shuffle, Library, GraduationCap, BookOpen, Briefcase } from 'lucide-react';
+import { Users, DollarSign, TrendingDown, Fingerprint, Tv, Gamepad2, Shuffle, Library } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 
 import SantriManagement from '../admin/SantriManagement';
-import SantriDewasaManagement from '../admin/SantriDewasaManagement';
 import GuruManagement from '../admin/GuruManagement';
 import PaymentSystem from '../admin/PaymentSystem';
 import PaymentRecap from '../admin/PaymentRecap';
@@ -24,7 +22,6 @@ import GameConfiguration from '../admin/GameConfiguration';
 import CalendarManagement from '../admin/CalendarManagement';
 import SalaryCalculation from '../admin/SalaryCalculation';
 import BackupRestoreManagement from '../admin/BackupRestoreManagement';
-import MMQManagement from '../admin/MMQManagement';
 
 import GlobalSearch from './GlobalSearch';
 import SantriDetailModal from './SantriDetailModal';
@@ -38,30 +35,14 @@ import { resolveAvatarRecord } from '@/lib/storageAdapters';
 import { enableGameFeatures } from '@/lib/featureFlags';
 import '@/styles/sdnb-dashboard.css';
 
-// Santri sub-categories shared by every dashboard that exposes the Data Santri
-// module. Kept here (not per-dashboard) so the segmented control behaves
-// identically for admin and tata usaha.
-export const SANTRI_SUB_TABS = [
-  { id: 'tpq', label: 'Murid TPQ', icon: GraduationCap },
-  { id: 'ptpt', label: 'Murid PTPT', icon: BookOpen },
-  { id: 'dewasa', label: 'Murid Dewasa', icon: Briefcase },
-];
-
-// Renders the module component for a given tab value. Santri is special-cased
-// because it carries the sub-category segmented control; every other module is
-// a plain component. Both the Admin and Tata Usaha dashboards render from this
-// single registry so the two never drift apart.
-const renderModule = (value, { santriSubTab }) => {
+// Shared registry: Admin and Tata Usaha render from this, so the two never drift apart.
+const renderModule = (value) => {
   switch (value) {
-    case 'santri':
-      return santriSubTab === 'dewasa'
-        ? <SantriDewasaManagement />
-        : <SantriManagement subCategory={santriSubTab} />;
+    case 'santri': return <SantriManagement />;
     case 'kelas': return <ClassManagement />;
     case 'guru': return <GuruManagement />;
     case 'rekap-absensi': return <AttendanceRecap />;
     case 'rekap-guru': return <GuruAttendanceRecap />;
-    case 'mmq': return <MMQManagement />;
     case 'salary': return <SalaryCalculation />;
     case 'academic-calendar': return <CalendarManagement />;
     case 'payment': return <PaymentSystem />;
@@ -96,7 +77,6 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(tabs[0]?.value);
-  const [activeSantriSubTab, setActiveSantriSubTab] = useState('tpq');
   const [stats, setStats] = useState({
     totalSantri: 0,
     totalPemasukanBulanIni: 0,
@@ -307,42 +287,12 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
         onTabChange={setActiveTab}
       />
 
-      {/* Santri Subcategory Segmented Control — visible only when Data Santri is active */}
-      {hasSantriTab && activeTab === 'santri' && (
-        <div className="flex justify-center mt-6">
-          <div className="admin-glass-tab-list inline-flex p-1 rounded-full gap-1">
-            {SANTRI_SUB_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveSantriSubTab(tab.id)}
-                className={`
-                  admin-glass-tab-button lpq-shiny-button relative px-6 py-2 rounded-full text-sm font-semibold flex items-center gap-2
-                  ${activeSantriSubTab === tab.id ? 'text-primary dark:text-white' : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'}
-                `}
-              >
-                {activeSantriSubTab === tab.id && (
-                  <motion.div
-                    layoutId="santri-subcat-pill"
-                    className="admin-glass-tab-indicator"
-                    transition={{ type: 'spring', stiffness: 430, damping: 34, mass: 0.72 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Tab Content — only the modules passed in `tabs` are rendered */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 mt-6">
         <div>
           {tabs.map((tab) => (
             <TabsContent key={tab.value} value={tab.value}>
-              {renderModule(tab.value, { santriSubTab: activeSantriSubTab })}
+              {renderModule(tab.value)}
             </TabsContent>
           ))}
         </div>

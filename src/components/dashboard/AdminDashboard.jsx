@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, LogIn, FileText,
   CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, Calculator,
-  Database, Library,
+  Database,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import { enableBackupRestore } from '@/lib/featureFlags';
@@ -15,7 +15,6 @@ const adminTabs = [
   { value: 'kelas', label: 'Manajemen Kelas', icon: BookOpen, group: 'akademik' },
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },
-  { value: 'mmq', label: 'MMQ', icon: Library, group: 'akademik' },
   { value: 'salary', label: 'Bisyaroh', icon: Calculator, group: 'akademik' },
   { value: 'academic-calendar', label: 'Kalender', icon: Calendar, group: 'akademik' },
   { value: 'payment', label: 'Pembayaran', icon: DollarSign, group: 'keuangan' },

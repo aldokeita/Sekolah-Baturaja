@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, FileText,
-  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, Library,
+  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 
@@ -20,7 +20,6 @@ const tataUsahaTabs = [
   { value: 'kelas', label: 'Manajemen Kelas', icon: BookOpen, group: 'akademik' },
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },
-  { value: 'mmq', label: 'MMQ', icon: Library, group: 'akademik' },
   { value: 'academic-calendar', label: 'Kalender', icon: Calendar, group: 'akademik' },
   { value: 'payment', label: 'Pembayaran', icon: DollarSign, group: 'keuangan' },
   { value: 'recap', label: 'Rekap SPP', icon: PieChart, group: 'keuangan' },
