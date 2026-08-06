@@ -58,16 +58,21 @@ export const getAcademicErrorMessage = (error) => {
     return message || 'Operasi akademik gagal.';
 };
 
+// `view=full` returns whole rows instead of the bare holiday-date list the
+// attendance consumers use. Only the calendar admin panel needs it — it has to
+// edit and delete individual entries, and a date may now hold several.
 export const fetchCalendarEvents = async ({ startDate, endDate }) => {
-    const params = new URLSearchParams({ date_from: startDate, date_to: endDate });
-    return apiClient.get(`/api/attendance/calendar?${params}`);
+    const params = new URLSearchParams({ date_from: startDate, date_to: endDate, view: 'full' });
+    const data = await apiClient.get(`/api/attendance/calendar?${params}`);
+    return Array.isArray(data) ? data : [];
 };
 
-export const saveCalendarEvent = async ({ existingId, selectedDate, description, isHoliday, userId }) => {
+export const saveCalendarEvent = async ({ existingId, selectedDate, title, description, isHoliday, userId }) => {
+    const cleanTitle = String(title || '').trim();
     const cleanDescription = String(description || '').trim();
     const payload = {
         date: selectedDate,
-        title: cleanDescription || (isHoliday ? 'Hari Libur' : 'Hari Masuk'),
+        title: cleanTitle || cleanDescription || (isHoliday ? 'Hari Libur' : 'Hari Masuk'),
         description: cleanDescription || null,
         is_holiday: Boolean(isHoliday),
         is_public: true,

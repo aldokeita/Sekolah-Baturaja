@@ -201,7 +201,7 @@ const PentashihDashboard = () => {
       const khotimData = khotimCandidates.map((s, idx) => ({
         'No': idx + 1,
         'Nomor Induk Qiroati': s.nomor_induk_qiroati || '-',
-        'Nama Santri': s.nama_lengkap,
+        'Nama Murid': s.nama_lengkap,
         'Nama Panggilan': s.nama_panggilan || '-',
         'Jilid Saat Ini': s.jilid || '-',
         'Kelas': s.className,
@@ -212,7 +212,7 @@ const PentashihDashboard = () => {
       const stagnantData = stagnantSantriList.map((s, idx) => ({
         'No': idx + 1,
         'Nomor Induk': s.nomor_induk_qiroati || '-',
-        'Nama Santri': s.nama_lengkap,
+        'Nama Murid': s.nama_lengkap,
         'Jilid': s.jilid || '-',
         'Kelas': s.className,
         'Guru Pengampu': s.teacherName,
@@ -221,11 +221,11 @@ const PentashihDashboard = () => {
       }));
 
       const levelSummaryData = [
-        { 'Kategori Jilid': 'Pra-TK (Pra-A / Pra-B / Pra-C)', 'Jumlah Santri': levelStats.praTk, 'Persentase': `${levelStats.praTkPct}%` },
-        { 'Kategori Jilid': 'Dasar (Jilid 1A - 3B)', 'Jumlah Santri': levelStats.dasar, 'Persentase': `${levelStats.dasarPct}%` },
-        { 'Kategori Jilid': 'Menengah (Jilid 4A - 5B)', 'Jumlah Santri': levelStats.menengah, 'Persentase': `${levelStats.menengahPct}%` },
-        { 'Kategori Jilid': 'Khotim / Tajwid / Finishing', 'Jumlah Santri': levelStats.khotim, 'Persentase': `${levelStats.khotimPct}%` },
-        { 'Kategori Jilid': 'TOTAL SANTRI', 'Jumlah Santri': santriList.length, 'Persentase': '100%' },
+        { 'Kategori Jilid': 'Pra-TK (Pra-A / Pra-B / Pra-C)', 'Jumlah Murid': levelStats.praTk, 'Persentase': `${levelStats.praTkPct}%` },
+        { 'Kategori Jilid': 'Dasar (Jilid 1A - 3B)', 'Jumlah Murid': levelStats.dasar, 'Persentase': `${levelStats.dasarPct}%` },
+        { 'Kategori Jilid': 'Menengah (Jilid 4A - 5B)', 'Jumlah Murid': levelStats.menengah, 'Persentase': `${levelStats.menengahPct}%` },
+        { 'Kategori Jilid': 'Khotim / Tajwid / Finishing', 'Jumlah Murid': levelStats.khotim, 'Persentase': `${levelStats.khotimPct}%` },
+        { 'Kategori Jilid': 'TOTAL MURID', 'Jumlah Murid': santriList.length, 'Persentase': '100%' },
       ];
 
       const wb = XLSX.utils.book_new();
@@ -237,7 +237,7 @@ const PentashihDashboard = () => {
       XLSX.utils.book_append_sheet(wb, wsKhotim, 'Calon Khotim');
 
       const wsStagnant = XLSX.utils.json_to_sheet(stagnantData);
-      XLSX.utils.book_append_sheet(wb, wsStagnant, 'Evaluasi Santri Stagnan');
+      XLSX.utils.book_append_sheet(wb, wsStagnant, 'Evaluasi Murid Stagnan');
 
       const dateStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
       XLSX.writeFile(wb, `Laporan_Pentashih_LPQ_${dateStr}.xlsx`);
@@ -308,7 +308,7 @@ const PentashihDashboard = () => {
               </div>
               <div>
                 <p className="text-2xl font-black text-slate-900 dark:text-slate-100 print:text-black">{santriList.length}</p>
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider print:text-slate-600">Total Santri Aktif</p>
+                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider print:text-slate-600">Total Murid Aktif</p>
               </div>
             </CardContent>
           </Card>
@@ -334,7 +334,7 @@ const PentashihDashboard = () => {
               </div>
               <div>
                 <p className="text-2xl font-black text-rose-600 dark:text-rose-400 print:text-rose-800">{stagnantSantriList.length}</p>
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider print:text-slate-600">Santri Perlu Evaluasi</p>
+                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider print:text-slate-600">Murid Perlu Evaluasi</p>
               </div>
             </CardContent>
           </Card>
@@ -385,11 +385,11 @@ const PentashihDashboard = () => {
             <div className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400 print:text-black" />
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 print:text-black">
-                Matriks Distribusi Tingkat Jilid Santri
+                Matriks Distribusi Tingkat Jilid Murid
               </h2>
             </div>
             <Badge variant="outline" className="text-xs font-semibold text-purple-700 border-purple-200 dark:text-purple-300 print:border-slate-400 print:text-black">
-              Total {santriList.length} Santri
+              Total {santriList.length} Murid
             </Badge>
           </div>
 
@@ -415,7 +415,7 @@ const PentashihDashboard = () => {
               <div className="w-full h-2 bg-blue-200 dark:bg-blue-900/50 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${levelStats.dasarPct}%` }} />
               </div>
-              <p className="text-[11px] text-muted-foreground">Pembiasaan makhroj & harokat santri.</p>
+              <p className="text-[11px] text-muted-foreground">Pembiasaan makhroj & harokat murid.</p>
             </div>
 
             {/* Jilid Menengah */}
@@ -460,12 +460,12 @@ const PentashihDashboard = () => {
                     Pipeline Calon Khotim & Pra-Imtihan
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Santri di tingkat Jilid 6, Al-Qur'an, Ghorib, Tajwid, & Finishing.
+                    Murid di tingkat Jilid 6, Al-Qur'an, Ghorib, Tajwid, & Finishing.
                   </p>
                 </div>
               </div>
               <Badge className="bg-amber-500 text-white font-bold text-xs w-fit">
-                {khotimCandidates.length} Santri
+                {khotimCandidates.length} Murid
               </Badge>
             </div>
 
@@ -485,7 +485,7 @@ const PentashihDashboard = () => {
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="border-b text-muted-foreground bg-slate-50 dark:bg-slate-800/50">
-                    <th className="py-2.5 px-3 font-semibold">Santri</th>
+                    <th className="py-2.5 px-3 font-semibold">Murid</th>
                     <th className="py-2.5 px-3 font-semibold">Jilid</th>
                     <th className="py-2.5 px-3 font-semibold">Kelas & Guru</th>
                     <th className="py-2.5 px-3 font-semibold text-right print:hidden">Kontak Ortu</th>
@@ -557,10 +557,10 @@ const PentashihDashboard = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-slate-100 print:text-black">
-                    Evaluasi Perkembangan Santri Stagnan
+                    Evaluasi Perkembangan Murid Stagnan
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Santri yang paling lama belum tes / naik jilid (berdasarkan riwayat pengujian).
+                    Murid yang paling lama belum tes / naik jilid (berdasarkan riwayat pengujian).
                   </p>
                 </div>
               </div>
@@ -573,7 +573,7 @@ const PentashihDashboard = () => {
             <div className="relative print:hidden">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Cari santri evaluasi..."
+                placeholder="Cari murid evaluasi..."
                 value={stagnantSearch}
                 onChange={e => setStagnantSearch(e.target.value)}
                 className="pl-9 h-9 text-xs"
@@ -585,7 +585,7 @@ const PentashihDashboard = () => {
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="border-b text-muted-foreground bg-slate-50 dark:bg-slate-800/50">
-                    <th className="py-2.5 px-3 font-semibold">Santri</th>
+                    <th className="py-2.5 px-3 font-semibold">Murid</th>
                     <th className="py-2.5 px-3 font-semibold">Jilid</th>
                     <th className="py-2.5 px-3 font-semibold">Lama Belum Tes</th>
                     <th className="py-2.5 px-3 font-semibold">Guru Pengampu</th>
@@ -658,7 +658,7 @@ const PentashihDashboard = () => {
                   {stagnantSantriList.length === 0 && (
                     <tr>
                       <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                        Tidak ada santri yang membutuhkan evaluasi khusus saat ini.
+                        Tidak ada murid yang membutuhkan evaluasi khusus saat ini.
                       </td>
                     </tr>
                   )}
@@ -674,10 +674,10 @@ const PentashihDashboard = () => {
         <div className="border-b pb-4 mb-2">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            Manajemen Kelas & Santri
+            Manajemen Kelas & Murid
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Tampilan interaktif berbasis sesi dan kelas. Klik santri untuk melihat rincian jilid, histori absensi, dan performa santri.
+            Tampilan interaktif berbasis sesi dan kelas. Klik murid untuk melihat rincian jilid, histori absensi, dan performa santri.
           </p>
         </div>
 

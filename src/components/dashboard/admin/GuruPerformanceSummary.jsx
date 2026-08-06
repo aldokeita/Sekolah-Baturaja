@@ -437,7 +437,7 @@ const GuruPerformanceSummary = () => {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
-                    <div className="h-[320px] w-full" role="img" aria-label="Grafik Rata-rata Kehadiran Kelas - menampilkan persentase kehadiran rata-rata santri untuk setiap kelas">
+                    <div className="h-[320px] w-full" role="img" aria-label="Grafik Rata-rata Kehadiran Kelas - menampilkan persentase kehadiran rata-rata murid untuk setiap kelas">
                     {performanceData.attendanceByClass.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={performanceData.attendanceByClass} margin={{ top: 10, right: 20, bottom: 20, left: 0 }}>
@@ -452,7 +452,7 @@ const GuruPerformanceSummary = () => {
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-slate-50 dark:bg-slate-900/20 rounded-xl">
                             <Users className="w-10 h-10 mb-2 opacity-20" />
-                            <p className="text-sm font-medium">Belum ada data kehadiran santri</p>
+                            <p className="text-sm font-medium">Belum ada data kehadiran murid</p>
                         </div>
                     )}
                     </div>
@@ -464,11 +464,11 @@ const GuruPerformanceSummary = () => {
             <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
               <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-purple-500" /> Progres Rata-rata Santri
+                    <TrendingUp className="w-5 h-5 text-purple-500" /> Progres Rata-rata Murid
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="h-[400px] w-full" role="img" aria-label="Grafik Progres Rata-rata Santri - menampilkan persentase progres rata-rata santri di setiap kelas yang diampu guru">
+                <div className="h-[400px] w-full" role="img" aria-label="Grafik Progres Rata-rata Murid - menampilkan persentase progres rata-rata murid di setiap kelas yang diampu guru">
                   {performanceData.progressByStudent.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={performanceData.progressByStudent} margin={{ top: 10, right: 20, bottom: 80, left: 0 }}>
@@ -483,7 +483,7 @@ const GuruPerformanceSummary = () => {
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-slate-50 dark:bg-slate-900/20 rounded-xl">
                         <TrendingUp className="w-10 h-10 mb-2 opacity-20" />
-                        <p className="text-sm font-medium">Belum ada data progres hafalan santri</p>
+                        <p className="text-sm font-medium">Belum ada data progres hafalan murid</p>
                     </div>
                   )}
                 </div>

@@ -72,7 +72,7 @@ const TopScorePage = () => {
             if (!student) {
                 toast({
                     title: "Kartu Tidak Dikenal",
-                    description: "Data santri tidak ditemukan untuk kartu ini.",
+                    description: "Data murid tidak ditemukan untuk kartu ini.",
                     variant: "destructive"
                 });
                 return;
@@ -210,8 +210,8 @@ const TopScorePage = () => {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-12 relative overflow-hidden font-sans text-slate-900 dark:text-slate-100">
             <Helmet>
-                <title>Papan Skor Santri Terbaik - LPQ Al-Fath Maulana</title>
-                <meta name="description" content="Leaderboard Top 10 Santri dengan poin tertinggi di LPQ Al-Fath Maulana." />
+                <title>Papan Skor Murid Terbaik - LPQ Al-Fath Maulana</title>
+                <meta name="description" content="Leaderboard Top 10 Murid dengan poin tertinggi di LPQ Al-Fath Maulana." />
             </Helmet>
 
             {/* Hidden RFID Input */}
@@ -277,7 +277,7 @@ const TopScorePage = () => {
                              </div>
 
                              <h1 className="text-3xl md:text-5xl font-black text-center text-blue-600 dark:text-blue-400 drop-shadow-sm tracking-tight">
-                                Papan Skor Santri Terbaik
+                                Papan Skor Murid Terbaik
                              </h1>
 
                              {/* Premium Right Trophy */}

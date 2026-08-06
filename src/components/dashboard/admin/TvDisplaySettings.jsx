@@ -61,8 +61,8 @@ const TvDisplaySettings = () => {
         }
     };
 
-    const sessions = [{ id: 'attendance', label: 'Detail Absensi & Kelas', icon: MonitorPlay }, { id: 'quotas', label: 'Kuota Per Sesi', icon: Users }, { id: 'wali', label: 'Info Wali Santri', icon: MessageSquare }, { id: 'profiles', label: 'Kartu Profil Santri', icon: User }, { id: 'leaderboard', label: 'Leaderboard Prestasi', icon: Trophy }];
-    const categories = [{ id: 'disciplined', label: 'Santri Paling Disiplin', icon: Trophy }, { id: 'drilling', label: 'Santri Terbaik Drilling', icon: Star }, { id: 'memorization', label: 'Santri Hafalan Terbanyak', icon: BookCopy }];
+    const sessions = [{ id: 'attendance', label: 'Detail Absensi & Kelas', icon: MonitorPlay }, { id: 'quotas', label: 'Kuota Per Sesi', icon: Users }, { id: 'wali', label: 'Info Wali Murid', icon: MessageSquare }, { id: 'profiles', label: 'Kartu Profil Murid', icon: User }, { id: 'leaderboard', label: 'Leaderboard Prestasi', icon: Trophy }];
+    const categories = [{ id: 'disciplined', label: 'Murid Paling Disiplin', icon: Trophy }, { id: 'drilling', label: 'Murid Terbaik Drilling', icon: Star }, { id: 'memorization', label: 'Murid Hafalan Terbanyak', icon: BookCopy }];
     const tabs = [{ id: 'general', label: 'Umum & Sesi', icon: Settings2 }, { id: 'quotas', label: 'Kuota & Pendaftaran', icon: Users }, { id: 'leaderboard', label: 'Leaderboard', icon: Trophy }];
 
     const handleLeaderboardChange = (category, session, gender, value) => {
@@ -102,7 +102,7 @@ const TvDisplaySettings = () => {
                                 </div>
                                 <div className="space-y-3 md:col-span-2 border-t pt-4">
                                     <Label className="flex items-center gap-2 font-bold text-primary mb-2"><UserMinus className="w-4 h-4"/> Filter Data Global</Label>
-                                    <div className="flex items-center justify-between bg-white dark:bg-black p-3 rounded-lg border"><div className="flex flex-col"><span className="font-bold text-sm">Tampilkan Data Santri Dewasa (Global)</span><span className="text-xs text-muted-foreground">Jika non-aktif, santri dewasa akan disembunyikan dari semua sesi kecuali diatur khusus.</span></div><Switch checked={config.showAdults} onCheckedChange={(checked) => setConfig({ ...config, showAdults: checked })} /></div>
+                                    <div className="flex items-center justify-between bg-white dark:bg-black p-3 rounded-lg border"><div className="flex flex-col"><span className="font-bold text-sm">Tampilkan Data Murid Dewasa (Global)</span><span className="text-xs text-muted-foreground">Jika non-aktif, murid dewasa akan disembunyikan dari semua sesi kecuali diatur khusus.</span></div><Switch checked={config.showAdults} onCheckedChange={(checked) => setConfig({ ...config, showAdults: checked })} /></div>
                                 </div>
                             </div>
                             <div className="space-y-4">
@@ -131,7 +131,7 @@ const TvDisplaySettings = () => {
                         </TabsContent>
 
                         <TabsContent value="quotas" className="space-y-6">
-                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4"><p className="text-sm text-blue-700">Atur kapasitas maksimal santri untuk setiap sesi dan informasi pendaftaran.</p></div>
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4"><p className="text-sm text-blue-700">Atur kapasitas maksimal murid untuk setiap sesi dan informasi pendaftaran.</p></div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 border-b pb-6">
                                 <div className="space-y-2"><Label className="flex items-center gap-2"><Calendar className="w-4 h-4"/> Tanggal Buka Pendaftaran</Label><Input type="date" value={config.registration?.startDate || ''} onChange={(e) => setConfig(prev => ({ ...prev, registration: { ...prev.registration, startDate: e.target.value } }))} /></div>
                                 <div className="space-y-2"><Label className="flex items-center gap-2"><Calendar className="w-4 h-4"/> Tanggal Tutup Pendaftaran</Label><Input type="date" value={config.registration?.endDate || ''} onChange={(e) => setConfig(prev => ({ ...prev, registration: { ...prev.registration, endDate: e.target.value } }))} /></div>
@@ -142,7 +142,7 @@ const TvDisplaySettings = () => {
                         </TabsContent>
 
                         <TabsContent value="leaderboard" className="space-y-8">
-                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6"><p className="text-sm text-blue-700">Pilih satu Santri Putra dan satu Santri Putri terbaik untuk setiap kategori dan sesi.</p></div>
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6"><p className="text-sm text-blue-700">Pilih satu Murid Putra dan satu Murid Putri terbaik untuk setiap kategori dan sesi.</p></div>
                             {categories.map(category => (
                                 <div key={category.id} className="border rounded-xl p-4 space-y-4 bg-slate-50/50">
                                     <h3 className="font-bold text-lg flex items-center gap-2 text-primary"><category.icon className="w-5 h-5" /> {category.label}</h3>
@@ -151,8 +151,8 @@ const TvDisplaySettings = () => {
                                             <div key={session} className="bg-white p-3 rounded-lg border shadow-sm">
                                                 <h4 className="text-sm font-bold text-center mb-3 uppercase text-muted-foreground border-b pb-2">{session}</h4>
                                                 <div className="space-y-3">
-                                                    <div className="space-y-1"><Label className="text-xs text-blue-600 flex items-center gap-1"><User className="w-3 h-3"/> Putra</Label><Select value={config.leaderboard?.[category.id]?.[session]?.['male'] || "none"} onValueChange={(val) => handleLeaderboardChange(category.id, session, 'male', val)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih Santri" /></SelectTrigger><SelectContent><SelectItem value="none">- Kosong -</SelectItem>{santriList.filter(s => true).map(s => (<SelectItem key={s.id} value={s.id}>{s.nama_lengkap}</SelectItem>))}</SelectContent></Select></div>
-                                                    <div className="space-y-1"><Label className="text-xs text-pink-600 flex items-center gap-1"><User className="w-3 h-3"/> Putri</Label><Select value={config.leaderboard?.[category.id]?.[session]?.['female'] || "none"} onValueChange={(val) => handleLeaderboardChange(category.id, session, 'female', val)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih Santri" /></SelectTrigger><SelectContent><SelectItem value="none">- Kosong -</SelectItem>{santriList.map(s => (<SelectItem key={s.id} value={s.id}>{s.nama_lengkap}</SelectItem>))}</SelectContent></Select></div>
+                                                    <div className="space-y-1"><Label className="text-xs text-blue-600 flex items-center gap-1"><User className="w-3 h-3"/> Putra</Label><Select value={config.leaderboard?.[category.id]?.[session]?.['male'] || "none"} onValueChange={(val) => handleLeaderboardChange(category.id, session, 'male', val)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih Murid" /></SelectTrigger><SelectContent><SelectItem value="none">- Kosong -</SelectItem>{santriList.filter(s => true).map(s => (<SelectItem key={s.id} value={s.id}>{s.nama_lengkap}</SelectItem>))}</SelectContent></Select></div>
+                                                    <div className="space-y-1"><Label className="text-xs text-pink-600 flex items-center gap-1"><User className="w-3 h-3"/> Putri</Label><Select value={config.leaderboard?.[category.id]?.[session]?.['female'] || "none"} onValueChange={(val) => handleLeaderboardChange(category.id, session, 'female', val)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih Murid" /></SelectTrigger><SelectContent><SelectItem value="none">- Kosong -</SelectItem>{santriList.map(s => (<SelectItem key={s.id} value={s.id}>{s.nama_lengkap}</SelectItem>))}</SelectContent></Select></div>
                                                 </div>
                                             </div>
                                         ))}

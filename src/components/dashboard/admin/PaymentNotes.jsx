@@ -62,7 +62,7 @@ const PaymentStatusTable = () => {
     const doc = new jsPDF();
     doc.text(`Status Pembayaran SPP - ${selectedMonth} ${selectedYear}`, 14, 16);
     doc.autoTable({
-      head: [['Nama Santri', 'Kelas', 'Periode', 'Status']],
+      head: [['Nama Murid', 'Kelas', 'Periode', 'Status']],
       body: statusData.map(s => [s.nama_lengkap, s.class_name, s.periode, s.status]),
       startY: 20,
     });
@@ -89,7 +89,7 @@ const PaymentStatusTable = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
-              <th className="p-3 text-left">Nama Santri</th>
+              <th className="p-3 text-left">Nama Murid</th>
               <th className="p-3 text-left">Kelas</th>
               <th className="p-3 text-left">Periode</th>
               <th className="p-3 text-left">Status</th>
@@ -99,7 +99,7 @@ const PaymentStatusTable = () => {
             {isLoading ? (
               <tr><td colSpan="4" className="text-center p-4">Memuat data...</td></tr>
             ) : statusData.length === 0 ? (
-              <tr><td colSpan="4" className="text-center p-4">Tidak ada data santri aktif.</td></tr>
+              <tr><td colSpan="4" className="text-center p-4">Tidak ada data murid aktif.</td></tr>
             ) : (
               statusData.map((s) => (
                 <tr key={s.id} className="border-b hover:bg-muted/50">
@@ -160,12 +160,12 @@ const PaymentNotes = () => {
 
   const generatePDF = () => {
     const doc = new jsPDF();
-    doc.text("Riwayat Pembayaran SPP Santri", 14, 16);
+    doc.text("Riwayat Pembayaran SPP Murid", 14, 16);
     doc.autoTable({
-      head: [['Tanggal', 'Nama Santri', 'Keterangan', 'Jumlah', 'Metode']],
+      head: [['Tanggal', 'Nama Murid', 'Keterangan', 'Jumlah', 'Metode']],
       body: payments.map(p => [
         new Date(p.tanggal_pembayaran).toLocaleDateString('id-ID'),
-        p.santri?.nama_lengkap || 'Santri Dihapus',
+        p.santri?.nama_lengkap || 'Murid Dihapus',
         p.bulan ? `SPP ${monthNumberToName(p.bulan)} ${p.tahun}` : p.catatan || 'Lainnya',
         `Rp ${p.jumlah.toLocaleString('id-ID')}`,
         p.metode_pembayaran
@@ -179,7 +179,7 @@ const PaymentNotes = () => {
     <>
       <div className="bg-card p-6 rounded-2xl shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-2xl font-bold text-accent-foreground">Riwayat Pembayaran SPP Santri</h2>
+          <h2 className="text-2xl font-bold text-accent-foreground">Riwayat Pembayaran SPP Murid</h2>
           <div className="flex gap-2">
             <Button onClick={generatePDF} disabled={isLoading}><Download className="w-4 h-4 mr-2" /> Unduh PDF</Button>
           </div>
@@ -189,7 +189,7 @@ const PaymentNotes = () => {
             <thead>
               <tr className="border-b">
                 <th className="p-3 text-left">Tanggal</th>
-                <th className="p-3 text-left">Nama Santri</th>
+                <th className="p-3 text-left">Nama Murid</th>
                 <th className="p-3 text-left">Keterangan</th>
                 <th className="p-3 text-left">Jumlah</th>
                 <th className="p-3 text-left">Metode</th>
@@ -205,7 +205,7 @@ const PaymentNotes = () => {
                 payments.map((p) => (
                   <tr key={p.id} className="border-b hover:bg-muted/50">
                     <td className="p-3">{new Date(p.tanggal_pembayaran).toLocaleDateString('id-ID')}</td>
-                    <td className="p-3">{p.santri?.nama_lengkap || 'Santri Dihapus'}</td>
+                    <td className="p-3">{p.santri?.nama_lengkap || 'Murid Dihapus'}</td>
                     <td className="p-3">{p.bulan ? `SPP ${monthNumberToName(p.bulan)} ${p.tahun}` : p.catatan || 'Lainnya'}</td>
                     <td className="p-3">Rp {p.jumlah.toLocaleString('id-ID')}</td>
                     <td className="p-3">{p.metode_pembayaran}</td>

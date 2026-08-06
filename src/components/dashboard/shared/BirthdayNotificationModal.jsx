@@ -23,10 +23,10 @@ const BirthdayNotificationModal = ({ isOpen, onClose, students = [], audience = 
             <span className="grid h-10 w-10 place-items-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-400/10 dark:text-rose-300">
               <Cake className="h-5 w-5" />
             </span>
-            {audience === 'guru' ? 'Ulang Tahun Guru Bulan Ini' : 'Ulang Tahun Santri Bulan Ini'}
+            {audience === 'guru' ? 'Ulang Tahun Guru Bulan Ini' : 'Ulang Tahun Murid Bulan Ini'}
           </DialogTitle>
           <DialogDescription className="text-slate-600 dark:text-slate-300">
-            {audience === 'guru' ? 'Daftar pengajar yang berulang tahun pada bulan berjalan.' : 'Daftar santri yang berulang tahun pada bulan berjalan.'}
+            {audience === 'guru' ? 'Daftar pengajar yang berulang tahun pada bulan berjalan.' : 'Daftar murid yang berulang tahun pada bulan berjalan.'}
           </DialogDescription>
         </DialogHeader>
 

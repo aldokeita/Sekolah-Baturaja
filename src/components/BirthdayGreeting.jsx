@@ -5,7 +5,7 @@ import { X, Sparkles, Gift } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
-const BirthdayGreeting = ({ user, type = "Santri" }) => {
+const BirthdayGreeting = ({ user, type = "Murid" }) => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {

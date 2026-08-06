@@ -209,7 +209,7 @@ const GatchaGamePage = () => {
                           </div>
                           <div>
                             <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-fuchsia-500 to-violet-500 mb-3">GACHA TIME!</h1>
-                            <p className={`text-base md:text-lg ${isDark ? 'text-white/65' : 'text-slate-600'}`}>Pilih santri yang akan bermain.</p>
+                            <p className={`text-base md:text-lg ${isDark ? 'text-white/65' : 'text-slate-600'}`}>Pilih murid yang akan bermain.</p>
                           </div>
                           <div className={`rounded-3xl p-5 md:p-6 backdrop-blur-xl ${isDark ? 'bg-white/8 shadow-[0_18px_50px_rgba(0,0,0,0.35)]' : 'bg-white/70 shadow-[0_18px_50px_rgba(71,85,105,0.16)]'}`}>
                             <Input
@@ -224,7 +224,7 @@ const GatchaGamePage = () => {
                               className={`w-full h-12 rounded-xl px-4 text-sm font-semibold outline-none ${isDark ? 'bg-slate-900/80 text-white' : 'bg-white text-slate-800'}`}
                               disabled={isRosterLoading}
                             >
-                              <option value="">{isRosterLoading ? 'Memuat santri...' : 'Pilih santri'}</option>
+                              <option value="">{isRosterLoading ? 'Memuat murid...' : 'Pilih murid'}</option>
                               {filteredSantri.map((santri) => (
                                 <option key={santri.id} value={santri.id}>
                                   {santri.nama_lengkap}{santri.jilid ? ` — ${santri.jilid}` : ''}

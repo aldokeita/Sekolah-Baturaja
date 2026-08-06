@@ -44,7 +44,7 @@ const UserManagement = () => {
   };
 
   const handleDelete = async (id, table) => {
-    const displayName = table === 'guru' ? 'Guru' : 'Santri';
+    const displayName = table === 'guru' ? 'Guru' : 'Murid';
     const resetField = table === 'santri' ? 'nama_panggilan' : 'email';
 
     if(window.confirm(`Anda yakin ingin mereset login untuk pengguna ini? Username & Password akan dikosongkan.`)){
@@ -99,7 +99,7 @@ const UserManagement = () => {
   const allUsers = [
     ...(adminUser ? [adminUser] : []),
     ...users.guru.map(u => ({...u, name: u.nama, username: u.email, role: 'guru', table: 'guru'})),
-    ...users.santri.map(u => ({...u, name: u.nama_lengkap, username: u.nama_panggilan, role: `santri ${u.kategori}`, table: 'santri'}))
+    ...users.santri.map(u => ({...u, name: u.nama_lengkap, username: u.nama_panggilan, role: `murid ${u.kategori}`, table: 'santri'}))
   ];
 
   const sortedUsers = useMemo(() => {
@@ -119,8 +119,8 @@ const UserManagement = () => {
 
   return (
     <div className="bg-white dark:bg-[#112D4E] p-6 rounded-2xl shadow-xl">
-      <h2 className="text-2xl font-bold text-[#3F72AF] mb-2">Manajemen Login Santri</h2>
-      <p className="text-sm text-muted-foreground mb-4">Fitur ini untuk mengelola username dan password login santri. Untuk guru & admin, silakan kelola di tab masing-masing.</p>
+      <h2 className="text-2xl font-bold text-[#3F72AF] mb-2">Manajemen Login Murid</h2>
+      <p className="text-sm text-muted-foreground mb-4">Fitur ini untuk mengelola username dan password login murid. Untuk guru & admin, silakan kelola di tab masing-masing.</p>
 
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

@@ -213,7 +213,7 @@ const DigitalAttendance = () => {
                     });
                     santriData = { ...santriData, foto_url };
                     if (!isActiveSantri(santriData.status)) {
-                        setLastScan({ type: 'warning', message: 'Santri nonaktif tidak dapat dicatat absensinya.', name: santriData.nama_lengkap, photo: santriData.foto_url });
+                        setLastScan({ type: 'warning', message: 'Murid nonaktif tidak dapat dicatat absensinya.', name: santriData.nama_lengkap, photo: santriData.foto_url });
                         return;
                     }
                     user = santriData;

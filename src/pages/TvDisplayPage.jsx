@@ -90,7 +90,7 @@ const PopupScanResult = ({ scan }) => {
             </div>
             <div>
                 <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-tight">{scan.name}</h3>
-                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide mt-1">{scan.role === 'guru' ? 'Guru Pengajar' : `Santri - ${scan.jilid || ''}`}</p>
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide mt-1">{scan.role === 'guru' ? 'Guru Pengajar' : `Murid - ${scan.jilid || ''}`}</p>
                 <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold inline-block mt-2">
                     ABSEN BERHASIL
                 </div>
@@ -142,7 +142,7 @@ const TvDisplayPage = () => {
         { id: 0, key: 'attendance', label: 'Detail Kelas' },
         { id: 1, key: 'quotas', label: 'Info Kuota' },
         { id: 3, key: 'wali', label: 'Info Wali' },
-        { id: 4, key: 'profiles', label: 'Profil Santri' },
+        { id: 4, key: 'profiles', label: 'Profil Murid' },
         { id: 5, key: 'leaderboard', label: 'Leaderboard' }
     ];
 
@@ -521,13 +521,18 @@ const TvDisplayPage = () => {
             case 0:
                 if (activeClasses.length === 0) return <div className="flex-1 flex items-center justify-center text-2xl opacity-50 font-bold uppercase tracking-widest">Tidak ada kelas untuk sesi {currentSessionTime} saat ini.</div>;
                 if (!currentClass) return <div className="flex-1 flex items-center justify-center text-2xl opacity-50">Memuat data kelas...</div>;
+                // Capacity comes from the class row. Classes with none declared
+                // stay on the neutral palette — there is nothing to be over.
+                const kelasKapasitas = Number(currentClass.kapasitas) > 0 ? Number(currentClass.kapasitas) : null;
                 let capacityColor = 'border-[#1B7D3F]';
                 let capacityHeaderBg = 'bg-gradient-to-r from-[#0F5C2E] to-[#1B7D3F]';
                 let capacityTextColor = 'text-[#1B7D3F] dark:text-[#4CAF50]';
-                if (currentClass.santriCount > 15) {
-                    capacityColor = 'border-red-500'; capacityHeaderBg = 'bg-gradient-to-r from-red-600 to-red-500'; capacityTextColor = 'text-red-600 dark:text-red-400';
-                } else if (currentClass.santriCount >= 11) {
-                    capacityColor = 'border-yellow-500'; capacityHeaderBg = 'bg-gradient-to-r from-yellow-500 to-amber-500'; capacityTextColor = 'text-yellow-600 dark:text-yellow-400';
+                if (kelasKapasitas) {
+                    if (currentClass.santriCount > kelasKapasitas) {
+                        capacityColor = 'border-red-500'; capacityHeaderBg = 'bg-gradient-to-r from-red-600 to-red-500'; capacityTextColor = 'text-red-600 dark:text-red-400';
+                    } else if (currentClass.santriCount >= Math.ceil(kelasKapasitas * 0.75)) {
+                        capacityColor = 'border-yellow-500'; capacityHeaderBg = 'bg-gradient-to-r from-yellow-500 to-amber-500'; capacityTextColor = 'text-yellow-600 dark:text-yellow-400';
+                    }
                 }
                 return (
                     <div className="h-full p-6 animate-in fade-in zoom-in duration-500 flex flex-col">
@@ -547,7 +552,7 @@ const TvDisplayPage = () => {
                                         <div>
                                             <h3 className="text-4xl font-bold mb-2 flex items-center gap-3">
                                                 {currentClass.nama_kelas}
-                                                <Badge variant="outline" className={`text-lg px-3 py-1 ${capacityTextColor} bg-white`}>{currentClass.santriCount}/15 Santri</Badge>
+                                                <Badge variant="outline" className={`text-lg px-3 py-1 ${capacityTextColor} bg-white`}>{kelasKapasitas ? `${currentClass.santriCount}/${kelasKapasitas}` : currentClass.santriCount} Murid</Badge>
                                             </h3>
                                             <p className="text-xl opacity-90">Guru: {currentClass.guru?.nama || 'Belum ditentukan'}</p>
                                         </div>
@@ -602,7 +607,7 @@ const TvDisplayPage = () => {
                                 </div>
                                 <div className="text-left">
                                     <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-500">Sinergi Ayah Bunda & LPQ</p>
-                                    <h2 className={`mt-1 text-3xl font-black tracking-tight md:text-4xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Pesan untuk Wali Santri</h2>
+                                    <h2 className={`mt-1 text-3xl font-black tracking-tight md:text-4xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Pesan untuk Wali Murid</h2>
                                 </div>
                             </div>
                             <AnimatePresence mode="wait">
@@ -631,10 +636,10 @@ const TvDisplayPage = () => {
                         <div className="h-full flex flex-col p-4 animate-in fade-in duration-700 items-center justify-center">
                            <div className="mb-3 text-center">
                             <p className="text-[0.68rem] font-black uppercase tracking-[0.32em] text-emerald-500">Galeri Peserta Didik</p>
-                            <h2 className={`mt-1 text-3xl font-black tracking-tight md:text-4xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Profil Santri LPQ Al-Fath Maulana</h2>
+                            <h2 className={`mt-1 text-3xl font-black tracking-tight md:text-4xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Profil Murid LPQ Al-Fath Maulana</h2>
                             <p className={`mt-1 text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tumbuh, belajar, dan berprestasi bersama Al-Qur&apos;an</p>
                            </div>
-                           <div className="flex-1 flex items-center justify-center text-xl opacity-50 font-bold">Data profil santri belum tersedia.</div>
+                           <div className="flex-1 flex items-center justify-center text-xl opacity-50 font-bold">Data profil murid belum tersedia.</div>
                         </div>
                     );
                 }
@@ -653,7 +658,7 @@ const TvDisplayPage = () => {
                     <div className="h-full flex flex-col p-4 animate-in fade-in duration-700">
                         <div className="mb-3 text-center">
                             <p className="text-[0.68rem] font-black uppercase tracking-[0.32em] text-emerald-500">Galeri Peserta Didik</p>
-                            <h2 className={`mt-1 text-3xl font-black tracking-tight md:text-4xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Profil Santri LPQ Al-Fath Maulana</h2>
+                            <h2 className={`mt-1 text-3xl font-black tracking-tight md:text-4xl ${isDark ? 'text-white' : 'text-slate-900'}`}>Profil Murid LPQ Al-Fath Maulana</h2>
                             <p className={`mt-1 text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tumbuh, belajar, dan berprestasi bersama Al-Qur&apos;an</p>
                            </div>
                         <div className={`grid ${gridClass} flex-1 w-full max-w-7xl mx-auto min-h-0`}>
@@ -730,13 +735,13 @@ const TvDisplayPage = () => {
                 );
             case 5:
                  const lBoard = config.leaderboard || {};
-                 const leaderboardCategories = [{ id: 'disciplined', label: 'Santri Paling Disiplin', icon: Trophy }, { id: 'drilling', label: 'Santri Terbaik Drilling', icon: Star }, { id: 'memorization', label: 'Santri Hafalan Terbanyak', icon: BookCopy }];
+                 const leaderboardCategories = [{ id: 'disciplined', label: 'Murid Paling Disiplin', icon: Trophy }, { id: 'drilling', label: 'Murid Terbaik Drilling', icon: Star }, { id: 'memorization', label: 'Murid Hafalan Terbanyak', icon: BookCopy }];
 
                  const lbGridClass = orientation === 'landscape'
                     ? 'grid-cols-3 gap-4'
                     : 'grid-cols-1 gap-3';
 
-                 const headerTitle = "SANTRI TERBAIK LPQ AL-FATH MAULANA";
+                 const headerTitle = "MURID TERBAIK LPQ AL-FATH MAULANA";
 
                  return (
                     <div className="h-full p-4 flex flex-col animate-in fade-in zoom-in duration-700 bg-[url('https://www.transparenttextures.com/patterns/diamond-upholstery.png')]">

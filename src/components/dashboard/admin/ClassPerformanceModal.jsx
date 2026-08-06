@@ -343,12 +343,12 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
                         <Activity className="w-6 h-6 text-blue-600"/> Performa Kelas: {classItem?.nama_kelas}
                     </DialogTitle>
-                    <DialogDescription>Analisis statistik santri, kenaikan jilid, dan kehadiran.</DialogDescription>
+                    <DialogDescription>Analisis statistik murid, kenaikan jilid, dan kehadiran.</DialogDescription>
                 </DialogHeader>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4">
                     <Card>
-                        <CardHeader className="pb-2 p-4"><CardTitle className="text-xs font-medium text-muted-foreground uppercase">Total Santri</CardTitle></CardHeader>
+                        <CardHeader className="pb-2 p-4"><CardTitle className="text-xs font-medium text-muted-foreground uppercase">Total Murid</CardTitle></CardHeader>
                         <CardContent className="p-4 pt-0"><div className="text-2xl font-bold text-blue-600">{totalSantri}</div></CardContent>
                     </Card>
                     <Card>
@@ -391,7 +391,7 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                             </Card>
 
                             <Card className="flex flex-col">
-                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4"/> Distribusi Jilid Santri</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4"/> Distribusi Jilid Murid</CardTitle></CardHeader>
                                 <CardContent className="flex-1 min-h-[250px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
@@ -427,7 +427,7 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                                         <div className="relative flex-1 sm:w-48">
                                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                             <Input
-                                                placeholder="Cari santri..."
+                                                placeholder="Cari murid..."
                                                 className="pl-8"
                                                 value={detailFilter.search}
                                                 onChange={(e) => setDetailFilter(prev => ({ ...prev, search: e.target.value }))}
@@ -463,7 +463,7 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                                         <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                                             <tr>
                                                 <th className="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" onClick={() => handleSortToggle('name')}>
-                                                    Nama Santri {detailSort.field === 'name' && (detailSort.direction === 'asc' ? '↑' : '↓')}
+                                                    Nama Murid {detailSort.field === 'name' && (detailSort.direction === 'asc' ? '↑' : '↓')}
                                                 </th>
                                                 <th className="px-4 py-3 font-semibold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" onClick={() => handleSortToggle('attendance_date')}>
                                                     Tanggal {detailSort.field === 'attendance_date' && (detailSort.direction === 'asc' ? '↑' : '↓')}
@@ -510,7 +510,7 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                         <Card>
                             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <CardTitle className="text-base flex items-center gap-2">
-                                    <CalendarDays className="w-5 h-5 text-indigo-500"/> Matriks Absensi Santri
+                                    <CalendarDays className="w-5 h-5 text-indigo-500"/> Matriks Absensi Murid
                                 </CardTitle>
                                 <div className="flex gap-2">
                                     <Select value={historyMonth.toString()} onValueChange={(val) => setHistoryMonth(Number(val))}>
@@ -534,7 +534,7 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                                     </div>
                                 ) : historyData.userRecap.length === 0 ? (
                                     <div className="text-center py-10 text-muted-foreground bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                                        Tidak ada data santri di kelas ini.
+                                        Tidak ada data murid di kelas ini.
                                     </div>
                                 ) : historyData.weekdaysInMonth.length === 0 ? (
                                     <div className="text-center py-10 text-muted-foreground bg-slate-50 dark:bg-slate-900/50 rounded-lg">
@@ -545,7 +545,7 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                                         <table className="w-full text-sm min-w-max">
                                             <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0 z-20">
                                                 <tr>
-                                                    <th className="px-3 py-3 text-left w-48 sticky left-0 bg-slate-100 dark:bg-slate-900 z-30 border-r border-slate-200 dark:border-slate-800 font-semibold text-slate-700 dark:text-slate-300 shadow-[1px_0_5px_rgba(0,0,0,0.05)]">Nama Santri</th>
+                                                    <th className="px-3 py-3 text-left w-48 sticky left-0 bg-slate-100 dark:bg-slate-900 z-30 border-r border-slate-200 dark:border-slate-800 font-semibold text-slate-700 dark:text-slate-300 shadow-[1px_0_5px_rgba(0,0,0,0.05)]">Nama Murid</th>
                                                     {historyData.weekdaysInMonth.map(day => (
                                                         <th key={day} className="px-2 py-3 text-center w-10 font-medium text-slate-500">{day}</th>
                                                     ))}
@@ -590,7 +590,7 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
 
                     <TabsContent value="stagnation" className="mt-4">
                         <Card>
-                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4"/> Durasi Santri di Jilid Saat Ini</CardTitle></CardHeader>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="w-4 h-4"/> Durasi Murid di Jilid Saat Ini</CardTitle></CardHeader>
                             <CardContent className="max-h-[400px] overflow-y-auto space-y-3">
                                 {stagnationData.length > 0 ? stagnationData.map(s => (
                                     <div key={s.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border">

@@ -256,7 +256,7 @@ const AttendanceDetailsModal = ({ isOpen, onClose, details, onSuccess }) => {
                   <div className="space-y-4">
                     <div style={{ padding: '1rem 1.25rem', borderRadius: 'var(--att-radius)', backgroundColor: 'hsl(var(--att-danger-bg))', border: '1px solid hsl(var(--att-danger-border))', textAlign: 'center' }}>
                       <p style={{ fontWeight: 600, marginBottom: '0.25rem', color: 'hsl(var(--att-danger))' }}>Status: Tidak Hadir</p>
-                      <p style={{ fontSize: '0.875rem', color: 'hsl(var(--att-danger))', opacity: 0.8 }}>Santri belum melakukan absensi pada tanggal ini.</p>
+                      <p style={{ fontSize: '0.875rem', color: 'hsl(var(--att-danger))', opacity: 0.8 }}>Murid belum melakukan absensi pada tanggal ini.</p>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', borderRadius: 'var(--att-radius)', backgroundColor: 'hsl(var(--att-surface-sunken) / 0.4)', border: '1px solid hsl(var(--att-border-subtle))' }}>

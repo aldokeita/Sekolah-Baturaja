@@ -34,7 +34,7 @@ export const getArchivedSantri = async (categories = []) => {
 };
 
 export const setSantriArchived = async ({ santriId, archived, reason }) => {
-  const fallback = archived ? 'Santri gagal dipindahkan ke arsip.' : 'Santri gagal dipulihkan dari arsip.';
+  const fallback = archived ? 'Murid gagal dipindahkan ke arsip.' : 'Murid gagal dipulihkan dari arsip.';
   try {
     if (archived) return await apiClient.post(`/api/santri/${santriId}/archive`, { reason });
     return await apiClient.post(`/api/santri/${santriId}/restore`);

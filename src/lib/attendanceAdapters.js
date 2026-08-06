@@ -63,10 +63,10 @@ export const getAttendanceErrorMessage = (error) => {
         || message.includes('attendance_user_date_sesi_unique')
         || message.includes('attendance_santri_first_daily_unique')
     ) {
-        return 'Absensi santri hari ini sudah tercatat.';
+        return 'Absensi murid hari ini sudah tercatat.';
     }
     if (error?.code === '42501' || message.toLowerCase().includes('row-level security')) {
-        return 'Anda tidak memiliki akses untuk mencatat absensi santri ini.';
+        return 'Anda tidak memiliki akses untuk mencatat absensi murid ini.';
     }
     return message || 'Absensi gagal dicatat.';
 };

@@ -8,7 +8,7 @@ import { toast } from '@/components/ui/use-toast';
 import { getArchivedSantri, setSantriArchived } from '@/lib/santriArchiveAdapters';
 import { getSessionName } from '@/utils/sessionMapping';
 
-const SantriArchiveDialog = ({ open, onOpenChange, categories, title = 'Arsip Santri', onRestored }) => {
+const SantriArchiveDialog = ({ open, onOpenChange, categories, title = 'Arsip Murid', onRestored }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [restoringId, setRestoringId] = useState(null);
@@ -49,11 +49,11 @@ const SantriArchiveDialog = ({ open, onOpenChange, categories, title = 'Arsip Sa
       await onRestored?.();
       window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
       toast({
-        title: 'Santri dipulihkan',
+        title: 'Murid dipulihkan',
         description: `${item.nama_lengkap} kembali aktif beserta kelas dan seluruh riwayatnya.`,
       });
     } catch (error) {
-      toast({ title: 'Gagal memulihkan santri', description: error.message, variant: 'destructive' });
+      toast({ title: 'Gagal memulihkan murid', description: error.message, variant: 'destructive' });
     } finally {
       setRestoringId(null);
     }
@@ -90,14 +90,14 @@ const SantriArchiveDialog = ({ open, onOpenChange, categories, title = 'Arsip Sa
           {loading ? (
             <div className="flex min-h-52 flex-col items-center justify-center gap-3 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
-              <p className="text-sm">Memuat arsip santri...</p>
+              <p className="text-sm">Memuat arsip murid...</p>
             </div>
           ) : filteredRows.length === 0 ? (
             <div className="flex min-h-52 flex-col items-center justify-center gap-3 rounded-lg border border-dashed text-center text-muted-foreground">
               <UserCheck className="h-8 w-8" />
               <div>
                 <p className="font-medium text-foreground">Arsip masih kosong</p>
-                <p className="text-sm">Santri yang dinonaktifkan atau dihapus akan muncul di sini.</p>
+                <p className="text-sm">Murid yang dinonaktifkan atau dihapus akan muncul di sini.</p>
               </div>
             </div>
           ) : (

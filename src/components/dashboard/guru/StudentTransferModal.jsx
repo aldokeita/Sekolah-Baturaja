@@ -139,7 +139,7 @@ const StudentTransferModal = ({ isOpen, onClose, santri, onTransferSuccess }) =>
                         <DialogFooter className="mt-7 gap-2 sm:gap-2">
                             <Button variant="outline" onClick={() => setShowConfirmation(false)} disabled={isSubmitting} className="h-11 rounded-xl border-white/70 bg-white/45 px-5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-white/5">Kembali</Button>
                             <Button onClick={handleTransfer} disabled={isSubmitting} className="guru-transfer-primary h-11 min-w-[170px] rounded-xl px-5 text-white">
-                                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Memindahkan...</> : <><ArrowRightLeft className="mr-2 h-4 w-4" />Pindahkan santri</>}
+                                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Memindahkan...</> : <><ArrowRightLeft className="mr-2 h-4 w-4" />Pindahkan murid</>}
                             </Button>
                         </DialogFooter>
                     </div>
@@ -159,7 +159,7 @@ const StudentTransferModal = ({ isOpen, onClose, santri, onTransferSuccess }) =>
                             <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-teal-200/70 bg-teal-50/70 shadow-sm dark:border-teal-400/20 dark:bg-teal-400/10"><Sparkles className="h-4 w-4" /></span>
                             Mutasi kelas
                         </div>
-                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">Transfer santri</DialogTitle>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">Transfer murid</DialogTitle>
                         <DialogDescription className="mt-1 max-w-xl text-sm leading-relaxed">Pilih kelas tujuan yang paling tepat untuk perjalanan belajar <strong className="font-bold text-foreground">{santri.nama_lengkap}</strong>.</DialogDescription>
                     </DialogHeader>
 

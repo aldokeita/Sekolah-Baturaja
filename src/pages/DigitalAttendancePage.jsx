@@ -96,7 +96,7 @@ const motivationalMessages = [
     "Anak sholeh/sholehah adalah harta terindah Ayah Bunda.",
     "Jadilah alasan Ayah dan Bunda tersenyum hari ini.",
     "Bersih itu ciri orang beriman. Sampahnya dibuang di tempatnya ya.",
-    "Jujur itu hebat! Santri LPQ Al-Fath Maulana pantang berbohong.",
+    "Jujur itu hebat! Murid LPQ Al-Fath Maulana pantang berbohong.",
     "Siapa yang bersungguh-sungguh, pasti akan berhasil. Man Jadda Wajada!",
     "Hari ini pembelajar, besok jadi pemimpin. Aamiin!",
     "Absen diterima! Silakan masuk, pintu ilmu sudah terbuka.",
@@ -580,7 +580,7 @@ const DigitalAttendancePage = () => {
               });
               santriData = { ...santriData, foto_url };
               if (!isActiveSantri(santriData.status)) {
-                  setLastScan({ type: 'warning', message: 'Santri nonaktif tidak dapat dicatat absensinya.', name: santriData.nama_lengkap, photo: santriData.foto_url });
+                  setLastScan({ type: 'warning', message: 'Murid nonaktif tidak dapat dicatat absensinya.', name: santriData.nama_lengkap, photo: santriData.foto_url });
                   return;
               }
               user = santriData; userRole = 'santri'; kategori = santriData.kategori || 'Anak';

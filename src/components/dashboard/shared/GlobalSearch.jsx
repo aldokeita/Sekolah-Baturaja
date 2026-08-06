@@ -152,7 +152,7 @@ const GlobalSearch = ({ onNavigate }) => {
             setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Cari santri, guru, kelas, pembayaran..."
+          placeholder="Cari murid, guru, kelas, pembayaran..."
           className={`w-full bg-transparent border-none py-3.5 pl-12 pr-12 text-sm sm:text-base outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-slate-100 rounded-full font-medium ${isLoading ? 'opacity-80' : ''}`}
           aria-expanded={isOpen}
           aria-autocomplete="list"

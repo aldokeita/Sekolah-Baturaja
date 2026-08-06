@@ -117,7 +117,7 @@ const EditPaymentModal = ({ isOpen, onClose, payment, onUpdate }) => {
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle>Edit Pembayaran</DialogTitle>
-                        <DialogDescription>Perbarui detail pembayaran untuk santri.</DialogDescription>
+                        <DialogDescription>Perbarui detail pembayaran untuk murid.</DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4 py-2">
@@ -127,7 +127,7 @@ const EditPaymentModal = ({ isOpen, onClose, payment, onUpdate }) => {
                                 <Input value={payment.transaction_id || payment.id} disabled className="bg-muted font-mono text-xs" />
                             </div>
                             <div>
-                                <Label className="text-xs text-muted-foreground">Nama Santri</Label>
+                                <Label className="text-xs text-muted-foreground">Nama Murid</Label>
                                 <Input value={payment.santri?.nama_lengkap || '-'} disabled className="bg-muted" />
                             </div>
                         </div>

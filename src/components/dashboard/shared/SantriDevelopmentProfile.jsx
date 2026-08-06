@@ -149,7 +149,7 @@ const SantriDevelopmentProfile = ({ santriId, userId, editable = false, showBeha
   };
 
   if (loading) {
-    return <div className="flex min-h-40 items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" />Memuat perkembangan santri...</div>;
+    return <div className="flex min-h-40 items-center justify-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" />Memuat perkembangan murid...</div>;
   }
 
   if (error) {
@@ -206,7 +206,7 @@ const SantriDevelopmentProfile = ({ santriId, userId, editable = false, showBeha
 
       <DashboardDisclosure
         title="Karakter Unggulan"
-        description="Kekuatan yang paling menonjol dalam keseharian santri."
+        description="Kekuatan yang paling menonjol dalam keseharian murid."
         icon={Sparkles}
         tone="violet"
         collapsible={collapsible}

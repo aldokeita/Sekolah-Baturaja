@@ -23,10 +23,17 @@ import {
 } from '@/lib/dataMasterAdapters';
 import { getStorageErrorMessage, resolveAvatarRecords, uploadAvatar } from '@/lib/storageAdapters';
 import { getBirthdaysThisMonth } from '@/lib/birthdayUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
-const AVAILABLE_ROLES = ['Pengajar', 'Pentashih', 'Staff Operasional', 'Admin'];
+const AVAILABLE_ROLES = ['Pengajar', 'Pentashih', 'Staff Operasional', 'Tata Usaha', 'Admin'];
 
 const GuruManagement = () => {
+  const { role } = useAuth();
+  // Account & role provisioning (create/delete accounts, assign app-roles,
+  // reset passwords) is admin-only. Tata Usaha may view and edit teacher
+  // profile fields but never touch credentials or roles — the backend enforces
+  // this too (see middleware.CanManage / guru.go), this just hides dead controls.
+  const isAdmin = role === 'admin';
   const [guruList, setGuruList] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGuru, setEditingGuru] = useState(null);
@@ -311,9 +318,11 @@ const GuruManagement = () => {
                     <Download className="w-3.5 h-3.5"/> Export
                  </button>
             </div>
-            <button onClick={handleAdd} className="admin-panel-primary-btn">
-                <Plus className="w-4 h-4"/> Tambah Guru
-            </button>
+            {isAdmin && (
+              <button onClick={handleAdd} className="admin-panel-primary-btn">
+                  <Plus className="w-4 h-4"/> Tambah Guru
+              </button>
+            )}
           </div>
       </div>
 
@@ -378,7 +387,7 @@ const GuruManagement = () => {
                 </td>
                 <td className="p-3"><div className="flex flex-col"><span className="text-xs" style={{ color: 'hsl(var(--admin-text-primary))' }}>{guru.email}</span><span className="text-xs" style={{ color: 'hsl(var(--admin-text-muted))' }}>{guru.no_hp}</span></div></td>
                 <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--admin-text-muted))' }}>{guru.rfid_tag || '-'}</td>
-                <td className="p-3"><div className="flex gap-1"><Button onClick={() => handleEdit(guru)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full" style={{ color: 'hsl(var(--admin-text-muted))' }}><Edit className="w-4 h-4" /></Button><Button onClick={() => handleDelete(guru)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full text-red-500 hover:text-red-600 hover:bg-red-50" title="Nonaktifkan akun guru"><Trash2 className="w-4 h-4" /></Button></div></td>
+                <td className="p-3"><div className="flex gap-1"><Button onClick={() => handleEdit(guru)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full" style={{ color: 'hsl(var(--admin-text-muted))' }}><Edit className="w-4 h-4" /></Button>{isAdmin && (<Button onClick={() => handleDelete(guru)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full text-red-500 hover:text-red-600 hover:bg-red-50" title="Nonaktifkan akun guru"><Trash2 className="w-4 h-4" /></Button>)}</div></td>
             </tr>
           ))}
           </tbody>
@@ -446,6 +455,7 @@ const GuruManagement = () => {
                  <div className="col-span-full font-semibold text-lg border-b pb-2 mt-2 text-primary">Akses & Sistem</div>
 
                  <div className="space-y-1.5"><label htmlFor="email" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3"/> Email (Login)</label><Input id="email" type="email" value={formData.email || ''} onChange={handleInputChange} required/></div>
+                 {isAdmin && (
                  <div className="space-y-1.5 relative">
                   <label htmlFor="password" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><Key className="w-3 h-3"/> Password</label>
                   <div className="relative">
@@ -462,10 +472,12 @@ const GuruManagement = () => {
                     Masukkan password baru minimal 8 karakter. Toggle hanya menampilkan nilai baru; password Auth lama tidak dapat dibaca kembali.
                   </p>
                 </div>
+                 )}
 
                 <div className="space-y-1.5"><label htmlFor="rfid_tag" className="text-xs font-medium uppercase text-muted-foreground">RFID Tag</label><Input id="rfid_tag" value={formData.rfid_tag || ''} onChange={handleInputChange} /></div>
               </div>
 
+              {isAdmin && (
               <div className="relative overflow-hidden rounded-2xl border border-cyan-200/70 bg-gradient-to-br from-white/85 via-cyan-50/70 to-blue-50/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_16px_40px_rgba(14,116,144,0.08)] backdrop-blur-xl dark:border-cyan-800/60 dark:from-slate-900/85 dark:via-cyan-950/35 dark:to-blue-950/35">
                   <div className="pointer-events-none absolute -right-16 -top-20 h-40 w-40 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-500/10" aria-hidden="true" />
                   <div className="relative mb-3 flex items-start gap-3">
@@ -474,14 +486,14 @@ const GuruManagement = () => {
                       </div>
                       <div>
                           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Roles / Jabatan Fungsional</p>
-                          <p className="mt-0.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">Role Admin memberikan akses penuh ke Dashboard Admin. Berikan hanya kepada pengelola yang dipercaya.</p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">Role Admin memberikan akses penuh ke Dashboard Admin. Role Tata Usaha membuka Dashboard Tata Usaha. Berikan hanya kepada pengelola yang dipercaya.</p>
                       </div>
                   </div>
                   <div className="relative grid gap-2 sm:grid-cols-2">
-                      {AVAILABLE_ROLES.map(role => (
-                          <div key={role} className={`flex min-h-11 items-center space-x-2 rounded-xl border px-3 py-2 transition-colors ${(formData.roles || []).includes(role) ? 'border-cyan-300 bg-white/85 shadow-sm dark:border-cyan-700 dark:bg-slate-900/80' : 'border-white/70 bg-white/45 hover:bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/35 dark:hover:bg-slate-900/60'}`}>
-                              <Checkbox id={`role-${role}`} checked={(formData.roles || []).includes(role)} onCheckedChange={(checked) => handleRoleChange(role, checked)} />
-                              <label htmlFor={`role-${role}`} className="flex-1 cursor-pointer select-none text-sm font-medium">{role}</label>
+                      {AVAILABLE_ROLES.map(roleOption => (
+                          <div key={roleOption} className={`flex min-h-11 items-center space-x-2 rounded-xl border px-3 py-2 transition-colors ${(formData.roles || []).includes(roleOption) ? 'border-cyan-300 bg-white/85 shadow-sm dark:border-cyan-700 dark:bg-slate-900/80' : 'border-white/70 bg-white/45 hover:bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/35 dark:hover:bg-slate-900/60'}`}>
+                              <Checkbox id={`role-${roleOption}`} checked={(formData.roles || []).includes(roleOption)} onCheckedChange={(checked) => handleRoleChange(roleOption, checked)} />
+                              <label htmlFor={`role-${roleOption}`} className="flex-1 cursor-pointer select-none text-sm font-medium">{roleOption}</label>
                           </div>
                       ))}
                   </div>
@@ -490,7 +502,13 @@ const GuruManagement = () => {
                       Saat login, akun ini akan diarahkan ke Dashboard Admin dan memperoleh kewenangan administrasi penuh.
                     </p>
                   )}
+                  {(formData.roles || []).includes('Tata Usaha') && !(formData.roles || []).includes('Admin') && (
+                    <p className="relative mt-3 rounded-xl border border-cyan-200/80 bg-cyan-50/80 px-3 py-2 text-xs font-medium text-cyan-900 dark:border-cyan-800/70 dark:bg-cyan-950/30 dark:text-cyan-200" role="status">
+                      Saat login, akun ini akan diarahkan ke Dashboard Tata Usaha (administrasi &amp; operasional, tanpa bisyaroh, backup, atau log login).
+                    </p>
+                  )}
               </div>
+              )}
 
               <div className="flex items-center space-x-2 pt-2"><Checkbox id="is_notulen" checked={formData.is_notulen} onCheckedChange={handleCheckboxChange} /><label htmlFor="is_notulen" className="text-sm font-medium cursor-pointer">Jadikan sebagai Notulen MMQ</label></div>
               <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Menyimpan...' : (editingGuru ? 'Simpan Perubahan' : 'Tambah Guru')}</Button></DialogFooter>

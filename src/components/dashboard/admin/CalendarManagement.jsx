@@ -16,15 +16,20 @@ const months = [
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
+const emptyForm = { title: '', description: '', is_holiday: true };
+
 const CalendarManagement = () => {
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [holidays, setHolidays] = useState({});
+  // date string -> array of agenda entries. A date may carry several entries
+  // since the one-row-per-date constraint was lifted.
+  const [eventsByDate, setEventsByDate] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [holidayForm, setHolidayForm] = useState({ description: '', is_holiday: true });
+  const [editingId, setEditingId] = useState(null);
+  const [holidayForm, setHolidayForm] = useState(emptyForm);
 
   const fetchHolidays = useCallback(async () => {
     setIsLoading(true);
@@ -33,11 +38,12 @@ const CalendarManagement = () => {
 
     try {
       const data = await fetchCalendarEvents({ startDate, endDate });
-      const holidayMap = {};
+      const grouped = {};
       data.forEach(item => {
-        holidayMap[item.date] = item;
+        if (!item?.date) return;
+        (grouped[item.date] ||= []).push(item);
       });
-      setHolidays(holidayMap);
+      setEventsByDate(grouped);
     } catch (error) {
       toast({ title: 'Gagal memuat kalender', description: getAcademicErrorMessage(error), variant: 'destructive' });
     }
@@ -48,53 +54,66 @@ const CalendarManagement = () => {
     fetchHolidays();
   }, [fetchHolidays]);
 
+  const selectedEvents = selectedDate ? (eventsByDate[selectedDate] || []) : [];
+
   const handleDateClick = (day) => {
     const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    setSelectedDate(dateStr);
+    const d = new Date(selectedYear, selectedMonth, day);
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
 
-    if (holidays[dateStr]) {
-      setHolidayForm({
-        description: holidays[dateStr].description || '',
-        is_holiday: holidays[dateStr].is_holiday
-      });
-    } else {
-      // Check if weekend for default suggestion
-      const d = new Date(selectedYear, selectedMonth, day);
-      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-      setHolidayForm({
-          description: isWeekend ? 'Libur Akhir Pekan' : '',
-          is_holiday: true
-      });
-    }
+    setSelectedDate(dateStr);
+    setEditingId(null);
+    // The dialog always opens on a blank "add" form; existing entries are
+    // listed above it and loaded into the form only when one is clicked.
+    setHolidayForm({
+      ...emptyForm,
+      title: (eventsByDate[dateStr]?.length || !isWeekend) ? '' : 'Libur Akhir Pekan',
+    });
     setDialogOpen(true);
+  };
+
+  const handleEditEvent = (event) => {
+    setEditingId(event.id);
+    setHolidayForm({
+      title: event.title || '',
+      description: event.description || '',
+      is_holiday: event.is_holiday,
+    });
   };
 
   const handleSaveHoliday = async () => {
     if (!selectedDate) return;
+    if (!String(holidayForm.title || '').trim() && !String(holidayForm.description || '').trim()) {
+      toast({ title: 'Nama agenda wajib diisi', description: 'Isi nama agenda atau keterangannya.', variant: 'destructive' });
+      return;
+    }
 
     try {
       await saveCalendarEvent({
-        existingId: holidays[selectedDate]?.id,
+        existingId: editingId,
         selectedDate,
+        title: holidayForm.title,
         description: holidayForm.description,
         isHoliday: holidayForm.is_holiday,
         userId: user?.id
       });
-      toast({ title: 'Berhasil', description: 'Status tanggal diperbarui.' });
-      setDialogOpen(false);
+      toast({ title: 'Berhasil', description: editingId ? 'Agenda diperbarui.' : 'Agenda ditambahkan.' });
+      setEditingId(null);
+      setHolidayForm(emptyForm);
       fetchHolidays();
     } catch (error) {
       toast({ title: 'Gagal menyimpan', description: getAcademicErrorMessage(error), variant: 'destructive' });
     }
   };
 
-  const handleDeleteHoliday = async () => {
-    if (!selectedDate || !holidays[selectedDate]) return;
-
+  const handleDeleteEvent = async (id) => {
     try {
-      await deleteCalendarEvent(holidays[selectedDate].id);
-      toast({ title: 'Berhasil', description: 'Tanggal kembali aktif (Default).' });
-      setDialogOpen(false);
+      await deleteCalendarEvent(id);
+      toast({ title: 'Berhasil', description: 'Agenda dihapus.' });
+      if (editingId === id) {
+        setEditingId(null);
+        setHolidayForm(emptyForm);
+      }
       fetchHolidays();
     } catch (error) {
       toast({ title: 'Gagal menghapus', description: getAcademicErrorMessage(error), variant: 'destructive' });
@@ -115,11 +134,12 @@ const CalendarManagement = () => {
       const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayDate = new Date(selectedYear, selectedMonth, d);
       const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
-      const holidayInfo = holidays[dateStr];
+      const dayEvents = eventsByDate[dateStr] || [];
 
-      // Logic: It's a holiday if marked in DB OR if it's a weekend (unless explicitly marked NOT holiday in DB)
-      const isDbHoliday = holidayInfo?.is_holiday === true;
-      const isDbActive = holidayInfo?.is_holiday === false;
+      // A date is off if ANY of its entries marks it a holiday. An explicit
+      // "masuk" entry is what overrides the automatic weekend rule.
+      const isDbHoliday = dayEvents.some(e => e.is_holiday === true);
+      const isDbActive = dayEvents.some(e => e.is_holiday === false);
       const isEffectiveHoliday = isDbHoliday || (isWeekend && !isDbActive);
 
       let bgClass = "bg-white dark:bg-slate-800 hover:border-blue-500";
@@ -127,7 +147,7 @@ const CalendarManagement = () => {
       let statusText = "";
 
       if (isEffectiveHoliday) {
-        if (isWeekend && !holidayInfo) {
+        if (isWeekend && dayEvents.length === 0) {
              // Implicit Weekend
              bgClass = "bg-slate-100 dark:bg-slate-900/50 text-slate-500 hover:border-slate-400";
              statusText = "Akhir Pekan";
@@ -135,12 +155,20 @@ const CalendarManagement = () => {
              // Explicit Holiday
              bgClass = "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900 hover:border-red-500";
              statusIcon = <CalendarOff className="w-4 h-4 text-red-500" />;
-             statusText = holidayInfo?.description || "Libur";
+             statusText = dayEvents[0]?.title || dayEvents[0]?.description || "Libur";
         }
       } else {
-        // Active Day
-        statusIcon = <CalendarCheck className="w-4 h-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />;
+        // Active Day — may still carry agenda entries (e.g. an exam or a visit).
+        statusIcon = dayEvents.length > 0
+          ? <CalendarIcon className="w-4 h-4 text-blue-500" />
+          : <CalendarCheck className="w-4 h-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />;
+        if (dayEvents.length > 0) {
+          bgClass = "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900 hover:border-blue-500";
+          statusText = dayEvents[0]?.title || dayEvents[0]?.description || "Agenda";
+        }
       }
+
+      const extraCount = dayEvents.length > 1 ? dayEvents.length - 1 : 0;
 
       days.push(
         <div
@@ -152,8 +180,9 @@ const CalendarManagement = () => {
             <span className={`font-bold text-lg ${isEffectiveHoliday ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{d}</span>
             {statusIcon}
           </div>
-          <div className="text-xs font-medium truncate mt-1">
-            {statusText && <Badge variant="outline" className={`text-[10px] h-5 px-1 border-0 ${isEffectiveHoliday ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600'}`}>{statusText}</Badge>}
+          <div className="text-xs font-medium truncate mt-1 flex items-center gap-1">
+            {statusText && <Badge variant="outline" className={`text-[10px] h-5 px-1 border-0 truncate ${isEffectiveHoliday ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{statusText}</Badge>}
+            {extraCount > 0 && <Badge variant="outline" className="text-[10px] h-5 px-1 border-0 bg-slate-200 text-slate-600 flex-shrink-0">+{extraCount}</Badge>}
           </div>
         </div>
       );
@@ -176,7 +205,7 @@ const CalendarManagement = () => {
       <CardHeader className="flex flex-col md:flex-row items-center justify-between pb-4 border-b gap-4">
         <div>
             <CardTitle className="text-xl flex items-center gap-2"><CalendarIcon className="w-6 h-6 text-primary"/> Kalender Akademik</CardTitle>
-            <CardDescription>Atur hari libur. Sabtu & Minggu otomatis dianggap libur kecuali diubah.</CardDescription>
+            <CardDescription>Atur hari libur dan agenda kegiatan. Satu tanggal boleh memuat beberapa agenda. Sabtu &amp; Minggu otomatis dianggap libur kecuali diubah.</CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-4 justify-center">
             {/* Button removed as requested */}
@@ -196,7 +225,7 @@ const CalendarManagement = () => {
                 <div key={day} className={`font-semibold text-sm uppercase ${day === 'Sab' || day === 'Min' ? 'text-red-400' : 'text-muted-foreground'}`}>{day}</div>
             ))}
         </div>
-        <div className="grid grid-cols-7 gap-2 md:gap-4">
+        <div className={`grid grid-cols-7 gap-2 md:gap-4 transition-opacity ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
             {generateCalendarDays()}
         </div>
 
@@ -204,18 +233,70 @@ const CalendarManagement = () => {
             <div className="flex items-center gap-2"><div className="w-4 h-4 bg-white border rounded"></div> Hari Efektif</div>
             <div className="flex items-center gap-2"><div className="w-4 h-4 bg-slate-100 border rounded"></div> Akhir Pekan (Libur)</div>
             <div className="flex items-center gap-2"><div className="w-4 h-4 bg-red-50 border border-red-200 rounded"></div> Hari Libur Nasional / Cuti</div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded"></div> Ada Agenda (Tetap KBM)</div>
         </div>
       </CardContent>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Pengaturan Tanggal</DialogTitle>
+                <DialogTitle>Agenda Tanggal Ini</DialogTitle>
                 <DialogDescription>
                     {selectedDate && new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+
+            {selectedEvents.length > 0 && (
+                <div className="space-y-2 border-b pb-4">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {selectedEvents.length} agenda tersimpan
+                    </Label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {selectedEvents.map(event => (
+                            <div
+                                key={event.id}
+                                className={`flex items-start gap-2 rounded-lg border p-2 text-sm ${editingId === event.id ? 'border-primary bg-primary/5' : 'border-border'}`}
+                            >
+                                {event.is_holiday
+                                    ? <CalendarOff className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                    : <CalendarCheck className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />}
+                                <button
+                                    type="button"
+                                    onClick={() => handleEditEvent(event)}
+                                    className="flex-1 text-left min-w-0"
+                                >
+                                    <div className="font-medium truncate">{event.title}</div>
+                                    {event.description && event.description !== event.title && (
+                                        <div className="text-xs text-muted-foreground truncate">{event.description}</div>
+                                    )}
+                                </button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 flex-shrink-0"
+                                    onClick={() => handleDeleteEvent(event.id)}
+                                    type="button"
+                                >
+                                    <Trash2 className="w-4 h-4 text-destructive"/>
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="space-y-4 py-2">
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {editingId ? 'Ubah agenda' : 'Tambah agenda baru'}
+                </Label>
+                <div className="space-y-2">
+                    <Label>Nama Agenda</Label>
+                    <Input
+                        placeholder="Contoh: Rapat Komite Sekolah"
+                        value={holidayForm.title}
+                        onChange={e => setHolidayForm(prev => ({ ...prev, title: e.target.value }))}
+                    />
+                </div>
                 <div className="space-y-2">
                     <Label>Status</Label>
                     <Select
@@ -230,21 +311,29 @@ const CalendarManagement = () => {
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label>Keterangan</Label>
+                    <Label>Keterangan <span className="text-muted-foreground font-normal">(opsional)</span></Label>
                     <Input
-                        placeholder="Contoh: Libur Idul Fitri"
+                        placeholder="Contoh: Pukul 09.00 di aula"
                         value={holidayForm.description}
                         onChange={e => setHolidayForm(prev => ({ ...prev, description: e.target.value }))}
                     />
                 </div>
             </div>
             <DialogFooter className="flex justify-between sm:justify-between">
-                {holidays[selectedDate] ? (
-                    <Button variant="destructive" onClick={handleDeleteHoliday} type="button"><Trash2 className="w-4 h-4 mr-2"/> Reset ke Default</Button>
+                {editingId ? (
+                    <Button
+                        variant="outline"
+                        type="button"
+                        onClick={() => { setEditingId(null); setHolidayForm(emptyForm); }}
+                    >
+                        Batal Ubah
+                    </Button>
                 ) : <div></div>}
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setDialogOpen(false)}>Batal</Button>
-                    <Button onClick={handleSaveHoliday}><Save className="w-4 h-4 mr-2"/> Simpan</Button>
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>Tutup</Button>
+                    <Button onClick={handleSaveHoliday}>
+                        <Save className="w-4 h-4 mr-2"/> {editingId ? 'Simpan Perubahan' : 'Tambah'}
+                    </Button>
                 </div>
             </DialogFooter>
         </DialogContent>

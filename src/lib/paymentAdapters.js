@@ -92,7 +92,7 @@ export const getSharedDefaultSppAmount = (santriList = []) => {
 export const getPaymentErrorMessage = (error) => {
     const message = String(error?.message || '');
     if (message.includes('payments_active_santri_bulan_tahun_unique')) {
-        return 'Pembayaran santri untuk bulan dan tahun tersebut sudah tercatat.';
+        return 'Pembayaran murid untuk bulan dan tahun tersebut sudah tercatat.';
     }
     if (error?.code === '23505' || message.includes('payments_transaction_id_unique')) {
         return 'Pembayaran duplikat terdeteksi. Silakan ulangi proses pembayaran.';

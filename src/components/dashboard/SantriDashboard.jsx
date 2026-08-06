@@ -343,7 +343,7 @@ const EditProfileDialog = ({ isOpen, onOpenChange, santri, onUpdate }) => {
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Edit Profil Santri</DialogTitle><DialogDescription>Perbarui data detail santri.</DialogDescription></DialogHeader>
+                <DialogHeader><DialogTitle>Edit Profil Murid</DialogTitle><DialogDescription>Perbarui data detail murid.</DialogDescription></DialogHeader>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                     <div className="col-span-full bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
                         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -471,7 +471,7 @@ const SantriDashboard = ({ isAdult = false }) => {
       setIsAttendanceModalOpen(true);
   };
 
-  if (!santriData) return <div className="p-8 text-center text-muted-foreground">Memuat data santri...</div>;
+  if (!santriData) return <div className="p-8 text-center text-muted-foreground">Memuat data murid...</div>;
 
   const jilidVideos = videos.reduce((acc, video) => { const jilid = video.jilid || 'Lainnya'; if (!acc[jilid]) acc[jilid] = []; acc[jilid].push(video); return acc; }, {});
   const hasAttendedToday = dailyAttendance.includes(santriData.id);
@@ -500,9 +500,9 @@ const SantriDashboard = ({ isAdult = false }) => {
 
   return (
     <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-24 sm:px-6 lg:px-8">
-        <BirthdayGreeting user={santriData} type="Santri" />
+        <BirthdayGreeting user={santriData} type="Murid" />
         <h1 className="text-3xl md:text-4xl font-bold text-[#112D4E] dark:text-white mb-8 flex items-center justify-between font-cinzel">
-            Dashboard Santri
+            Dashboard Murid
         </h1>
         <section className="relative mb-8 overflow-hidden rounded-2xl border border-white/80 bg-slate-100 text-slate-900 shadow-[14px_14px_32px_rgba(15,23,42,0.16),-12px_-12px_28px_rgba(255,255,255,0.92)] dark:border-white/10 dark:bg-slate-950 dark:text-white dark:shadow-[14px_14px_32px_rgba(0,0,0,0.5),-10px_-10px_26px_rgba(30,41,59,0.3)]">
           <Suspense fallback={null}><SantriLevelScene accentColor={levelInfo.accentColor} points={santriData.points} /></Suspense>
@@ -510,7 +510,7 @@ const SantriDashboard = ({ isAdult = false }) => {
           <div className="relative z-10 grid gap-7 p-5 sm:p-7 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:p-8">
             <div className="flex justify-center lg:justify-start">
               <div className="rounded-full bg-slate-100 p-2 shadow-[inset_5px_5px_12px_rgba(15,23,42,0.12),inset_-5px_-5px_12px_rgba(255,255,255,0.9)] dark:bg-slate-900 dark:shadow-[inset_5px_5px_12px_rgba(0,0,0,0.45),inset_-5px_-5px_12px_rgba(51,65,85,0.28)]">
-                <button type="button" onClick={() => setIsAvatarPreviewOpen(true)} className="block rounded-full transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Lihat foto profil santri">
+                <button type="button" onClick={() => setIsAvatarPreviewOpen(true)} className="block rounded-full transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Lihat foto profil murid">
                   <Avatar className="h-28 w-28 border-4 border-white bg-slate-100 shadow-xl dark:border-slate-700 sm:h-32 sm:w-32">
                     <AvatarImage src={santriData?.foto_url} className="object-cover" />
                     <AvatarFallback className="bg-slate-200 text-3xl font-black text-slate-700 dark:bg-slate-800 dark:text-white">{santriData?.nama_lengkap?.charAt(0) || 'S'}</AvatarFallback>
@@ -520,7 +520,7 @@ const SantriDashboard = ({ isAdult = false }) => {
             </div>
 
             <div className="min-w-0 text-center lg:text-left">
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.18em]" style={{ color: levelInfo.textColor }}>Profil belajar santri</p>
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.18em]" style={{ color: levelInfo.textColor }}>Profil belajar murid</p>
               <h2 className="text-2xl font-black tracking-tight sm:text-3xl">{santriData.nama_lengkap}</h2>
               <p className="mt-2 flex items-center justify-center gap-2 text-sm font-semibold text-muted-foreground sm:text-base lg:justify-start">
                 <Users className="h-4 w-4" /> {santriData.class?.nama_kelas || 'Belum masuk kelas'}
@@ -636,11 +636,11 @@ const SantriDashboard = ({ isAdult = false }) => {
         </Tabs>
 
         <EditProfileDialog isOpen={isInfoModalOpen} onOpenChange={setIsInfoModalOpen} santri={santriData} onUpdate={initializeData} />
-        <AvatarPreviewDialog open={isAvatarPreviewOpen} onOpenChange={setIsAvatarPreviewOpen} imageUrl={santriData.foto_url} name={santriData.nama_lengkap} description="Foto profil santri yang sedang digunakan." />
+        <AvatarPreviewDialog open={isAvatarPreviewOpen} onOpenChange={setIsAvatarPreviewOpen} imageUrl={santriData.foto_url} name={santriData.nama_lengkap} description="Foto profil murid yang sedang digunakan." />
 
         <Dialog open={isHafalanModalOpen} onOpenChange={setIsHafalanModalOpen}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Video Hafalan Santri</DialogTitle><DialogDescription>Pilih kategori video hafalan yang ingin ditonton.</DialogDescription></DialogHeader>
+                <DialogHeader><DialogTitle>Video Hafalan Murid</DialogTitle><DialogDescription>Pilih kategori video hafalan yang ingin ditonton.</DialogDescription></DialogHeader>
                 <Tabs defaultValue="Jilid 1" className="w-full">
                     <div className="overflow-x-auto pb-2"><TabsList>{Object.keys(jilidVideos).sort().map(jilid => (<TabsTrigger key={jilid} value={jilid}>{jilid}</TabsTrigger>))}</TabsList></div>
                     {Object.keys(jilidVideos).sort().map(jilid => (

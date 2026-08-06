@@ -96,7 +96,7 @@ const GatchaSettings = () => {
                     <Card>
                         <CardHeader>
                             <CardTitle>Daftar Tantangan Random</CardTitle>
-                            <CardDescription>Tantangan ini akan muncul secara acak saat santri bermain.</CardDescription>
+                            <CardDescription>Tantangan ini akan muncul secara acak saat murid bermain.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {config.challenges.map((challenge) => (

@@ -487,7 +487,7 @@ const QuizHafalanPage = () => {
                       <Gamepad2 className={`relative w-20 h-20 ${isDark ? 'text-white' : 'text-slate-800'}`} />
                     </div>
                     <div>
-                      <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400 mb-2">PILIH SANTRI</h2>
+                      <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400 mb-2">PILIH MURID</h2>
                       <p className={`${isDark ? 'text-white/60' : 'text-slate-500'} text-lg`}>Guru memilih pemain langsung dari kelas.</p>
                     </div>
                     <div className={`rounded-3xl p-5 md:p-6 backdrop-blur-xl ${isDark ? 'bg-white/8 shadow-[0_18px_50px_rgba(0,0,0,0.35)]' : 'bg-white/75 shadow-[0_18px_50px_rgba(71,85,105,0.16)]'}`}>
@@ -503,7 +503,7 @@ const QuizHafalanPage = () => {
                         className={`w-full h-12 rounded-xl px-4 text-sm font-semibold outline-none ${isDark ? 'bg-slate-900/80 text-white' : 'bg-white text-slate-800'}`}
                         disabled={isRosterLoading}
                       >
-                        <option value="">{isRosterLoading ? 'Memuat santri...' : 'Pilih santri'}</option>
+                        <option value="">{isRosterLoading ? 'Memuat murid...' : 'Pilih murid'}</option>
                         {filteredSantri.map((santri) => (
                           <option key={santri.id} value={santri.id}>
                             {santri.nama_lengkap}{santri.jilid ? ` — ${santri.jilid}` : ''}
@@ -595,7 +595,7 @@ const QuizHafalanPage = () => {
                                         <div className={`${isDark ? 'bg-slate-900/55' : 'bg-slate-100'} rounded-2xl p-6`}>
                                           <div className="flex flex-col gap-4 items-center">
                                             <p className="text-yellow-500 font-bold flex items-center justify-center gap-2 text-xl"><Search className="w-6 h-6" /> VALIDASI GURU</p>
-                                            <p className={`text-sm ${isDark ? 'text-white/65' : 'text-slate-500'}`}>Nilai jawaban santri secara langsung.</p>
+                                            <p className={`text-sm ${isDark ? 'text-white/65' : 'text-slate-500'}`}>Nilai jawaban murid secara langsung.</p>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                                               <Button
                                                 type="button"

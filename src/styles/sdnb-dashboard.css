@@ -1,0 +1,202 @@
+/* ============================================================================
+   sdnb-dashboard.css — brings the dashboards into the SDN Baturaja
+   "Aurora Glass" language used by the public pages (see sdnb.css).
+
+   admin-dashboard.css is fully token-driven (`--admin-*` HSL triplets), so the
+   whole surface — including all 36 admin panels — re-skins by remapping those
+   tokens inside `.sdnb-dash`. Only the shell (background wash, floating orbs,
+   heading font, nav pills, stat cards) needs explicit rules on top.
+
+   Palette is the same one the mockups use:
+     #5b6cff  hsl(234 100% 68%)   accent 1
+     #9a6cf0  hsl(261  82% 68%)   accent 2
+     #f0779f  hsl(340  80% 70%)   accent 3
+   ========================================================================== */
+
+.sdnb-dash {
+  /* ── surfaces ─────────────────────────────────────────────────────────── */
+  --admin-bg: 222 42% 94%;              /* #e9edf6 */
+  --admin-surface: 0 0% 100%;
+  --admin-surface-raised: 0 0% 100%;
+  --admin-surface-sunken: 226 40% 96%;
+  --admin-border: 230 40% 89%;
+  --admin-border-subtle: 230 40% 93%;
+
+  /* ── text ─────────────────────────────────────────────────────────────── */
+  --admin-text-primary: 236 26% 12%;    /* #171827 */
+  --admin-text-secondary: 232 18% 40%;  /* #535878 */
+  --admin-text-muted: 233 15% 50%;      /* #6d7192 */
+
+  /* ── accents ──────────────────────────────────────────────────────────── */
+  --admin-accent: 234 100% 68%;         /* #5b6cff */
+  --admin-accent-muted: 234 70% 60%;
+  --admin-accent-soft: 232 100% 96%;
+  --admin-accent-cyan: 190 75% 62%;
+  --admin-accent-violet: 261 82% 68%;   /* #9a6cf0 */
+  --admin-accent-amber: 340 80% 70%;    /* #f0779f — the palette's warm accent */
+
+  --admin-nav-active-bg: 234 100% 68%;
+  --admin-nav-active-fg: 0 0% 100%;
+  --admin-nav-hover-bg: 232 100% 96%;
+  --admin-nav-indicator: 234 100% 68%;
+  --admin-glow: 234 100% 68%;
+  --admin-shadow-color: 232 30% 60%;
+
+  position: relative;
+  min-height: 100vh;
+  font-family: 'Archivo', system-ui, sans-serif;
+  color: #1b1c28;
+}
+
+/* Headings adopt the display face used across the public site. */
+.sdnb-dash h1,
+.sdnb-dash h2,
+.sdnb-dash h3,
+.sdnb-dash .admin-page-header h1,
+.sdnb-dash .admin-stat-card__value {
+  font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ── background wash + floating orbs (same as the public shell) ──────────── */
+.sdnb-dash__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(160deg, #eef1f8 0%, #e7edf7 40%, #f4eef4 100%);
+}
+.sdnb-dash__orb {
+  position: fixed;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  animation: floaty 16s ease-in-out infinite;
+}
+.sdnb-dash__orb--a { top: -180px; left: -140px; width: 600px; height: 600px; background: radial-gradient(circle at 35% 35%, rgba(150, 170, 255, .55), rgba(150, 170, 255, 0) 68%); filter: blur(22px); }
+.sdnb-dash__orb--b { top: 90px; right: -200px; width: 620px; height: 620px; background: radial-gradient(circle at 50% 50%, rgba(255, 178, 214, .5), rgba(255, 178, 214, 0) 68%); filter: blur(22px); animation-duration: 19s; animation-direction: reverse; }
+.sdnb-dash__orb--c { bottom: -260px; left: 28%; width: 680px; height: 680px; background: radial-gradient(circle at 50% 50%, rgba(160, 240, 225, .45), rgba(160, 240, 225, 0) 66%); filter: blur(26px); animation-duration: 23s; }
+.sdnb-dash__content { position: relative; z-index: 1; }
+
+html[data-theme="dark"] .sdnb-dash__bg { background: linear-gradient(155deg, #141338 0%, #181a44 38%, #241a4a 70%, #2c1b3f 100%); }
+html[data-theme="dark"] .sdnb-dash__orb { opacity: .6; filter: blur(30px) saturate(1.5) brightness(1.1); }
+
+/* ── glass panels ────────────────────────────────────────────────────────── */
+.sdnb-dash .admin-panel,
+.sdnb-dash .admin-table-shell,
+.sdnb-dash .admin-section,
+.sdnb-dash .admin-filter-bar,
+.sdnb-dash .admin-form-section {
+  background: rgba(255, 255, 255, .55) !important;
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, .8) !important;
+  box-shadow: 0 26px 56px -24px rgba(55, 65, 120, .5), inset 0 1px 0 rgba(255, 255, 255, .95) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-panel,
+html[data-theme="dark"] .sdnb-dash .admin-table-shell,
+html[data-theme="dark"] .sdnb-dash .admin-section,
+html[data-theme="dark"] .sdnb-dash .admin-filter-bar,
+html[data-theme="dark"] .sdnb-dash .admin-form-section {
+  background: rgba(28, 30, 66, .55) !important;
+  border-color: rgba(255, 255, 255, .12) !important;
+}
+
+/* ── module navigation pills ─────────────────────────────────────────────── */
+.sdnb-dash .admin-module-nav {
+  background: rgba(255, 255, 255, .5);
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, .78);
+  border-radius: 22px;
+  box-shadow: 0 20px 46px -22px rgba(55, 65, 120, .5), inset 0 1px 0 rgba(255, 255, 255, .95);
+  padding: 8px;
+}
+.sdnb-dash .admin-nav-pill {
+  border-radius: 12px;
+  font-weight: 600;
+  color: #2c2f45;
+  transition: background .25s ease, color .25s ease;
+}
+.sdnb-dash .admin-nav-pill:hover { background: rgba(255, 255, 255, .7); color: #4a58e0; }
+.sdnb-dash .admin-nav-pill.active { color: #fff; font-weight: 700; }
+.sdnb-dash .admin-nav-pill-indicator {
+  background: linear-gradient(135deg, #6470ff, #8a6cf0 55%, #e58fc4);
+  border-radius: 12px;
+  box-shadow: 0 14px 30px -12px rgba(95, 105, 235, .95), inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+.sdnb-dash .admin-nav-group-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #8a8ea8;
+}
+.sdnb-dash .admin-nav-group-separator { background: rgba(120, 132, 200, .22); }
+
+/* ── stat cards ──────────────────────────────────────────────────────────── */
+.sdnb-dash .admin-stat-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .55) !important;
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, .8) !important;
+  box-shadow: 0 26px 56px -22px rgba(55, 65, 120, .55), inset 0 1px 0 rgba(255, 255, 255, .95) !important;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.sdnb-dash .admin-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(166deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.sdnb-dash .admin-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 36px 70px -22px rgba(55, 65, 120, .6), inset 0 1px 0 rgba(255, 255, 255, .95) !important;
+}
+.sdnb-dash .admin-stat-card__icon { border-radius: 16px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85); }
+
+/* ── primary buttons ─────────────────────────────────────────────────────── */
+.sdnb-dash .admin-panel-primary-btn,
+.sdnb-dash .attendance-header__action-btn {
+  border-radius: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #6470ff, #8a6cf0 55%, #e58fc4);
+  border: 0;
+  box-shadow: 0 14px 30px -12px rgba(95, 105, 235, .95), inset 0 1px 0 rgba(255, 255, 255, .6);
+  transition: filter .25s ease;
+}
+.sdnb-dash .admin-panel-primary-btn:hover,
+.sdnb-dash .attendance-header__action-btn:hover { filter: brightness(1.07); }
+
+.sdnb-dash .admin-action-cluster-btn {
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .62);
+  border: 1px solid rgba(255, 255, 255, .9);
+  color: #33375a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95);
+}
+.sdnb-dash .admin-action-cluster-btn:hover { background: rgba(255, 255, 255, .92); color: #4a4fd0; }
+
+/* ── segmented sub-tabs (Santri TPQ/PTPT/Dewasa) ─────────────────────────── */
+.sdnb-dash .admin-glass-tab-list {
+  background: rgba(255, 255, 255, .55);
+  border: 1px solid rgba(255, 255, 255, .85);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 14px 30px -18px rgba(60, 70, 120, .6);
+}
+.sdnb-dash .admin-glass-tab-indicator {
+  background: linear-gradient(135deg, #6470ff, #a06cf0 60%, #e58fc4);
+  box-shadow: 0 14px 28px -12px rgba(95, 105, 235, .95), inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+.sdnb-dash .admin-glass-tab-button.text-primary,
+.sdnb-dash .admin-glass-tab-button[aria-selected="true"] { color: #fff !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sdnb-dash__orb { animation: none; }
+}

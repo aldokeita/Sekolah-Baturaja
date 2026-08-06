@@ -337,7 +337,7 @@ const QuizSettings = () => {
             <div className="game-config-section-heading">
                 <div>
                     <h3 className="text-lg font-black flex items-center gap-2"><Sparkles className="w-5 h-5 text-cyan-500" /> Bank Soal Quiz Hafalan</h3>
-                    <p className="text-sm text-muted-foreground">Kategori dan soal di sini langsung digunakan roda quiz; guru memilih serta menilai santri tanpa RFID.</p>
+                    <p className="text-sm text-muted-foreground">Kategori dan soal di sini langsung digunakan roda quiz; guru memilih serta menilai murid tanpa RFID.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={resetToDefaults}><RefreshCw className="w-4 h-4 mr-2"/> Reset</Button>
@@ -452,7 +452,7 @@ const LevelSettings = () => {
                 female: levelConfig.female.map((level) => normalizeLevel(level, '#ec4899')).sort((a, b) => a.min - b.min)
             };
             for (const [gender, levels] of Object.entries(normalizedConfig)) {
-                if (levels.length === 0) throw new Error(`Minimal satu level santri ${gender === 'male' ? 'putra' : 'putri'} wajib tersedia.`);
+                if (levels.length === 0) throw new Error(`Minimal satu level murid ${gender === 'male' ? 'putra' : 'putri'} wajib tersedia.`);
                 levels.forEach((level) => {
                     if (!level.name?.trim()) throw new Error('Nama level tidak boleh kosong.');
                     if (!Number.isFinite(Number(level.min)) || !Number.isFinite(Number(level.max)) || Number(level.min) > Number(level.max)) {
@@ -528,7 +528,7 @@ const LevelSettings = () => {
                     <div className="game-level-card__preview">
                         <div className="game-level-card__avatar">{gender === 'female' ? 'P' : 'L'}</div>
                         <div className="min-w-0">
-                            <p className="game-level-card__name">Nama Santri</p>
+                            <p className="game-level-card__name">Nama Murid</p>
                             <p className="game-level-card__meta">{level.name || 'Level Baru'} · {level.min}–{level.max} poin</p>
                         </div>
                         <div className="game-level-card__accent" aria-label="Warna aksen level" />
@@ -606,7 +606,7 @@ const LevelSettings = () => {
             <div className="game-config-section-heading">
                 <div>
                     <h3 className="text-lg font-black">Level & Visual Profile Card</h3>
-                    <p className="text-sm text-muted-foreground">Atur rentang poin, nama level, warna aksen, serta depth neumorphic untuk santri putra dan putri.</p>
+                    <p className="text-sm text-muted-foreground">Atur rentang poin, nama level, warna aksen, serta depth neumorphic untuk murid putra dan putri.</p>
                 </div>
                 <Button type="button" onClick={saveLevelConfig} disabled={isLoading || isSaving} className="game-config-save">
                     <Save className="w-4 h-4 mr-2"/> {isSaving ? 'Menyimpan...' : 'Simpan Konfigurasi Level'}
@@ -615,8 +615,8 @@ const LevelSettings = () => {
 
             <Tabs defaultValue="male" className="w-full">
                 <TabsList className="game-level-gender-tabs w-full grid grid-cols-2">
-                    <TabsTrigger value="male"><User className="w-4 h-4 mr-2"/> Santri Putra</TabsTrigger>
-                    <TabsTrigger value="female"><UserCheck className="w-4 h-4 mr-2"/> Santri Putri</TabsTrigger>
+                    <TabsTrigger value="male"><User className="w-4 h-4 mr-2"/> Murid Putra</TabsTrigger>
+                    <TabsTrigger value="female"><UserCheck className="w-4 h-4 mr-2"/> Murid Putri</TabsTrigger>
                 </TabsList>
                 <TabsContent value="male" className="mt-5">
                     {renderLevelList('male', levelConfig.male)}
@@ -633,19 +633,19 @@ const TEMPLATE_FIELDS = [
     {
         key: 'jilidPromotion',
         title: 'Kenaikan Jilid',
-        description: 'Pesan untuk wali saat santri melanjutkan ke jilid berikutnya.',
+        description: 'Pesan untuk wali saat murid melanjutkan ke jilid berikutnya.',
         variables: ['nama_santri', 'jilid_lama', 'jilid_baru', 'link_grup', 'nama_lembaga'],
     },
     {
         key: 'jilidDemotion',
         title: 'Penurunan / Penguatan Jilid',
-        description: 'Pesan pendampingan saat santri perlu menguatkan pembelajaran di jilid tujuan.',
+        description: 'Pesan pendampingan saat murid perlu menguatkan pembelajaran di jilid tujuan.',
         variables: ['nama_santri', 'jilid_lama', 'jilid_baru', 'link_grup', 'nama_lembaga'],
     },
     {
         key: 'paymentReceipt',
         title: 'Bukti Pembayaran',
-        description: 'Pesan yang menyertai rincian transaksi pembayaran kepada wali santri.',
+        description: 'Pesan yang menyertai rincian transaksi pembayaran kepada wali murid.',
         variables: ['nama_santri', 'nomor_induk', 'rincian', 'nominal', 'tanggal', 'periode', 'metode', 'transaction_id', 'status', 'nama_lembaga'],
     },
 ];

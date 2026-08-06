@@ -40,8 +40,8 @@ const paymentItems = [
   { name: 'SPP Bulanan', amount: 0, monthly: true, icon: Wallet, custom: 'spp_dropdown' },
   { name: 'Sarpras', amount: 115000, monthly: false, icon: Building },
   { name: 'Seragam', amount: 175000, monthly: false, icon: Shirt },
-  { name: 'Tas Santri', amount: 75000, monthly: false, icon: Briefcase },
-  { name: 'ID Card Santri', amount: 25000, monthly: false, icon: IdCard },
+  { name: 'Tas Murid', amount: 75000, monthly: false, icon: Briefcase },
+  { name: 'ID Card Murid', amount: 25000, monthly: false, icon: IdCard },
   { name: 'Buku Prestasi', amount: 10000, monthly: false, icon: BookOpen },
   { name: 'Buku Jilid Pra TK', amount: 27500, monthly: false, icon: Book },
   { name: 'Buku Jilid 1-6', amount: 25000, monthly: false, hasSubtypes: true, icon: Book },
@@ -60,8 +60,8 @@ const SantriSelectorModal = ({ santriList, onSelect, open, onOpenChange, selecte
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-        <DialogHeader><DialogTitle>Pilih Santri</DialogTitle><DialogDescription>Cari dan klik pada santri untuk memilih. Anda bisa memilih lebih dari satu.</DialogDescription></DialogHeader>
-        <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /><Input placeholder="Cari nama santri..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" /></div>
+        <DialogHeader><DialogTitle>Pilih Murid</DialogTitle><DialogDescription>Cari dan klik pada murid untuk memilih. Anda bisa memilih lebih dari satu.</DialogDescription></DialogHeader>
+        <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /><Input placeholder="Cari nama murid..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" /></div>
         <div className="flex-grow overflow-y-auto p-1">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
             {filteredSantri.map(santri => (
@@ -156,7 +156,7 @@ const MonthSelectorDialog = ({ open, onOpenChange, item, onConfirm, initialYear,
                 <div className="space-y-4 py-4">
                     <div className="flex items-center justify-between"><label className="text-sm font-medium">Tahun Tagihan</label><Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(Number(val))}><SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger><SelectContent>{availableYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select></div>
                     <div><label className="text-sm font-medium mb-2 block">Bulan Tagihan</label><div className="grid grid-cols-3 gap-2">{monthsList.map(month => (<Button key={month} variant={selectedMonths.includes(month) ? "default" : "outline"} size="sm" onClick={() => toggleMonth(month)} className={cn("w-full justify-start px-2", selectedMonths.includes(month) && "bg-primary text-white hover:bg-primary/90")}>{selectedMonths.includes(month) && <Check className="w-3 h-3 mr-1"/>}{month}</Button>))}</div></div>
-                    {item?.custom === 'spp_dropdown' && (<div className="space-y-2"><label className="text-sm font-medium block">Nominal SPP</label><p className="text-xs text-muted-foreground">{getSharedDefaultSppAmount(selectedSantri) ? 'Nominal otomatis mengikuti default SPP santri. Admin tetap dapat menggantinya.' : 'Default SPP belum sama atau belum diatur. Pilih nominal untuk transaksi ini.'}</p><div className="grid grid-cols-3 gap-2">{sppOptions.map(opt => (<Button key={opt} variant={selectedSppOption === opt.toString() ? "default" : "outline"} size="sm" onClick={() => handleSppOptionChange(opt.toString())} className={cn(selectedSppOption === opt.toString() && "bg-primary hover:bg-primary/90 text-white")}>{(opt / 1000)}k</Button>))}<Button variant={selectedSppOption === 'custom' ? "default" : "outline"} size="sm" onClick={() => handleSppOptionChange('custom')} className={cn(selectedSppOption === 'custom' && "bg-primary hover:bg-primary/90 text-white")}>Custom</Button></div>{selectedSppOption === 'custom' && (<Input type="number" min="10000" step="1000" value={customAmount || ''} onChange={(e) => setCustomAmount(Number(e.target.value))} placeholder="Masukkan nominal..." className="mt-2"/>)}</div>)}
+                    {item?.custom === 'spp_dropdown' && (<div className="space-y-2"><label className="text-sm font-medium block">Nominal SPP</label><p className="text-xs text-muted-foreground">{getSharedDefaultSppAmount(selectedSantri) ? 'Nominal otomatis mengikuti default SPP murid. Admin tetap dapat menggantinya.' : 'Default SPP belum sama atau belum diatur. Pilih nominal untuk transaksi ini.'}</p><div className="grid grid-cols-3 gap-2">{sppOptions.map(opt => (<Button key={opt} variant={selectedSppOption === opt.toString() ? "default" : "outline"} size="sm" onClick={() => handleSppOptionChange(opt.toString())} className={cn(selectedSppOption === opt.toString() && "bg-primary hover:bg-primary/90 text-white")}>{(opt / 1000)}k</Button>))}<Button variant={selectedSppOption === 'custom' ? "default" : "outline"} size="sm" onClick={() => handleSppOptionChange('custom')} className={cn(selectedSppOption === 'custom' && "bg-primary hover:bg-primary/90 text-white")}>Custom</Button></div>{selectedSppOption === 'custom' && (<Input type="number" min="10000" step="1000" value={customAmount || ''} onChange={(e) => setCustomAmount(Number(e.target.value))} placeholder="Masukkan nominal..." className="mt-2"/>)}</div>)}
                     {item?.custom === 'spp' && (<div><label className="text-sm font-medium mb-1 block">Nominal per Bulan</label><Input type="number" value={customAmount} onChange={(e) => setCustomAmount(Number(e.target.value))} placeholder="Contoh: 120000" /></div>)}
                     <div className="pt-4 border-t flex justify-between items-center"><span className="text-sm text-muted-foreground">{selectedMonths.length} Bulan dipilih</span><span className="font-bold text-lg">Total: Rp {((item?.custom === 'spp' || item?.custom === 'spp_dropdown' ? customAmount : item?.amount || 0) * selectedMonths.length).toLocaleString('id-ID')}</span></div>
                 </div>
@@ -222,7 +222,7 @@ const PaymentSystem = () => {
         })));
         if (active) setSantriList(santriWithAvatars);
       } catch {
-        toast({ title: "Error", description: "Gagal memuat data santri.", variant: "destructive" });
+        toast({ title: "Error", description: "Gagal memuat data murid.", variant: "destructive" });
       }
     };
     fetchSantri();
@@ -281,7 +281,7 @@ const PaymentSystem = () => {
     const foundSantri = santriList.find(s => s.rfid_tag === rfidScan);
     if(foundSantri) {
         handleSantriSelect(foundSantri);
-        toast({ title: "Santri Ditemukan!", description: `Santri ${foundSantri.nama_lengkap} (${foundSantri.kategori}) ditambahkan.`});
+        toast({ title: "Murid Ditemukan!", description: `Murid ${foundSantri.nama_lengkap} (${foundSantri.kategori}) ditambahkan.`});
     } else {
         toast({ title: "RFID tidak ditemukan", description: "Pastikan kartu terdaftar.", variant: "destructive"});
     }
@@ -355,7 +355,7 @@ const PaymentSystem = () => {
   const updateCartItem = (cartId, updates) => setCart(prev => prev.map(item => item.cartId === cartId ? { ...item, ...updates } : item));
 
   const handlePayment = async () => {
-    if (selectedSantri.length === 0 || cart.length === 0) return toast({ title: "Error", description: "Pilih santri dan tambahkan item pembayaran.", variant: "destructive" });
+    if (selectedSantri.length === 0 || cart.length === 0) return toast({ title: "Error", description: "Pilih murid dan tambahkan item pembayaran.", variant: "destructive" });
     try {
         const transactionId = crypto.randomUUID();
         let newPayments = [];
@@ -402,7 +402,7 @@ const PaymentSystem = () => {
         const data = await createPaymentsBatch(newPayments);
         if (selectedSantri.length === 1) loadPaymentHistory(selectedSantri[0].id);
 
-        toast({ title: "Pembayaran Berhasil!", description: `Pembayaran untuk ${selectedSantri.length} santri telah lunas.` });
+        toast({ title: "Pembayaran Berhasil!", description: `Pembayaran untuk ${selectedSantri.length} murid telah lunas.` });
 
         let totalAmount = 0;
         for (const item of cart) { if (item.monthly) { totalAmount += (item.amount * item.months.length); } else { totalAmount += (item.amount * item.quantity); } }
@@ -446,7 +446,7 @@ const PaymentSystem = () => {
       });
 
       const link = document.createElement('a');
-      const santriName = receiptData.santri && receiptData.santri.length > 0 ? receiptData.santri[0].nama_lengkap.replace(/\s+/g, '_') : 'Santri';
+      const santriName = receiptData.santri && receiptData.santri.length > 0 ? receiptData.santri[0].nama_lengkap.replace(/\s+/g, '_') : 'Murid';
       const dateStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
       link.download = `Bukti_Pembayaran_${santriName}_${dateStr}.png`;
       link.href = dataUrl;
@@ -508,7 +508,7 @@ const PaymentSystem = () => {
                 </div>
                 <div className="admin-panel-header-text">
                     <h2>Sistem Pembayaran</h2>
-                    <p>Proses pembayaran santri dengan scan RFID atau pilih manual.</p>
+                    <p>Proses pembayaran murid dengan scan RFID atau pilih manual.</p>
                 </div>
             </div>
         </div>
@@ -520,12 +520,12 @@ const PaymentSystem = () => {
                         <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                         <Input ref={rfidInputRef} value={rfidScan} onChange={e => setRfidScan(e.target.value)} placeholder="Scan ID Card..." className="pl-10"/>
                     </form>
-                    <Button onClick={() => setIsSantriSelectorOpen(true)} className="w-full justify-start" variant="outline"><Users className="mr-2 h-4 w-4"/> {selectedSantri.length > 0 ? `${selectedSantri.length} Santri Terpilih` : 'Pilih Santri Manual'}</Button>
+                    <Button onClick={() => setIsSantriSelectorOpen(true)} className="w-full justify-start" variant="outline"><Users className="mr-2 h-4 w-4"/> {selectedSantri.length > 0 ? `${selectedSantri.length} Murid Terpilih` : 'Pilih Murid Manual'}</Button>
 
                     {selectedSantri.length > 0 && (
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg max-h-56 overflow-y-auto">
                             <div className="flex justify-between items-center mb-2">
-                                <h3 className="font-bold">Santri Terpilih:</h3>
+                                <h3 className="font-bold">Murid Terpilih:</h3>
                                 <Button variant="ghost" size="sm" className="h-6 px-2 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => setSelectedSantri([])}>
                                     <RotateCcw className="w-3 h-3 mr-1" /> Reset
                                 </Button>
@@ -565,13 +565,13 @@ const PaymentSystem = () => {
                             <div className="flex items-center gap-3"><div className="p-2 bg-white dark:bg-slate-800 rounded-md shadow-sm"><Banknote className="w-5 h-5 text-green-600"/></div><div><p className="text-xs font-semibold text-muted-foreground uppercase">Total Tagihan</p><p className="text-xl font-black text-slate-800 dark:text-white">Rp {(totalCart * Math.max(1, selectedSantri.length)).toLocaleString('id-ID')}</p></div></div>
 <Select value={paymentMethod} onValueChange={setPaymentMethod}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tunai">Tunai</SelectItem><SelectItem value="Transfer">Transfer</SelectItem></SelectContent></Select>
                         </div>
-                        <Button onClick={handlePayment} className="w-full h-12 text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.99]" size="lg" disabled={cart.length === 0 || selectedSantri.length === 0}>Proses Pembayaran {selectedSantri.length > 1 && `(${selectedSantri.length} Santri)`}</Button>
+                        <Button onClick={handlePayment} className="w-full h-12 text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.99]" size="lg" disabled={cart.length === 0 || selectedSantri.length === 0}>Proses Pembayaran {selectedSantri.length > 1 && `(${selectedSantri.length} Murid)`}</Button>
                     </CardFooter>
                 </Card>
 
                 {selectedSantri.length === 1 && (
                 <div className="mt-4">
-                    <div className="flex justify-between items-center mb-2"><h3 className="font-bold text-xl">Riwayat Bayar Santri</h3><div className="flex gap-2 items-center"><span className="text-xs font-medium mr-1">Filter Tagihan:</span><Select value={historyFilter.year.toString()} onValueChange={val => setHistoryFilter(f => ({...f, year: val === 'all' ? 'all' : Number(val)}))}><SelectTrigger className="w-[100px] h-8"><SelectValue placeholder="Tahun" /></SelectTrigger><SelectContent><SelectItem value="all">Semua</SelectItem>{availableYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select><Select value={historyFilter.month.toString()} onValueChange={val => setHistoryFilter(f => ({...f, month: val === 'all' ? 'all' : Number(val)}))}><SelectTrigger className="w-[120px] h-8"><SelectValue placeholder="Bulan" /></SelectTrigger><SelectContent><SelectItem value="all">Semua</SelectItem>{monthsList.map((m, i) => <SelectItem key={i} value={i.toString()}>{m}</SelectItem>)}</SelectContent></Select>{selectedHistory.length > 0 && <Button onClick={confirmDelete} variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/> Hapus ({selectedHistory.length})</Button>}</div></div>
+                    <div className="flex justify-between items-center mb-2"><h3 className="font-bold text-xl">Riwayat Bayar Murid</h3><div className="flex gap-2 items-center"><span className="text-xs font-medium mr-1">Filter Tagihan:</span><Select value={historyFilter.year.toString()} onValueChange={val => setHistoryFilter(f => ({...f, year: val === 'all' ? 'all' : Number(val)}))}><SelectTrigger className="w-[100px] h-8"><SelectValue placeholder="Tahun" /></SelectTrigger><SelectContent><SelectItem value="all">Semua</SelectItem>{availableYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select><Select value={historyFilter.month.toString()} onValueChange={val => setHistoryFilter(f => ({...f, month: val === 'all' ? 'all' : Number(val)}))}><SelectTrigger className="w-[120px] h-8"><SelectValue placeholder="Bulan" /></SelectTrigger><SelectContent><SelectItem value="all">Semua</SelectItem>{monthsList.map((m, i) => <SelectItem key={i} value={i.toString()}>{m}</SelectItem>)}</SelectContent></Select>{selectedHistory.length > 0 && <Button onClick={confirmDelete} variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/> Hapus ({selectedHistory.length})</Button>}</div></div>
                     <div className="max-h-48 overflow-y-auto space-y-2 border rounded-lg p-2">
                     {filteredHistory.length > 0 && (<div className="flex items-center px-2"><Checkbox id="selectAllHistory" checked={selectedHistory.length === filteredHistory.length && filteredHistory.length > 0} onCheckedChange={checked => checked ? setSelectedHistory(filteredHistory.map(p => p.id)) : setSelectedHistory([])} /><label htmlFor="selectAllHistory" className="ml-2 text-sm font-medium">Pilih Semua</label></div>)}
                     {filteredHistory.map(p => (<div key={p.id} className="flex items-center justify-between gap-2 p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"><div className="flex items-center gap-3 min-w-0 flex-1"><Checkbox id={`history-${p.id}`} checked={selectedHistory.includes(p.id)} onCheckedChange={() => handleSelectHistory(p.id)} className="flex-shrink-0" /><div className="flex-grow min-w-0"><p className="font-semibold truncate text-sm">{p.catatan}</p><div className="flex flex-wrap items-center gap-2 text-xs text-gray-500"><span>{new Date(p.tanggal_pembayaran).toLocaleString('id-ID')}</span>{p.bulan && <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px]">Tagihan: {monthNumberToName(p.bulan)} {p.tahun}</span>}</div></div><p className="font-bold whitespace-nowrap text-sm text-primary">Rp{Number(p.jumlah || 0).toLocaleString('id-ID')}</p></div><Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40" onClick={() => setHistoryProofPayment(p)} title="Buka bukti pembayaran" aria-label="Buka bukti pembayaran"><FileText className="h-4 w-4" /></Button></div>))}

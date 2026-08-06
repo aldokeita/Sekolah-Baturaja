@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import useAdminBodyClass from '@/hooks/useAdminBodyClass';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
+import TataUsahaDashboard from '@/components/dashboard/TataUsahaDashboard';
 import GuruDashboard from '@/components/dashboard/GuruDashboard';
 import SantriDashboard from '@/components/dashboard/SantriDashboard';
 import PentashihDashboard from '@/components/dashboard/PentashihDashboard';
@@ -49,6 +50,10 @@ const DashboardPage = () => {
       }
   }, [role, user]);
 
+  // Admin and Tata Usaha render through DashboardWorkspace, which already
+  // brings the SDN Aurora Glass shell (background wash + orbs).
+  const usesSdnbTheme = role === 'admin' || role === 'tata_usaha';
+
   const renderDashboard = () => {
     console.log('Rendering dashboard based on role:', role);
 
@@ -70,6 +75,8 @@ const DashboardPage = () => {
 
     if (role === 'admin') {
       return <AdminDashboard />;
+    } else if (role === 'tata_usaha') {
+      return <TataUsahaDashboard />;
     } else if (role === 'guru') {
       return <GuruDashboard />;
     } else if (role === 'santri') {
@@ -115,10 +122,12 @@ const DashboardPage = () => {
         <meta name="description" content="Dashboard sistem manajemen LPQ Al-Fath Maulana" />
       </Helmet>
 
-      <div className="lpq-admin-surface min-h-screen py-8 relative">
+      <div className={`min-h-screen relative ${usesSdnbTheme ? '' : 'lpq-admin-surface py-8'}`}>
         {/* SideRays — dark mode only, behind content. Surface is transparent
-            so rays show through the gaps between cards and panels. */}
-        {isDark && (
+            so rays show through the gaps between cards and panels. Skipped for
+            the dashboards already re-skinned to the SDN Aurora Glass theme,
+            which paint their own fixed background and floating orbs. */}
+        {isDark && !usesSdnbTheme && (
           <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
             <SideRays
               speed={1.2}

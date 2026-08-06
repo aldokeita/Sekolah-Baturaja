@@ -107,7 +107,7 @@ const PaymentStatusPage = () => {
       const dataUrl = await toPng(receiptRef.current, { cacheBust: true, backgroundColor: '#ffffff', pixelRatio: 2 });
 
       const link = document.createElement('a');
-      const santriName = paymentData.santri ? paymentData.santri.nama_lengkap.replace(/\s+/g, '_') : 'Santri';
+      const santriName = paymentData.santri ? paymentData.santri.nama_lengkap.replace(/\s+/g, '_') : 'Murid';
       const dateStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
       link.download = `Rapor_BuktiBayar_${santriName}_${dateStr}.png`;
       link.href = dataUrl;
@@ -128,7 +128,7 @@ const PaymentStatusPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground animate-pulse">Memuat data santri dan pembayaran...</p>
+            <p className="text-muted-foreground animate-pulse">Memuat data murid dan pembayaran...</p>
         </div>
       </div>
     );
@@ -201,7 +201,7 @@ const PaymentStatusPage = () => {
                           <table className="w-full">
                               <tbody>
                                   <tr><td className="w-32 text-slate-500 font-medium pb-1">Guru Pengampu</td><td className="font-bold text-slate-900 pb-1">: {teacherName}</td></tr>
-                                  <tr><td className="w-32 text-slate-500 font-medium pb-1">Wali Santri</td><td className="font-bold text-slate-900 pb-1">: {paymentData.santri?.nama_ayah || paymentData.santri?.nama_ibu || '-'}</td></tr>
+                                  <tr><td className="w-32 text-slate-500 font-medium pb-1">Wali Murid</td><td className="font-bold text-slate-900 pb-1">: {paymentData.santri?.nama_ayah || paymentData.santri?.nama_ibu || '-'}</td></tr>
                                   <tr><td className="w-32 text-slate-500 font-medium">Dicetak Tanggal</td><td className="font-bold text-slate-900">: {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
                               </tbody>
                           </table>

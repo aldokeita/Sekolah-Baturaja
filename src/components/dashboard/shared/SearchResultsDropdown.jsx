@@ -5,7 +5,7 @@ import { Search, History, Loader2, AlertCircle, RefreshCw, X, Trash2 } from 'luc
 import { motion } from 'framer-motion';
 
 const CATEGORY_LABELS = {
-  santri: 'Data Santri',
+  santri: 'Data Murid',
   guru: 'Data Guru',
   kelas: 'Manajemen Kelas',
   pembayaran: 'Data Pembayaran'

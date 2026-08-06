@@ -62,7 +62,7 @@ export const buildBirthdayWhatsappUrl = (person, audience = 'santri') => {
   const name = String(person?.nama_lengkap || person?.nama || 'Ananda').trim();
   const ageText = Number.isFinite(Number(person?.age)) ? ` yang hari ini berusia ${person.age} tahun` : '';
   const message = audience === 'guru'
-    ? `Assalamu'alaikum ${name}. Barakallah fii umrik${ageText}. Semoga Allah memberi kesehatan, keberkahan usia, dan kemudahan dalam mendampingi para santri belajar Al-Qur'an. Aamiin.`
+    ? `Assalamu'alaikum ${name}. Barakallah fii umrik${ageText}. Semoga Allah memberi kesehatan, keberkahan usia, dan kemudahan dalam mendampingi para murid belajar Al-Qur'an. Aamiin.`
     : `Assalamu'alaikum Bapak/Ibu wali ${name}. Barakallah fii umrik untuk ${name}${ageText}. Semoga Allah memberi kesehatan, keberkahan usia, serta memudahkan dan mengistiqamahkan Ananda dalam belajar Al-Qur'an. Aamiin.`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 };

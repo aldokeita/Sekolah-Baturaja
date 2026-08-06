@@ -304,7 +304,7 @@ const RandomNamePage = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <Input
                             type="text"
-                            placeholder="Cari Santri..."
+                            placeholder="Cari Murid..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10 h-10 rounded-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-blue-500/50 transition-all"
@@ -469,7 +469,7 @@ const RandomNamePage = () => {
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.3 }}
                                 >
-                                    Pilih santri terbaik untuk mendapatkan poin apresiasi
+                                    Pilih murid terbaik untuk mendapatkan poin apresiasi
                                 </motion.p>
                             </div>
                         </motion.div>

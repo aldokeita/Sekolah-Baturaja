@@ -106,7 +106,7 @@ const AttendanceProfileCard = ({
       className={`attendance-profile-card attendance-profile-card--white-glass ${isTeacher ? 'attendance-profile-card--teacher' : 'attendance-profile-card--student'} ${pointAccent ? 'attendance-profile-card--point-glow' : ''}`}
       style={cardStyle}
       role="region"
-      aria-label={`Profil ${isTeacher ? 'Guru' : 'Santri'}: ${name}`}
+      aria-label={`Profil ${isTeacher ? 'Guru' : 'Murid'}: ${name}`}
     >
       {/* Avatar — large, centered, top anchor */}
       <div className="attendance-profile-card__avatar-wrap">
@@ -380,10 +380,10 @@ function getPointAccent(points = 0) {
 
 function getPointLevel(points = 0) {
   const safePoints = Number(points) || 0;
-  if (safePoints <= 20) return 'Santri Biasa';
-  if (safePoints <= 50) return 'Santri Rajin';
-  if (safePoints <= 80) return 'Santri Super';
-  return 'Santri Legend';
+  if (safePoints <= 20) return 'Murid Biasa';
+  if (safePoints <= 50) return 'Murid Rajin';
+  if (safePoints <= 80) return 'Murid Super';
+  return 'Murid Legend';
 }
 
 /* --- Status Config --- */

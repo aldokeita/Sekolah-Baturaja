@@ -176,7 +176,7 @@ const PaymentHistory = () => {
                 ID_Pembayaran: payment.id,
                 ID_Santri: payment.santri_id,
                 Nomor_Induk_Qiroati: payment.santri?.nomor_induk_qiroati || '',
-                Nama_Santri: payment.santri?.nama_lengkap || 'Santri Dihapus',
+                Nama_Santri: payment.santri?.nama_lengkap || 'Murid Dihapus',
                 Kategori: payment.santri?.kategori || '',
                 Bulan_Tagihan: payment.bulan ? monthNumberToName(payment.bulan) : '',
                 Nomor_Bulan: payment.bulan || '',
@@ -222,7 +222,7 @@ const PaymentHistory = () => {
                 <div className="flex items-center gap-3">
                     <div className="admin-panel-header-icon"><FileText /></div>
                     <div className="admin-panel-header-text">
-                        <h2>Riwayat Pembayaran Santri</h2>
+                        <h2>Riwayat Pembayaran Murid</h2>
                         <p>Total {totalPayments.toLocaleString('id-ID')} riwayat pembayaran</p>
                     </div>
                 </div>
@@ -257,7 +257,7 @@ const PaymentHistory = () => {
             <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-grow">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input placeholder="Cari nama santri..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                    <Input placeholder="Cari nama murid..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                 </div>
                 <div className="flex gap-2 items-center">
                     <span className="text-sm font-medium whitespace-nowrap hidden md:inline">Filter Tagihan:</span>
@@ -288,7 +288,7 @@ const PaymentHistory = () => {
                                     onCheckedChange={handleSelectAll}
                                 />
                             </th>
-                            <th className="p-3 text-left">Nama Santri</th>
+                            <th className="p-3 text-left">Nama Murid</th>
                             <th className="p-3 text-left">Keterangan</th>
                             <th className="p-3 text-left">Bulan Tagihan</th>
                             <th className="p-3 text-left">Tahun Tagihan</th>
@@ -325,7 +325,7 @@ const PaymentHistory = () => {
                                             />
                                         </td>
                                         <td className="p-3">
-                                            <div className="font-medium">{p.santri?.nama_lengkap || 'Santri Dihapus'}</div>
+                                            <div className="font-medium">{p.santri?.nama_lengkap || 'Murid Dihapus'}</div>
                                             {p.santri?.nomor_induk_qiroati && (
                                                 <div className="text-[10px] text-muted-foreground">{p.santri.nomor_induk_qiroati}</div>
                                             )}

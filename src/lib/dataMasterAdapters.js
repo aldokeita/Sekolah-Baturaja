@@ -66,6 +66,10 @@ export const pickSantriProfileFields = (input) => {
     tanggal_pendaftaran: input.tanggal_pendaftaran || null,
     nama_ayah: input.nama_ayah || null,
     nama_ibu: input.nama_ibu || null,
+    pekerjaan_ayah: input.pekerjaan_ayah || null,
+    pekerjaan_ibu: input.pekerjaan_ibu || null,
+    // Null means "same as the student's address"; the detail view falls back.
+    alamat_ortu: input.alamat_ortu || null,
     no_kk: input.no_kk || null,
     no_nik: input.no_nik || null,
     berkas_foto: Boolean(input.berkas_foto),
@@ -124,10 +128,15 @@ export const pickGuruProfileFields = (input, role = 'guru') => ({
   status: input.status || 'active',
 });
 
-export const getOperationalRoleFromGuruForm = (input) =>
-  (input.roles || []).includes('Admin')
-    ? 'admin'
-    : ((input.roles || []).includes('Pentashih') ? 'pentashih' : 'guru');
+export const getOperationalRoleFromGuruForm = (input) => {
+  const roles = input.roles || [];
+  // Priority: Admin (full access) wins, then Tata Usaha (back-office staff),
+  // then Pentashih, otherwise a plain teacher account.
+  if (roles.includes('Admin')) return 'admin';
+  if (roles.includes('Tata Usaha')) return 'tata_usaha';
+  if (roles.includes('Pentashih')) return 'pentashih';
+  return 'guru';
+};
 
 // --- Santri query functions ---
 

@@ -428,8 +428,8 @@ const AttendanceRecap = () => {
     if (isLoading) return <div className="admin-table-loading" style={{ position: 'relative', minHeight: '12rem', borderRadius: '0.75rem', border: '1px solid hsl(var(--admin-border))', backgroundColor: 'hsl(var(--admin-surface))' }}><div className="admin-table-loading-spinner"></div><p>Memuat rekap absensi...</p></div>;
 
     const subTabs = [
-        { id: 'tpq', label: 'Rekap Absensi Santri TPQ', icon: Users },
-        { id: 'dewasa', label: 'Rekap Absensi Santri Dewasa', icon: User },
+        { id: 'tpq', label: 'Rekap Absensi Murid TPQ', icon: Users },
+        { id: 'dewasa', label: 'Rekap Absensi Murid Dewasa', icon: User },
     ];
 
     return (
@@ -442,7 +442,7 @@ const AttendanceRecap = () => {
                     </div>
                     <div className="admin-panel-header-text">
                         <h2>Rekap Absensi Digital</h2>
-                        <p>Pantau kehadiran santri per bulan dan sesi.</p>
+                        <p>Pantau kehadiran murid per bulan dan sesi.</p>
                     </div>
                 </div>
                 <div className="admin-panel-header-actions">
@@ -517,7 +517,7 @@ const AttendanceRecap = () => {
                     <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                         <div className="relative flex-grow w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Cari nama santri..." className="w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white dark:bg-slate-950" />
+                            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Cari nama murid..." className="w-full pl-9 pr-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white dark:bg-slate-950" />
                         </div>
                         <div className="flex gap-2 w-full sm:w-auto">
                             <Select value={sortKey} onValueChange={setSortKey}>
@@ -604,7 +604,7 @@ const AttendanceRecap = () => {
                                 {recapData.userRecap.length === 0 && (
                                     <tr>
                                         <td colSpan={recapData.weekdaysInMonth.length + 5} className="text-center py-10 text-slate-500 bg-slate-50/50 dark:bg-slate-900/20">
-                                            Tidak ada data santri ditemukan.
+                                            Tidak ada data murid ditemukan.
                                         </td>
                                     </tr>
                                 )}

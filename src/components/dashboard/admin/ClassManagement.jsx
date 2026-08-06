@@ -354,17 +354,22 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
     },
   });
 
+  // Capacity is per class now. Without one declared there is no denominator to
+  // compare against, so the card shows the headcount alone and stays neutral.
+  const kapasitas = Number(classItem.kapasitas) > 0 ? Number(classItem.kapasitas) : null;
   let capacityColor = 'text-blue-600 dark:text-emerald-400';
   let borderColor = 'border-blue-500 dark:border-emerald-500';
-  if (santriCount > 15) { capacityColor = 'text-red-600 dark:text-red-400'; borderColor = 'border-red-500'; }
-  else if (santriCount >= 11) { capacityColor = 'text-yellow-600 dark:text-yellow-400'; borderColor = 'border-yellow-500'; }
+  if (kapasitas) {
+    if (santriCount > kapasitas) { capacityColor = 'text-red-600 dark:text-red-400'; borderColor = 'border-red-500'; }
+    else if (santriCount >= Math.ceil(kapasitas * 0.75)) { capacityColor = 'text-yellow-600 dark:text-yellow-400'; borderColor = 'border-yellow-500'; }
+  }
 
   drop(ref);
   const waLink = classItem.guru?.no_hp ? `https://wa.me/${classItem.guru.no_hp.replace(/\D/g, '').replace(/^0/, '62')}` : null;
 
   return (
     <div ref={ref} data-handler-id={handlerId}>
-      <DroppableColumn ref={ref} title={classItem.nama_kelas} onDrop={item => onDropSantri(item, classItem.id)} icon={<Users className="w-5 h-5"/>} capacityText={`${santriCount}/15`} capacityColor={capacityColor} borderColor={borderColor}>
+      <DroppableColumn ref={ref} title={classItem.nama_kelas} onDrop={item => onDropSantri(item, classItem.id)} icon={<Users className="w-5 h-5"/>} capacityText={kapasitas ? `${santriCount}/${kapasitas}` : `${santriCount}`} capacityColor={capacityColor} borderColor={borderColor}>
         <div className="flex justify-between items-start">
           <div><div className="text-sm text-muted-foreground mb-2">{classItem.guru?.nama || 'Belum ada guru'}{waLink && (<a href={waLink} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-green-600 hover:underline"><Phone className="w-3 h-3 mr-1" /> WA</a>)}</div></div>
         </div>
@@ -373,13 +378,13 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
           <div className="flex gap-1 ml-auto"><Button size="sm" onClick={() => onShowDetails(classItem)} title="Detail Kelas"><BarChart2 className="w-3 h-3 mr-1"/> Detail</Button></div>
         </div>
         {children}
-        {(!children || children.length === 0) && <div className="text-center py-8 text-muted-foreground">Tarik santri ke sini</div>}
+        {(!children || children.length === 0) && <div className="text-center py-8 text-muted-foreground">Tarik murid ke sini</div>}
       </DroppableColumn>
     </div>
   );
 };
 
-const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anakSessionConfig', title = 'Manajemen Kelas (TPQ)', subtitle = 'Atur pembagian kelas, guru pengampu, dan mutasi santri TPQ.' }) => {
+const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anakSessionConfig', title = 'Manajemen Kelas (TPQ)', subtitle = 'Atur pembagian kelas, guru pengampu, dan mutasi murid TPQ.' }) => {
   const { user } = useAuth();
   const [classes, setClasses] = useState([]);
   const [santriList, setSantriList] = useState([]);
@@ -558,7 +563,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
   const resetForm = () => {
       const sessions = Object.keys(sessionTimes);
-      setFormData({ nama_kelas: '', sesi: sessions[0] || '', id_guru: null, notes: '', kategori });
+      setFormData({ nama_kelas: '', sesi: sessions[0] || '', id_guru: null, notes: '', kapasitas: '', kategori });
       setEditingClass(null);
   };
 
@@ -571,6 +576,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
           sesi: getSessionName(classItem.sesi),
           id_guru: classItem.id_guru,
           notes: classItem.notes || '',
+          kapasitas: classItem.kapasitas ?? '',
           kategori
       });
       setIsFormOpen(true);
@@ -580,15 +586,15 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
     setConfirmDialog({
         isOpen: true,
         title: 'Nonaktifkan Kelas',
-        description: 'Kelas akan dinonaktifkan. Kelas yang masih memiliki membership aktif tidak akan diubah agar data santri tetap konsisten.',
+        description: 'Kelas akan dinonaktifkan. Kelas yang masih memiliki membership aktif tidak akan diubah agar data murid tetap konsisten.',
         onConfirm: async () => {
             // Roster count comes from santriList, which the backend populates from
             // santri.current_class_id — the same column the class filters read.
             const occupants = santriList.filter(s => s.current_class_id === id).length;
             if (occupants > 0) {
               toast({
-                title: 'Kelas masih berisi santri',
-                description: `Masih ada ${occupants} santri di kelas ini. Pindahkan mereka terlebih dahulu.`,
+                title: 'Kelas masih berisi murid',
+                description: `Masih ada ${occupants} murid di kelas ini. Pindahkan mereka terlebih dahulu.`,
                 variant: 'destructive'
               });
               return;
@@ -607,13 +613,13 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const handleDropSantri = async (item, toClassId) => {
     if (item.fromClassId === toClassId) return;
     if (userRole !== 'admin') {
-      toast({ title: 'Akses ditolak', description: 'Hanya admin yang boleh memindahkan kelas santri.', variant: 'destructive' });
+      toast({ title: 'Akses ditolak', description: 'Hanya admin yang boleh memindahkan kelas murid.', variant: 'destructive' });
       return;
     }
     if (!toClassId) {
       toast({
         title: 'Kelas tujuan belum dipilih',
-        description: 'Mengeluarkan santri dari kelas perlu operasi backend terpisah dan masih ditunda.',
+        description: 'Mengeluarkan murid dari kelas perlu operasi backend terpisah dan masih ditunda.',
         variant: 'destructive'
       });
       return;
@@ -631,7 +637,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         description: result?.message || 'Mutasi kelas selesai.',
       });
     } catch (error) {
-      toast({ title: 'Gagal memindahkan santri', description: error.message, variant: 'destructive' });
+      toast({ title: 'Gagal memindahkan murid', description: error.message, variant: 'destructive' });
     }
     fetchAllData();
   };
@@ -639,10 +645,10 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const initiateJilidChange = (santri, direction) => {
       const currentIndex = jilidOptions.indexOf(santri.jilid);
       if (direction === 'up') {
-        if (currentIndex >= jilidOptions.length - 1) { toast({ title: 'Info', description: 'Santri sudah di jilid terakhir.' }); return; }
+        if (currentIndex >= jilidOptions.length - 1) { toast({ title: 'Info', description: 'Murid sudah di jilid terakhir.' }); return; }
         setJilidChangeData({ santri, direction: 'up', currentJilid: santri.jilid, nextJilid: jilidOptions[currentIndex + 1] });
       } else {
-        if (currentIndex <= 0) { toast({ title: 'Info', description: 'Santri sudah di jilid pertama.' }); return; }
+        if (currentIndex <= 0) { toast({ title: 'Info', description: 'Murid sudah di jilid pertama.' }); return; }
         setJilidChangeData({ santri, direction: 'down', currentJilid: santri.jilid, nextJilid: jilidOptions[currentIndex - 1] });
       }
       setIsJilidModalOpen(true);
@@ -659,16 +665,20 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         toast({ title: 'Gagal!', description: error.message, variant: 'destructive' });
         return;
       }
-      toast({ title: 'Berhasil!', description: `Jilid santri diubah ke ${nextJilid}.` });
+      toast({ title: 'Berhasil!', description: `Jilid murid diubah ke ${nextJilid}.` });
       fetchAllData(); setIsJilidModalOpen(false); setJilidChangeData(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Empty string means "no limit declared" — send null so the column stays
+    // NULL rather than tripping the kapasitas > 0 check with a 0.
+    const parsedKapasitas = parseInt(formData.kapasitas, 10);
     const classData = {
       nama_kelas: formData.nama_kelas,
       sesi: formData.sesi,
       id_guru: formData.id_guru || null,
+      kapasitas: Number.isFinite(parsedKapasitas) && parsedKapasitas > 0 ? parsedKapasitas : null,
       kategori,
     };
     if (!editingClass) {
@@ -772,7 +782,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                             Sesi: getSessionName(cls.sesi) || '',
                             Kelas: cls.nama_kelas || '',
                             Guru: cls.guru?.nama || '-',
-                            Santri: s.nama_lengkap || '-',
+                            Murid: s.nama_lengkap || '-',
                             Jilid: s.jilid || '-'
                         });
                     });
@@ -781,7 +791,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                         Sesi: getSessionName(cls.sesi) || '',
                         Kelas: cls.nama_kelas || '',
                         Guru: cls.guru?.nama || '-',
-                        Santri: '(Kosong)',
+                        Murid: '(Kosong)',
                         Jilid: '-'
                     });
                 }
@@ -789,7 +799,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         });
 
         if (data.length === 0) {
-            toast({ title: 'Data Kosong', description: 'Tidak ada data kelas atau santri untuk diekspor.', variant: 'destructive' });
+            toast({ title: 'Data Kosong', description: 'Tidak ada data kelas atau murid untuk diekspor.', variant: 'destructive' });
             return;
         }
 
@@ -855,7 +865,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
             <div className="admin-search-input">
                 <Search />
                 <Input
-                    placeholder="Cari santri berdasarkan nama..."
+                    placeholder="Cari murid berdasarkan nama..."
                     value={santriSearch}
                     onChange={e => setSantriSearch(e.target.value)}
                 />
@@ -874,10 +884,10 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <DroppableColumn title="Santri Belum Masuk Kelas" onDrop={(item) => handleDropSantri(item, null)} icon={<UserPlus className="w-5 h-5"/>}>
+          <DroppableColumn title="Murid Belum Masuk Kelas" onDrop={(item) => handleDropSantri(item, null)} icon={<UserPlus className="w-5 h-5"/>}>
             <div className="p-2 space-y-2 sticky top-0 bg-background z-10"><Select value={unassignedFilterJilid} onValueChange={setUnassignedFilterJilid}><SelectTrigger className="h-9"><SelectValue placeholder="Filter Jilid"/></SelectTrigger><SelectContent><SelectItem value="all">Semua Jilid</SelectItem>{jilidOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select></div>
             {filteredUnassignedSantri.map((santri, index) => <DraggableSantri key={santri.id} index={index} santri={santri} moveSantri={moveSantri} hasAttended={attendanceById.has(santri.id)} onViewDetails={handleViewSantriDetails} />)}
-            {filteredUnassignedSantri.length === 0 && <p className="text-center py-8 text-sm text-muted-foreground">Tidak ada santri.</p>}
+            {filteredUnassignedSantri.length === 0 && <p className="text-center py-8 text-sm text-muted-foreground">Tidak ada murid.</p>}
           </DroppableColumn>
         </div>
 
@@ -930,6 +940,16 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                 </div>
                 <div><label>Guru</label><Select value={formData.id_guru || 'none'} onValueChange={val => setFormData({ ...formData, id_guru: val === 'none' ? null : val })}><SelectTrigger><SelectValue placeholder="Pilih Guru"/></SelectTrigger><SelectContent><SelectItem value="none">Tidak ada</SelectItem>{guruList.map(g => <SelectItem key={g.id} value={g.id}>{g.nama}</SelectItem>)}</SelectContent></Select></div>
               </div>
+              <div>
+                <label>Kapasitas <span className="text-xs text-muted-foreground font-normal">(opsional)</span></label>
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="Kosongkan bila tanpa batas"
+                  value={formData.kapasitas ?? ''}
+                  onChange={e => setFormData({ ...formData, kapasitas: e.target.value })}
+                />
+              </div>
               <div><label>Catatan</label><Textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })}/></div>
               <DialogFooter><Button type="submit">Simpan</Button></DialogFooter>
             </form>
@@ -939,11 +959,11 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
           <DialogContent className="max-w-5xl">
             <DialogHeader>
-                <DialogTitle>Riwayat Mutasi Santri</DialogTitle>
-                <DialogDescription className="sr-only">Daftar riwayat mutasi kelas santri.</DialogDescription>
+                <DialogTitle>Riwayat Mutasi Murid</DialogTitle>
+                <DialogDescription className="sr-only">Daftar riwayat mutasi kelas murid.</DialogDescription>
             </DialogHeader>
             <div className="flex flex-wrap gap-2 my-4">
-                <div className="relative flex-grow"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/><Input placeholder="Cari nama santri..." value={historyFilters.search} onChange={e => setHistoryFilters({...historyFilters, search: e.target.value})} className="pl-9"/></div>
+                <div className="relative flex-grow"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/><Input placeholder="Cari nama murid..." value={historyFilters.search} onChange={e => setHistoryFilters({...historyFilters, search: e.target.value})} className="pl-9"/></div>
                 <Input type="date" value={historyFilters.date} onChange={e => setHistoryFilters({...historyFilters, date: e.target.value})} className="w-auto"/>
             </div>
             <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
@@ -953,7 +973,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                         <div className="flex items-start gap-4">
                              <Avatar className="h-14 w-14 border-2 border-white shadow-md"><AvatarImage src={m.santri?.foto_url} /><AvatarFallback className="text-lg font-bold bg-slate-200">{m.santri?.nama_lengkap?.[0]}</AvatarFallback></Avatar>
                             <div>
-                                <h4 className="font-bold text-lg text-primary">{m.santri?.nama_lengkap || 'Santri Dihapus'}</h4>
+                                <h4 className="font-bold text-lg text-primary">{m.santri?.nama_lengkap || 'Murid Dihapus'}</h4>
                                 <div className="flex items-center text-xs text-muted-foreground mt-1 gap-2"><Clock className="w-3 h-3" />{new Date(m.mutation_date).toLocaleString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                                 <div className="text-xs text-muted-foreground mt-1">
                                    {m.from_jilid && m.to_jilid ? (<div className="flex items-center gap-1 bg-white/50 dark:bg-black/20 px-2 py-1 rounded-md w-fit mt-1 border border-slate-100 dark:border-slate-700"><span className="font-semibold text-red-500">{m.from_jilid}</span><ArrowRight className="w-3 h-3 text-slate-400" /><span className="font-semibold text-green-500">{m.to_jilid}</span></div>) : 'Perubahan Kelas'}
@@ -990,9 +1010,9 @@ const ClassManagementWrapper = ({ userRole = 'admin' }) => {
     const [activeTab, setActiveTab] = useState("tpq");
 
     const subTabs = [
-        { id: 'tpq', label: 'Santri TPQ', icon: GraduationCap },
-        { id: 'ptpt', label: 'Santri PTPT', icon: BookOpen },
-        { id: 'dewasa', label: 'Santri Dewasa', icon: Briefcase },
+        { id: 'tpq', label: 'Murid TPQ', icon: GraduationCap },
+        { id: 'ptpt', label: 'Murid PTPT', icon: BookOpen },
+        { id: 'dewasa', label: 'Murid Dewasa', icon: Briefcase },
     ];
 
   return (
@@ -1023,10 +1043,10 @@ const ClassManagementWrapper = ({ userRole = 'admin' }) => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 
             <TabsContent value="tpq">
-                <GenericClassManagement key="tpq" userRole={userRole} kategori="Anak" configKey="anakSessionConfig" title="Manajemen Kelas (TPQ)" subtitle="Atur pembagian kelas, guru pengampu, dan mutasi santri TPQ." />
+                <GenericClassManagement key="tpq" userRole={userRole} kategori="Anak" configKey="anakSessionConfig" title="Manajemen Kelas (TPQ)" subtitle="Atur pembagian kelas, guru pengampu, dan mutasi murid TPQ." />
             </TabsContent>
             <TabsContent value="ptpt">
-                <GenericClassManagement key="ptpt" userRole={userRole} kategori="PTPT" configKey="ptptSessionConfig" title="Manajemen Kelas (PTPT)" subtitle="Atur pembagian kelas, guru pengampu, dan mutasi santri PTPT." />
+                <GenericClassManagement key="ptpt" userRole={userRole} kategori="PTPT" configKey="ptptSessionConfig" title="Manajemen Kelas (PTPT)" subtitle="Atur pembagian kelas, guru pengampu, dan mutasi murid PTPT." />
             </TabsContent>
             <TabsContent value="dewasa">
                 <AdultClassManagement />

@@ -233,9 +233,9 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                             <div>
                                 <DialogTitle className="text-2xl font-bold font-serif text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                     <GraduationCap className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                                    Detail Santri: {santri?.nama_lengkap || 'Santri'}
+                                    Detail Murid: {santri?.nama_lengkap || 'Murid'}
                                 </DialogTitle>
-                                <DialogDescription>Informasi lengkap & catatan perkembangan akademik santri.</DialogDescription>
+                                <DialogDescription>Informasi lengkap & catatan perkembangan akademik murid.</DialogDescription>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <Button
@@ -312,8 +312,24 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <p className="font-bold text-slate-800 dark:text-slate-200">{santri.className || santri.class?.nama_kelas || '-'}</p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Wali Santri (Ibu)</p>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Wali Murid (Ibu)</p>
                                 <p className="font-bold text-slate-800 dark:text-slate-200">{guardianName}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Pekerjaan Ayah</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{santriFullData?.pekerjaan_ayah || santri.pekerjaan_ayah || '-'}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Pekerjaan Ibu</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{santriFullData?.pekerjaan_ibu || santri.pekerjaan_ibu || '-'}</p>
+                            </div>
+                            <div className="sm:col-span-2">
+                                {/* Falls back to the student's own address — a null
+                                    alamat_ortu means "same address", not "unknown". */}
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Alamat Orang Tua</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">
+                                    {santriFullData?.alamat_ortu || santri.alamat_ortu || santriFullData?.alamat || santri.alamat || '-'}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -386,7 +402,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         <div>
                             <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
                                 <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                                Preview & Cetak Rapor Santri
+                                Preview & Cetak Rapor Murid
                             </DialogTitle>
                             <DialogDescription className="text-xs">
                                 Rapor Akademik & Karakter LPQ Aurora Neo Glass.
@@ -537,7 +553,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         {/* Biodata Santri Card */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/70 dark:border-slate-800 print:border print:bg-white">
                             <div>
-                                <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Nama Santri</p>
+                                <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Nama Murid</p>
                                 <p className="font-extrabold text-base text-slate-900 dark:text-slate-100">{santri.nama_lengkap}</p>
                                 <p className="text-xs text-muted-foreground font-mono">NIQ: {santri.nomor_induk_qiroati || '-'}</p>
                             </div>
@@ -552,7 +568,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <p className="text-xs text-muted-foreground">Kategori: {santri.kategori || 'Anak'}</p>
                             </div>
                             <div>
-                                <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Wali Santri (Ibu)</p>
+                                <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Wali Murid (Ibu)</p>
                                 <p className="font-bold text-slate-800 dark:text-slate-200">{guardianName}</p>
                                 <p className="text-xs text-muted-foreground">HP: {santriFullData?.no_hp_ortu || santri.no_hp_ortu || '-'}</p>
                             </div>
@@ -614,7 +630,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         <div className="space-y-3">
                             <h3 className="text-base font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
                                 <History className="w-5 h-5 text-blue-600" />
-                                1. Rekapitulasi Kehadiran Santri
+                                1. Rekapitulasi Kehadiran Murid
                             </h3>
 
                             <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
@@ -661,7 +677,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                             {/* Highlight Karakter Unggulan Badges */}
                             <div className="p-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 space-y-2">
                                 <p className="text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" /> Karakter Unggulan Santri:
+                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" /> Karakter Unggulan Murid:
                                 </p>
                                 <div className="flex flex-wrap gap-2 pt-1">
                                     {(characterData?.strengths && characterData.strengths.length > 0)
@@ -693,7 +709,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground italic text-center py-4">Belum ada data penilaian karakter untuk santri ini.</p>
+                                <p className="text-sm text-muted-foreground italic text-center py-4">Belum ada data penilaian karakter untuk murid ini.</p>
                             )}
                         </div>
 
@@ -701,7 +717,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         <div className="space-y-3">
                             <h3 className="text-base font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
                                 <BookOpen className="w-5 h-5 text-emerald-600" />
-                                3. Rekapitulasi Semua Hafalan Santri ({isPtpt ? 'PTPT' : 'Surat Pendek / Doa / Sholat'})
+                                3. Rekapitulasi Semua Hafalan Murid ({isPtpt ? 'PTPT' : 'Surat Pendek / Doa / Sholat'})
                             </h3>
 
                             <div className="overflow-x-auto max-h-80 overflow-y-auto custom-scrollbar rounded-xl border border-slate-200 dark:border-slate-800">
@@ -751,7 +767,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                         ) : (
                                             <tr>
                                                 <td colSpan={6} className="py-8 text-center text-muted-foreground italic">
-                                                    Belum ada rincian item hafalan yang tercatat untuk santri ini.
+                                                    Belum ada rincian item hafalan yang tercatat untuk murid ini.
                                                 </td>
                                             </tr>
                                         )}
@@ -763,7 +779,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         {/* Signatures Box */}
                         <div className="grid grid-cols-3 gap-6 pt-12 pb-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs">
                             <div className="space-y-16">
-                                <p className="font-semibold text-slate-700 dark:text-slate-300">Mengetahui,<br/>Orang Tua / Wali Santri</p>
+                                <p className="font-semibold text-slate-700 dark:text-slate-300">Mengetahui,<br/>Orang Tua / Wali Murid</p>
                                 <p className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-300 dark:border-slate-700 pb-1 w-3/4 mx-auto">
                                     ( .................................... )
                                 </p>
@@ -794,7 +810,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                             <History className="w-5 h-5 text-blue-600" />
                             Rekap Absensi: {santri?.nama_lengkap}
                         </DialogTitle>
-                        <DialogDescription>Matriks kehadiran santri per bulan.</DialogDescription>
+                        <DialogDescription>Matriks kehadiran murid per bulan.</DialogDescription>
                     </DialogHeader>
                     <AttendanceMatrixPanel santriId={santri?.id} />
                 </DialogContent>

@@ -318,18 +318,23 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
   const ref = useRef(null);
   const [{ handlerId }, drop] = useDrop({ accept: ItemTypes.CLASS, collect(monitor) { return { handlerId: monitor.getHandlerId() }; }, hover(item, monitor) { }, });
 
+  // Same rule as the TPQ class card: the denominator is the class's own
+  // kapasitas, and classes without one stay neutral.
+  const kapasitas = Number(classItem.kapasitas) > 0 ? Number(classItem.kapasitas) : null;
   let capacityColor = 'text-blue-600 dark:text-emerald-400'; let borderColor = 'border-blue-500 dark:border-emerald-500';
-  if (santriCount > 15) { capacityColor = 'text-red-600 dark:text-red-400'; borderColor = 'border-red-500'; }
-  else if (santriCount >= 11) { capacityColor = 'text-yellow-600 dark:text-yellow-400'; borderColor = 'border-yellow-500'; }
+  if (kapasitas) {
+    if (santriCount > kapasitas) { capacityColor = 'text-red-600 dark:text-red-400'; borderColor = 'border-red-500'; }
+    else if (santriCount >= Math.ceil(kapasitas * 0.75)) { capacityColor = 'text-yellow-600 dark:text-yellow-400'; borderColor = 'border-yellow-500'; }
+  }
 
   drop(ref);
   const waLink = classItem.guru?.no_hp ? `https://wa.me/${classItem.guru.no_hp.replace(/\D/g, '').replace(/^0/, '62')}` : null;
   return (
     <div ref={ref} data-handler-id={handlerId}>
-      <DroppableColumn ref={ref} title={classItem.nama_kelas} onDrop={item => onDropSantri(item, classItem.id)} icon={<Users className="w-5 h-5"/>} capacityText={`${santriCount}/15`} capacityColor={capacityColor} borderColor={borderColor}>
+      <DroppableColumn ref={ref} title={classItem.nama_kelas} onDrop={item => onDropSantri(item, classItem.id)} icon={<Users className="w-5 h-5"/>} capacityText={kapasitas ? `${santriCount}/${kapasitas}` : `${santriCount}`} capacityColor={capacityColor} borderColor={borderColor}>
         <div className="flex justify-between items-start"><div><div className="text-sm text-muted-foreground mb-2">{classItem.guru?.nama || 'Belum ada guru'}{waLink && (<a href={waLink} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-green-600 hover:underline"><Phone className="w-3 h-3 mr-1" /> WA</a>)}</div></div></div>
         <div className="flex justify-end gap-2 mb-2 border-b pb-2 flex-wrap"><Button size="sm" variant="outline" onClick={() => onEdit(classItem)}><Edit className="w-3 h-3"/></Button><Button size="sm" variant="destructive" onClick={() => onDelete(classItem.id)}><Trash2 className="w-3 h-3"/></Button><div className="flex gap-1 ml-auto"><Button size="sm" onClick={() => onShowDetails(classItem)} title="Detail Kelas"><BarChart2 className="w-3 h-3 mr-1"/> Detail</Button></div></div>
-        {children}{(!children || children.length === 0) && <div className="text-center py-8 text-muted-foreground">Tarik santri ke sini</div>}
+        {children}{(!children || children.length === 0) && <div className="text-center py-8 text-muted-foreground">Tarik murid ke sini</div>}
       </DroppableColumn>
     </div>
   );
@@ -488,7 +493,7 @@ const AdultClassManagement = () => {
     if (!toClassId || !targetClass) {
       toast({
         title: 'Kelas tujuan diperlukan',
-        description: 'Mutasi harus menuju kelas aktif. Pengeluaran santri dari kelas belum didukung oleh operasi mutasi.',
+        description: 'Mutasi harus menuju kelas aktif. Pengeluaran murid dari kelas belum didukung oleh operasi mutasi.',
         variant: 'destructive'
       });
       return;
@@ -498,9 +503,9 @@ const AdultClassManagement = () => {
       const result = await moveSantriClass({
         santri_id: santriId,
         target_class_id: toClassId,
-        reason: `Mutasi kelas dewasa: ${santri?.nama_lengkap || 'santri'} ke ${targetClass.nama_kelas}`,
+        reason: `Mutasi kelas dewasa: ${santri?.nama_lengkap || 'murid'} ke ${targetClass.nama_kelas}`,
       });
-      toast({ title: 'Mutasi berhasil', description: result?.message || `${santri?.nama_lengkap || 'Santri'} dipindahkan ke ${targetClass.nama_kelas}.` });
+      toast({ title: 'Mutasi berhasil', description: result?.message || `${santri?.nama_lengkap || 'Murid'} dipindahkan ke ${targetClass.nama_kelas}.` });
     } catch (error) {
       toast({ title: 'Mutasi gagal', description: error.message, variant: 'destructive' });
     }
@@ -536,10 +541,12 @@ const AdultClassManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const targetSession = formData.sesi || Object.keys(sessionTimes)[0];
+    const parsedKapasitas = parseInt(formData.kapasitas, 10);
     const classData = {
       nama_kelas: formData.nama_kelas.trim(),
       sesi: targetSession,
       id_guru: formData.id_guru || null,
+      kapasitas: Number.isFinite(parsedKapasitas) && parsedKapasitas > 0 ? parsedKapasitas : null,
       kategori: 'Dewasa',
       is_active: true,
     };
@@ -609,8 +616,8 @@ const AdultClassManagement = () => {
         const classGroup = classesBySession[session] || [];
         classGroup.forEach(cls => {
             const students = santriByClass[cls.id] || [];
-            if(students.length) students.forEach(s => data.push({ Sesi: cls.sesi, Kelas: cls.nama_kelas, Guru: cls.guru?.nama || '', Santri: s.nama_lengkap, Jilid: s.jilid }));
-            else data.push({ Sesi: cls.sesi, Kelas: cls.nama_kelas, Guru: cls.guru?.nama || '', Santri: '(Kosong)', Jilid: '' });
+            if(students.length) students.forEach(s => data.push({ Sesi: cls.sesi, Kelas: cls.nama_kelas, Guru: cls.guru?.nama || '', Murid: s.nama_lengkap, Jilid: s.jilid }));
+            else data.push({ Sesi: cls.sesi, Kelas: cls.nama_kelas, Guru: cls.guru?.nama || '', Murid: '(Kosong)', Jilid: '' });
         });
     });
     XLSX.writeFile(XLSX.utils.json_to_sheet(data), `Kelas_LPQ_Dewasa_${new Date().toLocaleDateString('id-ID')}.xlsx`);
@@ -622,7 +629,7 @@ const AdultClassManagement = () => {
   const handleViewSantriDetails = (santri) => { setSelectedSantri(santri); setIsSantriDetailOpen(true); };
   const resetForm = () => {
       const sessions = Object.keys(sessionTimes);
-      setFormData({ nama_kelas: '', sesi: sessions[0] || '', id_guru: null, notes: '', kategori: 'Dewasa' });
+      setFormData({ nama_kelas: '', sesi: sessions[0] || '', id_guru: null, notes: '', kapasitas: '', kategori: 'Dewasa' });
       setEditingClass(null);
   };
   const handleAdd = () => { resetForm(); setIsFormOpen(true); };
@@ -632,7 +639,7 @@ const AdultClassManagement = () => {
       setConfirmDialog({
           isOpen: true,
           title: 'Hapus Kelas',
-          description: 'Kelas akan dinonaktifkan. Riwayat santri di dalamnya tetap tersimpan dan dapat dipulihkan.',
+          description: 'Kelas akan dinonaktifkan. Riwayat murid di dalamnya tetap tersimpan dan dapat dipulihkan.',
           onConfirm: async () => {
               try {
                   // deleteClass is a soft delete (is_active = false) — history and
@@ -659,7 +666,7 @@ const AdultClassManagement = () => {
              </div>
              <div className="admin-panel-header-text">
                 <h2>Manajemen Kelas Dewasa</h2>
-                <p>Khusus untuk santri kategori dewasa.</p>
+                <p>Khusus untuk murid kategori dewasa.</p>
              </div>
           </div>
 
@@ -688,7 +695,7 @@ const AdultClassManagement = () => {
             <div className="admin-search-input">
                 <Search />
                 <Input
-                    placeholder="Cari santri..."
+                    placeholder="Cari murid..."
                     value={santriSearch}
                     onChange={e => setSantriSearch(e.target.value)}
                 />
@@ -708,10 +715,10 @@ const AdultClassManagement = () => {
 
         {/* Unassigned Santri */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <DroppableColumn title="Santri Belum Masuk Kelas" onDrop={(item) => handleDropSantri(item, null)} icon={<UserPlus className="w-5 h-5"/>}>
+          <DroppableColumn title="Murid Belum Masuk Kelas" onDrop={(item) => handleDropSantri(item, null)} icon={<UserPlus className="w-5 h-5"/>}>
             <div className="p-2 space-y-2 sticky top-0 bg-background z-10"><Select value={unassignedFilterJilid} onValueChange={setUnassignedFilterJilid}><SelectTrigger className="h-9"><SelectValue placeholder="Filter Jilid"/></SelectTrigger><SelectContent><SelectItem value="all">Semua Jilid</SelectItem>{jilidOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select></div>
             {filteredUnassignedSantri.map((santri, index) => <DraggableSantri key={santri.id} index={index} santri={santri} moveSantri={moveSantri} hasAttended={attendanceById.has(santri.id)} onViewDetails={handleViewSantriDetails} />)}
-            {filteredUnassignedSantri.length === 0 && <p className="text-center py-8 text-sm text-muted-foreground">Tidak ada santri.</p>}
+            {filteredUnassignedSantri.length === 0 && <p className="text-center py-8 text-sm text-muted-foreground">Tidak ada murid.</p>}
           </DroppableColumn>
         </div>
 
@@ -755,9 +762,9 @@ const AdultClassManagement = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{Object.keys(sessionTimes).map(s => <SelectItem key={s} value={s}>{s} ({sessionTimes[s]})</SelectItem>)}</SelectContent>
             </Select>
-            </div><div><label>Guru</label><Select value={formData.id_guru || 'none'} onValueChange={val => setFormData({ ...formData, id_guru: val === 'none' ? null : val })}><SelectTrigger><SelectValue placeholder="Pilih Guru"/></SelectTrigger><SelectContent><SelectItem value="none">Tidak ada</SelectItem>{guruList.map(g => <SelectItem key={g.id} value={g.id}>{g.nama}</SelectItem>)}</SelectContent></Select></div></div><div><label>Catatan</label><Textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })}/></div><DialogFooter><Button type="submit">Simpan</Button></DialogFooter></form></DialogContent></Dialog>
+            </div><div><label>Guru</label><Select value={formData.id_guru || 'none'} onValueChange={val => setFormData({ ...formData, id_guru: val === 'none' ? null : val })}><SelectTrigger><SelectValue placeholder="Pilih Guru"/></SelectTrigger><SelectContent><SelectItem value="none">Tidak ada</SelectItem>{guruList.map(g => <SelectItem key={g.id} value={g.id}>{g.nama}</SelectItem>)}</SelectContent></Select></div></div><div><label>Kapasitas <span className="text-xs text-muted-foreground font-normal">(opsional)</span></label><Input type="number" min="1" placeholder="Kosongkan bila tanpa batas" value={formData.kapasitas ?? ''} onChange={e => setFormData({ ...formData, kapasitas: e.target.value })}/></div><div><label>Catatan</label><Textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })}/></div><DialogFooter><Button type="submit">Simpan</Button></DialogFooter></form></DialogContent></Dialog>
 
-        <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}><DialogContent className="max-w-5xl"><DialogHeader><DialogTitle>Riwayat Mutasi Santri</DialogTitle></DialogHeader><div className="flex flex-wrap gap-2 my-4"><div className="relative flex-grow"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/><Input placeholder="Cari nama santri..." value={historyFilters.search} onChange={e => setHistoryFilters({...historyFilters, search: e.target.value})} className="pl-9"/></div><Input type="date" value={historyFilters.date} onChange={e => setHistoryFilters({...historyFilters, date: e.target.value})} className="w-auto"/></div><div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2 custom-scrollbar">{filteredHistory.map(m => (<div key={m.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm relative hover:shadow-md transition-all"><div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div className="flex items-start gap-4"><Avatar className="h-14 w-14 border-2 border-white shadow-md"><AvatarImage src={m.santri?.foto_url} /><AvatarFallback className="text-lg font-bold bg-slate-200">{m.santri?.nama_lengkap?.[0]}</AvatarFallback></Avatar><div><h4 className="font-bold text-lg text-primary">{m.santri?.nama_lengkap || 'Santri Dihapus'}</h4><div className="text-xs text-muted-foreground mt-1">{m.from_jilid && m.to_jilid ? `${m.from_jilid} âž” ${m.to_jilid}` : 'Perubahan Kelas'}</div></div></div><div className="flex items-center gap-3 flex-1 justify-center md:px-8"><div className="flex flex-col items-end min-w-[120px]"><p className="font-bold text-sm">{m.from_class?.nama_kelas || 'Luar Kelas'}</p></div><ArrowRight className="text-muted-foreground w-5 h-5" /><div className="flex flex-col items-start min-w-[120px]"><p className="font-bold text-sm">{m.to_class?.nama_kelas || 'Luar Kelas'}</p></div></div><div><Button variant="ghost" size="icon" onClick={() => confirmDeleteHistory(m.id)} className="text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full"><Trash2 className="w-4 h-4"/></Button></div></div></div>))}</div></DialogContent></Dialog>
+        <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}><DialogContent className="max-w-5xl"><DialogHeader><DialogTitle>Riwayat Mutasi Murid</DialogTitle></DialogHeader><div className="flex flex-wrap gap-2 my-4"><div className="relative flex-grow"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/><Input placeholder="Cari nama murid..." value={historyFilters.search} onChange={e => setHistoryFilters({...historyFilters, search: e.target.value})} className="pl-9"/></div><Input type="date" value={historyFilters.date} onChange={e => setHistoryFilters({...historyFilters, date: e.target.value})} className="w-auto"/></div><div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2 custom-scrollbar">{filteredHistory.map(m => (<div key={m.id} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm relative hover:shadow-md transition-all"><div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div className="flex items-start gap-4"><Avatar className="h-14 w-14 border-2 border-white shadow-md"><AvatarImage src={m.santri?.foto_url} /><AvatarFallback className="text-lg font-bold bg-slate-200">{m.santri?.nama_lengkap?.[0]}</AvatarFallback></Avatar><div><h4 className="font-bold text-lg text-primary">{m.santri?.nama_lengkap || 'Murid Dihapus'}</h4><div className="text-xs text-muted-foreground mt-1">{m.from_jilid && m.to_jilid ? `${m.from_jilid} âž” ${m.to_jilid}` : 'Perubahan Kelas'}</div></div></div><div className="flex items-center gap-3 flex-1 justify-center md:px-8"><div className="flex flex-col items-end min-w-[120px]"><p className="font-bold text-sm">{m.from_class?.nama_kelas || 'Luar Kelas'}</p></div><ArrowRight className="text-muted-foreground w-5 h-5" /><div className="flex flex-col items-start min-w-[120px]"><p className="font-bold text-sm">{m.to_class?.nama_kelas || 'Luar Kelas'}</p></div></div><div><Button variant="ghost" size="icon" onClick={() => confirmDeleteHistory(m.id)} className="text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full"><Trash2 className="w-4 h-4"/></Button></div></div></div>))}</div></DialogContent></Dialog>
 
         <SantriDetailModal santri={selectedSantri} isOpen={isSantriDetailOpen} onOpenChange={setIsSantriDetailOpen} onPromote={() => initiateJilidChange(selectedSantri, 'up')} onDemote={() => initiateJilidChange(selectedSantri, 'down')} />
         <JilidChangeModal isOpen={isJilidModalOpen} onClose={() => setIsJilidModalOpen(false)} onConfirm={confirmJilidChange} {...jilidChangeData} kategori="Dewasa" />

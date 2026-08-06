@@ -23,7 +23,7 @@ const months = MONTH_NAMES;
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF19A3'];
 
 const paymentItemsList = [
-  'SPP (100k)', 'SPP (50k)', 'Seragam', 'Tas Santri', 'ID Card Santri', 'Buku Prestasi', 'Buku Jilid Pra TK',
+  'SPP (100k)', 'SPP (50k)', 'Seragam', 'Tas Murid', 'ID Card Murid', 'Buku Prestasi', 'Buku Jilid Pra TK',
   'Buku Jilid 1-6 - Jilid 1', 'Buku Jilid 1-6 - Jilid 2', 'Buku Jilid 1-6 - Jilid 3', 'Buku Jilid 1-6 - Jilid 4', 'Buku Jilid 1-6 - Jilid 5', 'Buku Jilid 1-6 - Jilid 6', 'Buku Gharib & Tajwid',
 ];
 
@@ -169,7 +169,7 @@ const PaymentRecap = () => {
           const santri = allSantri.find(s => s.id === p.santri_id);
           return {
             ...p,
-            nama_lengkap: santri?.nama_lengkap || 'Santri Tidak Ditemukan',
+            nama_lengkap: santri?.nama_lengkap || 'Murid Tidak Ditemukan',
             sesi_mengaji: santri?.sesi_mengaji || '-',
             foto_url: santri?.foto_url || null,
             billing_year: p.tahun,
@@ -302,7 +302,7 @@ const PaymentRecap = () => {
                         <table>
                             <thead><tr>
                                 <th>No</th>
-                                <th colSpan={2}>Nama Santri</th>
+                                <th colSpan={2}>Nama Murid</th>
                                 <th className="cursor-pointer" onClick={() => handleSort('sesi_mengaji')}>Sesi</th>
                                 <th className="cursor-pointer" onClick={() => handleSort('status_spp')}>Status</th>
                                 <th>Jumlah</th>
@@ -365,7 +365,7 @@ const PaymentRecap = () => {
                         <div className="admin-table-shell">
                             <div className="admin-table-scroll" style={{ maxHeight: '500px' }}>
                                 <table>
-                                    <thead><tr><th>No</th><th>Nama Santri</th><th>Sesi</th><th>Jumlah</th><th>Tanggal</th><th>Tagihan</th></tr></thead>
+                                    <thead><tr><th>No</th><th>Nama Murid</th><th>Sesi</th><th>Jumlah</th><th>Tanggal</th><th>Tagihan</th></tr></thead>
                                     <tbody>
                                         {itemDetailData.map((item, index) => (
                                             <tr key={item.id}>

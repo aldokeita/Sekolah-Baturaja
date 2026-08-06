@@ -94,7 +94,7 @@ export const calculateAttendanceData = async (santriId, startDate, endDate) => {
 export const getHafalanProgressData = async (santriId) => {
     try {
         const santri = await fetchSantriDetail(santriId);
-        if (!santri) throw new Error('Data santri tidak ditemukan.');
+        if (!santri) throw new Error('Data murid tidak ditemukan.');
         const programScope = String(santri?.kategori || '').toUpperCase() === 'PTPT' ? 'PTPT' : 'TPQ';
 
         const parseJilidToNumber = (jilidStr) => {
@@ -184,7 +184,7 @@ export const getHafalanProgressData = async (santriId) => {
         };
     } catch (error) {
         console.error("Error fetching hafalan progress:", error);
-        throw new Error("Gagal mengambil data hafalan santri.");
+        throw new Error("Gagal mengambil data hafalan murid.");
     }
 };
 
@@ -301,7 +301,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.setFontSize(17);
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.text("RAPOR AKADEMIK & KARAKTER SANTRI", titleX, 17, { align: "center" });
+        doc.text("RAPOR AKADEMIK & KARAKTER MURID", titleX, 17, { align: "center" });
 
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -321,7 +321,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.setTextColor(...secondaryColor);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.text("I. BIODATA SANTRI", 15, 52);
+        doc.text("I. BIODATA MURID", 15, 52);
 
         doc.setDrawColor(226, 232, 240);
         doc.setLineWidth(0.5);
@@ -332,7 +332,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.setTextColor(51, 65, 85);
 
         // Left Col
-        doc.text("Nama Santri", 15, 60);
+        doc.text("Nama Murid", 15, 60);
         doc.setFont('helvetica', 'bold');
         doc.text(`: ${santriData.nama_lengkap}`, 48, 60);
         doc.setFont('helvetica', 'normal');
@@ -358,7 +358,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.text("Kelas & Sesi", 115, 60);
         doc.text(`: ${santriData.class?.nama_kelas || santriData.className || '-'} (${sessionName})`, 152, 60);
 
-        doc.text("Wali Santri (Ibu)", 115, 66);
+        doc.text("Wali Murid (Ibu)", 115, 66);
         doc.setFont('helvetica', 'bold');
         doc.text(`: ${guardianName}`, 152, 66);
         doc.setFont('helvetica', 'normal');
@@ -504,7 +504,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
             doc.setFontSize(9);
             doc.setFont('helvetica', 'italic');
             doc.setTextColor(100, 100, 100);
-            doc.text("Belum ada data penilaian karakter untuk santri ini.", 15, currentY + 6);
+            doc.text("Belum ada data penilaian karakter untuk murid ini.", 15, currentY + 6);
             currentY += 14;
         }
 
@@ -512,7 +512,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...secondaryColor);
-        doc.text("V. DAFTAR SEMUA HAFALAN SANTRI", 15, currentY);
+        doc.text("V. DAFTAR SEMUA HAFALAN MURID", 15, currentY);
 
         const hafalanRows = (hafalanData.allItems || []).map(item => {
             const scoreDisplay = item.score ? `${item.score} / 4` : '-';
@@ -584,7 +584,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.setTextColor(51, 65, 85);
 
         doc.text("Mengetahui,", 20, signY);
-        doc.text("Orang Tua / Wali Santri", 20, signY + 5);
+        doc.text("Orang Tua / Wali Murid", 20, signY + 5);
         doc.text("( .................................... )", 20, signY + 36);
 
         doc.text("Guru Pengampu Kelas,", 105, signY, { align: 'center' });
@@ -734,7 +734,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                                     children: [
                                         new Paragraph({
                                             alignment: AlignmentType.CENTER,
-                                            children: [new TextRun({ text: "RAPOR AKADEMIK & KARAKTER SANTRI", bold: true, size: 28, color: "FFFFFF", font: "Arial" })]
+                                            children: [new TextRun({ text: "RAPOR AKADEMIK & KARAKTER MURID", bold: true, size: 28, color: "FFFFFF", font: "Arial" })]
                                         }),
                                         new Paragraph({
                                             alignment: AlignmentType.CENTER,
@@ -753,9 +753,9 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
 
                 new Paragraph({ text: "", spacing: { after: 150 } }),
 
-                // 2. Section I: BIODATA SANTRI
+                // 2. Section I: BIODATA MURID
                 new Paragraph({
-                    children: [new TextRun({ text: "I. BIODATA SANTRI", bold: true, size: 22, color: "1E3A8A", font: "Arial" })],
+                    children: [new TextRun({ text: "I. BIODATA MURID", bold: true, size: 22, color: "1E3A8A", font: "Arial" })],
                     spacing: { before: 100, after: 80 }
                 }),
                 new Table({
@@ -763,7 +763,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                     rows: [
                         new TableRow({
                             children: [
-                                createCell("Nama Santri", { bold: true, shadingColor: "F8FAFC", width: 20 }),
+                                createCell("Nama Murid", { bold: true, shadingColor: "F8FAFC", width: 20 }),
                                 createCell(santriData.nama_lengkap, { bold: true, width: 30 }),
                                 createCell("Kelas & Sesi", { bold: true, shadingColor: "F8FAFC", width: 20 }),
                                 createCell(`${santriData.class?.nama_kelas || santriData.className || '-'} (${sessionName})`, { width: 30 })
@@ -773,7 +773,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                             children: [
                                 createCell("Nomor Induk (NIQ)", { bold: true, shadingColor: "F8FAFC" }),
                                 createCell(santriData.nomor_induk_qiroati || '-', { bold: true }),
-                                createCell("Wali Santri (Ibu)", { bold: true, shadingColor: "F8FAFC" }),
+                                createCell("Wali Murid (Ibu)", { bold: true, shadingColor: "F8FAFC" }),
                                 createCell(guardianName, { bold: true })
                             ]
                         }),
@@ -968,9 +968,9 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
 
                 new Paragraph({ text: "", spacing: { after: 150 } }),
 
-                // 7. Section VI: DAFTAR SEMUA HAFALAN SANTRI
+                // 7. Section VI: DAFTAR SEMUA HAFALAN MURID
                 new Paragraph({
-                    children: [new TextRun({ text: "VI. DAFTAR SEMUA HAFALAN SANTRI", bold: true, size: 22, color: "1E3A8A", font: "Arial" })],
+                    children: [new TextRun({ text: "VI. DAFTAR SEMUA HAFALAN MURID", bold: true, size: 22, color: "1E3A8A", font: "Arial" })],
                     spacing: { before: 100, after: 80 }
                 }),
                 new Table({
@@ -1020,7 +1020,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                     rows: [
                         new TableRow({
                             children: [
-                                createCell("Mengetahui,\nOrang Tua / Wali Santri\n\n\n\n( .................................... )", { align: AlignmentType.CENTER, width: 33 }),
+                                createCell("Mengetahui,\nOrang Tua / Wali Murid\n\n\n\n( .................................... )", { align: AlignmentType.CENTER, width: 33 }),
                                 createCell(`Guru Pengampu Kelas,\nUstadz / Ustadzah\n\n\n\n( ${teacherName} )`, { align: AlignmentType.CENTER, bold: true, width: 34 }),
                                 createCell("Disahkan oleh,\nPentashih LPQ Al-Fath Maulana\n\n\n\n( .................................... )", { align: AlignmentType.CENTER, width: 33 })
                             ]
@@ -1035,7 +1035,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Rapor_LPQ_${(santriData.nama_lengkap || 'Santri').replace(/\s+/g, '_')}.docx`;
+    a.download = `Rapor_LPQ_${(santriData.nama_lengkap || 'Murid').replace(/\s+/g, '_')}.docx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

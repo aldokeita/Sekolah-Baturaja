@@ -339,13 +339,13 @@ const GuruDashboard = () => {
 
   const handleManualMurojaahInsert = async () => {
     if (!manualMurojaahForm.santri_id || !manualMurojaahForm.item_name) {
-        toast({ title: "Gagal", description: "Silakan pilih santri dan item hafalan.", variant: "destructive" });
+        toast({ title: "Gagal", description: "Silakan pilih murid dan item hafalan.", variant: "destructive" });
         return;
     }
 
     setIsSubmittingManual(true);
     setIsSubmittingManual(false);
-    toast({ title: "Belum tersedia", description: "Input setoran manual guru ditunda. Santri dapat mengajukan murojaah dari dashboard santri.", variant: "destructive" });
+    toast({ title: "Belum tersedia", description: "Input setoran manual guru ditunda. Murid dapat mengajukan murojaah dari dashboard murid.", variant: "destructive" });
   };
 
   const pendingSubmissionsCount = useMemo(() => murojaahSubmissions.filter(sub => sub.status === 'menunggu').length, [murojaahSubmissions]);
@@ -357,10 +357,10 @@ const GuruDashboard = () => {
   const initiateJilidChange = (santri, direction) => {
     const currentIndex = jilidOptions.indexOf(santri.jilid);
     if (direction === 'up') {
-      if (currentIndex >= jilidOptions.length - 1) { toast({ title: 'Info', description: 'Santri sudah di jilid terakhir.' }); return; }
+      if (currentIndex >= jilidOptions.length - 1) { toast({ title: 'Info', description: 'Murid sudah di jilid terakhir.' }); return; }
       setJilidChangeData({ santri, direction: 'up', currentJilid: santri.jilid, nextJilid: jilidOptions[currentIndex + 1] });
     } else {
-      if (currentIndex <= 0) { toast({ title: 'Info', description: 'Santri sudah di jilid pertama.' }); return; }
+      if (currentIndex <= 0) { toast({ title: 'Info', description: 'Murid sudah di jilid pertama.' }); return; }
       setJilidChangeData({ santri, direction: 'down', currentJilid: santri.jilid, nextJilid: jilidOptions[currentIndex - 1] });
     }
     setIsJilidModalOpen(true);
@@ -377,7 +377,7 @@ const GuruDashboard = () => {
         toast({ title: 'Gagal!', description: error.message, variant: 'destructive' });
         return;
       }
-      toast({ title: 'Berhasil!', description: `Jilid santri diubah ke ${nextJilid}.` });
+      toast({ title: 'Berhasil!', description: `Jilid murid diubah ke ${nextJilid}.` });
       setMyClasses(prev => prev.map(cls => ({ ...cls, santri: cls.santri.map(s => s.id === santri.id ? {...s, jilid: nextJilid} : s) })));
       setIsJilidModalOpen(false); setJilidChangeData(null);
   };
@@ -495,7 +495,7 @@ const GuruDashboard = () => {
                         <CardTitle className={cn("flex items-center gap-3 text-lg md:text-xl font-bold", headerText)}>
                             <Users className="w-6 h-6" /> Kelas: {cls.nama_kelas}
                         </CardTitle>
-                        <CardDescription className="text-sm font-medium">Sesi: {cls.sesi} | Santri Aktif: {cls.santri.length}</CardDescription>
+                        <CardDescription className="text-sm font-medium">Sesi: {cls.sesi} | Murid Aktif: {cls.santri.length}</CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
@@ -503,7 +503,7 @@ const GuruDashboard = () => {
                                 <thead className="bg-secondary/10 dark:bg-card">
                                     <tr className="border-b border-border">
                                         <th className="py-3 px-4 text-left font-semibold text-foreground/70 w-12">No</th>
-                                        <th className="py-3 px-4 text-left font-semibold text-foreground/70">Nama Santri</th>
+                                        <th className="py-3 px-4 text-left font-semibold text-foreground/70">Nama Murid</th>
                                         <th className="py-3 px-4 text-center font-semibold text-foreground/70">Kehadiran</th>
                                         <th className="py-3 px-4 text-left font-semibold text-foreground/70">Jilid</th>
                                         <th className="py-3 px-4 text-left font-semibold text-foreground/70">Hafalan</th>
@@ -595,7 +595,7 @@ const GuruDashboard = () => {
                                     })}
                                 </tbody>
                             </table>
-                            {(cls.santri || []).length === 0 && <p className="p-4 text-center text-muted-foreground">Belum ada santri di kelas ini.</p>}
+                            {(cls.santri || []).length === 0 && <p className="p-4 text-center text-muted-foreground">Belum ada murid di kelas ini.</p>}
                         </div>
                     </CardContent>
                 </Card>
@@ -610,13 +610,13 @@ const GuruDashboard = () => {
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
                 <Avatar className="h-28 w-28"><AvatarFallback className="text-4xl">{previewAvatar?.nama_lengkap?.charAt(0)}</AvatarFallback></Avatar>
-                <p className="text-sm">Foto santri belum tersedia.</p>
+                <p className="text-sm">Foto murid belum tersedia.</p>
               </div>
             )}
           </div>
           <DialogHeader className="px-6 pb-6">
             <DialogTitle>{previewAvatar?.nama_lengkap}</DialogTitle>
-            <DialogDescription>Foto profil santri dari kelas yang Anda ampu.</DialogDescription>
+            <DialogDescription>Foto profil murid dari kelas yang Anda ampu.</DialogDescription>
           </DialogHeader>
         </DialogContent>
       </Dialog>
@@ -627,7 +627,7 @@ const GuruDashboard = () => {
           <DialogContent className="max-h-[88vh] max-w-6xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Skor Hafalan {selectedHafalan.category}</DialogTitle>
-              <DialogDescription>Santri: {selectedSantri.nama_lengkap}. Hafalan ditandai tercapai otomatis setelah memperoleh skor 4.</DialogDescription>
+              <DialogDescription>Murid: {selectedSantri.nama_lengkap}. Hafalan ditandai tercapai otomatis setelah memperoleh skor 4.</DialogDescription>
               <div className="grid grid-cols-2 gap-2 pt-3 sm:grid-cols-4" aria-label="Keterangan skor perkembangan">
                 {DEVELOPMENT_SCORE_OPTIONS.map((option) => (
                   <div key={option.score} className="min-w-0 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-slate-900">
@@ -685,9 +685,9 @@ const GuruDashboard = () => {
                             </div>
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold">Pilih Santri</label>
+                                    <label className="text-sm font-semibold">Pilih Murid</label>
                                     <Select value={manualMurojaahForm.santri_id} onValueChange={(val) => setManualMurojaahForm({...manualMurojaahForm, santri_id: val})}>
-                                        <SelectTrigger><SelectValue placeholder="Pilih Santri di Kelas" /></SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder="Pilih Murid di Kelas" /></SelectTrigger>
                                         <SelectContent>{allMySantri.map(s => <SelectItem key={s.id} value={s.id}>{s.nama_lengkap}</SelectItem>)}</SelectContent>
                                     </Select>
                                 </div>
@@ -738,7 +738,7 @@ const GuruDashboard = () => {
                             {currentSubmission.status === 'menunggu' ? (
                                 <div className="space-y-3 pt-4 border-t border-border">
                                     <label className="font-semibold text-sm">Berikan Umpan Balik / Nilai</label>
-                                    <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Tuliskan umpan balik untuk santri ini..." className="min-h-[100px]" />
+                                    <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Tuliskan umpan balik untuk murid ini..." className="min-h-[100px]" />
                                     <Button onClick={handleSubmitFeedback} className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md"><Send className="w-4 h-4 mr-2"/> Simpan Penilaian</Button>
                                 </div>
                             ) : (

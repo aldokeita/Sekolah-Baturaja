@@ -122,7 +122,7 @@ const BackupRestoreManagement = () => {
     // client. Per-table screens (santri, guru, kelas, pembayaran) still work.
     const BACKUP_UNSUPPORTED_MESSAGE = 'Backup & restore belum tersedia pada backend baru. '
         + 'Fitur ini membutuhkan endpoint dump/restore tabel yang belum dibuat. '
-        + 'Gunakan ekspor per-modul (santri, guru, kelas, pembayaran) sebagai gantinya.';
+        + 'Gunakan ekspor per-modul (murid, guru, kelas, pembayaran) sebagai gantinya.';
 
     const fetchTableData = async (tableName) => {
         throw new Error(`${tableName}: ${BACKUP_UNSUPPORTED_MESSAGE}`);
@@ -328,9 +328,9 @@ const BackupRestoreManagement = () => {
                     a.download = generateFilename('santri', 'csv');
                     a.click();
                     window.URL.revokeObjectURL(url);
-                    toast({ title: "Info CSV", description: "Format CSV hanya mengunduh data Santri. Gunakan XLSX/JSON untuk backup penuh." });
+                    toast({ title: "Info CSV", description: "Format CSV hanya mengunduh data Murid. Gunakan XLSX/JSON untuk backup penuh." });
                 } else {
-                    toast({ title: "Data Kosong", description: "Tidak ada data santri untuk diexport ke CSV.", variant: "warning" });
+                    toast({ title: "Data Kosong", description: "Tidak ada data murid untuk diexport ke CSV.", variant: "warning" });
                 }
             }
 
@@ -524,7 +524,7 @@ const BackupRestoreManagement = () => {
                                 </Button>
                                 <Button variant="outline" className="h-32 flex flex-col items-center justify-center gap-3 hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all group" onClick={() => initiateBackup('csv')} disabled={isLoading}>
                                     <FileText className="w-10 h-10 text-slate-500 group-hover:scale-110 transition-transform" />
-                                    <div className="text-center"><div className="font-bold text-slate-700 dark:text-slate-200">Format CSV</div><div className="text-xs text-muted-foreground mt-1">Data Santri Saja</div></div>
+                                    <div className="text-center"><div className="font-bold text-slate-700 dark:text-slate-200">Format CSV</div><div className="text-xs text-muted-foreground mt-1">Data Murid Saja</div></div>
                                 </Button>
                             </div>
 
@@ -538,7 +538,7 @@ const BackupRestoreManagement = () => {
                             <Alert className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
                                 <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                 <AlertTitle className="text-amber-800 dark:text-amber-300">Informasi Penting</AlertTitle>
-                                <AlertDescription className="text-amber-700 dark:text-amber-400">Backup mencakup seluruh data tabel sistem (Santri, Guru, Kelas, Keuangan, dll). Pastikan simpan file di tempat yang aman karena berisi data sensitif.</AlertDescription>
+                                <AlertDescription className="text-amber-700 dark:text-amber-400">Backup mencakup seluruh data tabel sistem (Murid, Guru, Kelas, Keuangan, dll). Pastikan simpan file di tempat yang aman karena berisi data sensitif.</AlertDescription>
                             </Alert>
                         </TabsContent>
 

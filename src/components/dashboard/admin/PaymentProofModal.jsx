@@ -75,7 +75,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
     const paymentDate = receiptPayment?.tanggal_pembayaran || receiptPayment?.created_at || new Date().toISOString();
     const paymentMethod = receiptPayment?.metode_pembayaran || '-';
     const transactionRef = receiptPayment?.transaction_id || receiptPayment?.id || '-';
-    const studentName = receiptPayment?.santri?.nama_lengkap || 'Santri';
+    const studentName = receiptPayment?.santri?.nama_lengkap || 'Murid';
     const studentId = receiptPayment?.santri?.nomor_induk_qiroati || '-';
     const period = formatPaymentPeriod(receiptPayment?.bulan, receiptPayment?.tahun);
     const notes = receiptPayment?.catatan || 'Pembayaran Administrasi';
@@ -95,7 +95,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
                 imagePlaceholder: '/logo-lpq-al-fath-maulana.webp',
             });
             const link = document.createElement('a');
-            const santriName = studentName.replace(/\s+/g, '_') || 'Santri';
+            const santriName = studentName.replace(/\s+/g, '_') || 'Murid';
             const dateStr = new Date(paymentDate).toLocaleDateString('id-ID').replace(/\//g, '-');
             link.download = `Bukti-Pembayaran-${santriName}-${dateStr}.png`;
             link.href = dataUrl;
@@ -110,7 +110,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
 
     const handleSendWhatsApp = () => {
         if (!receiptPayment || !receiptPayment.santri?.no_hp_ortu) {
-            toast({ title: "Gagal", description: "Nomor HP Wali Santri tidak ditemukan.", variant: "destructive" });
+            toast({ title: "Gagal", description: "Nomor HP Wali Murid tidak ditemukan.", variant: "destructive" });
             return;
         }
 

@@ -65,7 +65,7 @@ const BulkUploadModal = ({ isOpen, onClose, onUpload, category = 'Dewasa' }) => 
     ];
     const ws = XLSX.utils.aoa_to_sheet([headers]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template Santri Dewasa");
+    XLSX.utils.book_append_sheet(wb, ws, "Template Murid Dewasa");
     XLSX.writeFile(wb, "Template_Import_Santri_Dewasa.xlsx");
   };
 
@@ -117,7 +117,7 @@ const BulkUploadModal = ({ isOpen, onClose, onUpload, category = 'Dewasa' }) => 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Import Data Santri Dewasa Massal</DialogTitle>
+          <DialogTitle>Import Data Murid Dewasa Massal</DialogTitle>
           <DialogDescription>Pilih metode import data.</DialogDescription>
         </DialogHeader>
 
@@ -271,17 +271,17 @@ const SantriDewasaManagement = () => {
         fetchSantriList({ kategori: 'Dewasa', activeOnly: true, notDeleted: true, limit: 200 }).catch(() => null),
         fetchClassList({ includeGuru: true }).catch(() => null),
       ]);
-      const santriRes = { data: santriData, error: santriData ? null : new Error('gagal memuat santri') };
+      const santriRes = { data: santriData, error: santriData ? null : new Error('gagal memuat murid') };
       const classesRes = { data: classesData, error: classesData ? null : new Error('gagal memuat kelas') };
 
       if (santriRes.data) {
           const uniqueKategoris = [...new Set(santriRes.data.map(s => s.kategori))];
-          console.log(`Raw Santri Data (Dewasa Context): ${santriRes.data.length} records`);
+          console.log(`Raw Murid Data (Dewasa Context): ${santriRes.data.length} records`);
           console.log("Unique kategoris found:", uniqueKategoris);
       }
 
       if (santriRes.error) {
-          toast({ title: "Error", description: "Gagal memuat data santri dewasa.", variant: "destructive" });
+          toast({ title: "Error", description: "Gagal memuat data murid dewasa.", variant: "destructive" });
       } else {
           // Client-side filtering to be safe against case inconsistencies
           const filteredDewasa = (santriRes.data || []).filter(s => {
@@ -394,7 +394,7 @@ const SantriDewasaManagement = () => {
       if (!uploadReport?.validData) return;
       try {
           await bulkInsertSantri(uploadReport.validData);
-          toast({ title: "Berhasil", description: `${uploadReport.validCount} data santri dewasa berhasil diimport.` });
+          toast({ title: "Berhasil", description: `${uploadReport.validCount} data murid dewasa berhasil diimport.` });
           loadData();
           setIsReportOpen(false);
           setUploadReport(null);
@@ -413,7 +413,7 @@ const SantriDewasaManagement = () => {
     }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Santri Dewasa");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Murid Dewasa");
     XLSX.writeFile(workbook, "Data_Santri_Dewasa.xlsx");
   };
 
@@ -422,7 +422,7 @@ const SantriDewasaManagement = () => {
     if (!file) return;
 
     if (!editingSantri?.id) {
-        toast({ title: "Simpan Akun Terlebih Dahulu", description: "Avatar memakai path berdasarkan UUID akun. Simpan data santri sebelum upload foto.", variant: "destructive" });
+        toast({ title: "Simpan Akun Terlebih Dahulu", description: "Avatar memakai path berdasarkan UUID akun. Simpan data murid sebelum upload foto.", variant: "destructive" });
         e.target.value = '';
         return;
     }
@@ -454,7 +454,7 @@ const SantriDewasaManagement = () => {
     }
 
     if (!editingSantri && !finalFormData.password) {
-        toast({ title: "Gagal", description: "Password wajib diisi untuk santri baru.", variant: "destructive" });
+        toast({ title: "Gagal", description: "Password wajib diisi untuk murid baru.", variant: "destructive" });
         return;
     }
 
@@ -487,7 +487,7 @@ const SantriDewasaManagement = () => {
 
       if (!editingSantri) {
         const created = await createSantri({ ...profilePayload, password: finalFormData.password });
-        if (!created?.id) throw new Error('Akun santri dewasa gagal dibuat.');
+        if (!created?.id) throw new Error('Akun murid dewasa gagal dibuat.');
         targetId = created.id;
       } else if (Object.keys(profilePayload).length > 0) {
         await updateSantri(targetId, profilePayload);
@@ -497,19 +497,19 @@ const SantriDewasaManagement = () => {
         await moveSantriClass({
           santri_id: targetId,
           target_class_id: selectedClassId,
-          reason: editingSantri ? 'Perubahan kelas santri dewasa' : 'Penempatan kelas awal santri dewasa',
+          reason: editingSantri ? 'Perubahan kelas murid dewasa' : 'Penempatan kelas awal murid dewasa',
         });
       }
 
       if (shouldArchiveAfterSave) {
-        await archiveSantriAccounts([targetId], 'Dinonaktifkan melalui form Data Santri Dewasa');
+        await archiveSantriAccounts([targetId], 'Dinonaktifkan melalui form Data Murid Dewasa');
       }
 
       toast({
         title: "Berhasil!",
         description: shouldArchiveAfterSave
-          ? "Data santri tersimpan dan dipindahkan ke arsip."
-          : (editingSantri ? "Data santri berhasil diperbarui" : "Santri dewasa berhasil ditambahkan")
+          ? "Data murid tersimpan dan dipindahkan ke arsip."
+          : (editingSantri ? "Data murid berhasil diperbarui" : "Murid dewasa berhasil ditambahkan")
       });
       await loadData();
       window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
@@ -533,14 +533,14 @@ const SantriDewasaManagement = () => {
     setConfirmDialog({
       isOpen: true,
       title: 'Pindahkan ke Arsip',
-      description: `${selectedSantri.size} santri dewasa akan dinonaktifkan. Seluruh kelas, hafalan, karakter, absensi, pembayaran, dan riwayat tetap tersimpan untuk dipulihkan nanti.`,
+      description: `${selectedSantri.size} murid dewasa akan dinonaktifkan. Seluruh kelas, hafalan, karakter, absensi, pembayaran, dan riwayat tetap tersimpan untuk dipulihkan nanti.`,
       onConfirm: async () => {
         try {
-          await archiveSantriAccounts(idsToDelete, 'Dipindahkan ke arsip dari Data Santri Dewasa');
+          await archiveSantriAccounts(idsToDelete, 'Dipindahkan ke arsip dari Data Murid Dewasa');
           await loadData();
           window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
           setSelectedSantri(new Set());
-          toast({ title: "Masuk arsip", description: "Santri dewasa telah diarsipkan tanpa menghapus riwayatnya." });
+          toast({ title: "Masuk arsip", description: "Murid dewasa telah diarsipkan tanpa menghapus riwayatnya." });
         } catch (error) {
           toast({ title: "Gagal!", description: error.message, variant: "destructive" });
         }
@@ -554,15 +554,15 @@ const SantriDewasaManagement = () => {
       setConfirmDialog({
           isOpen: true,
           title: 'Migrasi ke TPQ',
-          description: `Yakin ingin memindahkan ${editingSantri.nama_lengkap} ke kategori TPQ (Anak)? Santri akan dikeluarkan dari kelas Dewasa saat ini.`,
+          description: `Yakin ingin memindahkan ${editingSantri.nama_lengkap} ke kategori TPQ (Anak)? Murid akan dikeluarkan dari kelas Dewasa saat ini.`,
           onConfirm: async () => {
               try {
                   const result = await changeSantriCategory({
                       santri_id: editingSantri.id,
                       new_category: 'Anak',
-                      reason: 'Migrasi santri dewasa ke TPQ oleh admin',
+                      reason: 'Migrasi murid dewasa ke TPQ oleh admin',
                   });
-                  toast({ title: "Berhasil", description: result?.message || "Santri berhasil dipindahkan ke kategori TPQ (Anak)." });
+                  toast({ title: "Berhasil", description: result?.message || "Murid berhasil dipindahkan ke kategori TPQ (Anak)." });
                   setIsFormOpen(false);
                   await loadData();
               } catch (error) {
@@ -628,8 +628,8 @@ const SantriDewasaManagement = () => {
                 <Briefcase />
              </div>
              <div className="admin-panel-header-text">
-                <h2>Manajemen Santri Dewasa</h2>
-                <p>Kelola data santri, jilid, dan sesi khusus dewasa.</p>
+                <h2>Manajemen Murid Dewasa</h2>
+                <p>Kelola data murid, jilid, dan sesi khusus dewasa.</p>
              </div>
           </div>
 
@@ -653,7 +653,7 @@ const SantriDewasaManagement = () => {
                  </button>
             </div>
             <button onClick={() => { resetForm(); setIsFormOpen(true); }} className="admin-panel-primary-btn">
-                <Plus className="w-4 h-4"/> Tambah Santri
+                <Plus className="w-4 h-4"/> Tambah Murid
             </button>
           </div>
       </div>
@@ -730,7 +730,7 @@ const SantriDewasaManagement = () => {
         {!isLoadingData && sortedAndFilteredSantri.length === 0 && (
             <div className="admin-table-empty">
                 <Search />
-                <p>Tidak ada data santri ditemukan.</p>
+                <p>Tidak ada data murid ditemukan.</p>
             </div>
         )}
         </div>
@@ -738,7 +738,7 @@ const SantriDewasaManagement = () => {
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editingSantri ? 'Edit Santri Dewasa' : 'Tambah Santri Dewasa'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingSantri ? 'Edit Murid Dewasa' : 'Tambah Murid Dewasa'}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-muted/20 rounded-xl border">
                 <Avatar className="w-24 h-24 border-4 border-background shadow-md cursor-pointer hover:opacity-80 transition-opacity" onClick={() => formData.foto_url && setPreviewImage(formData.foto_url)}>
@@ -805,7 +805,7 @@ const SantriDewasaManagement = () => {
                 )}
                 <div className="flex gap-2">
                     <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Batal</Button>
-                    <Button type="submit">{editingSantri ? 'Simpan Perubahan' : 'Tambah Santri Dewasa'}</Button>
+                    <Button type="submit">{editingSantri ? 'Simpan Perubahan' : 'Tambah Murid Dewasa'}</Button>
                 </div>
             </DialogFooter>
           </form>
@@ -818,7 +818,7 @@ const SantriDewasaManagement = () => {
         open={isArchiveOpen}
         onOpenChange={setIsArchiveOpen}
         categories={['Dewasa']}
-        title="Arsip Santri Dewasa"
+        title="Arsip Murid Dewasa"
         onRestored={loadData}
       />
       <ConfirmationDialog

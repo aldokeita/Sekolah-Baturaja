@@ -60,7 +60,7 @@ const JilidPerformanceChart = ({ data }) => {
         <Card>
             <CardHeader>
                 <CardTitle>Performa Kenaikan Jilid</CardTitle>
-                <CardDescription>Jumlah santri yang naik jilid dalam 6 bulan terakhir.</CardDescription>
+                <CardDescription>Jumlah murid yang naik jilid dalam 6 bulan terakhir.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="h-80 w-full">
