@@ -696,7 +696,11 @@ const SantriManagement = () => {
       return;
     }
 
-    if (finalFormData.default_spp_amount !== '' && finalFormData.default_spp_amount !== null) {
+    // Perlakukan undefined sama seperti kosong. Sebelumnya hanya '' dan null yang
+    // dilewati, sehingga field yang tidak diinisialisasi resetForm lolos ke
+    // Number(undefined) = NaN dan memunculkan galat "minimal Rp10.000" pada field
+    // yang jelas-jelas kosong — tidak mungkin dilewati pengguna.
+    if (String(finalFormData.default_spp_amount ?? '').trim() !== '') {
       const defaultSppAmount = Number(finalFormData.default_spp_amount);
       if (!Number.isFinite(defaultSppAmount) || defaultSppAmount < 10000) {
         toast({ title: "Default SPP Tidak Valid", description: "Default SPP minimal Rp10.000 atau kosongkan jika belum ditentukan.", variant: "destructive" });
@@ -850,7 +854,8 @@ const SantriManagement = () => {
       nama_lengkap: '', nama_panggilan: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
       nama_ayah: '', nama_ibu: '', pekerjaan_ayah: '', pekerjaan_ibu: '', alamat_ortu: '',
       no_hp_ortu: '', alamat: '', status: 'Aktif', foto_url: '', password: '', rfid_tag: '',
-      no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false, id_kelas: null, points: 0, kategori: 'Anak'
+      no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false,
+      default_spp_amount: '', id_kelas: null, points: 0, kategori: 'Anak'
     });
     setEditingSantri(null);
   };
@@ -1189,7 +1194,11 @@ const SantriManagement = () => {
                         <h4><Lock /> Akses Login</h4>
                         <div className="admin-edit-field-grid">
                             <div className="admin-edit-field"><label>Username</label><Input type="text" value={formData.nama_panggilan || ''} readOnly style={{ opacity: 0.7 }} /></div>
-                            <div className="admin-edit-field"><label>Password</label><Input type="text" value={formData.password || ''} onChange={(e) => setFormData({ ...formData, password: e.target.value })} disabled={Boolean(editingSantri)} required={!editingSantri} placeholder={editingSantri ? 'Reset password melalui alur admin terpisah' : ''} /></div>
+                            {/* Tidak `required`: bila dikosongkan, password otomatis memakai NISN
+                            atau NIS (lihat handleSubmit), sama seperti perilaku impor massal.
+                            Dulu field ini `required`, sehingga browser memblokir submit tanpa
+                            pesan apa pun dan pengisian otomatis itu mustahil tercapai. */}
+                        <div className="admin-edit-field"><label>Password</label><Input type="text" value={formData.password || ''} onChange={(e) => setFormData({ ...formData, password: e.target.value })} disabled={Boolean(editingSantri)} placeholder={editingSantri ? 'Reset password melalui alur admin terpisah' : 'Kosongkan untuk memakai NISN'} /></div>
                         </div>
                     </div>
                 </div>
