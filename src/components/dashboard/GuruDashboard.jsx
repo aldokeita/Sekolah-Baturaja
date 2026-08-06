@@ -44,14 +44,11 @@ import AvatarPreviewDialog from '@/components/dashboard/shared/AvatarPreviewDial
 import StudentTransferModal from '@/components/dashboard/guru/StudentTransferModal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getTingkatLevels } from '@/lib/tahfizhLevels';
 
 const ProfileConstellationScene = lazy(() => import('@/components/dashboard/santri/SantriLevelScene'));
 
-const jilidOptions = [
-  'Pra TK A', 'Pra TK B', 'Pra TK C', 'Jilid 1A', 'Jilid 1B', 'Jilid 1C', 'Jilid 2A', 'Jilid 2B',
-  'Jilid 3A', 'Jilid 3B', 'Jilid 4A', 'Jilid 4B', 'Jilid 5A', 'Jilid 5B', 'Jilid 6A', 'Jilid 6B',
-  'Al-Qur\'an', 'Ghorib Tajwid', 'Finishing'
-];
+const jilidOptions = getTingkatLevels();
 
 const getSessionStartTimestamp = (dateStr, sesiName) => buildSessionStartTimestamp(dateStr, sesiName);
 

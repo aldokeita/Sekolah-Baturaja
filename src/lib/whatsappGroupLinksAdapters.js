@@ -1,16 +1,7 @@
 import apiClient from '@/lib/apiClient';
+import { getTingkatLevels } from '@/lib/tahfizhLevels';
 
-export const WHATSAPP_JILID_OPTIONS = Object.freeze([
-  'Pra TK A', 'Pra TK B', 'Pra TK C',
-  'Jilid 1A', 'Jilid 1B', 'Jilid 1C',
-  'Jilid 2A', 'Jilid 2B',
-  'Jilid 3A', 'Jilid 3B',
-  'Jilid 4A', 'Jilid 4B',
-  'Jilid 5A', 'Jilid 5B',
-  'Jilid Juz 27',
-  'Jilid 6A', 'Jilid 6B',
-  "Al-Qur'an", 'Ghorib Tajwid', 'Finishing',
-]);
+export const WHATSAPP_JILID_OPTIONS = Object.freeze(getTingkatLevels());
 
 const WHATSAPP_INVITE_PATTERN = /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9_-]+$/;
 

@@ -20,6 +20,7 @@ import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getSessionName } from '@/utils/sessionMapping';
+import { getTingkatLevels } from '@/lib/tahfizhLevels';
 import {
   createClass,
   deleteClass,
@@ -37,7 +38,7 @@ import {
 } from '@/lib/dataMasterAdapters';
 
 const ItemTypes = { SANTRI: 'santri', CLASS: 'class', SESSION: 'session', CLASS_ORDER: 'class_order' };
-const jilidOptions = ['Pra TK A', 'Pra TK B', 'Pra TK C', 'Jilid 1A', 'Jilid 1B', 'Jilid 1C', 'Jilid 2A', 'Jilid 2B', 'Jilid 3A', 'Jilid 3B', 'Jilid 4A', 'Jilid 4B', 'Jilid 5A', 'Jilid 5B', 'Jilid Juz 27', 'Jilid 6A', 'Jilid 6B', 'Al-Qur\'an', 'Ghorib Tajwid', 'Finishing'];
+const jilidOptions = getTingkatLevels();
 
 // Draggable Session Item for Config
 const DraggableSessionItem = ({ name, time, index, moveSession, onDelete, onUpdate }) => {

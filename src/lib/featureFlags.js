@@ -10,3 +10,8 @@ export const enableGameFeatures = import.meta.env.VITE_ENABLE_GAME_FEATURES !== 
 
 export const edgeFunctionDisabledMessage =
   'Fitur ini belum tersedia.';
+
+
+// Program tahfizh bersifat opsional bagi sekolah umum. Saat mati, kolom Tingkat
+// dan riwayatnya disembunyikan; datanya tetap utuh di basis data.
+export const enableTahfizh = import.meta.env.VITE_ENABLE_TAHFIZH === 'true';

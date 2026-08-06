@@ -34,6 +34,8 @@ import { archiveSantriAccounts, getFunctionErrorMessage } from '@/lib/santriArch
 import { copyTextToClipboard } from '@/lib/clipboardUtils';
 import SantriArchiveDialog from '@/components/dashboard/admin/SantriArchiveDialog';
 import DataPagination from '@/components/dashboard/shared/DataPagination';
+import { getTingkatLevels } from '@/lib/tahfizhLevels';
+import { enableTahfizh } from '@/lib/featureFlags';
 
 const PAGE_SIZE = 10;
 
@@ -1155,6 +1157,21 @@ const SantriManagement = () => {
                     <div className="admin-edit-field-grid">
                         <div className="admin-edit-field"><label>RFID Tag</label><Input type="text" value={formData.rfid_tag || ''} onChange={(e) => setFormData({ ...formData, rfid_tag: e.target.value })} /></div>
                         <div className="admin-edit-field"><label>Status</label><Select value={formData.status} onValueChange={val => setFormData({ ...formData, status: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Aktif">Aktif</SelectItem><SelectItem value="Nonaktif">Non-Aktif</SelectItem></SelectContent></Select></div>
+                        {enableTahfizh && (
+                          <div className="admin-edit-field">
+                            <label>Tingkat Tahfizh</label>
+                            <Input
+                              type="text"
+                              list="tingkat-tahfizh-options"
+                              placeholder="Contoh: Juz 30, Iqro 3, Ummi 4"
+                              value={formData.jilid || ''}
+                              onChange={(e) => setFormData({ ...formData, jilid: e.target.value })}
+                            />
+                            <datalist id="tingkat-tahfizh-options">
+                              {getTingkatLevels().map((level) => <option key={level} value={level} />)}
+                            </datalist>
+                          </div>
+                        )}
 
                         <div className="admin-edit-field"><label>Kelas Aktif <span className="normal-case text-[10px]" style={{ color: 'hsl(var(--admin-text-muted))' }}>(untuk Absensi)</span></label><Select value={getSelectedClassId(formData) || undefined} onValueChange={val => setFormData({ ...formData, current_class_id: val, id_kelas: val })}><SelectTrigger><SelectValue placeholder="Pilih kelas aktif" /></SelectTrigger><SelectContent>{classesList.map(cls => <SelectItem key={cls.id} value={cls.id}>{cls.nama_kelas}{cls.guru?.nama ? ` - ${cls.guru.nama}` : ''}</SelectItem>)}</SelectContent></Select></div>
                         <div className="admin-edit-field">
