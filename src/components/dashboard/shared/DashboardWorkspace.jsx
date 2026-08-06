@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { Users, DollarSign, TrendingDown, Fingerprint, Tv, Gamepad2, Shuffle, Library } from 'lucide-react';
+import { Users, DollarSign, TrendingDown, Fingerprint, Tv, Gamepad2, Shuffle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -151,17 +151,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
           if (tabs.some((t) => t.value === 'history')) setActiveTab('history');
           toast({ title: 'Navigasi', description: `Menuju riwayat pembayaran ${item.santri?.nama_lengkap || ''}` });
           break;
-        case 'hafalan':
-          if (item.santri?.id) {
-            const santriFromHafalan = await fetchSantriDetail(item.santri.id).catch(() => null);
-            if (santriFromHafalan) {
-              setSelectedSantri(await resolveAvatarRecord(santriFromHafalan, { ownerType: 'santri' }));
-              setIsSantriModalOpen(true);
-            }
-          } else if (hasSantriTab) {
-            setActiveTab('santri');
-          }
-          break;
+
         default:
           break;
       }
@@ -206,13 +196,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
             >
               <Gamepad2 className="w-4 h-4"/><span>Play Gatcha</span>
             </button>
-            <button
-              type="button"
-              onClick={() => navigate('/quiz-hafalan')}
-              className="attendance-header__action-btn attendance-header__action-btn--quiz lpq-shiny-button"
-            >
-              <Library className="w-4 h-4"/><span>Play Quiz</span>
-            </button>
+
             <button
               type="button"
               onClick={() => navigate('/random-name')}

@@ -20,7 +20,6 @@ import PrestasiPage from '@/pages/PrestasiPage';
 import EkstrakurikulerPage from '@/pages/EkstrakurikulerPage';
 import DigitalAttendancePage from '@/pages/DigitalAttendancePage';
 import TvDisplayPage from '@/pages/TvDisplayPage';
-import QuizHafalanPage from '@/pages/QuizHafalanPage';
 import GatchaGamePage from '@/pages/GatchaGamePage';
 import GalleryPage from '@/pages/GalleryPage';
 import RandomNamePage from '@/pages/RandomNamePage';
@@ -138,14 +137,12 @@ function App() {
                 <Route path="/tv-display-mode" element={<ProtectedRoute allowedRoles={operationalDisplayRoles}><TvDisplayPage /></ProtectedRoute>} />
                 {enableGameFeatures ? (
                   <>
-                    <Route path="/quiz-hafalan" element={<ProtectedRoute><QuizHafalanPage /></ProtectedRoute>} />
                     <Route path="/gatcha-game" element={<ProtectedRoute><GatchaGamePage /></ProtectedRoute>} />
                     <Route path="/random-name" element={<ProtectedRoute><RandomNamePage /></ProtectedRoute>} />
                     <Route path="/top-score" element={<ProtectedRoute><TopScorePage /></ProtectedRoute>} />
                   </>
                 ) : (
                   <>
-                    <Route path="/quiz-hafalan" element={<ProtectedRoute><DeferredFeaturePage /></ProtectedRoute>} />
                     <Route path="/gatcha-game" element={<ProtectedRoute><DeferredFeaturePage /></ProtectedRoute>} />
                     <Route path="/random-name" element={<ProtectedRoute><DeferredFeaturePage /></ProtectedRoute>} />
                     <Route path="/top-score" element={<ProtectedRoute><DeferredFeaturePage /></ProtectedRoute>} />
