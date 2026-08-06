@@ -48,6 +48,7 @@ func main() {
 	contentHandler := handler.NewContentHandler(pool)
 	configHandler := handler.NewAppConfigHandler(pool)
 	academicHandler := handler.NewAcademicHandler(pool)
+	scheduleHandler := handler.NewScheduleHandler(pool)
 	mmqHandler := handler.NewMMQHandler(pool)
 	gamificationHandler := handler.NewGamificationHandler(pool)
 	mediaPlayerHandler := handler.NewMediaPlayerHandler(pool)
@@ -120,6 +121,7 @@ func main() {
 		r.Mount("/api/attendance", attendanceHandler.Routes())
 		r.Mount("/api/payments", paymentHandler.Routes())
 		r.Mount("/api/academic", academicHandler.Routes())
+		r.Mount("/api/schedule", scheduleHandler.Routes())
 		r.Mount("/api/mmq", mmqHandler.Routes())
 		r.Mount("/api/config", configHandler.Routes())
 
