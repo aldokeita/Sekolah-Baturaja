@@ -107,15 +107,16 @@ type userRow struct {
 	hash string
 }
 
-// resolveUser mencari user di santri (nomor_induk/panggilan) atau guru (email).
+// resolveUser mencari user di santri (NISN/NIS/panggilan) atau guru (email).
 // Santri dicek duluan; jika tidak ketemu baru coba guru/admin/pentashih.
 func (h *AuthHandler) resolveUser(ctx context.Context, username string) (id, role, hash string, err error) {
-	// Coba santri: login by nomor_induk_qiroati atau nama_panggilan
+	// Murid login pakai NISN atau NIS. nomor_induk_qiroati tetap diterima sebagai
+	// fallback agar murid lama tidak terkunci sebelum NISN mereka terisi.
 	var row userRow
 	err = h.db.QueryRow(ctx, `
 		SELECT id, 'santri', COALESCE(password,'')
 		FROM santri
-		WHERE (nomor_induk_qiroati = $1 OR LOWER(nama_panggilan) = LOWER($1))
+		WHERE (nisn = $1 OR nis = $1 OR nomor_induk_qiroati = $1 OR LOWER(nama_panggilan) = LOWER($1))
 		  AND status = 'Aktif'
 		LIMIT 1
 	`, username).Scan(&row.id, &row.role, &row.hash)

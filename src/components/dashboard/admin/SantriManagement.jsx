@@ -24,7 +24,6 @@ import {
   fetchSantriPage,
   mapSantriForLegacyUi,
   moveSantriClass,
-  normalizeNomorIndukQiroati,
   pickChangedSantriProfileFields,
   pickSantriProfileFields,
   updateSantri,
@@ -56,7 +55,6 @@ const BULK_IMPORT_COLUMNS = [
   'No HP Ortu',
   'No KK',
   'No NIK',
-  'No Induk Qiroati',
   'RFID',
 ];
 
@@ -450,15 +448,12 @@ const SantriManagement = () => {
             // 14. No NIK
             santri.no_nik = row[13];
 
-            // 15. No Induk Qiroati
-            santri.nomor_induk_qiroati = normalizeNomorIndukQiroati(row[14]);
-
             // 16. RFID
             santri.rfid_tag = row[15];
 
             // Setup Default Password based on Priority
             if (!santri.password) {
-                 santri.password = santri.nomor_induk_qiroati || santri.nama_panggilan || '1234';
+                 santri.password = santri.nisn || santri.nis || santri.nama_panggilan || '1234';
             }
 
             validData.push(santri);
@@ -494,10 +489,10 @@ const SantriManagement = () => {
   const [totalSantri, setTotalSantri] = useState(0);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [formData, setFormData] = useState({
-    nama_lengkap: '', nama_panggilan: '', nomor_induk_qiroati: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
+    nama_lengkap: '', nama_panggilan: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
     nama_ayah: '', nama_ibu: '', pekerjaan_ayah: '', pekerjaan_ibu: '', alamat_ortu: '',
     no_hp_ortu: '', alamat: '', status: 'Aktif', foto_url: '', password: '', rfid_tag: '',
-    no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false, link_qiroati: '', default_spp_amount: '', id_kelas: null, points: 0, kategori: 'Anak'
+    no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false, default_spp_amount: '', id_kelas: null, points: 0, kategori: 'Anak'
   });
 
   useEffect(() => {
@@ -660,15 +655,10 @@ const SantriManagement = () => {
     setFormData(prev => ({ ...prev, nama_panggilan: capitalized }));
   };
 
-  const handleQiroatiIdChange = (e) => {
-    const qiroatiId = e.target.value;
-    setFormData(prev => ({ ...prev, nomor_induk_qiroati: qiroatiId, password: qiroatiId }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const finalFormData = { ...formData, kategori: 'Anak' };
-    finalFormData.nomor_induk_qiroati = normalizeNomorIndukQiroati(finalFormData.nomor_induk_qiroati);
 
     const requiredFields = [
       ['nama_lengkap', 'Nama lengkap'],
@@ -697,7 +687,7 @@ const SantriManagement = () => {
         finalFormData.nama_panggilan = finalFormData.nama_lengkap.trim().split(/\s+/)[0] || null;
     }
 
-    if (!finalFormData.password) finalFormData.password = finalFormData.nomor_induk_qiroati;
+    if (!finalFormData.password) finalFormData.password = finalFormData.nisn || finalFormData.nis;
 
     if (finalFormData.password && finalFormData.password.length < 4) {
         toast({ title: "Validasi Password Gagal", description: "Password minimal 4 karakter.", variant: "destructive" });
@@ -747,8 +737,6 @@ const SantriManagement = () => {
         return;
       }
 
-      // nomor_induk_qiroati is a plain santri column now — the Go backend reads it
-      // directly at login, so it no longer needs a separate auth-alias sync step.
       if (Object.keys(profilePayload).length > 0) {
         const savedSantri = await updateSantri(targetId, profilePayload);
         if (!savedSantri?.id) throw new Error('Data murid tidak tersimpan karena tidak ada row yang diperbarui.');
@@ -857,10 +845,10 @@ const SantriManagement = () => {
 
   const resetForm = () => {
     setFormData({
-      nama_lengkap: '', nama_panggilan: '', nomor_induk_qiroati: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
+      nama_lengkap: '', nama_panggilan: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
       nama_ayah: '', nama_ibu: '', pekerjaan_ayah: '', pekerjaan_ibu: '', alamat_ortu: '',
       no_hp_ortu: '', alamat: '', status: 'Aktif', foto_url: '', password: '', rfid_tag: '',
-      no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false, link_qiroati: '', id_kelas: null, points: 0, kategori: 'Anak'
+      no_kk: '', no_nik: '', berkas_foto: false, berkas_akta: false, berkas_kk: false, berkas_form: false, id_kelas: null, points: 0, kategori: 'Anak'
     });
     setEditingSantri(null);
   };
@@ -889,21 +877,21 @@ const SantriManagement = () => {
     }
   };
 
-  const handleCopyIndukQiroati = async (induk) => {
+  const handleCopyNisn = async (induk) => {
     if (!induk) {
-        toast({ title: "Gagal", description: "Nomor Induk Qiroati tidak tersedia.", variant: "destructive" });
+        toast({ title: "Gagal", description: "NISN belum diisi.", variant: "destructive" });
         return;
     }
     try {
         await copyTextToClipboard(induk);
         toast({
-            title: "Nomor Induk disalin",
-            description: "Nomor induk disalin ke clipboard.",
+            title: "NISN disalin",
+            description: "NISN disalin ke clipboard.",
             className: "bg-green-50 border-green-200 text-green-700",
             action: <CheckCircle className="w-5 h-5 text-green-600"/>
         });
     } catch {
-        toast({ title: "Gagal Copy", description: "Tidak bisa menyalin Nomor Induk.", variant: "destructive" });
+        toast({ title: "Gagal Copy", description: "Tidak bisa menyalin NISN.", variant: "destructive" });
     }
   };
 
@@ -1065,9 +1053,9 @@ const SantriManagement = () => {
                             <button
                                 type="button"
                                 className="text-xs text-left text-muted-foreground font-mono cursor-pointer hover:text-green-600 hover:underline flex items-center gap-1 group/nick focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 rounded-sm"
-                                onClick={() => handleCopyIndukQiroati(santri.nomor_induk_qiroati)}
-                                title="Klik untuk menyalin No Induk Qiroati"
-                                aria-label={`Salin Nomor Induk Qiroati ${santri.nama_panggilan || santri.nama_lengkap}`}
+                                onClick={() => handleCopyNisn(santri.nisn)}
+                                title="Klik untuk menyalin NISN"
+                                aria-label={`Salin NISN ${santri.nama_panggilan || santri.nama_lengkap}`}
                             >
                                 {santri.nama_panggilan}
                                 <Copy className="w-3 h-3 opacity-0 group-hover/nick:opacity-50" />
@@ -1165,12 +1153,10 @@ const SantriManagement = () => {
                 <div className="admin-edit-section">
                     <div className="admin-edit-section-header"><GraduationCap /> Akademik & Sistem</div>
                     <div className="admin-edit-field-grid">
-                        <div className="admin-edit-field"><label>No. Induk Qiroati</label><Input type="text" value={formData.nomor_induk_qiroati || ''} onChange={handleQiroatiIdChange} required={!editingSantri} /></div>
                         <div className="admin-edit-field"><label>RFID Tag</label><Input type="text" value={formData.rfid_tag || ''} onChange={(e) => setFormData({ ...formData, rfid_tag: e.target.value })} /></div>
                         <div className="admin-edit-field"><label>Status</label><Select value={formData.status} onValueChange={val => setFormData({ ...formData, status: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Aktif">Aktif</SelectItem><SelectItem value="Nonaktif">Non-Aktif</SelectItem></SelectContent></Select></div>
 
                         <div className="admin-edit-field"><label>Kelas Aktif <span className="normal-case text-[10px]" style={{ color: 'hsl(var(--admin-text-muted))' }}>(untuk Absensi)</span></label><Select value={getSelectedClassId(formData) || undefined} onValueChange={val => setFormData({ ...formData, current_class_id: val, id_kelas: val })}><SelectTrigger><SelectValue placeholder="Pilih kelas aktif" /></SelectTrigger><SelectContent>{classesList.map(cls => <SelectItem key={cls.id} value={cls.id}>{cls.nama_kelas}{cls.guru?.nama ? ` - ${cls.guru.nama}` : ''}</SelectItem>)}</SelectContent></Select></div>
-                        <div className="admin-edit-field"><label>Link Qiroati</label><Input type="text" value={formData.link_qiroati || ''} onChange={(e) => setFormData({ ...formData, link_qiroati: e.target.value })} /></div>
                         <div className="admin-edit-field">
                             <label>Default SPP Bulanan</label>
                             <Input type="number" min="10000" step="1000" value={formData.default_spp_amount ?? ''} onChange={(e) => setFormData({ ...formData, default_spp_amount: e.target.value })} placeholder="Contoh: 70000" />

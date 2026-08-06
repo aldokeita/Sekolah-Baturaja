@@ -144,9 +144,9 @@ func (h *SantriHandler) List(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "%"+search+"%")
 		i := len(args)
 		where = append(where, fmt.Sprintf(
-			"(s.nama_lengkap ILIKE $%d OR s.nomor_induk_qiroati ILIKE $%d "+
+			"(s.nama_lengkap ILIKE $%d OR s.nisn ILIKE $%d OR s.nis ILIKE $%d OR s.nomor_induk_qiroati ILIKE $%d "+
 				"OR s.nama_panggilan ILIKE $%d OR s.nama_ayah ILIKE $%d "+
-				"OR s.rfid_tag ILIKE $%d)", i, i, i, i, i))
+				"OR s.rfid_tag ILIKE $%d)", i, i, i, i, i, i, i))
 	}
 
 	// Authz scoping.
@@ -574,11 +574,14 @@ func insertSantriTx(ctx context.Context, tx pgx.Tx, body map[string]any) (map[st
 		profile[k] = v
 	}
 
-	// Santri log in with nomor_induk_qiroati; default the password to it so a new
-	// account is usable immediately. Login self-heals the hash on first use.
+	// Murid login pakai NISN/NIS; jadikan salah satunya password awal supaya akun
+	// baru langsung bisa dipakai. Login self-heals hash-nya saat pertama dipakai.
 	if _, ok := profile["password"]; !ok {
-		if nomor := strings.TrimSpace(asString(profile["nomor_induk_qiroati"])); nomor != "" {
-			profile["password"] = nomor
+		for _, key := range []string{"nisn", "nis", "nomor_induk_qiroati"} {
+			if v := strings.TrimSpace(asString(profile[key])); v != "" {
+				profile["password"] = v
+				break
+			}
 		}
 	}
 	if err := hashPasswordField(profile); err != nil {
