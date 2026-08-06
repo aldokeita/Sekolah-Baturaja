@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { RotateCcw, ClipboardList, GripVertical, PlusCircle, MinusCircle, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import HafalanDisplay from '@/components/dashboard/shared/HafalanDisplay';
-import { createHafalanItem, deactivateHafalanItem, fetchHafalanItems, getAcademicErrorMessage, updateHafalanItem } from '@/lib/academicAdapters';
+import { createHafalanItem, deactivateHafalanItem, fetchHafalanItems, getAcademicErrorMessage, updateHafalanItem, HAFALAN_SCOPE_PER_KELAS, HAFALAN_SCOPE_PER_JUZ } from '@/lib/academicAdapters';
 import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
 import { createDefaultEnrollmentData, prepareEnrollmentDataForSave } from '@/lib/enrollmentContent';
 import { defaultContent, mergeHomepageContent } from '@/components/public/home/homeUtils';
@@ -34,15 +34,16 @@ import {
   slugify
 } from '@/lib/publicContentAdapters';
 
-const TPQ_LEVELS = [1, 2, 3, 4, 5, 6].map(String);
-const PTPT_LEVELS = ['Juz 1', 'Juz 2', 'Juz 28', 'Juz 29', 'Juz 30'];
+// Enam tahap, dipakai sebagai Kelas 1-6 untuk sekolah dasar.
+const KELAS_LEVELS = [1, 2, 3, 4, 5, 6].map(String);
+const JUZ_LEVELS = ['Juz 1', 'Juz 2', 'Juz 28', 'Juz 29', 'Juz 30'];
 
 const HafalanItemManager = ({
   category,
-  programScope = 'TPQ',
+  programScope = HAFALAN_SCOPE_PER_KELAS,
   title = category,
-  levels = TPQ_LEVELS,
-  levelPrefix = 'Jilid'
+  levels = KELAS_LEVELS,
+  levelPrefix = 'Kelas'
 }) => {
   const [items, setItems] = useState([]);
   const [newItemName, setNewItemName] = useState('');
@@ -121,9 +122,9 @@ const HafalanItemManager = ({
           <div>
             <h4 id={`hafalan-${programScope}-${category}`} className="text-xl font-black text-foreground sm:text-2xl">{title}</h4>
             <p className="mt-1 text-sm text-muted-foreground">
-              {programScope === 'PTPT'
-                ? 'Kurikulum tahfizh PTPT terpisah dari hafalan TPQ dan dinilai dengan skala 1–4.'
-                : 'Atur urutan hafalan TPQ berdasarkan jilid pembelajaran.'}
+              {programScope === HAFALAN_SCOPE_PER_JUZ
+                ? 'Hafalan Al-Qur’an per juz, dinilai dengan skala 1–4. Terbuka untuk semua murid.'
+                : 'Atur urutan hafalan bertahap berdasarkan kelas 1–6. Terbuka untuk semua murid.'}
             </p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
@@ -809,22 +810,22 @@ const ContentManagement = () => {
             </div>
         </TabsContent>
         <TabsContent value="hafalan" className="animate-in fade-in slide-in-from-bottom-2">
-          <Tabs defaultValue="tpq" className="space-y-5">
+          <Tabs defaultValue="per-kelas" className="space-y-5">
             <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-lg bg-muted p-1 sm:w-auto">
-              <TabsTrigger value="tpq" className="min-w-[150px]">Hafalan TPQ</TabsTrigger>
-              <TabsTrigger value="ptpt" className="min-w-[150px]">Hafalan PTPT</TabsTrigger>
+              <TabsTrigger value="per-kelas" className="min-w-[150px]">Hafalan per Kelas</TabsTrigger>
+              <TabsTrigger value="per-juz" className="min-w-[150px]">Hafalan per Juz</TabsTrigger>
             </TabsList>
-            <TabsContent value="tpq" className="space-y-6">
-              <HafalanItemManager category="Doa" programScope="TPQ" />
-              <HafalanItemManager category="Sholat" programScope="TPQ" />
-              <HafalanItemManager category="Surat" programScope="TPQ" />
+            <TabsContent value="per-kelas" className="space-y-6">
+              <HafalanItemManager category="Doa" programScope={HAFALAN_SCOPE_PER_KELAS} />
+              <HafalanItemManager category="Sholat" programScope={HAFALAN_SCOPE_PER_KELAS} />
+              <HafalanItemManager category="Surat" programScope={HAFALAN_SCOPE_PER_KELAS} />
             </TabsContent>
-            <TabsContent value="ptpt">
+            <TabsContent value="per-juz">
               <HafalanItemManager
                 category="Tahfizh"
-                programScope="PTPT"
-                title="Kurikulum Tahfizh PTPT"
-                levels={PTPT_LEVELS}
+                programScope={HAFALAN_SCOPE_PER_JUZ}
+                title="Hafalan Al-Qur'an per Juz"
+                levels={JUZ_LEVELS}
                 levelPrefix=""
               />
             </TabsContent>

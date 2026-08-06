@@ -35,14 +35,25 @@ export const groupHafalanItemsByJilid = (items = []) => {
     return groups;
 };
 
-export const PTPT_TAHFIZH_TARGETS = ['Juz 1', 'Juz 2', 'Juz 28', 'Juz 29', 'Juz 30'];
+export const JUZ_TAHFIZH_TARGETS = ['Juz 1', 'Juz 2', 'Juz 28', 'Juz 29', 'Juz 30'];
 
-export const getHafalanProgramScope = (santriOrCategory) => {
-    const category = typeof santriOrCategory === 'string' ? santriOrCategory : santriOrCategory?.kategori;
-    return String(category || '').toUpperCase() === 'PTPT' ? 'PTPT' : 'TPQ';
-};
+// Hafalan punya dua bentuk: bertahap per kelas 1-6, dan tahfizh Al-Qur'an per juz.
+// Lingkupnya ditentukan oleh JENIS materinya, bukan oleh status murid — setiap
+// murid boleh mengambil keduanya. Sebelumnya lingkup diturunkan dari
+// santri.kategori, sehingga murid non-PTPT tidak pernah bisa punya hafalan juz
+// dan sebaliknya.
+//
+// Nilai 'TPQ' dan 'PTPT' TIDAK diubah karena tersimpan di kolom
+// hafalan_items.program_scope. Hanya labelnya yang diterjemahkan di UI, sama
+// seperti perlakuan pada peran 'Pentashih'.
+export const HAFALAN_SCOPE_PER_KELAS = 'TPQ';
+export const HAFALAN_SCOPE_PER_JUZ = 'PTPT';
 
-export const groupHafalanItemsByTarget = (items = [], targets = PTPT_TAHFIZH_TARGETS) => (
+export const getHafalanScopeForCategory = (category) => (
+    String(category || '').trim().toLowerCase() === 'tahfizh' ? HAFALAN_SCOPE_PER_JUZ : HAFALAN_SCOPE_PER_KELAS
+);
+
+export const groupHafalanItemsByTarget = (items = [], targets = JUZ_TAHFIZH_TARGETS) => (
     Object.fromEntries(targets.map((target) => [target, items.filter((item) => String(item?.jilid || '').trim() === target)]))
 );
 
@@ -95,7 +106,7 @@ export const fetchHafalanItems = async (category = null, programScope = null) =>
     return apiClient.get(`/api/academic/items?${params}`);
 };
 
-export const createHafalanItem = async ({ category, itemName, jilid, itemOrder, programScope = 'TPQ' }) => {
+export const createHafalanItem = async ({ category, itemName, jilid, itemOrder, programScope = HAFALAN_SCOPE_PER_KELAS }) => {
     await apiClient.post('/api/academic/items', {
         program_scope: programScope,
         category,

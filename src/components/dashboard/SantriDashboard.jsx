@@ -29,10 +29,9 @@ import {
   fetchMurojaahSubmissions,
   getAcademicErrorMessage,
   getDevelopmentScoreMeta,
-  getHafalanProgramScope,
   groupHafalanItemsByJilid,
   groupHafalanItemsByTarget,
-  PTPT_TAHFIZH_TARGETS,
+  JUZ_TAHFIZH_TARGETS,
   progressStatusToComplete
 } from '@/lib/academicAdapters';
 import { fetchSantriDetail, fetchSantriList, updateSantri } from '@/lib/dataMasterAdapters';
@@ -108,7 +107,7 @@ const HafalanSection = ({
   hafalanData = [],
   tone = 'emerald',
   targets = [1, 2, 3, 4, 5, 6],
-  titlePrefix = 'Jilid',
+  titlePrefix = 'Kelas',
   isTahfizh = false
 }) => {
   const safeItems = Array.isArray(items) ? items : [];
@@ -457,8 +456,10 @@ const SantriDashboard = ({ isAdult = false }) => {
         }
     }
     if (Array.isArray(itemsResult)) {
-      const programScope = getHafalanProgramScope(santriResult.data);
-      setHafalanItems(itemsResult.filter((item) => item.program_scope === programScope));
+      // Semua materi hafalan dimuat, baik yang per kelas maupun per juz. Dulu
+      // disaring menurut status murid, sehingga separuh materi tidak pernah
+      // terlihat. Pemisahannya kini dilakukan per bagian lewat `category`.
+      setHafalanItems(itemsResult);
     }
     if (videosResult.data?.content) setVideos(videosResult.data.content);
     else setVideos([]);
@@ -527,7 +528,9 @@ const SantriDashboard = ({ isAdult = false }) => {
               </p>
               <div className="mt-5 grid grid-cols-2 gap-2 sm:max-w-xl sm:grid-cols-4">
                 {[
-                  [getHafalanProgramScope(santriData) === 'PTPT' ? 'Target' : 'Jilid', santriData.jilid || '-'],
+                  // Kolom `jilid` pada murid kini berarti tingkat mengaji pilihan
+                  // sekolah (lihat tahfizhLevels), bukan jilid Qiroati.
+                  ['Tingkat', santriData.jilid || '-'],
                   ['Poin', santriData.points || 0],
                   ['Level', levelInfo.name],
                   ['Sesi', sessionName],
@@ -580,24 +583,22 @@ const SantriDashboard = ({ isAdult = false }) => {
                        </div>
                        <BarChart3 className="hidden h-7 w-7 text-primary/60 sm:block" aria-hidden="true" />
                      </div>
-                     {getHafalanProgramScope(santriData) === 'PTPT' ? (
-                       <HafalanSection
-                         title="Tahfizh PTPT"
-                         category="Tahfizh"
-                         items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Tahfizh')}
-                         hafalanData={hafalan}
-                         tone="violet"
-                         targets={PTPT_TAHFIZH_TARGETS}
-                         titlePrefix=""
-                         isTahfizh
-                       />
-                     ) : (
-                       <>
-                         <HafalanSection title="Do'a" category="Doa" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Doa')} hafalanData={hafalan} tone="emerald" />
-                         <HafalanSection title="Sholat" category="Sholat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Sholat')} hafalanData={hafalan} tone="sky" />
-                         <HafalanSection title="Surat" category="Surat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Surat')} hafalanData={hafalan} tone="violet" />
-                       </>
-                     )}
+                     {/* Keempat bagian tampil untuk setiap murid, tanpa memandang status.
+                         Dulu murid berkategori PTPT hanya melihat Tahfizh dan yang lain
+                         hanya melihat tiga sisanya. */}
+                     <HafalanSection title="Do'a" category="Doa" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Doa')} hafalanData={hafalan} tone="emerald" />
+                     <HafalanSection title="Sholat" category="Sholat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Sholat')} hafalanData={hafalan} tone="sky" />
+                     <HafalanSection title="Surat" category="Surat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Surat')} hafalanData={hafalan} tone="violet" />
+                     <HafalanSection
+                       title="Hafalan Al-Qur'an per Juz"
+                       category="Tahfizh"
+                       items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Tahfizh')}
+                       hafalanData={hafalan}
+                       tone="violet"
+                       targets={JUZ_TAHFIZH_TARGETS}
+                       titlePrefix=""
+                       isTahfizh
+                     />
                      <SantriDevelopmentProfile santriId={santriData.id} editable={false} collapsible />
                    </div>
                  </div>

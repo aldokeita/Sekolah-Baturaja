@@ -32,9 +32,11 @@ import {
   fetchHafalanItems,
   fetchHafalanProgress,
   fetchMurojaahSubmissions,
-  getHafalanProgramScope,
+  getHafalanScopeForCategory,
   getAcademicErrorMessage,
-  PTPT_TAHFIZH_TARGETS,
+  HAFALAN_SCOPE_PER_KELAS,
+  HAFALAN_SCOPE_PER_JUZ,
+  JUZ_TAHFIZH_TARGETS,
   updateMurojaahReview,
   upsertHafalanProgress
 } from '@/lib/academicAdapters';
@@ -172,7 +174,7 @@ const GuruDashboard = () => {
   const [selectedSantri, setSelectedSantri] = useState(null);
   const [previewAvatar, setPreviewAvatar] = useState(null);
   const [isOwnAvatarPreviewOpen, setIsOwnAvatarPreviewOpen] = useState(false);
-  const [selectedHafalan, setSelectedHafalan] = useState({ category: '', programScope: 'TPQ', items: [] });
+  const [selectedHafalan, setSelectedHafalan] = useState({ category: '', programScope: HAFALAN_SCOPE_PER_KELAS, items: [] });
   const [murojaahSubmissions, setMurojaahSubmissions] = useState([]);
   const [currentSubmission, setCurrentSubmission] = useState(null);
   const [feedback, setFeedback] = useState('');
@@ -272,9 +274,11 @@ const GuruDashboard = () => {
   const openDetailModal = (santri) => { setSelectedSantri(santri); setIsDetailOpen(true); };
   const openTransferModal = (santri) => setTransferSantri(santri);
   const openHafalanModal = (santri, category) => {
-      const programScope = getHafalanProgramScope(santri);
+      // Lingkup diturunkan dari jenis materi yang dibuka, bukan dari status murid.
+      // Dengan begitu murid mana pun bisa punya hafalan per kelas maupun per juz.
+      const programScope = getHafalanScopeForCategory(category);
       const filteredItems = (hafalanItems || []).filter((item) => (
-        item && item.category === category && (item.program_scope === programScope || (!item.program_scope && programScope === 'TPQ'))
+        item && item.category === category && (item.program_scope === programScope || (!item.program_scope && programScope === HAFALAN_SCOPE_PER_KELAS))
       ));
       setSelectedSantri(santri);
       setSelectedHafalan({ category, programScope, items: filteredItems });
@@ -411,8 +415,8 @@ const GuruDashboard = () => {
   const themeGradient = isFemale ? 'from-pink-500 to-rose-600' : 'from-sky-500 to-blue-700';
   const headerGradient = isFemale ? 'from-slate-50 to-pink-50 dark:from-slate-900 dark:to-pink-950/40' : 'from-blue-50 to-sky-50 dark:from-slate-900 dark:to-blue-950/40';
   const headerText = isFemale ? 'text-pink-700 dark:text-pink-300' : 'text-blue-700 dark:text-blue-300';
-  const hafalanTargets = selectedHafalan.programScope === 'PTPT'
-      ? PTPT_TAHFIZH_TARGETS
+  const hafalanTargets = selectedHafalan.programScope === HAFALAN_SCOPE_PER_JUZ
+      ? JUZ_TAHFIZH_TARGETS
       : ['1', '2', '3', '4', '5', '6'];
   const itemsByJilid = Object.fromEntries(hafalanTargets.map((target, index) => [
       target,
@@ -555,15 +559,13 @@ const GuruDashboard = () => {
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <div className="flex flex-wrap gap-1">
-                                                        {getHafalanProgramScope(santri) === 'PTPT' ? (
-                                                          <Button size="sm" variant="outline" className="h-7 border-violet-300 text-xs text-violet-700 hover:bg-violet-50 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-950/30" onClick={() => openHafalanModal(santri, 'Tahfizh')}>Tahfizh</Button>
-                                                        ) : (
-                                                          <>
-                                                            <Button size="sm" variant="outline" className="h-7 text-xs border-primary/20 hover:bg-primary/5 text-primary" onClick={() => openHafalanModal(santri, 'Doa')}>Doa</Button>
-                                                            <Button size="sm" variant="outline" className="h-7 text-xs border-primary/20 hover:bg-primary/5 text-primary" onClick={() => openHafalanModal(santri, 'Sholat')}>Sholat</Button>
-                                                            <Button size="sm" variant="outline" className="h-7 text-xs border-primary/20 hover:bg-primary/5 text-primary" onClick={() => openHafalanModal(santri, 'Surat')}>Surat</Button>
-                                                          </>
-                                                        )}
+                                                        {/* Keempatnya terbuka untuk setiap murid. Dulu murid berkategori
+                                                            PTPT hanya dapat Tahfizh dan yang lain hanya dapat tiga
+                                                            sisanya, sehingga tidak ada murid yang bisa punya keduanya. */}
+                                                        <Button size="sm" variant="outline" className="h-7 text-xs border-primary/20 hover:bg-primary/5 text-primary" onClick={() => openHafalanModal(santri, 'Doa')}>Doa</Button>
+                                                        <Button size="sm" variant="outline" className="h-7 text-xs border-primary/20 hover:bg-primary/5 text-primary" onClick={() => openHafalanModal(santri, 'Sholat')}>Sholat</Button>
+                                                        <Button size="sm" variant="outline" className="h-7 text-xs border-primary/20 hover:bg-primary/5 text-primary" onClick={() => openHafalanModal(santri, 'Surat')}>Surat</Button>
+                                                        <Button size="sm" variant="outline" className="h-7 border-violet-300 text-xs text-violet-700 hover:bg-violet-50 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-950/30" onClick={() => openHafalanModal(santri, 'Tahfizh')}>Tahfizh</Button>
                                                     </div>
                                                 </td>
                                                 <td className="py-3 px-4">
@@ -636,7 +638,7 @@ const GuruDashboard = () => {
             </DialogHeader>
             <div className="grid min-w-0 grid-cols-1 gap-4 pt-4 md:grid-cols-2 xl:grid-cols-3">
               {hafalanTargets.map(jilid => (
-                <HafalanDisplay key={jilid} jilid={jilid} titlePrefix={selectedHafalan.programScope === 'PTPT' ? '' : 'Jilid'} items={itemsByJilid[jilid] || []} isDraggable={false} scoreData={currentProgressData} onScoreChange={handleHafalanScoreChange} />
+                <HafalanDisplay key={jilid} jilid={jilid} titlePrefix={selectedHafalan.programScope === HAFALAN_SCOPE_PER_JUZ ? '' : 'Kelas'} items={itemsByJilid[jilid] || []} isDraggable={false} scoreData={currentProgressData} onScoreChange={handleHafalanScoreChange} />
               ))}
             </div>
           </DialogContent>
