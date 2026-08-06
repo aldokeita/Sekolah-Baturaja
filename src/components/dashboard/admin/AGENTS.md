@@ -13,8 +13,7 @@ Tidak ada subdirektori. Setiap `.jsx` file adalah satu panel admin yang di-rende
 |-------|------|--------|
 | Data Murid | `SantriManagement.jsx` | CRUD murid, profil, status aktif — satu tabel, tanpa kategori |
 | Guru | `GuruManagement.jsx` | CRUD guru, profil pengajar |
-| Kelas | `ClassManagement.jsx` | CRUD kelas, assign guru/murid |
-| Kelas Dewasa | `AdultClassManagement.jsx` | Kelas kategori dewasa; dirender di dalam `ClassManagement`. **Sisa era TPQ** — kategori murid dewasa sudah dihapus di `4170e3b`, jadi panel ini timpang dan nasibnya belum diputuskan |
+| Kelas | `ClassManagement.jsx` | CRUD kelas, assign guru/murid — satu daftar, tanpa sub-tab kategori |
 | User | `UserManagement.jsx` | Manajemen akun login & role |
 | Arsip Santri | `SantriArchiveDialog.jsx` | Dialog arsip santri non-aktif |
 

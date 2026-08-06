@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, Clock, BarChart2, GripVertical, FileSpreadsheet, Filter, ArrowRight, Phone, Eye, User, Settings, GraduationCap, Briefcase, ListOrdered, BookOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, Clock, BarChart2, GripVertical, FileSpreadsheet, Filter, ArrowRight, Phone, Eye, User, Settings, GraduationCap, ListOrdered } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,9 +18,6 @@ import JilidChangeModal from './JilidChangeModal';
 import ClassPerformanceModal from './ClassPerformanceModal';
 import * as XLSX from 'xlsx';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { motion } from 'framer-motion';
-import AdultClassManagement from './AdultClassManagement';
 import { getSessionName, getSessionNumber, getAllSessions } from '@/utils/sessionMapping';
 import {
   createClass,
@@ -381,7 +378,12 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
   );
 };
 
-const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anakSessionConfig', title = 'Manajemen Kelas (TPQ)', subtitle = 'Atur pembagian kelas, guru pengampu, dan mutasi murid TPQ.' }) => {
+// Satu sekolah umum, satu jenis murid. Sub-tab Murid TPQ / PTPT / Dewasa sudah
+// dicabut, jadi panel ini menampilkan SEMUA kelas aktif tanpa menyaring kategori.
+// `kategori` di bawah hanya dipakai sebagai nilai default saat membuat kelas baru,
+// bukan lagi sebagai pembeda tampilan — data kelas lama berkategori PTPT tetap
+// terlihat dan tetap bisa dikelola, tidak disembunyikan.
+const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anakSessionConfig', title = 'Manajemen Kelas', subtitle = 'Atur pembagian kelas, guru pengampu, dan mutasi murid.' }) => {
   const { user } = useAuth();
   const [classes, setClasses] = useState([]);
   const [santriList, setSantriList] = useState([]);
@@ -434,11 +436,9 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
             guru: await resolveAvatarRecord(classItem.guru, { ownerType: 'guru' }),
         })));
         const mappedClasses = resolvedClassData.map(mapClassForLegacyUi);
-        const filteredClasses = mappedClasses.filter(c => {
-            if (c.is_active === false) return false;
-            if (kategori === 'Anak') return !c.kategori || c.kategori.toLowerCase() === 'anak';
-            return c.kategori === kategori;
-        });
+        // Tanpa penyaringan kategori: satu sekolah, satu daftar kelas. Kelas lama
+        // berkategori PTPT ikut tampil supaya tidak menjadi data yatim.
+        const filteredClasses = mappedClasses.filter(c => c.is_active !== false);
         setClasses(filteredClasses);
 
         setGuruList(resolvedGuruData);
@@ -455,9 +455,8 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
             order_in_class: s.order_in_class ?? 0,
           };
         }).filter(s => {
-            const isMatch = kategori === 'Anak' ? (!s.kategori || s.kategori.toLowerCase() === 'anak' || s.kategori.toLowerCase() === 'tpq') : s.kategori === kategori;
-            const isActive = !s.status || s.status.toLowerCase() === 'aktif' || s.status.toLowerCase() === 'active';
-            return isMatch && isActive;
+            // Semua murid aktif, tanpa memandang kategori lama.
+            return !s.status || s.status.toLowerCase() === 'aktif' || s.status.toLowerCase() === 'active';
         });
         setSantriList(filteredSantri);
 
@@ -804,10 +803,10 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         ws['!cols'] = [{wch: 15}, {wch: 20}, {wch: 30}, {wch: 30}, {wch: 15}];
 
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, `Kelas ${kategori}`);
+        XLSX.utils.book_append_sheet(wb, ws, 'Kelas');
 
         const dateStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-        XLSX.writeFile(wb, `Kelas_LPQ_${kategori}_${dateStr}.xlsx`);
+        XLSX.writeFile(wb, `Kelas_${dateStr}.xlsx`);
 
         toast({ title: 'Ekspor Berhasil', description: 'File Excel berhasil diunduh.' });
     } catch (error) {
@@ -821,7 +820,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         <div className="admin-panel-header">
           <div className="flex items-center gap-3">
              <div className="admin-panel-header-icon">
-                {kategori === 'Anak' ? <GraduationCap /> : <BookOpen />}
+                <GraduationCap />
              </div>
              <div className="admin-panel-header-text">
                 <h2>{title}</h2>
@@ -1003,54 +1002,12 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   );
 };
 
-const ClassManagementWrapper = ({ userRole = 'admin' }) => {
-    const [activeTab, setActiveTab] = useState("tpq");
-
-    const subTabs = [
-        { id: 'tpq', label: 'Murid TPQ', icon: GraduationCap },
-        { id: 'ptpt', label: 'Murid PTPT', icon: BookOpen },
-        { id: 'dewasa', label: 'Murid Dewasa', icon: Briefcase },
-    ];
-
-  return (
-      <div>
-        <div className="flex justify-center mb-6">
-            <div className="admin-segmented-control">
-                {subTabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`admin-segmented-control-item ${activeTab === tab.id ? 'active' : ''}`}
-                    >
-                        {activeTab === tab.id && (
-                            <motion.span
-                                layoutId="class-management-active-pill"
-                                className="admin-segmented-control-indicator"
-                                transition={{ type: 'spring', stiffness: 430, damping: 34, mass: 0.72 }}
-                            />
-                        )}
-                        <span className="relative z-10 flex items-center gap-2">
-                            <tab.icon className="w-4 h-4" />
-                            {tab.label}
-                        </span>
-                    </button>
-                ))}
-            </div>
-        </div>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-
-            <TabsContent value="tpq">
-                <GenericClassManagement key="tpq" userRole={userRole} kategori="Anak" configKey="anakSessionConfig" title="Manajemen Kelas (TPQ)" subtitle="Atur pembagian kelas, guru pengampu, dan mutasi murid TPQ." />
-            </TabsContent>
-            <TabsContent value="ptpt">
-                <GenericClassManagement key="ptpt" userRole={userRole} kategori="PTPT" configKey="ptptSessionConfig" title="Manajemen Kelas (PTPT)" subtitle="Atur pembagian kelas, guru pengampu, dan mutasi murid PTPT." />
-            </TabsContent>
-            <TabsContent value="dewasa">
-                <AdultClassManagement />
-            </TabsContent>
-        </Tabs>
-      </div>
-  );
-}
+// Sekolah umum dengan satu jenis murid, jadi tidak ada lagi pemilah kategori.
+// Tiga sub-tab sebelumnya (Murid TPQ, Murid PTPT, Murid Dewasa) dicabut atas
+// keputusan pengguna: sekolah tidak menyelenggarakan kelas dewasa maupun PTPT,
+// dan istilah TPQ tidak relevan lagi.
+const ClassManagementWrapper = ({ userRole = 'admin' }) => (
+  <GenericClassManagement userRole={userRole} />
+);
 
 export default ClassManagementWrapper;
