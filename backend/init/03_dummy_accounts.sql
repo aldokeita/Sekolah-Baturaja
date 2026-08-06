@@ -11,11 +11,16 @@
 -- Passwords are hashed with pgcrypto bcrypt ($2a$, cost 12), which is what
 -- golang.org/x/crypto/bcrypt verifies against.
 --
--- NOTE ON ADMIN: migration 20260722000100 adds two constraints —
---   user_profiles_admin_email_check  (an admin's email must be admin@lpqalfathmaulana.id)
+-- NOTE ON ADMIN: migration 20260722000100 once added two constraints that
+-- locked the admin down —
+--   user_profiles_admin_email_check  (an admin's email had to match one value)
 --   user_profiles_single_admin_idx   (only one admin row may exist)
--- so the bootstrap admin from 02_auth_columns.sql is reused as-is rather than
--- creating a second one. See docs note in that file if the email needs to change.
+-- but 20260723000200_enable_guru_admin_roles.sql DROPPED BOTH. Neither exists
+-- today, so nothing constrains the admin email at the database level.
+--
+-- The bootstrap admin from 02_auth_columns.sql is still reused as-is rather than
+-- creating a second one, simply to keep one well-known account. Its address moved
+-- to admin@sdnbaturaja.sch.id in 20260806000600 so it matches the other staff.
 
 -- ── Precondition ─────────────────────────────────────────────────────────────
 -- 'tata_usaha' is added to app_role by migration 20260805000100. Fail with a

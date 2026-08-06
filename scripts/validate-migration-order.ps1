@@ -59,7 +59,9 @@ $expectedNames = @(
   "20260806000100_academic_calendar_multi_event.sql",
   "20260806000200_classes_kapasitas.sql",
   "20260806000300_santri_parent_details.sql",
-  "20260806000400_santri_school_identity.sql"
+  "20260806000400_santri_school_identity.sql",
+  "20260806000500_jadwal_pelajaran.sql",
+  "20260806000600_admin_email_domain.sql"
 )
 
 $actualNames = $files | ForEach-Object { $_.Name }

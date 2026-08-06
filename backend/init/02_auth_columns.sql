@@ -13,14 +13,14 @@ alter table public.santri add column if not exists password text;
 -- ponytail: single bootstrap admin, no invite flow. Add one when there's a
 -- second person who needs to create accounts.
 insert into auth.users (id, email)
-values ('a1fa7a10-0000-0000-0000-000000000001', 'admin@lpqalfathmaulana.id')
+values ('a1fa7a10-0000-0000-0000-000000000001', 'admin@sdnbaturaja.sch.id')
 on conflict (id) do update set email = excluded.email;
 
 insert into public.guru (id, nama, email, status, roles, password)
 values (
   'a1fa7a10-0000-0000-0000-000000000001',
   'Administrator',
-  'admin@lpqalfathmaulana.id',
+  'admin@sdnbaturaja.sch.id',
   'active',
   array['Admin'],
   extensions.crypt('admin123', extensions.gen_salt('bf', 12))
@@ -36,7 +36,7 @@ values (
   'a1fa7a10-0000-0000-0000-000000000001',
   'admin',
   'Administrator',
-  'admin@lpqalfathmaulana.id',
+  'admin@sdnbaturaja.sch.id',
   'active'
 )
 on conflict (id) do update set
