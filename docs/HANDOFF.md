@@ -162,39 +162,67 @@ lolos.
 Tidak ada `ErrorBoundary` sama sekali di `src/` sampai commit `63ca161`. Satu error saat render
 melepas seluruh pohon React: putih total tanpa pesan.
 
+Sekarang ada **dua lapis**, dan keduanya perlu:
+
+- `ErrorBoundary` di `DashboardPage` — menangkap error dari komponen dashboard di bawahnya, dengan
+  pesan khusus dashboard dan reset saat peran berubah.
+- `ErrorBoundary` di `App.jsx` membungkus `<Routes>` — jaring terakhir. Boundary hanya menangkap
+  error dari **keturunannya**; error yang dilempar komponen halaman itu sendiri lolos dari boundary
+  di dalam halaman tersebut. Ini terbukti saat pengujian: melempar error di dalam `renderDashboard()`
+  tetap memutihkan layar sampai lapisan `App.jsx` ditambahkan.
+
+Keduanya sudah diuji dengan error sengaja dan menampilkan kartu pesan yang benar.
+
 Cara membedakan gejala:
 
 - **Putih total** → exception saat render. Cek console, bukan role.
 - **Spinner "Menyiapkan Dashboard…"** → role belum terdeteksi (`DashboardPage.jsx:103`).
 - **Kartu merah "Role Tidak Terdeteksi"** → ada user tapi tanpa role (`:86`).
 
-### Form murid terhalang password `required` tanpa pesan
+### Form murid dulu terhalang dua kali tanpa pesan yang benar
 
-`SantriManagement.jsx:692` mengisi password otomatis dari NISN bila kosong, tetapi `:1192`
-menandainya `required={!editingSantri}`. Fallback itu **mustahil tercapai**: browser memblokir
-submit lebih dulu, tanpa toast dan tanpa request — sangat membingungkan saat dilacak.
+Sudah diperbaiki (commit `02e0f62`), tapi polanya layak diingat karena keduanya **membisu**:
 
-Salah satu dari keduanya keliru dan itu keputusan produk: (a) password wajib → hapus fallback dan
-beri tanda wajib di label, atau (b) password opsional → hapus `required`. **Belum diputuskan.**
+1. Field Password ber-atribut `required`, jadi browser memblokir submit tanpa toast dan tanpa
+   request. Padahal `handleSubmit` sudah mengisi password otomatis dari NISN, sama seperti impor
+   massal — pengisian otomatis itu mustahil tercapai. Diputuskan: password **opsional**, `required`
+   dihapus, placeholder menjelaskan perilakunya.
+2. Setelah itu muncul galat "Default SPP minimal Rp10.000 atau kosongkan" pada field yang jelas-jelas
+   kosong. `resetForm()` tidak menyertakan `default_spp_amount`, jadi nilainya `undefined`;
+   penjagaan lama hanya melewati `''` dan `null`, sehingga `undefined` lolos ke `Number(undefined)`
+   = `NaN`.
+
+Pelajarannya: bila submit tidak menghasilkan apa pun — tanpa toast, tanpa request — curigai validasi
+HTML5. Tanyakan langsung ke form dengan `form.checkValidity()` dan `el.validationMessage`.
 
 ### Semua avatar patah dengan status 200
 
-`backend/internal/handler/file.go:191`: `baseURL := r.URL.Scheme + "://" + r.Host`. Pada request
-sisi server `r.URL.Scheme` **selalu kosong** — hanya `r.Host` terisi. Hasilnya `://localhost:8080`.
-Guard di baris 192 hanya menangkap kasus keduanya kosong (`"://"`), jadi tidak pernah menolong.
+Sudah diperbaiki (commit `36ee210`), tapi pola kegagalannya penting: **rusak sambil membalas 200.**
 
-`src` avatar menjadi `://localhost:8080/files/avatars/...`, diresolusi browser relatif ke origin
-jadi `http://localhost:3000/://localhost:8080/...`, lalu Vite membalas index.html dengan **200 OK**.
-Karena statusnya 200, tidak ada error apa pun — avatar diam-diam jatuh ke inisial.
+`file.go` dulu menyusun `baseURL := r.URL.Scheme + "://" + r.Host`. Pada request sisi server
+`r.URL.Scheme` **selalu kosong** — hanya `r.Host` terisi. Hasilnya `://localhost:8080`. Guard lama
+membandingkan hasil gabungan dengan `"://"` sehingga tidak pernah kena.
 
-Perbaikan: turunkan skema dari `r.TLS` dan header `X-Forwarded-Proto`, dan jadikan `r.Host == ""`
-sebagai syarat fallback. **Belum dikerjakan.**
+`src` avatar menjadi `://localhost:8080/files/avatars/...`, diresolusi browser relatif ke origin jadi
+`http://localhost:3000/://localhost:8080/...`, lalu Vite membalas index.html berstatus **200 OK**.
+Karena 200, tidak ada error apa pun — avatar diam-diam jatuh ke inisial.
 
-### Request yang kena 401 tidak diulang setelah refresh
+Skema kini diturunkan dari `r.TLS` dan `X-Forwarded-Proto`, syarat fallback jadi `r.Host == ""`.
 
-Token akses berumur 15 menit (`ACCESS_TOKEN_TTL_MINUTES`, default 15). Saat kedaluwarsa,
-`POST /api/auth/refresh` berhasil dan sesi pulih, tetapi request yang sudah kena 401 memunculkan
-toast error alih-alih diulang. Bukan kerusakan, tapi pengguna melihat kegagalan palsu tiap 15 menit.
+Catatan untuk pengujian: `/app/uploads` di container **kosong** — data dummy menyimpan nama berkas
+foto yang filenya tidak pernah dibuat. Jadi avatar tetap jatuh ke inisial, dan itu wajar. Untuk
+menguji, buat satu berkas di `/app/uploads/avatars/santri/<id>/profile.webp`.
+
+### "Fetch error" di console mode dev BUKAN kerusakan
+
+Catatan sebelumnya di file ini — bahwa request kena 401 tidak diulang setelah refresh — **salah** dan
+sudah dikoreksi. `apiClient.request()` memang sudah mengulang request begitu token diperbarui
+(`apiClient.js:46`), dan itu terbukti berhasil.
+
+Pesan `Fetch error from http://...: {"error":"unauthorized"}` berasal dari alat pemantau bawaan mode
+pengembangan yang disuntikkan `vite.config.js:171`. Alat itu membungkus `window.fetch` dan mencatat
+**setiap** respons non-OK, termasuk percobaan pertama yang memang wajar gagal sebelum token
+diperbarui. Jangan mengejarnya sebagai bug; tidak muncul di build produksi.
 
 ### Email admin masih berdomain lama
 
@@ -232,20 +260,23 @@ Go tidak terpasang di mesin dev, jadi **Docker adalah satu-satunya cara memverif
 
 ## 7. Langkah berikutnya
 
-Sudah selesai: hapus tiga file mati, segarkan `CLAUDE.md`, uji Rapat Guru, uji Metode Mengaji,
-perbaiki celah API Konten, pasang `ErrorBoundary`, perbaiki prop `dismiss` pada toast.
+Seluruh daftar sebelumnya sudah tuntas: hapus file mati, segarkan `CLAUDE.md`, uji Rapat Guru, uji
+Metode Mengaji, perbaiki celah API Konten, pasang `ErrorBoundary` dua lapis dan mengujinya, perbaiki
+prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, dan hapus
+`SantriDewasaManagement.jsx`.
 
-Yang tersisa, berurutan:
+Yang tersisa:
 
-1. **Putuskan password wajib atau opsional** (lihat jebakan di atas), lalu selesaikan uji simpan
-   murid baru dengan NISN + Angkatan sampai bertahan setelah refresh.
-2. **Perbaiki URL avatar** di `file.go:191` — dampaknya di seluruh aplikasi, perbaikannya kecil.
-3. Uji tampilan fallback `ErrorBoundary` dengan crash sengaja.
-4. Putuskan nasib `SantriDewasaManagement.jsx` — **yatim**, tak ada `.jsx` yang mengimpornya, hanya
-   disebut di `AGENTS.md`. Padahal `AdultClassManagement` (kelas dewasa) masih hidup di dalam
-   `ClassManagement`, jadi timpang: kelas dewasa ada, panel muridnya tidak terjangkau.
-5. Ulangi request yang kena 401 setelah refresh berhasil.
-6. Push branch agar Vercel membuat Preview Deployment. **Belum dilakukan.**
+1. **Putuskan nasib `AdultClassManagement`.** Kategori murid dewasa sudah dihapus di `4170e3b`
+   ("sekolah ini satu lembaga umum"), tapi panel *kelas* dewasa masih hidup di dalam
+   `ClassManagement`. Timpang: kelasnya ada, muridnya tidak. Kalau SD negeri ini tidak
+   menyelenggarakan kelas dewasa, panel itu ikut dicopot.
+2. **Pasang jaring test.** Saat ini **nol** framework test. Delapan bug pada 2026-08-06 semuanya
+   ditemukan dengan tangan, dan tiga di antaranya membisu — tidak memunculkan pesan apa pun. Ini
+   prasyarat sebelum rename kosakata apa pun.
+3. Ganti email admin berdomain lama (butuh migrasi tersendiri, lihat jebakan di atas).
+4. Perbaiki `resolveUser` yang rapuh (lihat jebakan di atas).
+5. Modelkan ulang absensi: `sesi_mengaji` → jam pelajaran & mata pelajaran.
 
 Sebelum menyentuh rename kosakata `santri`, baca dulu keputusan mengikat di bagian 2.
 
