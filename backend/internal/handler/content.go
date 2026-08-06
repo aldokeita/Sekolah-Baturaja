@@ -42,8 +42,10 @@ func (h *ContentHandler) Routes() http.Handler {
 	r.Put("/announcements/{id}", h.UpdateAnnouncement)
 	r.Delete("/announcements/{id}", h.DeleteAnnouncement)
 
-	// Feedback — public, no auth
+	// Feedback — POST is the public contact form; list/delete are back-office.
 	r.Post("/feedback", h.SubmitFeedback)
+	r.Get("/feedback", h.ListFeedback)
+	r.Delete("/feedback/{id}", h.DeleteFeedback)
 
 	// Public teacher roster for the "Tim Pengajar" section on /profil.
 	r.Get("/teachers", h.ListPublicTeachers)
@@ -681,19 +683,45 @@ func (h *ContentHandler) DeleteAnnouncement(w http.ResponseWriter, r *http.Reque
 // Feedback
 // ---------------------------------------------------------------------------
 
+type feedbackRow struct {
+	ID        string  `json:"id"`
+	Nama      *string `json:"nama"`
+	Email     *string `json:"email"`
+	Phone     *string `json:"phone"`
+	Message   string  `json:"message"`
+	Status    string  `json:"status"`
+	CreatedAt string  `json:"created_at"`
+}
+
 // SubmitFeedback POST /api/content/feedback (public, no auth)
+//
+// Accepts both the current field names the contact form sends (phone, message)
+// and the older no_hp/pesan spelling. The form sends the former; the handler
+// only understood the latter, so every submission failed validation.
 func (h *ContentHandler) SubmitFeedback(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Nama  string  `json:"nama"`
-		Email *string `json:"email"`
-		NoHp  *string `json:"no_hp"`
-		Pesan string  `json:"pesan"`
+		Nama    string  `json:"nama"`
+		Email   *string `json:"email"`
+		Phone   *string `json:"phone"`
+		NoHp    *string `json:"no_hp"`
+		Message string  `json:"message"`
+		Pesan   string  `json:"pesan"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
-	if body.Nama == "" || body.Pesan == "" {
+
+	message := body.Message
+	if message == "" {
+		message = body.Pesan
+	}
+	phone := body.Phone
+	if phone == nil {
+		phone = body.NoHp
+	}
+
+	if strings.TrimSpace(body.Nama) == "" || strings.TrimSpace(message) == "" {
 		jsonError(w, "nama dan pesan wajib diisi", http.StatusBadRequest)
 		return
 	}
@@ -703,7 +731,7 @@ func (h *ContentHandler) SubmitFeedback(w http.ResponseWriter, r *http.Request) 
 		INSERT INTO feedbacks (nama, email, phone, message)
 		VALUES ($1,$2,$3,$4)
 		RETURNING id
-	`, body.Nama, body.Email, body.NoHp, body.Pesan).Scan(&id)
+	`, body.Nama, body.Email, phone, message).Scan(&id)
 	if err != nil {
 		jsonError(w, fmt.Sprintf("gagal menyimpan pesan: %v", err), http.StatusInternalServerError)
 		return
@@ -712,4 +740,66 @@ func (h *ContentHandler) SubmitFeedback(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]any{"data": map[string]string{"id": id}})
+}
+
+// ListFeedback GET /api/content/feedback (admin only)
+//
+// Feeds the "Pesan Masuk" list in the Konten admin panel. Newest first so the
+// unhandled messages sit at the top.
+func (h *ContentHandler) ListFeedback(w http.ResponseWriter, r *http.Request) {
+	role := middleware.RoleFromCtx(r.Context())
+	if !middleware.CanManage(role) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	rows, err := h.db.Query(r.Context(), `
+		SELECT id, nama, email, phone, message, status, created_at::text
+		FROM feedbacks
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		jsonError(w, "gagal mengambil pesan masuk", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	result := []feedbackRow{}
+	for rows.Next() {
+		var f feedbackRow
+		if err := rows.Scan(&f.ID, &f.Nama, &f.Email, &f.Phone, &f.Message, &f.Status, &f.CreatedAt); err != nil {
+			jsonError(w, "gagal membaca pesan masuk", http.StatusInternalServerError)
+			return
+		}
+		result = append(result, f)
+	}
+
+	jsonOK(w, map[string]any{"data": result})
+}
+
+// DeleteFeedback DELETE /api/content/feedback/:id (admin only)
+func (h *ContentHandler) DeleteFeedback(w http.ResponseWriter, r *http.Request) {
+	role := middleware.RoleFromCtx(r.Context())
+	if !middleware.CanManage(role) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		jsonError(w, "id wajib diisi", http.StatusBadRequest)
+		return
+	}
+
+	tag, err := h.db.Exec(r.Context(), `DELETE FROM feedbacks WHERE id = $1`, id)
+	if err != nil {
+		jsonError(w, "gagal menghapus pesan", http.StatusInternalServerError)
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		jsonError(w, "pesan tidak ditemukan", http.StatusNotFound)
+		return
+	}
+
+	jsonOK(w, map[string]any{"data": map[string]string{"id": id}})
 }
