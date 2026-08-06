@@ -592,7 +592,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.text(`( ${teacherName} )`, 105, signY + 36, { align: 'center' });
 
         doc.text("Disahkan oleh,", 180, signY, { align: 'right' });
-        doc.text("Pentashih LPQ Al-Fath Maulana", 180, signY + 5, { align: 'right' });
+        doc.text("Wakil Kepala Sekolah", 180, signY + 5, { align: 'right' });
         doc.text("( .................................... )", 180, signY + 36, { align: 'right' });
 
         // --- Footer Page Numbers ---
@@ -1022,7 +1022,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                             children: [
                                 createCell("Mengetahui,\nOrang Tua / Wali Murid\n\n\n\n( .................................... )", { align: AlignmentType.CENTER, width: 33 }),
                                 createCell(`Guru Pengampu Kelas,\nUstadz / Ustadzah\n\n\n\n( ${teacherName} )`, { align: AlignmentType.CENTER, bold: true, width: 34 }),
-                                createCell("Disahkan oleh,\nPentashih LPQ Al-Fath Maulana\n\n\n\n( .................................... )", { align: AlignmentType.CENTER, width: 33 })
+                                createCell("Disahkan oleh,\nWakil Kepala Sekolah\n\n\n\n( .................................... )", { align: AlignmentType.CENTER, width: 33 })
                             ]
                         })
                     ]

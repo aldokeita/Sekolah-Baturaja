@@ -15,6 +15,7 @@ const adminTabs = [
   { value: 'kelas', label: 'Manajemen Kelas', icon: BookOpen, group: 'akademik' },
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },
+  { value: 'rapat-guru', label: 'Rapat Guru', icon: Users, group: 'akademik' },
   { value: 'salary', label: 'Bisyaroh', icon: Calculator, group: 'akademik' },
   { value: 'academic-calendar', label: 'Kalender', icon: Calendar, group: 'akademik' },
   { value: 'payment', label: 'Pembayaran', icon: DollarSign, group: 'keuangan' },

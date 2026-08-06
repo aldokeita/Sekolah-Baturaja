@@ -138,7 +138,7 @@ const AttendanceProfileCard = ({
         {isTeacher && (
           <div className="attendance-profile-card__role-badge">
             <GraduationCap className="w-3.5 h-3.5" />
-            <span>{isPentashih ? 'Pentashih' : 'Guru'}</span>
+            <span>{isPentashih ? 'Wakil Kepala Sekolah' : 'Guru'}</span>
           </div>
         )}
       </div>

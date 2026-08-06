@@ -8,6 +8,7 @@ import { toast } from '@/components/ui/use-toast';
 
 import SantriManagement from '../admin/SantriManagement';
 import GuruManagement from '../admin/GuruManagement';
+import MMQManagement from '../admin/MMQManagement';
 import PaymentSystem from '../admin/PaymentSystem';
 import PaymentRecap from '../admin/PaymentRecap';
 import PaymentHistory from '../admin/PaymentHistory';
@@ -40,6 +41,7 @@ const renderModule = (value) => {
   switch (value) {
     case 'santri': return <SantriManagement />;
     case 'kelas': return <ClassManagement />;
+    case 'rapat-guru': return <MMQManagement />;
     case 'guru': return <GuruManagement />;
     case 'rekap-absensi': return <AttendanceRecap />;
     case 'rekap-guru': return <GuruAttendanceRecap />;

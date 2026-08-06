@@ -80,7 +80,7 @@ const MMQManagement = () => {
     const handleSaveSchedule = async (data) => {
         const result = await updateMMQSchedule(data);
         if (result.success) {
-            toast({ title: "Berhasil", description: "Jadwal MMQ disimpan." });
+            toast({ title: "Berhasil", description: "Jadwal rapat disimpan." });
             setIsScheduleModalOpen(false);
             loadData();
         } else {
@@ -100,7 +100,7 @@ const MMQManagement = () => {
     const handleSaveAttendance = async (data) => {
         const result = await saveMMQAttendance(data);
         if (result.success) {
-            toast({ title: "Berhasil", description: "Absensi MMQ diperbarui." });
+            toast({ title: "Berhasil", description: "Kehadiran rapat diperbarui." });
             loadData();
         } else {
             toast({ title: "Gagal", description: result.error, variant: "destructive" });
@@ -123,7 +123,7 @@ const MMQManagement = () => {
                         <BookOpen />
                     </div>
                     <div className="admin-panel-header-text">
-                        <h2>Manajemen MMQ</h2>
+                        <h2>Rapat Guru</h2>
                         <p>Majelis Mu'allimil Qur'an — Absensi & Jadwal Guru</p>
                     </div>
                 </div>
@@ -146,7 +146,7 @@ const MMQManagement = () => {
                         className={`admin-segmented-control-item ${activeTab === 'schedule' ? 'active' : ''}`}
                         onClick={() => setActiveTab('schedule')}
                     >
-                        <Calendar className="w-3.5 h-3.5" /> Jadwal MMQ
+                        <Calendar className="w-3.5 h-3.5" /> Jadwal Rapat
                     </button>
                     <button
                         className={`admin-segmented-control-item ${activeTab === 'guru' ? 'active' : ''}`}
@@ -265,7 +265,7 @@ const MMQManagement = () => {
                         {schedules.length === 0 && (
                             <div className="admin-empty-state col-span-full">
                                 <Calendar className="admin-empty-state-icon" />
-                                <p className="admin-empty-state-description">Belum ada jadwal MMQ diatur.</p>
+                                <p className="admin-empty-state-description">Belum ada jadwal rapat diatur.</p>
                             </div>
                         )}
                     </div>
@@ -304,7 +304,7 @@ const MMQManagement = () => {
             <Dialog open={isScheduleModalOpen} onOpenChange={setIsScheduleModalOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{editingSchedule ? 'Edit Jadwal MMQ' : 'Tambah Jadwal MMQ'}</DialogTitle>
+                        <DialogTitle>{editingSchedule ? 'Edit Jadwal Rapat' : 'Tambah Jadwal Rapat'}</DialogTitle>
                     </DialogHeader>
                     <MMQScheduleForm
                         initialData={editingSchedule}

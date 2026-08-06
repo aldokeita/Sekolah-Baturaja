@@ -114,7 +114,7 @@ const PentashihDashboard = () => {
       setClassList(classes);
       setSantriList(mappedSantri);
     } catch (error) {
-      toast({ title: 'Gagal memuat data pentashih', description: error.message, variant: 'destructive' });
+      toast({ title: 'Gagal memuat data', description: error.message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -240,9 +240,9 @@ const PentashihDashboard = () => {
       XLSX.utils.book_append_sheet(wb, wsStagnant, 'Evaluasi Murid Stagnan');
 
       const dateStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-      XLSX.writeFile(wb, `Laporan_Pentashih_LPQ_${dateStr}.xlsx`);
+      XLSX.writeFile(wb, `Laporan_Wakil_Kepala_Sekolah_${dateStr}.xlsx`);
 
-      toast({ title: 'Berhasil Ekspor Excel', description: 'File laporan pentashih berhasil diunduh.' });
+      toast({ title: 'Berhasil Ekspor Excel', description: 'File laporan berhasil diunduh.' });
     } catch (err) {
       toast({ title: 'Gagal Ekspor', description: err.message, variant: 'destructive' });
     }
@@ -259,7 +259,7 @@ const PentashihDashboard = () => {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-3xl md:text-4xl font-black uppercase text-purple-700 dark:text-purple-400 tracking-wide print:text-black">
-              Dashboard Pentashih
+              Dashboard Wakil Kepala Sekolah
             </h1>
             <Badge className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1 text-xs uppercase tracking-wider flex items-center gap-1 shadow-sm print:hidden">
               <ShieldCheck className="w-3.5 h-3.5" /> Penguji & Quality Assurance
@@ -358,7 +358,7 @@ const PentashihDashboard = () => {
                   <div className="min-w-0 flex-1">
                     <h2 className="text-base font-bold leading-tight truncate">{guruData.nama}</h2>
                     <span className="inline-flex items-center gap-1 text-purple-100 text-[11px] font-semibold bg-white/20 px-2 py-0.5 rounded-full mt-0.5">
-                      <ShieldCheck className="w-3 h-3" /> {guruData.jabatan || 'Pentashih Official'}
+                      <ShieldCheck className="w-3 h-3" /> {guruData.jabatan || 'Wakil Kepala Sekolah'}
                     </span>
                   </div>
                 </div>

@@ -791,9 +791,9 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 </p>
                             </div>
                             <div className="space-y-16">
-                                <p className="font-semibold text-slate-700 dark:text-slate-300">Disahkan oleh,<br/>Pentashih Official LPQ</p>
+                                <p className="font-semibold text-slate-700 dark:text-slate-300">Disahkan oleh,<br/>Wakil Kepala Sekolah</p>
                                 <p className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-300 dark:border-slate-700 pb-1 w-3/4 mx-auto">
-                                    Pentashih LPQ Al-Fath Maulana
+                                    Wakil Kepala Sekolah
                                 </p>
                             </div>
                         </div>

@@ -230,7 +230,7 @@ const SalaryCalculation = () => {
             'Potongan Manual': d.manualDeductionAmount,
             'Pendapatan Badal': d.badalIncome,
             'Tunjangan Admin': d.adminIncome,
-            'Tunjangan Pentashih': d.pentashihIncome,
+            'Tunjangan Wakil Kepala Sekolah': d.pentashihIncome,
             'Tunjangan Staff Ops': d.staffOpsIncome,
             'Tunjangan Bendahara': d.bendaharaIncome,
             'Total Bisyaroh': d.totalSalary
@@ -298,7 +298,7 @@ const SalaryCalculation = () => {
                         <div><label className="text-[10px] uppercase font-bold text-muted-foreground">Sesi Non-Syahadah</label><Input type="number" value={rates.nonSyahadah} onChange={e => setRates({...rates, nonSyahadah: Number(e.target.value)})} className="h-8 text-xs"/></div>
                         <div><label className="text-[10px] uppercase font-bold text-muted-foreground">Potongan Absen</label><Input type="number" value={rates.deductionTpQ} onChange={e => setRates({...rates, deductionTpQ: Number(e.target.value)})} className="h-8 text-xs"/></div>
                         <div><label className="text-[10px] uppercase font-bold text-muted-foreground">Admin</label><Input type="number" value={rates.adminSalary} onChange={e => setRates({...rates, adminSalary: Number(e.target.value)})} className="h-8 text-xs"/></div>
-                        <div><label className="text-[10px] uppercase font-bold text-muted-foreground">Pentashih</label><Input type="number" value={rates.pentashihSalary} onChange={e => setRates({...rates, pentashihSalary: Number(e.target.value)})} className="h-8 text-xs"/></div>
+                        <div><label className="text-[10px] uppercase font-bold text-muted-foreground">Wakil Kepala Sekolah</label><Input type="number" value={rates.pentashihSalary} onChange={e => setRates({...rates, pentashihSalary: Number(e.target.value)})} className="h-8 text-xs"/></div>
                         <div><label className="text-[10px] uppercase font-bold text-muted-foreground">Staff Ops</label><Input type="number" value={rates.staffOpsSalary} onChange={e => setRates({...rates, staffOpsSalary: Number(e.target.value)})} className="h-8 text-xs"/></div>
                         <div><label className="text-[10px] uppercase font-bold text-muted-foreground">Bendahara</label><Input type="number" value={rates.bendaharaSalary} onChange={e => setRates({...rates, bendaharaSalary: Number(e.target.value)})} className="h-8 text-xs"/></div>
                     </div>
@@ -384,7 +384,7 @@ const SalaryCalculation = () => {
                                             </div>
                                             {/* Pentashih Toggle */}
                                             <div className="flex justify-between items-center">
-                                                <Label htmlFor="pentashih-switch" className="text-sm cursor-pointer">Tunjangan Pentashih</Label>
+                                                <Label htmlFor="pentashih-switch" className="text-sm cursor-pointer">Tunjangan Wakil Kepala Sekolah</Label>
                                                 <div className="flex items-center gap-2">
                                                     {selectedGuruDetail.isPentashih && <span className="text-xs font-mono text-green-600">+ Rp {rates.pentashihSalary.toLocaleString()}</span>}
                                                     <Switch id="pentashih-switch" checked={selectedGuruDetail.isPentashih} onCheckedChange={() => toggleRole(selectedGuruDetail.id, pentashihGurus, setPentashihGurus)} />

@@ -1,4 +1,4 @@
-﻿
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -26,6 +26,10 @@ import { getBirthdaysThisMonth } from '@/lib/birthdayUtils';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AVAILABLE_ROLES = ['Pengajar', 'Pentashih', 'Staff Operasional', 'Tata Usaha', 'Admin'];
+
+// Nilai 'Pentashih' tetap dipakai sebagai nilai tersimpan karena resolusi role
+// dan data guru lama bergantung padanya. Yang berubah hanya labelnya.
+const ROLE_LABELS = { Pentashih: 'Wakil Kepala Sekolah' };
 
 const GuruManagement = () => {
   const { role } = useAuth();
@@ -104,7 +108,7 @@ const GuruManagement = () => {
     if (window.confirm(`Yakin ingin menonaktifkan ${guruToDelete.nama}? Akun login akan dinonaktifkan tanpa hard delete.`)) {
       try {
           await deleteGuru(guruToDelete.id);
-          toast({ title: "Berhasil!", description: "Akun guru/pentashih telah dinonaktifkan." });
+          toast({ title: "Berhasil!", description: "Akun guru telah dinonaktifkan." });
           fetchGuru();
       } catch (err) {
           toast({ title: "Gagal Hapus Data Guru", description: err.message, variant: "destructive" });
@@ -493,7 +497,7 @@ const GuruManagement = () => {
                       {AVAILABLE_ROLES.map(roleOption => (
                           <div key={roleOption} className={`flex min-h-11 items-center space-x-2 rounded-xl border px-3 py-2 transition-colors ${(formData.roles || []).includes(roleOption) ? 'border-cyan-300 bg-white/85 shadow-sm dark:border-cyan-700 dark:bg-slate-900/80' : 'border-white/70 bg-white/45 hover:bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/35 dark:hover:bg-slate-900/60'}`}>
                               <Checkbox id={`role-${roleOption}`} checked={(formData.roles || []).includes(roleOption)} onCheckedChange={(checked) => handleRoleChange(roleOption, checked)} />
-                              <label htmlFor={`role-${roleOption}`} className="flex-1 cursor-pointer select-none text-sm font-medium">{roleOption}</label>
+                              <label htmlFor={`role-${roleOption}`} className="flex-1 cursor-pointer select-none text-sm font-medium">{ROLE_LABELS[roleOption] || roleOption}</label>
                           </div>
                       ))}
                   </div>
