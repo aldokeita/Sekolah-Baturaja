@@ -32,6 +32,32 @@ dibongkar tanpa instruksi baru.
 | Absensi | **Tetap harian, tidak diubah sama sekali** | Sudah harian sejak semula — lihat di bawah |
 | Jadwal pelajaran | **Fitur baru**, tetap per periode, CRUD penuh | Tiga tabel baru, murni aditif |
 | Email admin | Pindah ke `admin@sdnbaturaja.sch.id` | Konsisten dengan tiga akun staf lain |
+| **Identitas sekolah** | **Dikustomisasi dari Dashboard Admin, jangan ditanam di kode** | Aplikasi ini **template yang akan dijual**; pembeli mengganti identitasnya sendiri |
+
+### Ini template, bukan aplikasi satu sekolah
+
+Keputusan ini mengubah cara menilai banyak hal: **apa pun yang khas satu sekolah harus bisa
+disunting pembeli dari dashboard**, bukan menjadi konstanta di kode.
+
+Identitas sekolah kini bersumber dari `src/lib/schoolIdentity.js`, disimpan di `website_content`
+dengan kunci `school_identity`, dan disunting lewat tab **Identitas Sekolah** (tab pertama di
+Manajemen Konten). Yang mengikutinya: nav dan footer publik, halaman Kontak, subjudul dashboard
+admin/tata usaha/wakil kepala sekolah, judul tab browser, kuitansi pembayaran (tiga tempat), berkas
+backup, notulensi rapat, dan slide baru.
+
+Kenapa `website_content`, bukan `/api/config`: halaman publik harus bisa membacanya **tanpa token**.
+`GET /api/content/website` terbuka, `/api/config` di balik `RequireAuth`. Penulisannya tetap dijaga
+`CanManage` di Go, jadi tidak ada backend yang perlu diubah — dan tidak ada allowlist kunci di
+`UpsertWebsiteContent`, berbeda dari `validConfigKeys` pada appconfig.
+
+`normalizeSchoolIdentity` menggabungkan isi tersimpan dengan bawaan, jadi identitas tidak pernah
+tampil bolong walau pembeli baru mengisi sebagiannya.
+
+**Dua domain memang berbeda peruntukan, jangan "diseragamkan":** halaman publik memakai
+`sekolahbta.id` (keputusan pengguna), sedangkan akun login memakai `@sdnbaturaja.sch.id`.
+
+`index.html` statis dan dimuat sebelum React, jadi judulnya tidak bisa membaca basis data. Judul
+bawaan ada di sana, dan `App.jsx` menyelaraskan `document.title` setelah identitas dimuat.
 
 Manajemen Kelas kini **satu panel tanpa sub-tab**. Tiga sub-tab lama (Murid TPQ, Murid PTPT, Murid
 Dewasa) dicabut dan `AdultClassManagement.jsx` dihapus.
@@ -142,6 +168,8 @@ Jangan mengikuti kalimat lama itu.
 | Simpan murid baru + NISN | **Tuntas di browser**: tersimpan, bertahan setelah muat ulang, murid aktif 9 → 10. Baris uji `Uji NISN Baturaja` / NISN `1234567890` / angkatan `2026/2027` masih ada di DB sebagai bukti |
 | `GET /api/content/feedback` | **200 OK** (sebelumnya 405) |
 | `ErrorBoundary` | **Sudah diuji** dengan crash sengaja di kedua lapisan — lihat bagian 4 |
+| **Identitas sekolah tersambung** | **Tuntas lewat DB + browser**: menulis identitas berbeda ke `website_content` membuat judul tab, nama di nav, inisial logo, nama & alamat footer, serta telepon & surel halaman Kontak ikut berubah; nilai lama hilang; setelah baris uji dihapus semuanya kembali ke bawaan |
+| Panel Identitas Sekolah (klik-tayang) | **Belum** — menuntut login admin, dan agen tidak boleh mengisi kata sandi. Jalur simpannya memakai `saveWebsiteContentItem` yang sudah dipakai panel Konten lain |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
@@ -407,17 +435,21 @@ Absensi **sengaja tidak dirombak** — alasannya di bagian 2, jangan diajukan ul
 
 Yang tersisa:
 
-1. **Bereskan sisa identitas LPQ yang masih tampil ke pengguna.** Ini yang paling terlihat sekarang:
-   - Dashboard admin bertulis "Kelola seluruh sistem **LPQ Al-Fath Maulana**"
-   - Judul tab browser "Dashboard - **LPQ Al-Fath Maulana**"
-   - `src/lib/institutionContent.js` menyimpan identitas LPQ seutuhnya (nama, website
-     `lpqalfathmaulana.id`, visi, misi, deskripsi Qiroati) dan **masih hidup** di dua komponen:
-     `CallToAction.jsx` dan `PaymentStatusPage.jsx`
+1. **Sisa identitas yang belum bisa disunting pembeli.** Identitas sekolah sudah selesai (lihat
+   bagian 2), tapi masih ada yang khas satu sekolah dan tertanam di kode:
+   - **Direktori staf di halaman Kontak** (`ContactPage.jsx:24-27`): empat nama orang beserta surel
+     `@sekolah.id`. Ini data orang, bukan identitas lembaga — pilihannya dijadikan konten yang
+     disunting admin, atau dibaca dari tabel `guru`. Belum diputuskan.
+   - **Alamat di `KontakBody.jsx:138`** masih menuliskan "Jalan Dr. Moh. Hatta No. 14" secara
+     harfiah. Berkas `generated/` hasil konversi mockup, jadi perlu ditangani hati-hati.
+   - **Nama berkas logo** `public/logo-lpq-al-fath-maulana.webp` masih berbau LPQ. Menggantinya
+     berarti memindahkan berkas plus menyesuaikan rujukannya di beberapa tempat.
+   - **Contoh isi halaman publik** di `institutionContent.js` (jadwal sesi, kuota, slide hero, FAQ
+     biaya TPQ, fasilitas, galeri) masih bernuansa TPQ. Isinya memang cuma nilai awal sebelum admin
+     mengisi lewat panel Konten, tapi FAQ "biaya pendaftaran TPQ" jelas tidak pantas bagi pembeli.
 
-   AGENTS.md melarang memakai identitas lembaga sumber, jadi ini bukan sekadar kosmetik. Tapi
-   menggantinya butuh **keputusan konten dari pengguna**: nama resmi, alamat, telepon, visi, misi.
-   Jangan mengarang sendiri. Catatan: halaman publik SDN memakai `sdnbaturaja@sekolah.id`,
-   sedangkan akun login memakai `@sdnbaturaja.sch.id` — dua domain berbeda, perlu diselaraskan.
+   Nama kelas CSS `lpq-*` dan nama design system "LPQ Aurora Neo-Glass" **dibiarkan** — itu nama
+   internal, tidak terlihat pengguna.
 
 2. **Perluas jaring test.** 40 test yang ada hanya menutupi logika murni di `src/lib/`.
    Belum ada satu pun test komponen (butuh `@testing-library/react`) maupun test Go
