@@ -28,6 +28,7 @@ dibongkar tanpa instruksi baru.
 | Jilid/Sesi di Data Murid | Filter & kolom dihapus, field tetap ada di balik flag | Jadi isian bebas, bukan dropdown Qiroati |
 | Metode mengaji | Sekolah **memilih metode**, tingkat mengikuti | Qiroati/Iqro/Ummi/Wafa/Tilawati/Tahfizh-Juz/Kustom |
 | Kategori murid & kelas | **Dihapus seluruhnya.** Tidak ada kelas dewasa, tidak ada PTPT, istilah TPQ tidak dipakai | SD negeri dengan satu jenis murid |
+| Hafalan | Dua bentuk tetap ada, **tapi keduanya terbuka untuk semua murid** | Per Kelas 1–6 dan per Juz Al-Qur'an; status murid tidak lagi membatasi |
 
 Manajemen Kelas kini **satu panel tanpa sub-tab**. Tiga sub-tab lama (Murid TPQ, Murid PTPT, Murid
 Dewasa) dicabut dan `AdultClassManagement.jsx` dihapus.
@@ -276,11 +277,10 @@ prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, dan
 
 Yang tersisa:
 
-1. **Label TPQ/PTPT masih terlihat di fitur Hafalan.** Panel Konten punya tab "Hafalan TPQ" dan
-   "Hafalan PTPT" (`ContentManagement.jsx:814`), dan dashboard guru serta murid memakai
-   `programScope` bernilai `'TPQ'`/`'PTPT'` beserta `PTPT_TAHFIZH_TARGETS`. Hafalan sengaja
-   dipertahankan (lihat bagian 2), jadi ini soal **penamaan**, bukan pencabutan fitur. Belum
-   diputuskan mau dinamai apa.
+1. **Verifikasi visual dashboard guru dan murid** untuk perubahan hafalan (commit `066a3cb`).
+   Keduanya belum dilihat langsung karena masuk sebagai peran itu menuntut pengisian kata sandi.
+   Yang perlu dicek: guru melihat empat tombol (Doa, Sholat, Surat, Tahfizh) pada setiap murid, dan
+   murid melihat keempat bagian hafalan.
 2. **Pasang jaring test.** Saat ini **nol** framework test. Delapan bug pada 2026-08-06 semuanya
    ditemukan dengan tangan, dan tiga di antaranya membisu — tidak memunculkan pesan apa pun. Ini
    prasyarat sebelum rename kosakata apa pun.
