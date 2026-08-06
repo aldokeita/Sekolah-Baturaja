@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import useAdminBodyClass from '@/hooks/useAdminBodyClass';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import TataUsahaDashboard from '@/components/dashboard/TataUsahaDashboard';
 import GuruDashboard from '@/components/dashboard/GuruDashboard';
@@ -145,7 +146,12 @@ const DashboardPage = () => {
           </div>
         )}
         <div className="relative" style={{ zIndex: 1 }}>
-          {renderDashboard()}
+          {/* Tanpa boundary, satu error saat render memutihkan seluruh aplikasi
+              tanpa pesan apa pun. key={role} mereset boundary ketika peran
+              berubah, supaya error lama tidak menempel setelah login ulang. */}
+          <ErrorBoundary key={role} title="Dashboard Gagal Dimuat">
+            {renderDashboard()}
+          </ErrorBoundary>
         </div>
       </div>
     </>
