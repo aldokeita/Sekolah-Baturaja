@@ -4,78 +4,158 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-LPQ Al-Fath Maulana — Islamic school (TPQ) management system. React SPA with Supabase backend, deployed on Vercel. Indonesian language UI.
+School management system with an Indonesian-language UI, deployed on Vercel.
 
-Read `AGENTS.md` for operational rules and `AI_DEVELOPMENT_GUIDE.md` for the full development handbook (read only relevant sections per task).
+The app is **mid-migration**: it began as LPQ Al-Fath Maulana (an Islamic Qur'an school / TPQ) and is
+being converted into **SDN Baturaja**, a general public elementary school. Package name, admin email,
+and parts of the design-system naming still carry the LPQ identity. Terminology, flows, and modules
+are what change — the mature parts of the old app are kept, not rewritten.
+
+Read `AGENTS.md` for operational rules, `docs/HANDOFF.md` before continuing migration work (it holds
+the binding decisions and known traps), and `AI_DEVELOPMENT_GUIDE.md` as a reference handbook — only
+the sections a given task needs.
 
 ## Commands
 
 ```bash
 npm run dev        # Vite dev server on port 3000
-npm run build      # Generates LLMS metadata then runs vite build
+npm run build      # tools/build.js — generates LLMS metadata, then vite build
 npm run preview    # Preview production build on port 3000
 npm run lint       # ESLint (flat config, --quiet)
 ```
 
-No test framework is configured. Validation is lint + build.
+No JS test framework is configured. Validation is `npm run lint` + `npm run build` + the guard
+scripts in `scripts/validate-*.ps1`.
+
+Go is **not installed** on the dev machine — Docker is the only way to compile or run the backend:
+
+```bash
+cd backend && docker compose up -d --build
+```
+
+That builds the Go API on `:8080` and starts PostgreSQL on `:5432` (database `lpq_db`).
 
 ## Architecture
 
-**Stack:** React 18 + Vite 7 + Supabase + Tailwind CSS + shadcn/ui + React Router 6
+**Stack:** React 18 + Vite 7 + Go API + PostgreSQL + Tailwind CSS + shadcn/ui + React Router 6
 
 **Path alias:** `@` → `./src`
 
 **Node version:** 22 (see `.nvmrc`)
 
-### Routing & Roles
+### Data layer — goes through the Go backend, not Supabase
 
-Single-page app with `react-router-dom`. Four role-based dashboards:
-- `AdminDashboard` — full system management
-- `GuruDashboard` — teacher view
-- `PentashihDashboard` — Quran assessment reviewer
-- `SantriDashboard` — student view
+There is **no Supabase client in this app.** `@supabase/supabase-js` is not a dependency, and
+`src/lib/customSupabaseClient.js` no longer exists. Any doc still describing `supabase.from()` calls
+is stale.
 
-Auth flows through `src/contexts/SupabaseAuthContext.jsx` which loads `user_profiles` to determine role. Protected routes gate on role via `src/components/ProtectedRoute.jsx`.
-
-### Data Layer
-
-- `src/lib/customSupabaseClient.js` — Supabase client with graceful no-config fallback (proxy returns `{ data: null, error }` when env vars missing)
-- `src/lib/*Adapters.js` — domain-specific data access (finance, attendance, MMQ, storage, etc.). All Supabase queries go through adapters.
-- `src/lib/featureFlags.js` — toggles for edge functions, deferred features, games, backup/restore
+- `src/lib/apiClient.js` — the single HTTP client. Centralised JWT handling with automatic refresh.
+  `publicFetch` is the unauthenticated variant for public pages; `clearTokens` is logout.
+- `src/lib/*Adapters.js` — domain-specific data access (finance, attendance, MMQ, app config,
+  storage, …). Components call adapters; adapters call `apiClient`. Never fetch from a component.
+- `src/lib/featureFlags.js` — toggles read from `import.meta.env`.
 
 ### Backend
 
-- Supabase project with 44 migrations in `supabase/migrations/`
-- Edge functions in `supabase/functions/` (Deno): auth helpers, signed uploads, login attempts
-- RLS policies are migration-managed — never edit deployed migrations, create new ones
+- Go API in `backend/`, one handler file per domain in `backend/internal/handler/` (17 files),
+  registered in `backend/main.go`.
+- **Authorization lives in Go**, not in the database: `backend/internal/middleware/auth.go` provides
+  `RequireAuth` (JWT) and `RequireRole`. The pool connects as the `postgres` superuser, so **RLS
+  policies do not gate live requests** — treat them as legacy and defence-in-depth, not enforcement.
+  Adding a route means adding its role check in Go.
+- `backend/internal/handler/appconfig.go` keeps an allowlist, `validConfigKeys`. A new app-config key
+  must be added there or writes are rejected.
+- Key-value app settings live in the `website_content` table, keyed via
+  `APP_CONFIG_KEYS` in `src/lib/appConfigAdapters.js`.
 
-### UI System
+### Database
 
-Design system: "LPQ Aurora Neo-Glass" — frosted glass, aurora teal-cyan-blue-violet palette, neumorphic depth, spring animations. Uses shadcn/ui components in `src/components/ui/`, domain components in `src/components/`.
+- 50 ordered SQL migrations in `supabase/migrations/`. The directory name is historical — these are
+  applied to local PostgreSQL by `backend/init/01_migrate.sh` during container init.
+- Always add a **new** migration; never edit one that has been applied.
+- Writing a migration is not applying it. A migration that is only written while code already
+  references its columns breaks every login. Apply an individual file with:
 
-### Key Directories
+  ```powershell
+  Get-Content "supabase\migrations\<name>.sql" -Raw |
+    docker compose -f backend\docker-compose.yml exec -T db psql -U postgres -d lpq_db
+  ```
+
+- Verify a column really landed with `\d <table>` before trusting it.
+
+### Edge functions (dormant)
+
+`supabase/functions/` holds 6 Deno functions (signed uploads, user management, login attempts,
+password reset). They are **not on the live path** — the Go API replaced them. Nothing in `src/`
+calls them; only the `enableEdgeFunctions` flag references the concept, and it defaults to `false`.
+
+### Routing & roles
+
+Single-page app with `react-router-dom`. **Five** role-based dashboards in
+`src/components/dashboard/`, routed by `src/pages/DashboardPage.jsx`:
+
+| Dashboard | Role value | Notes |
+|---|---|---|
+| `AdminDashboard` | `admin` | Full system management |
+| `GuruDashboard` | `guru` | Teacher view |
+| `TataUsahaDashboard` | `tata_usaha` | Administrative staff |
+| `PentashihDashboard` | `pentashih` | **Labelled "Wakil Kepala Sekolah"** in the UI |
+| `SantriDashboard` | `santri` | Student view |
+
+The `'pentashih'` value is deliberately unchanged in the database — only its label is translated, via
+`ROLE_LABELS` in `GuruManagement.jsx`. Changing the stored value would break existing data and RLS.
+
+Auth flows through `src/contexts/AuthContext.jsx` (**not** `SupabaseAuthContext.jsx`) and is gated
+per-route by `src/components/ProtectedRoute.jsx`.
+
+### UI system
+
+Two coexisting visual layers — do not mix them:
+
+- **Public site (SDN Baturaja):** `src/components/sdnb/` with `PublicLayout`, `SiteNav`,
+  `SiteFooter`, and page bodies in `sdnb/generated/`. Styled by `src/styles/sdnb*.css`.
+- **Dashboards ("LPQ Aurora Neo-Glass"):** frosted glass, aurora teal–cyan–blue–violet palette,
+  neumorphic depth, spring animations. shadcn/ui primitives in `src/components/ui/`, visual effects
+  in `src/components/reactbits/`.
+
+### Key directories
 
 ```
-src/components/dashboard/admin/  — 36 admin management panels
-src/components/dashboard/shared/ — shared dashboard widgets
-src/contexts/                    — Auth + Theme providers
-src/hooks/                       — custom hooks (attendance, search, media)
-src/lib/                         — Supabase client, adapters, utilities
-src/pages/                       — route-level page components
-supabase/migrations/             — ordered SQL migrations
-supabase/functions/              — Deno edge functions
-tools/                           — build scripts (LLMS generator)
+src/components/dashboard/admin/   — 37 admin management panels
+src/components/dashboard/shared/  — shared dashboard widgets
+src/components/sdnb/              — public SDN Baturaja site (layout, nav, footer, page bodies)
+src/components/ui/                — shadcn/ui primitives
+src/contexts/                     — AuthContext + ThemeContext
+src/hooks/                        — custom hooks (attendance, search, media)
+src/lib/                          — apiClient, adapters, feature flags, utilities
+src/pages/                        — 19 route-level pages
+backend/internal/handler/         — Go API handlers, one per domain
+supabase/migrations/              — 50 ordered SQL migrations (applied to local Postgres)
+scripts/                          — operational + validation scripts
+tools/                            — build scripts (LLMS generator)
 ```
 
 ## Environment
 
-Copy `.env.example` to `.env.local` and fill `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. The app runs in degraded mode without them (no data, no auth).
+Copy `.env.example` to `.env.local`:
+
+```
+VITE_API_URL=http://localhost:8080   # Go backend
+VITE_ENABLE_EDGE_FUNCTIONS=false
+VITE_ENABLE_DEFERRED_FEATURES=false
+VITE_ENABLE_TAHFIZH=false            # optional tahfizh programme
+```
+
+There are no `VITE_SUPABASE_*` variables. `VITE_ENABLE_TAHFIZH` gates the Tingkat column, its
+history, and the "Metode Mengaji" admin panel; the underlying data stays intact when off.
 
 ## Conventions
 
-- Adapters own all Supabase queries — components don't call `supabase.from()` directly
-- Implement features end-to-end: migration → RLS → adapter → validation → UI
-- Partial updates for edit forms (don't send full payload)
-- Don't hardcode data that should come from Supabase
-- Don't disable fields or features just because schema doesn't support them yet — extend the schema
+- Adapters own all API access — components never call `apiClient` or `fetch` directly
+- Implement features end-to-end: migration → apply → handler + role check → adapter → validation → UI
+- A field counts as done only when it can be created, saved, edited, and survives a refresh
+- Partial updates for edit forms (don't send the full payload)
+- Don't hardcode data that should come from the API, and don't swap dynamic data for dummy content
+- Don't disable a field just because the schema lacks it — extend the schema
+- Don't remove or downgrade functionality merely to silence an error
 - Conventional commits: `feat:`, `fix:`, `chore:`, `test:`, `docs:`

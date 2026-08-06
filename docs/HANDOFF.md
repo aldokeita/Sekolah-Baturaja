@@ -93,7 +93,15 @@ jalur tidak menjatuhkan seluruhnya.
 `.claude/**` ke `ignores` di `eslint.config.mjs`.
 
 Pelajarannya: lint yang "hijau" perlu dicek benar-benar memeriksa file, bukan cuma exit code.
-Worktree `mystifying-nobel-977ad1` (detached di `7f61898`) masih ada dan belum dibersihkan.
+
+Worktree `mystifying-nobel-977ad1` sudah dibongkar: registrasi git dicabut dan **seluruh 521 file
+terhapus**. Sebelum dihapus, isinya dibandingkan terhadap `7f61898` lewat index sementara — salinan
+persis, nol modifikasi, nol file untracked, jadi tidak ada pekerjaan yang hilang.
+
+Sisa 13 **direktori kosong** masih ada dalam status *delete-pending* Windows (ACL-nya menolak dibaca
+karena masih dipegang handle proses). Tidak berbahaya — nol file di dalamnya, sudah tidak terdaftar
+di `git worktree list`, dan `.claude/**` kini diabaikan ESLint. Akan hilang sendiri setelah proses
+yang memegangnya berakhir atau setelah reboot.
 
 ### Email admin masih berdomain lama
 
@@ -134,19 +142,26 @@ Go tidak terpasang di mesin dev, jadi **Docker adalah satu-satunya cara memverif
 1. Uji simpan murid baru dengan NISN + Angkatan, pastikan bertahan setelah refresh.
 2. Uji panel Metode Mengaji (`VITE_ENABLE_TAHFIZH=true`) — pilih Iqro, simpan, muat ulang.
 3. Uji tab Rapat Guru.
-4. Hapus tiga file mati (menunggu keputusan pengguna — lihat di bawah).
-5. Push branch agar Vercel membuat Preview Deployment.
+4. ~~Hapus tiga file mati~~ — **selesai.** `src/components/Navbar.jsx`,
+   `src/components/Footer.jsx`, dan `lib/customSupabaseClient.js` dihapus. Ketiganya yatim dan
+   digantikan `src/components/sdnb/SiteNav.jsx` / `SiteFooter.jsx` / `src/lib/apiClient.js`.
+   `npm run lint` kini **bersih, exit 0**.
+5. ~~Segarkan `CLAUDE.md`~~ — **selesai.** Lihat di bawah.
+6. Push branch agar Vercel membuat Preview Deployment. **Belum dilakukan.**
 
-### File mati yang menunggu keputusan
+### CLAUDE.md sudah disegarkan
 
-| File | Kondisi |
-|---|---|
-| `src/components/Navbar.jsx` | Yatim. Digantikan `src/components/sdnb/SiteNav.jsx`. Mengimpor `@/lib/schoolProfile` & `@/styles/school-home.css` yang tidak ada → 2 error lint |
-| `src/components/Footer.jsx` | Yatim. Digantikan `src/components/sdnb/SiteFooter.jsx`. Error impor yang sama → 2 error lint |
-| `lib/customSupabaseClient.js` | Shim di akar repo, meneruskan ke `src/lib/customSupabaseClient.js` yang **sudah tidak ada** (data layer kini lewat backend Go). Tidak ada yang mengimpor → 1 error lint |
+Isi lamanya menyesatkan setiap sesi baru. Yang diperbaiki:
 
-Menghapus ketiganya menuntaskan seluruh 5 error lint. Belum dieksekusi karena butuh persetujuan.
-
-`CLAUDE.md` masih menyebut `src/lib/customSupabaseClient.js` sebagai lapisan data dan komponen
-memanggil `supabase.from()`. Itu sudah tidak berlaku — semua request lewat `src/lib/apiClient.js`
-ke backend Go. Perlu disegarkan.
+- Lapisan data: `src/lib/customSupabaseClient.js` **tidak ada** dan `@supabase/supabase-js` bukan
+  dependensi. Semua request lewat `src/lib/apiClient.js` ke backend Go.
+- **Otorisasi ada di Go**, bukan di database. Pool tersambung sebagai superuser `postgres`, jadi
+  **RLS tidak menjaga request yang hidup** — gerbangnya `RequireAuth`/`RequireRole` di
+  `backend/internal/middleware/auth.go`. Rute baru wajib menambah pemeriksaan peran di Go.
+- Dashboard ada **lima**, bukan empat (`TataUsahaDashboard` terlewat).
+- Context auth bernama `AuthContext.jsx`, bukan `SupabaseAuthContext.jsx`.
+- Edge function di `supabase/functions/` **dorman** — tidak ada satu pun pemanggil di `src/`.
+- Env: tidak ada `VITE_SUPABASE_*`; yang dipakai `VITE_API_URL`.
+- Hitungan disegarkan: 50 migrasi, 37 panel admin, 19 halaman, 17 handler Go.
+- Ditambahkan: dua lapisan visual yang berdampingan (`sdnb/` publik vs dashboard Aurora), jebakan
+  "menulis migrasi ≠ menerapkan migrasi", dan allowlist `validConfigKeys`.
