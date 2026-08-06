@@ -8,7 +8,11 @@ import { toast } from '@/components/ui/use-toast';
 import { getArchivedSantri, setSantriArchived } from '@/lib/santriArchiveAdapters';
 import { getSessionName } from '@/utils/sessionMapping';
 
-const SantriArchiveDialog = ({ open, onOpenChange, categories, title = 'Arsip Murid', onRestored }) => {
+// `categories` bersifat opsional: daftar kosong berarti tanpa penyaringan kategori,
+// sama seperti default getArchivedSantri(). Wajib punya nilai bawaan — tanpa itu
+// categories.join() di bawah melempar TypeError dan, karena aplikasi tidak punya
+// ErrorBoundary, satu prop yang lupa dikirim memutihkan seluruh dashboard.
+const SantriArchiveDialog = ({ open, onOpenChange, categories = [], title = 'Arsip Murid', onRestored }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [restoringId, setRestoringId] = useState(null);
