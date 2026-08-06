@@ -59,7 +59,7 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
       setNotulenList(notulenData);
       setAllGuru(guruData);
     } catch (error) {
-      toast({ title: 'Gagal memuat MMQ', description: getMmqErrorMessage(error), variant: 'destructive' });
+      toast({ title: 'Gagal memuat rapat guru', description: getMmqErrorMessage(error), variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +74,7 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
 
   const buildAttendancePayload = (guruId, status = 'Hadir') => {
     if (!activeSchedule) {
-      throw new Error('Jadwal MMQ aktif belum tersedia.');
+      throw new Error('Jadwal rapat guru aktif belum tersedia.');
     }
 
     return {
@@ -109,7 +109,7 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
       }
 
       if (targetGuru.id !== guru?.id && currentUserRole !== 'admin') {
-        toast({ title: 'Ditolak', description: 'Guru hanya boleh mencatat kehadiran MMQ miliknya sendiri.', variant: 'destructive' });
+        toast({ title: 'Ditolak', description: 'Guru hanya boleh mencatat kehadiran rapat miliknya sendiri.', variant: 'destructive' });
         return;
       }
 
@@ -136,7 +136,7 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
       return;
     }
     if (!activeSchedule) {
-      toast({ title: 'Gagal', description: 'Jadwal MMQ aktif belum tersedia.', variant: 'destructive' });
+      toast({ title: 'Gagal', description: 'Jadwal rapat guru aktif belum tersedia.', variant: 'destructive' });
       return;
     }
 
@@ -180,7 +180,7 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Majelis Mu'allimil Qur'an (MMQ)</DialogTitle>
+          <DialogTitle>Rapat Guru</DialogTitle>
           <DialogDescription>Sistem absensi dan notulensi untuk guru.</DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="absensi">
@@ -237,10 +237,10 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
           </TabsContent>
 
           <TabsContent value="notulensi" className="mt-4">
-            <h3 className="font-semibold mb-1">Buat Notulensi MMQ</h3>
+            <h3 className="font-semibold mb-1">Buat Notulensi Rapat</h3>
             <p className="text-sm text-muted-foreground mb-3">{formatScheduleLabel(activeSchedule)}</p>
             <Input value={notulenTitle} onChange={(event) => setNotulenTitle(event.target.value)} placeholder="Judul notulensi..." className="mb-2" />
-            <Textarea value={notulenText} onChange={(event) => setNotulenText(event.target.value)} placeholder="Tulis hasil pertemuan MMQ hari ini..." rows={8} />
+            <Textarea value={notulenText} onChange={(event) => setNotulenText(event.target.value)} placeholder="Tulis hasil rapat guru hari ini..." rows={8} />
             <Button onClick={handleSaveNotulen} className="mt-2" disabled={!activeSchedule}>Simpan Notulensi</Button>
           </TabsContent>
 

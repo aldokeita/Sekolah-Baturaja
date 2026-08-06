@@ -483,7 +483,7 @@ const GuruDashboard = () => {
               </div>
               <div className="guru-profile-neo__actions">
                 <Button onClick={() => setIsEditProfileOpen(true)} variant="outline" className="guru-profile-neo__button"><Edit className="mr-2 h-4 w-4" /> Edit Profil</Button>
-                <div className="guru-profile-neo__action-pair"><Button onClick={() => setIsMmqOpen(true)} size="sm" variant="outline" className="guru-profile-neo__button">MMQ</Button><Button onClick={() => setIsRecapOpen(true)} size="sm" variant="outline" className="guru-profile-neo__button">Absensi</Button></div>
+                <div className="guru-profile-neo__action-pair"><Button onClick={() => setIsMmqOpen(true)} size="sm" variant="outline" className="guru-profile-neo__button">Rapat Guru</Button><Button onClick={() => setIsRecapOpen(true)} size="sm" variant="outline" className="guru-profile-neo__button">Absensi</Button></div>
                 <Button onClick={() => setIsMurojaahOpen(true)} size="sm" className="guru-profile-neo__button guru-profile-neo__button--accent"><Mic className="mr-2 h-4 w-4"/> Setoran Muroja'ah{pendingSubmissionsCount > 0 && <span className="guru-profile-neo__notification-dot" aria-label={`${pendingSubmissionsCount} setoran menunggu peninjauan`}></span>}</Button>
               </div>
             </div>
