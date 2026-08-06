@@ -1,6 +1,6 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-06 · **Branch:** `migrate-frontpage-baru` (belum pernah di-push) · **HEAD:** `0093ca9`
+**Diperbarui:** 2026-08-06 · **Branch:** `migrate-frontpage-baru` (**sudah di-push**, sinkron dengan origin) · **HEAD:** `cb4c53a`
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -29,6 +29,9 @@ dibongkar tanpa instruksi baru.
 | Metode mengaji | Sekolah **memilih metode**, tingkat mengikuti | Qiroati/Iqro/Ummi/Wafa/Tilawati/Tahfizh-Juz/Kustom |
 | Kategori murid & kelas | **Dihapus seluruhnya.** Tidak ada kelas dewasa, tidak ada PTPT, istilah TPQ tidak dipakai | SD negeri dengan satu jenis murid |
 | Hafalan | Dua bentuk tetap ada, **tapi keduanya terbuka untuk semua murid** | Per Kelas 1–6 dan per Juz Al-Qur'an; status murid tidak lagi membatasi |
+| Absensi | **Tetap harian, tidak diubah sama sekali** | Sudah harian sejak semula — lihat di bawah |
+| Jadwal pelajaran | **Fitur baru**, tetap per periode, CRUD penuh | Tiga tabel baru, murni aditif |
+| Email admin | Pindah ke `admin@sdnbaturaja.sch.id` | Konsisten dengan tiga akun staf lain |
 
 Manajemen Kelas kini **satu panel tanpa sub-tab**. Tiga sub-tab lama (Murid TPQ, Murid PTPT, Murid
 Dewasa) dicabut dan `AdultClassManagement.jsx` dihapus.
@@ -37,6 +40,42 @@ Penyaringan kategori **dihapus, bukan dipatok ke `'Anak'`**. Basis data masih me
 3 murid berkategori `PTPT` dari era lama; mematoknya ke `'Anak'` akan membuat data itu tak terlihat
 dan tak terkelola. Semua kelas aktif dan semua murid aktif kini tampil dalam satu daftar. Nilai
 `kategori` hanya tersisa sebagai default saat membuat kelas baru.
+
+### Absensi TIDAK dirombak, dan itu keputusan sadar
+
+Rencana "modelkan ulang absensi" **dibatalkan setelah pemeriksaan**, bukan karena terlupa.
+
+Tabel `attendance` **sudah harian sejak semula**: index `attendance_santri_first_daily_unique
+(user_id, attendance_date) WHERE role='santri'` sudah menjamin satu catatan per murid per hari.
+Tidak ada yang perlu diubah di lapisan data.
+
+Yang membuat absensi *terasa* ngaji adalah lima sesi (Pagi/Pagi 2/Siang/Sore/Malam) di
+`src/utils/sessionMapping.js` beserta `DEFAULT_SESSION_TIMES`. Membongkarnya menyentuh **27
+pemanggil** (`getSessionName` 16, `buildSessionStartTimestamp` 11) yang tersebar di seluruh layar
+absensi — risiko besar, manfaat kecil, dan tidak diminta.
+
+Bila suatu saat benar-benar dirombak: jangan hapus kolom `sesi`. Sekolah bisa saja punya kelas
+pagi dan siang, dan data historis di staging memakainya.
+
+### Jadwal pelajaran memakai tabel sendiri, bukan menempel di absensi
+
+Tiga tabel baru di `20260806000500_jadwal_pelajaran.sql`:
+
+| Tabel | Isi |
+|---|---|
+| `periode_ajaran` | tahun ajaran + semester, hanya **satu boleh aktif** |
+| `mata_pelajaran` | daftar mapel, 9 mapel kurikulum SD tersemai otomatis |
+| `jadwal_pelajaran` | satu baris = satu slot (kelas × hari × jam) |
+
+Jadwal ini untuk **perencanaan dan tampilan**, BUKAN untuk absen per mata pelajaran. Absensi tetap
+harian dan tidak tersambung ke jadwal.
+
+`hari` disimpan sebagai `smallint` 1..6 (Senin..Sabtu). Minggu ditolak constraint. Nama hari
+Indonesia hanya label di UI.
+
+Bentrok jam **diperiksa di Go**, bukan exclusion constraint, karena Postgres tidak punya range type
+bawaan untuk `time`. Yang dijaga database hanya keabsahan baris dan duplikat persis. Bila nanti
+butuh jaminan anti-balapan, buat range type kustom lebih dulu.
 
 **Nilai `'Pentashih'` di database TIDAK diubah.** Hanya labelnya yang diterjemahkan lewat
 `ROLE_LABELS` di `GuruManagement.jsx`. Mengubah nilainya akan merusak data lama dan RLS.
@@ -89,15 +128,18 @@ model data.
 | Guard `scripts/validate-*.ps1` | **4 dari 5 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
 | Login 6 akun | **Terbukti jalan** lewat API |
-| `resolveUser` tahan kegagalan | **Terbukti lewat uji suntik kerusakan** |
+| `resolveUser` tahan kegagalan | **Terbukti lewat uji suntik kerusakan** (rename kolom `nisn`) |
 | 18 tab dashboard admin | **Semua merender**, nol crash — disapu satu per satu di browser |
 | Panel Metode Mengaji | **Tuntas di browser**: pilih Iqro → simpan → DB → bertahan setelah muat ulang |
 | Tab Rapat Guru | **Tuntas**, tab merender bersih |
 | Dashboard guru — 4 tombol hafalan | **Tuntas di browser** (Doa/Sholat/Surat/Tahfizh, Tahfizh terbuka berisi) |
 | Dashboard murid — 4 bagian hafalan | **Tuntas lewat API + kode**: token murid biasa menerima Doa 44, Sholat 33, Surat 26, Tahfizh 98; kedua `program_scope` terkirim; 4 `<HafalanSection>` dirender tanpa syarat status |
+| **Panel Jadwal Pelajaran** | **Tuntas di browser**: render, tambah, tolak bentrok, konfirmasi hapus, empty state kembali, 390px nol scroll horizontal |
+| **CRUD jadwal lewat API** | **Tuntas**: 7 penjagaan DB + 8 alur CRUD + penjagaan peran (guru 403 menyunting, 200 membaca, 401 tanpa token) |
+| **Email admin domain baru** | **Tuntas**: email baru masuk, email lama ditolak, 4 akun lain tanpa regresi |
 | Simpan murid baru + NISN | **Masih terhalang** — lihat jebakan "password `required`" di bawah |
 | `GET /api/content/feedback` | **200 OK** (sebelumnya 405) |
-| `ErrorBoundary` | Terpasang; tampilan fallback-nya **belum** diuji dengan crash sengaja |
+| `ErrorBoundary` | **Sudah diuji** dengan crash sengaja di kedua lapisan — lihat bagian 4 |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
@@ -250,10 +292,47 @@ pengembangan yang disuntikkan `vite.config.js:171`. Alat itu membungkus `window.
 **setiap** respons non-OK, termasuk percobaan pertama yang memang wajar gagal sebelum token
 diperbarui. Jangan mengejarnya sebagai bug; tidak muncul di build produksi.
 
-### Email admin masih berdomain lama
+### Kolom `time` pgx jadi objek, bukan string — dan uji API bisa melewatkannya
 
-`admin@lpqalfathmaulana.id` dikunci oleh constraint `user_profiles_admin_email_check` dan
-`user_profiles_single_admin_idx` (migrasi `20260722000100`). Menggantinya butuh migrasi tersendiri.
+Jam pada jadwal sempat tampil `[obje–[obje` di layar. Kolom `time` dipetakan pgx ke `pgtype.Time`,
+yang menjadi `{"Microseconds":25200000000,"Valid":true}` begitu di-JSON-kan — bukan `"07:00"`.
+
+Sudah diperbaiki: `schedule.go` memakai daftar kolom eksplisit dengan `to_char(...,'HH24:MI')`,
+dan insert/update **membaca ulang** barisnya lewat `jadwalByID` karena `RETURNING *` mengembalikan
+bentuk `pgtype.Time` lagi.
+
+**Pelajaran yang lebih penting dari bug-nya:** uji API sebelumnya lulus semua padahal bug ini ada,
+karena hanya memeriksa kolom teks (`ruang`, `mata_pelajaran_nama`) dan tidak pernah menyentuh field
+jam. Bila menambah kolom bertipe `time`, `date`, `numeric`, atau `interval`, **periksa bentuk JSON-nya
+sendiri**, jangan cuma cek request berhasil.
+
+### `.playwright-mcp/` melumpuhkan ESLint, persis seperti `.claude/worktrees`
+
+Begitu skill Playwright dipakai, direktori `.playwright-mcp/` muncul dan di Windows sering terkunci
+proses. ESLint **gagal total** (exit 2, nol berkas diperiksa) saat traversal glob menabraknya —
+bukan gagal lint, tapi gagal membaca direktori.
+
+Sudah ditambahkan ke `ignores` di `eslint.config.mjs` dan ke `.gitignore`. Pola yang sama pernah
+terjadi pada `.claude/worktrees`. Bila ESLint tiba-tiba exit 2, curigai direktori artefak alat bantu
+lebih dulu, bukan kode.
+
+Cara memastikan lint benar-benar memeriksa berkas, bukan sekadar exit 0:
+
+```powershell
+npx eslint src/lib/scheduleAdapters.js --format json | ConvertFrom-Json |
+  ForEach-Object { "$($_.filePath): $($_.messages.Count) temuan" }
+```
+
+### Email admin: catatan lama SALAH, dan sudah dibereskan
+
+Catatan sebelumnya menyebut `admin@lpqalfathmaulana.id` dikunci constraint
+`user_profiles_admin_email_check` dan index `user_profiles_single_admin_idx`.
+**Keduanya sudah dihapus** oleh `20260723000200_enable_guru_admin_roles.sql` sejak lama — tidak ada
+constraint apa pun yang mengunci email admin di tingkat database.
+
+Email sudah dipindahkan ke `admin@sdnbaturaja.sch.id` lewat `20260806000600_admin_email_domain.sql`.
+Migrasinya idempoten dan **berhenti diam-diam** bila email tujuan sudah dipakai akun lain, karena
+menimpanya akan mengunci dua orang keluar sekaligus.
 
 ---
 
@@ -261,7 +340,7 @@ diperbarui. Jangan mengejarnya sebagai bug; tidak muncul di build produksi.
 
 | Peran | Username | Password |
 |---|---|---|
-| Admin | `admin@lpqalfathmaulana.id` | `admin123` |
+| Admin | `admin@sdnbaturaja.sch.id` | `admin123` |
 | Tata Usaha | `tatausaha@sdnbaturaja.sch.id` | `tatausaha123` |
 | Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
 | Wakil Kepala Sekolah | `pentashih@sdnbaturaja.sch.id` | `pentashih123` |
@@ -288,22 +367,41 @@ Go tidak terpasang di mesin dev, jadi **Docker adalah satu-satunya cara memverif
 
 Seluruh daftar sebelumnya sudah tuntas: hapus file mati, segarkan `CLAUDE.md`, uji Rapat Guru, uji
 Metode Mengaji, perbaiki celah API Konten, pasang `ErrorBoundary` dua lapis dan mengujinya, perbaiki
-prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, dan hapus
-`SantriDewasaManagement.jsx`.
+prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, hapus
+`SantriDewasaManagement.jsx`, verifikasi hafalan sisi guru dan murid, pasang jaring test, perbaiki
+`resolveUser`, **ganti email admin**, dan **bangun jadwal pelajaran beserta CRUD-nya**.
 
-Tiga dari lima sudah tuntas: verifikasi hafalan sisi guru dan murid, jaring test, dan
-perbaikan `resolveUser`.
+Absensi **sengaja tidak dirombak** — alasannya di bagian 2, jangan diajukan ulang tanpa alasan baru.
 
 Yang tersisa:
 
-1. **Ganti email admin berdomain lama** (butuh migrasi tersendiri, lihat jebakan di atas).
-2. **Modelkan ulang absensi**: `sesi_mengaji` → jam pelajaran & mata pelajaran. Ini perubahan
-   model data, bukan sekadar ganti nama — butuh keputusan desain dari pengguna lebih dulu.
+1. **Bereskan sisa identitas LPQ yang masih tampil ke pengguna.** Ini yang paling terlihat sekarang:
+   - Dashboard admin bertulis "Kelola seluruh sistem **LPQ Al-Fath Maulana**"
+   - Judul tab browser "Dashboard - **LPQ Al-Fath Maulana**"
+   - `src/lib/institutionContent.js` menyimpan identitas LPQ seutuhnya (nama, website
+     `lpqalfathmaulana.id`, visi, misi, deskripsi Qiroati) dan **masih hidup** di dua komponen:
+     `CallToAction.jsx` dan `PaymentStatusPage.jsx`
+
+   AGENTS.md melarang memakai identitas lembaga sumber, jadi ini bukan sekadar kosmetik. Tapi
+   menggantinya butuh **keputusan konten dari pengguna**: nama resmi, alamat, telepon, visi, misi.
+   Jangan mengarang sendiri. Catatan: halaman publik SDN memakai `sdnbaturaja@sekolah.id`,
+   sedangkan akun login memakai `@sdnbaturaja.sch.id` — dua domain berbeda, perlu diselaraskan.
+
+2. **Putuskan nasib dua berkas yatim**: `src/components/Navbar.jsx` dan `src/components/Footer.jsx`.
+   Tidak ada yang mengimpor keduanya, dan keduanya mengimpor berkas yang sudah dihapus.
+   Menunggu persetujuan pengguna untuk dihapus.
+
 3. **Perluas jaring test.** 40 test yang ada hanya menutupi logika murni di `src/lib/`.
    Belum ada satu pun test komponen (butuh `@testing-library/react`) maupun test Go
    (`go test` hanya bisa lewat Docker). Penjagaan yang masih inline di dalam komponen
    tetap tak terjangkau sampai diekstrak seperti `validateDefaultSppAmount`.
-4. Uji tampilan fallback `ErrorBoundary` dengan crash sengaja.
+   Sasaran paling layak berikutnya: `periksaBentrok` di `schedule.go` — logika irisan jam yang
+   saat ini hanya terbukti lewat uji manual.
+
+4. **Hubungkan jadwal pelajaran ke tempat lain.** Sekarang jadwal berdiri sendiri di panel admin.
+   Yang masuk akal berikutnya: guru melihat jadwal mengajarnya di dashboard sendiri, dan murid
+   melihat jadwal kelasnya. Endpoint `GET /api/schedule/jadwal?guru_id=` dan `?class_id=` sudah
+   tersedia dan sudah diuji.
 
 ### Cara memakai jaring test
 
