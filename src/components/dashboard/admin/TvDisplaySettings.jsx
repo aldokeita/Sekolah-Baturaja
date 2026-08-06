@@ -11,7 +11,8 @@ import { Tv, Save, Layout, Users, Trophy, Star, BookCopy, User, Calendar, Smartp
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { motion } from 'framer-motion';
-import { OFFICIAL_CONTACT, OFFICIAL_QUOTAS } from '@/lib/institutionContent';
+import { OFFICIAL_QUOTAS } from '@/lib/institutionContent';
+import { getSchoolIdentity } from '@/lib/schoolIdentity';
 
 const TvDisplaySettings = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +25,7 @@ const TvDisplaySettings = () => {
         enabledSessions: { attendance: true, quotas: true, wali: true, profiles: true, leaderboard: true },
         sessionSettings: { attendance: { orientation: 'landscape', showAdultClasses: false }, quotas: { orientation: 'landscape' }, wali: { orientation: 'landscape' }, profiles: { orientation: 'landscape', mode: 'auto', maxPages: 0 }, leaderboard: { orientation: 'landscape' } },
         sessionQuotas: { pagi: OFFICIAL_QUOTAS.pagi, siang: OFFICIAL_QUOTAS.siang, sore: OFFICIAL_QUOTAS.sore },
-        registration: { startDate: '', endDate: '', contactWa: '6285783227144', websiteUrl: OFFICIAL_CONTACT.website.replace(/^https?:\/\//, '') },
+        registration: { startDate: '', endDate: '', contactWa: getSchoolIdentity().whatsapp, websiteUrl: getSchoolIdentity().website.replace(/^https?:\/\//, '') },
         leaderboard: {},
         durations: { quotas: 15, wali: 30, waliMessage: 10, leaderboard: 15, attendancePage: 10, profilesPage: 10, profilesTotal: 300 }
     });

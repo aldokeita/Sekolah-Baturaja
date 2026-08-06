@@ -9,7 +9,8 @@ import {
   OFFICIAL_SCHEDULES,
 } from '@/lib/institutionContent';
 
-export const BRAND_NAME = 'LPQ Al-Fath Maulana';
+// BRAND_NAME dihapus: tidak ada pemakainya, dan nama sekolah kini datang dari
+// panel Identitas Sekolah (lihat src/lib/schoolIdentity.js), bukan konstanta.
 export const LOCAL_LOGO = '/logo-lpq-al-fath-maulana.webp';
 
 export const defaultContent = {

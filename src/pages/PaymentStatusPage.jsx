@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { OFFICIAL_CONTACT } from '@/lib/institutionContent';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import {
@@ -27,6 +27,7 @@ import { calculateAttendanceData, getHafalanProgressData, getPointsData } from '
 import { fetchAllPayments, fetchPaymentDetail } from '@/lib/paymentAdapters';
 
 const PaymentStatusPage = () => {
+  const sekolah = useSchoolIdentity();
   const { paymentId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -165,13 +166,13 @@ const PaymentStatusPage = () => {
               {/* HEADER SECTION (Dual Logos) */}
               <div className="px-10 pt-10 pb-6 border-b-4 border-primary/20 relative">
                   <div className="flex justify-between items-center">
-                      <img src="/logo-lpq-al-fath-maulana.webp" alt="Logo LPQ Al-Fath Maulana" className="w-20 h-20 object-contain"/>
+                      <img src="/logo-lpq-al-fath-maulana.webp" alt={`Logo ${sekolah.name}`} className="w-20 h-20 object-contain"/>
                       <div className="text-center flex-1 px-4">
-                          <h1 className="text-2xl font-black text-slate-900 font-serif uppercase tracking-widest">LPQ Al-Fath Maulana</h1>
-                          <h2 className="text-lg font-bold text-primary tracking-wide">Lembaga Pendidikan Al-Qur'an</h2>
+                          <h1 className="text-2xl font-black text-slate-900 font-serif uppercase tracking-widest">{sekolah.name}</h1>
+                          <h2 className="text-lg font-bold text-primary tracking-wide">{sekolah.tagline}</h2>
                           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
-                              {OFFICIAL_CONTACT.address}<br/>
-                              {OFFICIAL_CONTACT.phone} · lpqalfathmaulana.id
+                              {sekolah.address}<br/>
+                              {[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}
                           </p>
                       </div>
                       <div className="w-20 h-20 flex items-center justify-center border-2 border-slate-200 rounded-full bg-slate-50 text-[10px] font-bold text-center text-slate-400">
@@ -320,7 +321,7 @@ const PaymentStatusPage = () => {
                       </div>
 
                       <div className="text-center">
-                          <p className="text-sm text-slate-800 mb-16">{OFFICIAL_CONTACT.city}, {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                          <p className="text-sm text-slate-800 mb-16">{sekolah.city}, {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                           <p className="font-bold text-slate-900 border-b border-slate-900 pb-1 px-4">{teacherName}</p>
                           <p className="text-xs text-slate-500 mt-1">Guru Kelas / Administrasi</p>
                       </div>

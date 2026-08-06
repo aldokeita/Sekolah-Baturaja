@@ -9,9 +9,10 @@ import QRCode from 'qrcode';
 import { fetchPaymentDetail, formatPaymentPeriod } from '@/lib/paymentAdapters';
 import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicContentAdapters';
 import { DEFAULT_WHATSAPP_TEMPLATES, fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
-import { OFFICIAL_CONTACT } from '@/lib/institutionContent';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 const PaymentProofModal = ({ isOpen, onClose, payment }) => {
+    const sekolah = useSchoolIdentity();
     const receiptRef = useRef(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isLoadingPayment, setIsLoadingPayment] = useState(false);
@@ -135,7 +136,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
             metode: paymentMethod,
             transaction_id: transactionRef,
             status: 'LUNAS',
-            nama_lembaga: 'LPQ Al-Fath Maulana',
+            nama_lembaga: sekolah.name,
         });
 
         const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
@@ -154,9 +155,9 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
                         {/* Header */}
                         <div className="text-center pb-4 mb-4 border-b border-dashed border-slate-300 relative z-10">
                             <img src={receiptLogoUrl} alt="Logo" className="w-16 h-16 mx-auto mb-2 object-contain"/>
-                            <h3 className="font-bold text-xl text-primary tracking-tight font-poppins">LPQ AL-FATH MAULANA</h3>
-                            <p className="text-xs text-slate-500 mt-1">{OFFICIAL_CONTACT.address}</p>
-                            <p className="text-xs text-slate-500">{OFFICIAL_CONTACT.phone} · lpqalfathmaulana.id</p>
+                            <h3 className="font-bold text-xl text-primary tracking-tight font-poppins">{sekolah.name.toUpperCase()}</h3>
+                            <p className="text-xs text-slate-500 mt-1">{sekolah.address}</p>
+                            <p className="text-xs text-slate-500">{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>
                         </div>
 
                         {/* Watermark LUNAS */}

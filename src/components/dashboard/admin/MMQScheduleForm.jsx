@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -22,7 +23,7 @@ const MMQScheduleForm = ({ initialData, onSave, onCancel, isSaving }) => {
         day_of_week: '5',
         start_time: '10:00',
         end_time: '11:00',
-        location: 'LPQ Al-Fath Maulana',
+        location: getSchoolIdentity().name,
         is_active: true
     });
 

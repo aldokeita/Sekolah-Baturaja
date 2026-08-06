@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,7 +42,7 @@ const JilidChangeModal = ({ isOpen, onClose, santri, direction, currentJilid, ne
             jilid_lama: currentJilid,
             jilid_baru: nextJilid,
             link_grup: resolveWhatsAppGroupLink(nextJilid, groupLink),
-            nama_lembaga: 'LPQ Al-Fath Maulana',
+            nama_lembaga: getSchoolIdentity().name,
             kategori,
         }));
     };

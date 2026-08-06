@@ -10,7 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { RotateCcw, ClipboardList, GripVertical, PlusCircle, MinusCircle, ArrowUp, ArrowDown } from 'lucide-react';
+import { RotateCcw, ClipboardList, GripVertical, PlusCircle, MinusCircle, ArrowUp, ArrowDown, Building2 } from 'lucide-react';
+import SchoolIdentitySettings from '@/components/dashboard/admin/SchoolIdentitySettings';
+import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import { motion } from 'framer-motion';
 import HafalanDisplay from '@/components/dashboard/shared/HafalanDisplay';
 import { createHafalanItem, deactivateHafalanItem, fetchHafalanItems, getAcademicErrorMessage, updateHafalanItem, HAFALAN_SCOPE_PER_KELAS, HAFALAN_SCOPE_PER_JUZ } from '@/lib/academicAdapters';
@@ -362,7 +364,7 @@ const ContentManagement = () => {
   };
 
   const handleHeroSlideChange = (id, field, value) => { setContent(prev => ({ ...prev, heroSlides: prev.heroSlides.map(slide => slide.id === id ? { ...slide, [field]: value } : slide) })); };
-  const addHeroSlide = () => { if (content.heroSlides?.length >= 5) return; setContent(prev => ({ ...prev, heroSlides: [...(prev.heroSlides || []), { id: Date.now(), url: '/logo-lpq-al-fath-maulana.webp', text: 'Teks slide baru', author: 'LPQ Al-Fath Maulana' }] })); };
+  const addHeroSlide = () => { if (content.heroSlides?.length >= 5) return; setContent(prev => ({ ...prev, heroSlides: [...(prev.heroSlides || []), { id: Date.now(), url: '/logo-lpq-al-fath-maulana.webp', text: 'Teks slide baru', author: getSchoolIdentity().name }] })); };
   const handleSantriOfTheMonthChange = (index, personId, alasan) => { const person = santriList.find(p => p.id === personId); if (person) { const newSantriOTM = [...content.santriOfTheMonth]; newSantriOTM[index] = { ...person, alasan }; setContent(prev => ({ ...prev, santriOfTheMonth: newSantriOTM })); } };
   const handleGuruOfTheMonthChange = (personId, alasan) => { const person = guruList.find(p => p.id === personId); if (person) setContent(prev => ({ ...prev, guruOfTheMonth: { ...person, alasan } })); };
   const handleLeaderboardChange = (index, personId, achievement) => { const person = santriList.find(p => p.id === personId); if (person) { const newLeaderboard = [...content.leaderboard]; newLeaderboard[index] = { ...person, achievement }; setContent(prev => ({ ...prev, leaderboard: newLeaderboard })); } };
@@ -495,6 +497,9 @@ const ContentManagement = () => {
   };
 
   const tabs = [
+      // Identitas ditaruh paling depan: bagi pembeli template, ini hal pertama
+      // yang perlu diganti.
+      { id: 'identitas', label: 'Identitas Sekolah', icon: Building2 },
       { id: 'homepage', label: 'Halaman Depan', icon: Home },
       { id: 'apresiasi', label: 'Apresiasi', icon: Heart },
       { id: 'media', label: 'Media & Galeri', icon: ImageIcon },
@@ -541,7 +546,7 @@ const ContentManagement = () => {
           </div>
           <div className="admin-panel-header-text">
             <h2>Manajemen Konten Website</h2>
-            <p>Kelola konten yang tampil di halaman publik LPQ Al-Fath Maulana.</p>
+            <p>Kelola konten yang tampil di halaman publik {getSchoolIdentity().shortName}.</p>
           </div>
         </div>
         <div className="admin-panel-header-actions">
@@ -562,6 +567,10 @@ const ContentManagement = () => {
                 ))}
             </div>
         </div>
+
+        <TabsContent value="identitas" className="animate-in fade-in slide-in-from-bottom-2">
+            <SchoolIdentitySettings />
+        </TabsContent>
 
         <TabsContent value="homepage" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
             <div className="admin-card p-4"><h3 className="font-bold text-xl mb-4">Logo Website</h3><Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} />{content.logoUrl && <img src={content.logoUrl} alt="Logo Preview" className="w-24 h-24 mt-2 bg-gray-200 p-2 rounded-md" />}</div>

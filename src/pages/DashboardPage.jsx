@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import useAdminBodyClass from '@/hooks/useAdminBodyClass';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import TataUsahaDashboard from '@/components/dashboard/TataUsahaDashboard';
@@ -17,6 +18,7 @@ import '@/styles/admin-dashboard.css';
 const DashboardPage = () => {
   const { role, user } = useAuth();
   const { isDark } = useTheme();
+  const sekolah = useSchoolIdentity();
   const [santriProfile, setSantriProfile] = useState(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
@@ -119,8 +121,8 @@ const DashboardPage = () => {
   return (
     <>
       <Helmet>
-        <title>Dashboard - LPQ Al-Fath Maulana</title>
-        <meta name="description" content="Dashboard sistem manajemen LPQ Al-Fath Maulana" />
+        <title>{`Dashboard - ${sekolah.shortName}`}</title>
+        <meta name="description" content={`Dashboard sistem manajemen ${sekolah.name}`} />
       </Helmet>
 
       <div className={`min-h-screen relative ${usesSdnbTheme ? '' : 'lpq-admin-surface py-8'}`}>

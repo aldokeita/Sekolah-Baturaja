@@ -1,32 +1,14 @@
-export const INSTITUTION_NAME = 'LPQ Al-Fath Maulana';
-export const OFFICIAL_WEBSITE = 'https://lpqalfathmaulana.id';
-
-export const OFFICIAL_CONTACT = Object.freeze({
-  address: 'Lrg. Kemang Kampung Baru Kanio Lama, Kel. Kemalaraja, Pasar Baru Baturaja, Sumatera Selatan',
-  city: 'Baturaja',
-  phone: '0857-8322-7144',
-  phoneHref: 'tel:+6285783227144',
-  whatsapp: 'https://wa.me/6285783227144',
-  email: 'admin@lpqalfathmaulana.id',
-  emailHref: 'mailto:admin@lpqalfathmaulana.id',
-  mapUrl: 'https://maps.app.goo.gl/zh4REizJZx6LByMD9',
-  website: OFFICIAL_WEBSITE,
-});
-
-export const OFFICIAL_PROFILE = Object.freeze({
-  description: [
-    "LPQ Al-Fath Maulana adalah lembaga pendidikan Al-Qur'an yang menerapkan metode Qiroati, sebuah sistem pembelajaran yang efektif dalam mengajarkan bacaan Al-Qur'an dengan tartil dan sesuai kaidah tajwid.",
-    "Berlokasi di Baturaja, LPQ Al-Fath Maulana berkomitmen mencetak generasi Qur'ani yang mampu membaca Al-Qur'an dengan benar serta memahami dan mengamalkan nilai-nilai luhur di dalamnya.",
-  ],
-  secondaryDescription: 'Pembelajaran menekankan tahsin, tahqiq, pembinaan adab, pendampingan sesuai kemampuan, serta lingkungan belajar yang kondusif bagi murid dan keluarga.',
-  vision: "Menjadi lembaga pendidikan Al-Qur'an terdepan yang mencetak generasi Qur'ani berakhlak mulia.",
-  missions: [
-    "Mengajarkan Al-Qur'an dengan metode Qiroati yang terstruktur dan efektif.",
-    'Membina akhlak murid sesuai dengan nilai-nilai Islam.',
-    'Menyediakan lingkungan belajar yang kondusif dan menyenangkan.',
-    'Mengembangkan potensi murid secara optimal.',
-  ],
-});
+// CATATAN PENTING
+//
+// Identitas sekolah TIDAK lagi tinggal di sini. Sumbernya adalah panel
+// "Identitas Sekolah" di dashboard admin, dibaca lewat `src/lib/schoolIdentity.js`.
+// Aplikasi ini template yang dikustomisasi pembeli, jadi nama, kontak, visi, dan
+// misi harus bisa diubah tanpa menyentuh kode.
+//
+// Yang tersisa di berkas ini hanyalah contoh isi halaman publik (jadwal, kuota,
+// slide, fasilitas, galeri, FAQ) yang memang baru dipakai sebagai nilai awal
+// sebelum admin mengisinya sendiri lewat panel Konten.
+export { DEFAULT_SCHOOL_IDENTITY } from '@/lib/schoolIdentity';
 
 export const OFFICIAL_SCHEDULES = Object.freeze([
   { id: 'pagi', title: 'Sesi Pagi', time: '08.00–09.15 WIB', type: 'TPQ' },

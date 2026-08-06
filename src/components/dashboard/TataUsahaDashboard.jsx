@@ -4,6 +4,7 @@ import {
   CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, CalendarDays,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { enableTahfizh } from '@/lib/featureFlags';
 
 // Tata Usaha (administrative staff) module set. Mirrors the Admin dashboard's
@@ -34,12 +35,15 @@ const tataUsahaTabs = [
   { value: 'game-config', label: 'Konfigurasi', icon: Settings, group: 'konten' },
 ];
 
-const TataUsahaDashboard = () => (
-  <DashboardWorkspace
-    title="Dashboard Tata Usaha"
-    subtitle="Kelola administrasi & operasional LPQ Al-Fath Maulana"
-    tabs={tataUsahaTabs}
-  />
-);
+const TataUsahaDashboard = () => {
+  const sekolah = useSchoolIdentity();
+  return (
+    <DashboardWorkspace
+      title="Dashboard Tata Usaha"
+      subtitle={`Kelola administrasi & operasional ${sekolah.shortName}`}
+      tabs={tataUsahaTabs}
+    />
+  );
+};
 
 export default TataUsahaDashboard;

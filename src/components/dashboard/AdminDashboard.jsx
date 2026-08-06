@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import { enableBackupRestore, enableTahfizh } from '@/lib/featureFlags';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 // Full module set for the Administrator. The Tata Usaha dashboard reuses the
 // same DashboardWorkspace shell with a narrower subset (see TataUsahaDashboard).
@@ -34,12 +35,15 @@ const adminTabs = [
   return true;
 });
 
-const AdminDashboard = () => (
-  <DashboardWorkspace
-    title="Dashboard Administrator"
-    subtitle="Kelola seluruh sistem LPQ Al-Fath Maulana"
-    tabs={adminTabs}
-  />
-);
+const AdminDashboard = () => {
+  const sekolah = useSchoolIdentity();
+  return (
+    <DashboardWorkspace
+      title="Dashboard Administrator"
+      subtitle={`Kelola seluruh sistem ${sekolah.shortName}`}
+      tabs={adminTabs}
+    />
+  );
+};
 
 export default AdminDashboard;

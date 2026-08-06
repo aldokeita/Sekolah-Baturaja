@@ -12,6 +12,7 @@ import ContactPage from '@/pages/ContactPage';
 import PaymentStatusPage from '@/pages/PaymentStatusPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { hydrateSchoolIdentity, subscribeSchoolIdentity, getSchoolIdentity } from '@/lib/schoolIdentity';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
 import NewsPage from '@/pages/NewsPage';
 import FacilitiesPage from '@/pages/FacilitiesPage';
@@ -124,6 +125,19 @@ function App() {
     } catch {
       // sessionStorage can be unavailable in restricted browser modes.
     }
+  }, []);
+
+  // Identitas sekolah dihidrasi sekali di sini, bukan per halaman: halaman
+  // publik dan seluruh dashboard memakainya. Endpoint-nya terbuka, jadi ini
+  // tetap jalan sebelum login. Bila gagal, singgahan atau nilai bawaan dipakai.
+  useEffect(() => {
+    // Judul tab diselaraskan dengan identitas tersimpan. index.html statis, jadi
+    // tanpa ini nama sekolah yang diganti pembeli tidak akan terlihat di tab.
+    // Halaman yang memasang <Helmet> sendiri (mis. dashboard) tetap menang.
+    const syncTitle = (identity) => { document.title = identity.name; };
+    const unsubscribe = subscribeSchoolIdentity(syncTitle);
+    hydrateSchoolIdentity().then(syncTitle).catch(() => syncTitle(getSchoolIdentity()));
+    return unsubscribe;
   }, []);
 
   return (

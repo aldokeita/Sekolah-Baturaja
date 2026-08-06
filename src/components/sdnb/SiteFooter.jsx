@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { submitPublicFeedback, getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import '@/styles/sdnb.css';
 
 /**
@@ -46,7 +47,9 @@ const COL_HALAMAN = [
   { label: 'PPDB 2026', to: '/pendaftaran' },
 ];
 
-export const SiteFooterRingkas = () => (
+export const SiteFooterRingkas = () => {
+  const sekolah = useSchoolIdentity();
+  return (
   <footer id="kontak" data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '92px 28px 40px' }}>
     <div style={{ position: 'relative', overflow: 'hidden', padding: '38px 40px', borderRadius: 28, background: 'rgba(255,255,255,.5)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.75)', boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
       <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '45%', background: 'linear-gradient(168deg,rgba(255,255,255,.55),rgba(255,255,255,0))', pointerEvents: 'none' }} />
@@ -54,11 +57,11 @@ export const SiteFooterRingkas = () => (
       <div className="sdnb-footer-grid" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr', gap: 36 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 12, background: 'linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 12, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.85)' }}>SDN</div>
-            <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: '-.01em', color: '#1b1c28' }}>Sekolah Dasar Negeri Baturaja</div>
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: 'linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 12, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.85)' }}>{sekolah.logoAbbr}</div>
+            <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: '-.01em', color: '#1b1c28' }}>{sekolah.name}</div>
           </div>
           <p style={{ margin: '16px 0 0', maxWidth: 300, fontSize: 13, lineHeight: 1.65, color: '#5f6486' }}>
-            Jalan Dr. Moh. Hatta No. 14, Baturaja Timur, Kabupaten Ogan Komering Ulu, Sumatera Selatan 32111.
+            {sekolah.address}
           </p>
         </div>
 
@@ -74,21 +77,23 @@ export const SiteFooterRingkas = () => (
         <div>
           <div style={colLabel}>Kontak</div>
           <div style={{ ...colList, color: '#3f4468' }}>
-            <div>(0735) 320145</div>
-            <div>sdnbaturaja@sekolah.id</div>
-            <div>Senin–Jumat, 07.30–15.00</div>
+            <div>{sekolah.phone}</div>
+            <div>{sekolah.email}</div>
+            <div>{sekolah.officeHours}</div>
           </div>
         </div>
       </div>
 
       <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', fontSize: 12, color: '#70759a' }}>
-        &copy; 2026 Sekolah Dasar Negeri Baturaja. Seluruh hak cipta dilindungi.
+        &copy; {new Date().getFullYear()} {sekolah.name}. Seluruh hak cipta dilindungi.
       </div>
     </div>
   </footer>
-);
+  );
+};
 
 const SiteFooter = () => {
+  const sekolah = useSchoolIdentity();
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -120,11 +125,11 @@ const SiteFooter = () => {
         <div className="sdnb-footer-grid" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1.2fr', gap: 36 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 12, background: 'linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 12, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.85)' }}>SDN</div>
-              <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: '-.01em', color: '#1b1c28' }}>Sekolah Dasar Negeri Baturaja</div>
+              <div style={{ width: 36, height: 36, borderRadius: 12, background: 'linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 12, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.85)' }}>{sekolah.logoAbbr}</div>
+              <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: '-.01em', color: '#1b1c28' }}>{sekolah.name}</div>
             </div>
             <p style={{ margin: '16px 0 0', maxWidth: 280, fontSize: 13, lineHeight: 1.65, color: '#5f6486' }}>
-              Jalan Dr. Moh. Hatta No. 14, Baturaja Timur, Kabupaten Ogan Komering Ulu, Sumatera Selatan 32111.
+              {sekolah.address}
             </p>
           </div>
 
@@ -166,7 +171,7 @@ const SiteFooter = () => {
         </div>
 
         <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, fontSize: 12, color: '#70759a' }}>
-          <div>&copy; 2026 Sekolah Dasar Negeri Baturaja. Seluruh hak cipta dilindungi.</div>
+          <div>&copy; {new Date().getFullYear()} {sekolah.name}. Seluruh hak cipta dilindungi.</div>
           <div style={{ display: 'flex', gap: 18 }}>
             <Link to="/" className="h-flink" style={{ color: '#70759a' }}>Kebijakan privasi</Link>
             <Link to="/" className="h-flink" style={{ color: '#70759a' }}>Peta situs</Link>

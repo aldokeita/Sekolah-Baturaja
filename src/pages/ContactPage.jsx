@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import KontakBody from '@/components/sdnb/generated/KontakBody';
 import { submitPublicFeedback } from '@/lib/publicContentAdapters';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import '@/styles/sdnb.css';
 
 /**
@@ -33,6 +34,7 @@ const JAM = [
 ];
 
 const ContactPage = () => {
+  const sekolah = useSchoolIdentity();
   const [peran, setPeran] = useState('Orang tua murid');
   const [nama, setNama] = useState('');
   const [kontak, setKontak] = useState('');
@@ -91,10 +93,13 @@ const ContactPage = () => {
     statusText: buka ? 'Kantor sedang buka sekarang' : 'Kantor sedang tutup, pesan tetap masuk',
 
     chips: [
-      ['Telepon kantor', '(0735) 320145', 'Ketuk untuk menyalin', '#6470ff,#8a6cf0', () => copy('073 5320145', 'Nomor telepon')],
-      ['Surel resmi', 'sdnbaturaja@sekolah.id', 'Ketuk untuk menyalin', '#7a6cf5,#c07ad8', () => copy('sdnbaturaja@sekolah.id', 'Alamat surel')],
-      ['WhatsApp tata usaha', '0812 7345 8890', 'Ketuk untuk menyalin', '#a86ce8,#e58fc4', () => copy('081273458890', 'Nomor WhatsApp')],
-      ['Jam layanan', '07.30–15.00', 'Senin sampai Jumat', '#e0839a,#f0a06c', () => toast('Jumat tutup pukul 11.30')],
+      // Nilai identitas datang dari panel Identitas Sekolah, bukan ditanam di sini.
+      ['Telepon kantor', sekolah.phone, 'Ketuk untuk menyalin', '#6470ff,#8a6cf0', () => copy(sekolah.phone, 'Nomor telepon')],
+      ['Surel resmi', sekolah.email, 'Ketuk untuk menyalin', '#7a6cf5,#c07ad8', () => copy(sekolah.email, 'Alamat surel')],
+      ...(sekolah.whatsapp
+        ? [['WhatsApp tata usaha', sekolah.whatsapp, 'Ketuk untuk menyalin', '#a86ce8,#e58fc4', () => copy(sekolah.whatsapp, 'Nomor WhatsApp')]]
+        : []),
+      ['Jam layanan', sekolah.officeHours, 'Sesuai jadwal sekolah', '#e0839a,#f0a06c', () => toast(sekolah.officeHours)],
     ].map(([label, nilai, aksi, grad, act]) => ({
       label, nilai, aksi, act,
       icon: `position:relative;width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(140deg,${grad});box-shadow:0 16px 32px -14px rgba(90,100,200,.85),inset 0 1px 0 rgba(255,255,255,.55)`,
@@ -130,7 +135,7 @@ const ContactPage = () => {
     noTiket: tiket,
     reset: () => { setKirimDone(false); setNama(''); setKontak(''); setPesan(''); setTiket(''); },
 
-    salinAlamat: () => copy('Jalan Dr. Moh. Hatta No. 14, Baturaja Timur, Ogan Komering Ulu 32111', 'Alamat sekolah'),
+    salinAlamat: () => copy(sekolah.address, 'Alamat sekolah'),
     labelAlamat: 'Salin alamat',
 
     jam: JAM.map(([h, w, dd], i) => {
@@ -160,8 +165,8 @@ const ContactPage = () => {
   return (
     <div className="sdnb-kontak">
       <Helmet>
-        <title>Kontak — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Telepon, surel, WhatsApp, jam layanan, dan formulir pesan untuk Sekolah Dasar Negeri Baturaja." />
+        <title>{`Kontak — ${sekolah.name}`}</title>
+        <meta name="description" content={`Telepon, surel, jam layanan, dan formulir pesan untuk ${sekolah.name}.`} />
       </Helmet>
       {KontakBody(vals)}
     </div>

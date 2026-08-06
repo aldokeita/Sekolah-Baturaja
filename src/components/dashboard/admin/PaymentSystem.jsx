@@ -34,7 +34,8 @@ import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicConten
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
 import PaymentProofModal from './PaymentProofModal';
 import { fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
-import { OFFICIAL_CONTACT } from '@/lib/institutionContent';
+import { getSchoolIdentity } from '@/lib/schoolIdentity';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 const paymentItems = [
   { name: 'SPP Bulanan', amount: 0, monthly: true, icon: Wallet, custom: 'spp_dropdown' },
@@ -175,6 +176,7 @@ const DuplicatePaymentDialog = ({ open, onOpenChange, onResetMonth }) => (
 );
 
 const PaymentSystem = () => {
+  const sekolah = useSchoolIdentity();
   const [santriList, setSantriList] = useState([]);
   const [selectedSantri, setSelectedSantri] = useState([]);
   const [cart, setCart] = useState([]);
@@ -489,7 +491,7 @@ const PaymentSystem = () => {
       metode: receiptData.method,
       transaction_id: receiptData.transactionId || '-',
       status: 'LUNAS',
-      nama_lembaga: 'LPQ Al-Fath Maulana',
+      nama_lembaga: getSchoolIdentity().name,
     });
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -591,10 +593,10 @@ const PaymentSystem = () => {
             {receiptData && (<>
               <div ref={receiptRef} className="p-4 bg-white text-slate-800 rounded-xl shadow-lg border border-slate-100 relative overflow-hidden" id="receipt-content">
                   <div className="text-center pb-2 mb-2 border-b border-dashed border-slate-300 relative z-10">
-                       <img src={receiptLogoUrl} alt="Logo LPQ Al-Fath Maulana" className="w-12 h-12 mx-auto mb-2 object-contain"/>
-                       <h3 className="font-bold text-lg text-primary tracking-tight font-poppins">LPQ AL-FATH MAULANA</h3>
-                       <p className="text-[10px] text-slate-500 mt-1">{OFFICIAL_CONTACT.address}</p>
-                       <p className="text-[10px] text-slate-500">{OFFICIAL_CONTACT.phone} · lpqalfathmaulana.id</p>
+                       <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-12 h-12 mx-auto mb-2 object-contain"/>
+                       <h3 className="font-bold text-lg text-primary tracking-tight font-poppins">{sekolah.name.toUpperCase()}</h3>
+                       <p className="text-[10px] text-slate-500 mt-1">{sekolah.address}</p>
+                       <p className="text-[10px] text-slate-500">{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>
                   </div>
 
                   {/* Lunas Stamp - Centered */}

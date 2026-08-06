@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -148,7 +149,7 @@ const BackupRestoreManagement = () => {
         }
 
         backup._backup_meta = {
-            app: 'LPQ Al-Fath Maulana',
+            app: getSchoolIdentity().name,
             version: 2,
             created_at: new Date().toISOString(),
             created_by: user?.email || user?.id || 'admin',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,6 +42,7 @@ const calculateUntestedDuration = (lastDateStr) => {
 };
 
 const PentashihDashboard = () => {
+  const sekolah = useSchoolIdentity();
   const { user } = useAuth();
   const [guruData, setGuruData] = useState(null);
   const [santriList, setSantriList] = useState([]);
@@ -266,7 +268,7 @@ const PentashihDashboard = () => {
             </Badge>
           </div>
           <p className="text-muted-foreground print:text-slate-600">
-            Pusat pengawasan mutu bacaan, distribusi jilid, dan calon khotim LPQ Al-Fath Maulana.
+            Pusat pengawasan mutu bacaan, distribusi tingkat, dan calon khotim {sekolah.shortName}.
           </p>
         </div>
 

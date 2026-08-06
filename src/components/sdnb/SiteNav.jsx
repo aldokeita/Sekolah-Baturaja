@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import '@/styles/sdnb.css';
 
 /**
@@ -47,6 +48,7 @@ const SiteNav = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toggleTheme } = useTheme();
+  const sekolah = useSchoolIdentity();
 
   const isHome = location.pathname === '/';
   const isProfileGroup = PROFILE_LINKS.some((l) => location.pathname.startsWith(l.to));
@@ -61,10 +63,10 @@ const SiteNav = () => {
         <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '60%', background: 'linear-gradient(165deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none', borderRadius: '22px 22px 0 0' }} />
 
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 13, background: 'linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 13, letterSpacing: '.02em', boxShadow: '0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)' }}>SDN</div>
+          <div style={{ width: 40, height: 40, borderRadius: 13, background: 'linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 13, letterSpacing: '.02em', boxShadow: '0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)' }}>{sekolah.logoAbbr}</div>
           <div style={{ lineHeight: 1.15 }}>
-            <div className="nav-brandtitle" style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-.01em', color: '#1b1c28' }}>Sekolah Dasar Negeri Baturaja</div>
-            <div className="nav-sub" style={{ fontSize: 11, fontWeight: 500, color: '#6c718f' }}>Ogan Komering Ulu, Sumatera Selatan</div>
+            <div className="nav-brandtitle" style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-.01em', color: '#1b1c28' }}>{sekolah.name}</div>
+            <div className="nav-sub" style={{ fontSize: 11, fontWeight: 500, color: '#6c718f' }}>{sekolah.city}</div>
           </div>
         </Link>
 
