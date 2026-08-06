@@ -1,48 +1,54 @@
 // CATATAN PENTING
 //
-// Identitas sekolah TIDAK lagi tinggal di sini. Sumbernya adalah panel
-// "Identitas Sekolah" di dashboard admin, dibaca lewat `src/lib/schoolIdentity.js`.
-// Aplikasi ini template yang dikustomisasi pembeli, jadi nama, kontak, visi, dan
-// misi harus bisa diubah tanpa menyentuh kode.
+// Identitas sekolah TIDAK tinggal di sini. Sumbernya adalah panel "Identitas
+// Sekolah" di dashboard admin, dibaca lewat `src/lib/schoolIdentity.js`.
 //
-// Yang tersisa di berkas ini hanyalah contoh isi halaman publik (jadwal, kuota,
-// slide, fasilitas, galeri, FAQ) yang memang baru dipakai sebagai nilai awal
-// sebelum admin mengisinya sendiri lewat panel Konten.
+// Berkas ini hanya menyimpan **contoh isi halaman publik**: jadwal, kuota, slide
+// pembuka, fasilitas, galeri, FAQ, dan keunggulan. Semuanya sekadar nilai awal
+// sebelum admin mengisinya sendiri lewat panel Konten, dan seluruhnya tersimpan
+// di `website_content` begitu disunting.
+//
+// Karena aplikasi ini template yang akan dijual, isi contoh harus netral untuk
+// sekolah dasar umum — jangan mengembalikan nuansa TPQ/Qiroati.
 export { DEFAULT_SCHOOL_IDENTITY } from '@/lib/schoolIdentity';
 
+// Jam belajar per rombongan kelas. Nama sesi (Pagi/Siang/Sore) tetap dipakai
+// modul absensi, jadi kuota di bawah masih memakai kunci itu.
 export const OFFICIAL_SCHEDULES = Object.freeze([
-  { id: 'pagi', title: 'Sesi Pagi', time: '08.00–09.15 WIB', type: 'TPQ' },
-  { id: 'siang', title: 'Sesi Siang', time: '14.00–15.15 WIB', type: 'TPQ' },
-  { id: 'sore', title: 'Sesi Sore', time: '16.00–17.15 WIB', type: 'TPQ' },
+  { id: 'kelas-1-2', title: 'Kelas 1–2', time: '07.30–11.00 WIB', type: 'Reguler' },
+  { id: 'kelas-3-4', title: 'Kelas 3–4', time: '07.30–12.30 WIB', type: 'Reguler' },
+  { id: 'kelas-5-6', title: 'Kelas 5–6', time: '07.30–13.00 WIB', type: 'Reguler' },
 ]);
 
+// Daya tampung per sesi absensi. Kunci dewasa dihapus bersama pencabutan
+// kategori murid dewasa.
 export const OFFICIAL_QUOTAS = Object.freeze({
-  pagi: 15,
-  siang: 15,
-  sore: 15,
-  dewasaPagi: 9,
-  dewasaSiang: 7,
-  dewasaMalam: 8,
+  pagi: 28,
+  siang: 28,
+  sore: 28,
 });
 
+// CATATAN: berkas gambarnya masih peninggalan sekolah Al-Qur'an
+// (hero-al-alaq, hero-qiroati). Teksnya sudah netral, tetapi FOTONYA perlu
+// diganti sebelum template dijual — lihat public/institution/.
 export const OFFICIAL_HERO_SLIDES = Object.freeze([
   {
     id: 'official-hero-learning',
     url: '/institution/hero-learning.webp',
-    text: "Sebaik-baik kalian adalah orang yang mempelajari Al-Qur'an dan mengajarkannya",
-    author: 'HR. Bukhari',
+    text: 'Setiap anak berhak belajar dengan tenang dan tumbuh dengan percaya diri',
+    author: 'Semangat sekolah kami',
   },
   {
-    id: 'official-hero-al-alaq',
+    id: 'official-hero-classroom',
     url: '/institution/hero-al-alaq.webp',
-    text: 'Bacalah dengan menyebut nama Tuhanmu yang menciptakan',
-    author: 'QS. Al-Alaq: 1',
+    text: 'Kelas yang tertata, guru yang mengenal setiap murid',
+    author: 'Pendampingan belajar',
   },
   {
-    id: 'official-hero-qiroati',
+    id: 'official-hero-character',
     url: '/institution/hero-qiroati.webp',
-    text: "Jangan wariskan bacaan Qur'an yang salah, karena yang benar itu mudah",
-    author: 'KH. Dachlan Salim Zarkasyi',
+    text: 'Bukan hanya pandai, tetapi juga jujur, disiplin, dan peduli',
+    author: 'Penguatan karakter',
   },
 ]);
 
@@ -50,7 +56,7 @@ export const OFFICIAL_FACILITIES = Object.freeze([
   {
     id: 'official-classroom',
     name: 'Ruang Kelas',
-    description: 'Ruang kelas yang bersih dan nyaman mendukung murid belajar Al-Qur’an dengan lebih fokus.',
+    description: 'Ruang kelas yang bersih, terang, dan nyaman sehingga murid dapat belajar dengan fokus.',
     image_url: '/institution/classroom.webp',
   },
 ]);
@@ -58,8 +64,8 @@ export const OFFICIAL_FACILITIES = Object.freeze([
 export const OFFICIAL_GALLERY = Object.freeze([
   {
     id: 'official-gallery-quiz',
-    title: 'Quiz bersama murid',
-    caption: 'Quiz tanya jawab bersama murid LPQ Al-Fath Maulana.',
+    title: 'Kuis bersama murid',
+    caption: 'Kuis tanya jawab di dalam kelas.',
     description: 'Kegiatan interaktif untuk menguatkan pemahaman dan kebersamaan murid.',
     url: '/institution/gallery-quiz.webp',
   },
@@ -67,26 +73,31 @@ export const OFFICIAL_GALLERY = Object.freeze([
 
 export const OFFICIAL_FAQS = Object.freeze([
   {
-    id: 'fee',
-    question: 'Berapa biaya pendaftaran TPQ?',
-    answer: 'Total biaya pendaftaran TPQ adalah Rp450.000 dan dapat dicicil selama satu bulan.',
+    id: 'age',
+    question: 'Berapa usia minimal untuk masuk kelas 1?',
+    answer: 'Calon murid berusia 6 tahun pada 1 Juli tahun pelajaran berjalan. Usia 5 tahun 6 bulan dapat dipertimbangkan bila daya tampung masih tersedia.',
   },
   {
-    id: 'adult',
-    question: 'Apakah tersedia kelas untuk orang dewasa?',
-    answer: 'Ya. Kelas dewasa tersedia untuk usia minimal 17 tahun dengan pilihan waktu pagi, siang, atau malam sesuai kesepakatan.',
+    id: 'fee',
+    question: 'Apakah ada biaya sekolah?',
+    answer: 'Sebagai sekolah dasar negeri, tidak ada biaya SPP. Iuran hanya untuk kegiatan tertentu dan selalu disepakati bersama komite sekolah.',
   },
   {
     id: 'requirements',
-    question: 'Apa saja syarat pendaftaran TPQ?',
-    answer: 'Wali dan calon murid hadir saat pendaftaran, mengisi formulir, serta membawa fotokopi akta kelahiran, Kartu Keluarga, dua pasfoto 3×4, dan materai Rp10.000.',
+    question: 'Apa saja syarat pendaftaran murid baru?',
+    answer: 'Fotokopi akta kelahiran, Kartu Keluarga, kartu identitas orang tua, dan dua lembar pasfoto 3×4. Orang tua hadir saat pendaftaran untuk mengisi formulir.',
+  },
+  {
+    id: 'hours',
+    question: 'Jam berapa kegiatan belajar berlangsung?',
+    answer: 'Kegiatan belajar dimulai pukul 07.30. Jam pulang menyesuaikan tingkat kelas, paling awal pukul 11.00 dan paling akhir pukul 13.00.',
   },
 ]);
 
 export const INSTITUTION_PROOF_POINTS = Object.freeze([
-  { id: 'qiroati', title: 'Metode Qiroati terstruktur', text: 'Pembelajaran bacaan berlangsung bertahap, tartil, dan sesuai kaidah tajwid.' },
-  { id: 'small-class', title: 'Kelas maksimal 15 murid', text: 'Kelas kecil memberi ruang bagi guru untuk mendampingi perkembangan setiap murid.' },
-  { id: 'progress', title: 'Progres tercatat', text: 'Buku prestasi membantu guru dan wali memantau bacaan serta tindak lanjut belajar.' },
+  { id: 'small-class', title: 'Kelas yang tidak berlebih', text: 'Jumlah murid per kelas dijaga agar guru dapat mendampingi setiap anak.' },
+  { id: 'character', title: 'Karakter sejalan akademik', text: 'Kejujuran, kedisiplinan, dan kepedulian dinilai bersama capaian belajar.' },
+  { id: 'progress', title: 'Perkembangan tercatat', text: 'Rapor akademik dan karakter membantu guru serta orang tua memantau kemajuan murid.' },
 ]);
 
 export const OFFICIAL_CTA_BACKGROUND = '/institution/cta-activity.webp';
