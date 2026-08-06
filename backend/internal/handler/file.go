@@ -188,8 +188,22 @@ func (h *FileHandler) SignedURL(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "bucket dan path wajib diisi", http.StatusBadRequest)
 		return
 	}
-	baseURL := r.URL.Scheme + "://" + r.Host
-	if baseURL == "://" {
+	// r.URL.Scheme selalu kosong pada request sisi server — hanya r.Host yang
+	// terisi. Menyusunnya langsung menghasilkan "://localhost:8080", yang oleh
+	// browser dibaca sebagai alamat relatif sehingga seluruh foto gagal dimuat.
+	// Guard lama membandingkan hasilnya dengan "://", jadi tidak pernah kena
+	// karena r.Host tidak kosong.
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	// Di belakang reverse proxy (Vercel, nginx) TLS diakhiri di proxy, jadi
+	// skema aslinya hanya diketahui dari header ini.
+	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
+		scheme = forwarded
+	}
+	baseURL := scheme + "://" + r.Host
+	if r.Host == "" {
 		baseURL = "http://localhost:" + h.cfg.Port
 	}
 	url := h.store.SignedURL(bucket, path, time.Hour, baseURL)
