@@ -1,6 +1,6 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-06 · **Branch:** `migrate-frontpage-baru` (**sudah di-push**, sinkron dengan origin) · **HEAD:** `cb4c53a`
+**Diperbarui:** 2026-08-06 · **Branch:** `migrate-frontpage-baru` (**sudah di-push**, sinkron dengan origin) · **HEAD:** `9fbe113`
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -24,7 +24,7 @@ dibongkar tanpa instruksi baru.
 |---|---|---|
 | MMQ | **Dialihfungsikan** jadi "Rapat Guru", bukan dihapus | Sekolah tetap butuh rapat internal guru |
 | Pentashih | **Dilabel ulang** jadi "Wakil Kepala Sekolah" | Alur persetujuannya tetap berguna |
-| Hafalan | **Dipertahankan** di kode, hanya dicopot dari routing & dashboard | Sebagian sekolah umum punya program tahfizh |
+| Hafalan | **Dipertahankan**; rute publik Qiroati dicopot, tapi hafalan tetap hidup di dashboard guru & murid | Sebagian sekolah umum punya program tahfizh |
 | Jilid/Sesi di Data Murid | Filter & kolom dihapus, field tetap ada di balik flag | Jadi isian bebas, bukan dropdown Qiroati |
 | Metode mengaji | Sekolah **memilih metode**, tingkat mengikuti | Qiroati/Iqro/Ummi/Wafa/Tilawati/Tahfizh-Juz/Kustom |
 | Kategori murid & kelas | **Dihapus seluruhnya.** Tidak ada kelas dewasa, tidak ada PTPT, istilah TPQ tidak dipakai | SD negeri dengan satu jenis murid |
@@ -109,12 +109,14 @@ lapisan frontend saja dan manfaatkan seam yang sudah ada (`mapSantriForLegacyUi`
 `dataMasterAdapters.js`) sebagai penerjemah. API dan DB tetap `santri`. **Jangan** mengganti nama
 tabel: 554 kemunculan di migrasi, dan migrasi lama tidak boleh diedit.
 
-Dua prasyarat sebelum rename apa pun: pasang jaring test lebih dulu (saat ini **nol** framework
-test), karena rename tanpa test persis melahirkan kelas bug "penghapusan meninggalkan lubang".
+Prasyarat sebelum rename apa pun: jaring test harus menutupi area yang disentuh, karena rename tanpa
+test persis melahirkan kelas bug "penghapusan meninggalkan lubang". Vitest **sudah terpasang** (40
+test), tapi baru menutupi logika murni di `src/lib/` — belum cukup untuk rename lintas komponen.
+Lihat bagian 7 nomor 3.
 
-Satu pengecualian yang memang layak dimodelkan ulang, bukan sekadar diganti nama: **absensi**.
-`sesi_mengaji` adalah konsep ngaji; SD negeri butuh jam pelajaran dan mata pelajaran. Itu perubahan
-model data.
+**Koreksi catatan lama:** dokumen ini pernah menulis absensi sebagai "pengecualian yang layak
+dimodelkan ulang". Itu **dibatalkan** setelah pemeriksaan — lihat "Absensi TIDAK dirombak" di atas.
+Jangan mengikuti kalimat lama itu.
 
 ---
 
@@ -137,7 +139,7 @@ model data.
 | **Panel Jadwal Pelajaran** | **Tuntas di browser**: render, tambah, tolak bentrok, konfirmasi hapus, empty state kembali, 390px nol scroll horizontal |
 | **CRUD jadwal lewat API** | **Tuntas**: 7 penjagaan DB + 8 alur CRUD + penjagaan peran (guru 403 menyunting, 200 membaca, 401 tanpa token) |
 | **Email admin domain baru** | **Tuntas**: email baru masuk, email lama ditolak, 4 akun lain tanpa regresi |
-| Simpan murid baru + NISN | **Masih terhalang** — lihat jebakan "password `required`" di bawah |
+| Simpan murid baru + NISN | **Tuntas di browser**: tersimpan, bertahan setelah muat ulang, murid aktif 9 → 10. Baris uji `Uji NISN Baturaja` / NISN `1234567890` / angkatan `2026/2027` masih ada di DB sebagai bukti |
 | `GET /api/content/feedback` | **200 OK** (sebelumnya 405) |
 | `ErrorBoundary` | **Sudah diuji** dengan crash sengaja di kedua lapisan — lihat bagian 4 |
 
@@ -184,14 +186,17 @@ Get-Content "supabase\migrations\<nama>.sql" -Raw |
   docker compose -f backend\docker-compose.yml exec -T db psql -U postgres -d lpq_db
 ```
 
-### `resolveUser` rapuh terhadap kegagalan query santri
+### `resolveUser` rapuh terhadap kegagalan query santri — SUDAH DIPERBAIKI
 
-Di `backend/internal/handler/auth.go`, santri dicek lebih dulu. Error apa pun yang bukan
-`pgx.ErrNoRows` langsung menghentikan fungsi, sehingga **query guru tidak pernah dijalankan**.
-Satu query santri yang rusak menjatuhkan login semua peran.
+Di `backend/internal/handler/auth.go`, santri dicek lebih dulu. Dulu error apa pun yang bukan
+`pgx.ErrNoRows` langsung menghentikan fungsi, sehingga **query guru tidak pernah dijalankan** —
+satu query santri yang rusak menjatuhkan login semua peran.
 
-Cacat ini sudah ada sebelum migrasi SDN dan belum diperbaiki. Layak dibenahi agar kegagalan satu
-jalur tidak menjatuhkan seluruhnya.
+Sudah diperbaiki di commit `11001c8`, dan **dibuktikan lewat uji suntik kerusakan**: kolom `nisn`
+sengaja di-rename supaya query santri gagal, lalu login guru/admin diuji tetap berhasil.
+
+Polanya tetap layak diingat: pada fungsi yang mencoba beberapa jalur berurutan, kegagalan jalur
+pertama tidak boleh menghentikan jalur berikutnya.
 
 ### Worktree agen di `.claude/` melumpuhkan ESLint sepenuhnya
 
@@ -336,6 +341,27 @@ menimpanya akan mengunci dua orang keluar sekaligus.
 
 ---
 
+### Dua guru demo TIDAK punya sandi — jangan buang waktu mencobanya
+
+`Guru Demo A` dan `Guru Demo B` (`guru-*-demo@example.invalid`) memegang seluruh kelas demo, tetapi
+kolom `password`-nya kosong sehingga **tidak bisa dipakai login**. Hal yang sama berlaku untuk
+`Pentashih Demo`. Satu-satunya akun guru yang bisa login adalah `guru@sdnbaturaja.sch.id`
+(Siti Aminah) — dan akun itu **tidak memegang kelas apa pun**, jadi daftar muridnya kosong.
+
+Akibatnya, memverifikasi apa pun yang bergantung pada daftar murid di dashboard guru butuh fixture
+sementara. Resep yang sudah terbukti:
+
+```sql
+insert into classes (nama_kelas, sesi, id_guru, kategori, is_active)
+values ('Kelas Uji Sementara','Pagi','a1fa7a10-0000-0000-0000-000000000012','Anak',true);
+update santri set current_class_id='<id kelas di atas>' where nisn='1234567890';
+-- setelah selesai: kosongkan current_class_id, lalu hapus kelasnya
+```
+
+Pakai murid uji `1234567890`, jangan murid demo, supaya data demo tetap utuh.
+
+---
+
 ## 5. Kredensial pengujian (data dummy lokal)
 
 | Peran | Username | Password |
@@ -347,6 +373,12 @@ menimpanya akan mengunci dua orang keluar sekaligus.
 | Murid | `2026041` atau `Naila` | `santri123` |
 
 Sumber: `backend/init/03_dummy_accounts.sql`. Bukan kredensial produksi.
+
+**Batas yang perlu diperhitungkan saat merencanakan verifikasi:** agen tidak boleh mengisi kata sandi
+ke form login, termasuk sandi dummy di atas. Verifikasi yang menuntut masuk sebagai peran tertentu
+harus dirancang begini: pengguna yang login, agen yang memeriksa. Alternatif tanpa login sama sekali
+adalah menguji lewat API dengan token, atau memeriksa jalur kode plus isi database — cara itu yang
+dipakai untuk membuktikan dashboard murid menerima keempat kategori hafalan.
 
 ---
 
@@ -387,18 +419,14 @@ Yang tersisa:
    Jangan mengarang sendiri. Catatan: halaman publik SDN memakai `sdnbaturaja@sekolah.id`,
    sedangkan akun login memakai `@sdnbaturaja.sch.id` — dua domain berbeda, perlu diselaraskan.
 
-2. **Putuskan nasib dua berkas yatim**: `src/components/Navbar.jsx` dan `src/components/Footer.jsx`.
-   Tidak ada yang mengimpor keduanya, dan keduanya mengimpor berkas yang sudah dihapus.
-   Menunggu persetujuan pengguna untuk dihapus.
-
-3. **Perluas jaring test.** 40 test yang ada hanya menutupi logika murni di `src/lib/`.
+2. **Perluas jaring test.** 40 test yang ada hanya menutupi logika murni di `src/lib/`.
    Belum ada satu pun test komponen (butuh `@testing-library/react`) maupun test Go
    (`go test` hanya bisa lewat Docker). Penjagaan yang masih inline di dalam komponen
    tetap tak terjangkau sampai diekstrak seperti `validateDefaultSppAmount`.
    Sasaran paling layak berikutnya: `periksaBentrok` di `schedule.go` — logika irisan jam yang
    saat ini hanya terbukti lewat uji manual.
 
-4. **Hubungkan jadwal pelajaran ke tempat lain.** Sekarang jadwal berdiri sendiri di panel admin.
+3. **Hubungkan jadwal pelajaran ke tempat lain.** Sekarang jadwal berdiri sendiri di panel admin.
    Yang masuk akal berikutnya: guru melihat jadwal mengajarnya di dashboard sendiri, dan murid
    melihat jadwal kelasnya. Endpoint `GET /api/schedule/jadwal?guru_id=` dan `?class_id=` sudah
    tersedia dan sudah diuji.
