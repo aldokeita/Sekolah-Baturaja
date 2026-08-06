@@ -75,12 +75,18 @@ func main() {
 	r.Get("/api/guru/count", guruHandler.Count)
 
 	// ── Public: website content (news, announcements, feedback) ──────────────
-	// Admin write endpoints inside this handler check role themselves.
+	// Admin write endpoints inside this handler check role themselves via
+	// CanManage(RoleFromCtx(...)), so this mount needs OptionalAuth to put the
+	// role in the context. Plain RequireAuth would lock out the public reads;
+	// no middleware at all leaves the role empty and rejects admin too.
 	// ponytail: no separate public gamification-config route — those keys
 	// (gatcha_config, level_config, tv_config) are website_content rows already
 	// readable via GET /api/content/website?keys=..., so a dedicated route is
 	// redundant. Add one only if the payload shape needs to diverge.
-	r.Mount("/api/content", contentHandler.Routes())
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.OptionalAuth(cfg.JWTSecret))
+		r.Mount("/api/content", contentHandler.Routes())
+	})
 
 	// ── Public: login attempt recorder ───────────────────────────────────────
 	// Deliberately outside the RequireAuth group: a FAILED login has no token

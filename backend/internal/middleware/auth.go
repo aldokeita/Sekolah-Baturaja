@@ -35,6 +35,38 @@ func RequireAuth(secret string) func(http.Handler) http.Handler {
 	}
 }
 
+// OptionalAuth fills the user id and role into the request context when a valid
+// Bearer token is present, and passes the request through untouched when the
+// token is absent or invalid. It never rejects a request — the handler decides.
+//
+// Use it for routers that mix genuinely public reads with back-office writes
+// that gate themselves on RoleFromCtx/CanManage. /api/content is exactly that:
+// news, announcements, and the contact form must stay readable/postable without
+// a token, while the write endpoints are admin-only.
+//
+// Without this middleware those self-gating handlers see an empty role and
+// reject EVERYONE including admin, because only RequireAuth ever populates the
+// context — which is what silently disabled the whole Konten panel.
+func OptionalAuth(secret string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			header := r.Header.Get("Authorization")
+			if !strings.HasPrefix(header, "Bearer ") {
+				next.ServeHTTP(w, r)
+				return
+			}
+			claims, err := auth.ValidateAccessToken(strings.TrimPrefix(header, "Bearer "), secret)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			ctx := context.WithValue(r.Context(), CtxUserID, claims.UserID)
+			ctx = context.WithValue(ctx, CtxRole, claims.Role)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
 func RequireRole(roles ...string) func(http.Handler) http.Handler {
 	allowed := make(map[string]struct{}, len(roles))
 	for _, r := range roles {
