@@ -11,6 +11,7 @@ import ProfilePage from '@/pages/ProfilePage';
 import ContactPage from '@/pages/ContactPage';
 import PaymentStatusPage from '@/pages/PaymentStatusPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
 import NewsPage from '@/pages/NewsPage';
 import FacilitiesPage from '@/pages/FacilitiesPage';
@@ -132,6 +133,11 @@ function App() {
           <Router>
             <RouteLogger />
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
+              {/* Jaring terakhir. Boundary di dalam DashboardPage hanya menangkap
+                  error dari komponen dashboard di bawahnya; error yang dilempar
+                  oleh komponen halaman itu sendiri lolos dan memutihkan layar.
+                  Yang ini menangkap sisanya, untuk semua halaman. */}
+              <ErrorBoundary>
               <Routes>
                 <Route path="/absensi-digital" element={<ProtectedRoute allowedRoles={operationalDisplayRoles}><DigitalAttendancePage /></ProtectedRoute>} />
                 <Route path="/tv-display-mode" element={<ProtectedRoute allowedRoles={operationalDisplayRoles}><TvDisplayPage /></ProtectedRoute>} />
@@ -182,6 +188,7 @@ function App() {
                   </PublicLayout>
                 } />
               </Routes>
+              </ErrorBoundary>
               <Toaster />
               <ScrollToTopButton />
             </div>
