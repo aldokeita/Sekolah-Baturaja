@@ -21,6 +21,8 @@ supabase/.branches/
 !.agents/skills/lpq-creative-web-expert/
 !.agents/skills/lpq-creative-web-expert/SKILL.md
 .codex/
+.claude/
+.omo/
 
 *.bak
 *.tar

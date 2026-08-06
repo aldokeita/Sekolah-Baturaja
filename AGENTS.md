@@ -1,5 +1,63 @@
 # AGENTS.md — LPQ Al-Fath Maulana
 
+**Generated:** 2026-08-06 | **Commit:** 7f61898 | **Branch:** migrate-frontpage-baru
+
+## Struktur proyek
+
+```
+./
+├── src/                          # Frontend React SPA (JSX, ~300 file)
+│   ├── components/dashboard/admin/  # 36 panel admin (AGENTS.md tersedia)
+│   ├── components/dashboard/shared/ # Widget dashboard bersama
+│   ├── components/ui/               # shadcn/ui (57 komponen)
+│   ├── components/reactbits/        # Efek visual kustom (aurora, glass, glow)
+│   ├── contexts/                    # AuthContext + ThemeContext
+│   ├── hooks/                       # 12 custom hooks (absensi, search, media)
+│   ├── lib/                         # Adapter layer + apiClient (AGENTS.md tersedia)
+│   ├── pages/                       # 31 route-level pages
+│   └── styles/                      # CSS (admin, public, aurora theme)
+├── backend/                      # Go API server — proxy ke Supabase (AGENTS.md tersedia)
+│   ├── cmd/seed-admin/              # CLI seed admin user
+│   └── internal/                    # auth, config, db, handler(17), middleware, storage
+├── supabase/                     # Supabase config (AGENTS.md tersedia)
+│   ├── migrations/                  # 46 migration SQL
+│   ├── functions/                   # 5 Deno edge functions
+│   └── tests/                       # RLS, storage, function tests
+├── scripts/                      # 29 script operasional (AGENTS.md tersedia)
+├── docs/                         # 50 dokumen arsitektur & fase implementasi
+└── tools/                        # Build tools (LLMS generator, dc-convert)
+```
+
+## Di mana mencari
+
+| Tugas | Lokasi | Catatan |
+|-------|--------|---------|
+| Auth flow | `src/contexts/SupabaseAuthContext.jsx` → `src/components/ProtectedRoute.jsx` | JWT via Go backend, bukan langsung Supabase |
+| API call dari frontend | `src/lib/apiClient.js` → `src/lib/*Adapters.js` | Semua request melalui adapter, JANGAN panggil API langsung dari komponen |
+| Tambah panel admin baru | `src/components/dashboard/admin/` | Lihat pattern di `SantriManagement.jsx` atau `PaymentSystem.jsx` |
+| Dashboard role-based | `src/pages/DashboardPage.jsx` → `src/components/dashboard/` | 5 role: admin, guru, santri, pentashih, tata_usaha |
+| Route baru | `src/App.jsx` | React Router 6, nested routes, ProtectedRoute wrapper |
+| Backend handler baru | `backend/internal/handler/` | Satu file per domain, register di `backend/main.go` |
+| Migration DB | `supabase/migrations/` | SELALU buat file baru, JANGAN edit migration lama |
+| Edge function | `supabase/functions/` | Deno runtime, shared code di `_shared/` |
+| Feature flags | `src/lib/featureFlags.js` | Toggle untuk game, deferred features, backup/restore |
+| Design tokens | `src/styles/` + `tailwind.config.js` | Aurora Neo-Glass: teal–cyan–blue–violet palette |
+| Script deployment | `scripts/` | Lihat AGENTS.md di scripts/ untuk kategori |
+
+## Code map (simbol kunci)
+
+| Simbol | Tipe | Lokasi | Peran |
+|--------|------|--------|-------|
+| `apiClient` | module | `src/lib/apiClient.js` | HTTP client terpusat, JWT refresh otomatis |
+| `clearTokens` | function | `src/lib/apiClient.js` | Logout — hapus token dari localStorage |
+| `publicFetch` | function | `src/lib/apiClient.js` | Fetch tanpa auth untuk halaman publik |
+| `ProtectedRoute` | component | `src/components/ProtectedRoute.jsx` | Route guard role-based, 12 consumer di App.jsx |
+| `DashboardPage` | component | `src/pages/DashboardPage.jsx` | Router ke 5 dashboard berdasarkan role |
+| `fetchAttendance` | function | `src/lib/attendanceAdapters.js` | 31 consumer — adapter absensi paling sentral |
+| `createAttendance` | function | `src/lib/attendanceAdapters.js` | 12 consumer — buat record absensi |
+| `featureFlags` | module | `src/lib/featureFlags.js` | Toggle fitur (game, edge functions, backup) |
+| `SideRays` | component | `src/components/reactbits/SideRays/` | Efek visual aurora — dark mode only |
+
 ## 1. Prinsip utama
 
 Kerjakan hanya ruang lingkup yang diminta pengguna.
