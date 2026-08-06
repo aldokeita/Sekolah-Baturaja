@@ -233,10 +233,16 @@ func (h *ScheduleHandler) DeleteMapel(w http.ResponseWriter, r *http.Request) {
 
 // ---- Jadwal pelajaran ----
 
-func (h *ScheduleHandler) ListJadwal(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	rows, err := h.db.Query(r.Context(), `
-		SELECT j.*,
+// jadwalSelect memakai daftar kolom eksplisit, bukan j.*, semata-mata karena
+// jam_mulai dan jam_selesai bertipe `time`. pgx memetakannya ke pgtype.Time,
+// yang menjadi {"Microseconds":25200000000,"Valid":true} begitu di-JSON-kan -
+// bukan "07:00" yang dibutuhkan UI. to_char memaksanya jadi string.
+const jadwalSelect = `
+		SELECT j.id, j.periode_id, j.class_id, j.mata_pelajaran_id, j.guru_id,
+		       j.hari,
+		       to_char(j.jam_mulai,   'HH24:MI') AS jam_mulai,
+		       to_char(j.jam_selesai, 'HH24:MI') AS jam_selesai,
+		       j.ruang, j.catatan, j.created_at, j.updated_at,
 		       m.nama  AS mata_pelajaran_nama,
 		       m.kode  AS mata_pelajaran_kode,
 		       c.nama_kelas,
@@ -244,7 +250,22 @@ func (h *ScheduleHandler) ListJadwal(w http.ResponseWriter, r *http.Request) {
 		FROM jadwal_pelajaran j
 		JOIN mata_pelajaran m ON m.id = j.mata_pelajaran_id
 		JOIN classes c        ON c.id = j.class_id
-		LEFT JOIN guru g      ON g.id = j.guru_id
+		LEFT JOIN guru g      ON g.id = j.guru_id`
+
+// jadwalByID membaca ulang satu baris lewat jadwalSelect. Dipakai setelah insert
+// dan update supaya bentuk yang dikembalikan sama persis dengan yang dikembalikan
+// daftar - RETURNING * akan mengembalikan jam dalam bentuk pgtype.Time lagi.
+func (h *ScheduleHandler) jadwalByID(ctx context.Context, id string) (map[string]any, error) {
+	rows, err := h.db.Query(ctx, jadwalSelect+` WHERE j.id = $1::uuid`, id)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectExactlyOneRow(rows, rowToMap)
+}
+
+func (h *ScheduleHandler) ListJadwal(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	rows, err := h.db.Query(r.Context(), jadwalSelect+`
 		WHERE ($1 = '' OR j.periode_id = $1::uuid)
 		  AND ($2 = '' OR j.class_id   = $2::uuid)
 		  AND ($3 = '' OR j.guru_id    = $3::uuid)
@@ -281,6 +302,10 @@ func (h *ScheduleHandler) CreateJadwal(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, pesanGalatJadwal(err, "jadwal"), http.StatusBadRequest)
 		return
 	}
+	// Baca ulang supaya jam kembali sebagai string dan kolom join ikut terisi.
+	if lengkap, err := h.jadwalByID(r.Context(), asString(item["id"])); err == nil {
+		item = lengkap
+	}
 	w.WriteHeader(http.StatusCreated)
 	jsonData(w, item)
 }
@@ -308,6 +333,9 @@ func (h *ScheduleHandler) UpdateJadwal(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonError(w, pesanGalatJadwal(err, "jadwal"), http.StatusBadRequest)
 		return
+	}
+	if lengkap, err := h.jadwalByID(r.Context(), id); err == nil {
+		item = lengkap
 	}
 	jsonData(w, item)
 }

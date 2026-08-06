@@ -6,7 +6,9 @@ import globals from 'globals';
 export default [
 	// .claude/** berisi worktree sementara agen — melintasinya membuat resolver
 	// import menabrak node_modules milik repo utama dan ESLint gagal total.
-	{ ignores: ['node_modules/**', 'dist/**', 'build/**', 'vite.config.js', '.claude/**'] },
+	// .playwright-mcp/** artefak MCP browser; di Windows direktorinya bisa terkunci
+	// proses sehingga traversal glob ESLint meledak (exit 2, nol berkas diperiksa).
+	{ ignores: ['node_modules/**', 'dist/**', 'build/**', 'vite.config.js', '.claude/**', '.playwright-mcp/**'] },
 	{
 		files: ['**/*.js', '**/*.jsx'],
 		plugins: { react, 'react-hooks': reactHooks, import: importPlugin },

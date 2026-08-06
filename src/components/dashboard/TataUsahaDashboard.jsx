@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, FileText,
-  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar,
+  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, CalendarDays,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import { enableTahfizh } from '@/lib/featureFlags';
@@ -19,6 +19,7 @@ const tataUsahaTabs = [
   { value: 'santri', label: 'Data Murid', icon: Users, group: 'data' },
   { value: 'guru', label: 'Data Guru', icon: BookUser, group: 'data' },
   { value: 'kelas', label: 'Manajemen Kelas', icon: BookOpen, group: 'akademik' },
+  { value: 'jadwal-pelajaran', label: 'Jadwal Pelajaran', icon: CalendarDays, group: 'akademik' },
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },
   { value: 'rapat-guru', label: 'Rapat Guru', icon: Users, group: 'akademik' },

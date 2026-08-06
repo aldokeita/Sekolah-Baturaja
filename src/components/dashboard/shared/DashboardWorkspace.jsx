@@ -17,6 +17,7 @@ import ContentManagement from '../admin/ContentManagement';
 import LoginLogs from '../admin/LoginLogs';
 import ExpenseManagement from '../admin/ExpenseManagement';
 import ClassManagement from '../admin/ClassManagement';
+import JadwalPelajaran from '../admin/JadwalPelajaran';
 import AttendanceRecap from '../admin/AttendanceRecap';
 import GuruAttendanceRecap from '../admin/GuruAttendanceRecap';
 import TvDisplaySettings from '../admin/TvDisplaySettings';
@@ -44,6 +45,7 @@ const renderModule = (value) => {
   switch (value) {
     case 'santri': return <SantriManagement />;
     case 'kelas': return <ClassManagement />;
+    case 'jadwal-pelajaran': return <JadwalPelajaran />;
     case 'rapat-guru': return <MMQManagement />;
     case 'metode-mengaji': return <TahfizhConfiguration />;
     case 'guru': return <GuruManagement />;
