@@ -254,7 +254,7 @@ var validPaymentStatus = map[string]bool{
 // those rows — a row with no month is not part of any specific month.
 func (h *PaymentHandler) PaymentRecap(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -324,7 +324,7 @@ func (h *PaymentHandler) PaymentRecap(w http.ResponseWriter, r *http.Request) {
 // Body: single object or array of payment objects
 func (h *PaymentHandler) CreatePayments(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -465,7 +465,7 @@ func (h *PaymentHandler) CreatePayments(w http.ResponseWriter, r *http.Request) 
 // DeletePayment DELETE /api/payments/:id (admin only)
 func (h *PaymentHandler) DeletePayment(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -499,7 +499,7 @@ func (h *PaymentHandler) DeletePayment(w http.ResponseWriter, r *http.Request) {
 // Body: {ids: [uuid...]}
 func (h *PaymentHandler) BulkDeletePayments(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -573,7 +573,7 @@ func (h *PaymentHandler) PaymentStatus(w http.ResponseWriter, r *http.Request) {
 // Query params: from (date), to (date), page, limit
 func (h *PaymentHandler) ListExpenses(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -672,7 +672,7 @@ func (h *PaymentHandler) ListExpenses(w http.ResponseWriter, r *http.Request) {
 // CreateExpense POST /api/payments/expenses (admin only)
 func (h *PaymentHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -724,7 +724,7 @@ type expenseInput struct {
 
 // UpdateExpense PUT /api/payments/expenses/:id (admin only)
 func (h *PaymentHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -771,7 +771,7 @@ func (h *PaymentHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 // DeleteExpense DELETE /api/payments/expenses/:id (admin only)
 func (h *PaymentHandler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -847,7 +847,7 @@ func (h *PaymentHandler) GetPayment(w http.ResponseWriter, r *http.Request) {
 // UpdatePayment PUT /api/payments/{id} (admin only)
 // Partial update: only the keys present in the body are written.
 func (h *PaymentHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -918,7 +918,7 @@ func (h *PaymentHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 // status without reading payment amounts.
 func (h *PaymentHandler) PaymentStatusSummary(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" && role != "guru" && role != "pentashih" {
+	if !middleware.CanManage(role) && role != "guru" && role != "pentashih" {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -973,7 +973,7 @@ func (h *PaymentHandler) PaymentStatusSummary(w http.ResponseWriter, r *http.Req
 // month is omitted or "all" for a whole-year total. Sums are computed in
 // Postgres so the client never has to page through every row.
 func (h *PaymentHandler) Cashflow(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

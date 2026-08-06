@@ -1,0 +1,113 @@
+-- 03_dummy_accounts.sql — demo login accounts, one per role.
+-- Runs after 02_auth_columns.sql on a fresh database; safe to re-run by hand
+-- against an existing one (every statement is idempotent).
+--
+-- Login rules enforced by the Go backend (internal/handler/auth.go):
+--   staff  -> guru.email + guru.password, needs guru.status='active'
+--             AND a matching user_profiles row with status='active'
+--   santri -> santri.nomor_induk_qiroati (or nama_panggilan) + santri.password,
+--             needs santri.status='Aktif'
+--
+-- Passwords are hashed with pgcrypto bcrypt ($2a$, cost 12), which is what
+-- golang.org/x/crypto/bcrypt verifies against.
+--
+-- NOTE ON ADMIN: migration 20260722000100 adds two constraints —
+--   user_profiles_admin_email_check  (an admin's email must be admin@lpqalfathmaulana.id)
+--   user_profiles_single_admin_idx   (only one admin row may exist)
+-- so the bootstrap admin from 02_auth_columns.sql is reused as-is rather than
+-- creating a second one. See docs note in that file if the email needs to change.
+
+-- ── Precondition ─────────────────────────────────────────────────────────────
+-- 'tata_usaha' is added to app_role by migration 20260805000100. Fail with a
+-- readable message instead of a bare enum error if that migration is missing.
+do $$
+begin
+  if not exists (
+    select 1 from pg_enum e
+    join pg_type t on t.oid = e.enumtypid
+    where t.typname = 'app_role' and e.enumlabel = 'tata_usaha'
+  ) then
+    raise exception 'app_role is missing the tata_usaha value. Apply supabase/migrations/20260805000100_add_tata_usaha_role.sql first.';
+  end if;
+end $$;
+
+-- ── Staff accounts (guru + user_profiles) ────────────────────────────────────
+do $$
+declare
+  r record;
+  hashed text;
+begin
+  for r in
+    select * from (values
+      -- id, email, password, display name, jabatan, roles[], app_role
+      ('a1fa7a10-0000-0000-0000-000000000011'::uuid, 'tatausaha@sdnbaturaja.sch.id', 'tatausaha123',
+       'Lestari Ningsih, A.Md.', 'Tata Usaha',           array['Tata Usaha'],  'tata_usaha'),
+      ('a1fa7a10-0000-0000-0000-000000000012'::uuid, 'guru@sdnbaturaja.sch.id',      'guru123',
+       'Siti Aminah, S.Pd.SD',   'Guru Kelas I',         array['Pengajar'],    'guru'),
+      ('a1fa7a10-0000-0000-0000-000000000013'::uuid, 'pentashih@sdnbaturaja.sch.id', 'pentashih123',
+       'Ratna Dewi, S.Pd.SD',    'Pentashih',            array['Pentashih'],   'pentashih')
+    ) as t(id, email, pw, nama, jabatan, roles, app_role)
+  loop
+    hashed := extensions.crypt(r.pw, extensions.gen_salt('bf', 12));
+
+    insert into auth.users (id, email)
+    values (r.id, r.email)
+    on conflict (id) do update set email = excluded.email;
+
+    insert into public.guru (id, nama, email, jabatan, status, roles, password)
+    values (r.id, r.nama, r.email, r.jabatan, 'active', r.roles, hashed)
+    on conflict (id) do update set
+      nama     = excluded.nama,
+      email    = excluded.email,
+      jabatan  = excluded.jabatan,
+      status   = 'active',
+      roles    = excluded.roles,
+      password = excluded.password;
+
+    insert into public.user_profiles (id, role, display_name, email, status)
+    values (r.id, r.app_role::public.app_role, r.nama, r.email, 'active')
+    on conflict (id) do update set
+      role         = excluded.role,
+      display_name = excluded.display_name,
+      email        = excluded.email,
+      status       = 'active';
+  end loop;
+end $$;
+
+-- ── Student account (santri + user_profiles) ─────────────────────────────────
+-- Logs in with the student number, matching the "Nomor induk murid" field on
+-- the login screen.
+do $$
+declare
+  sid uuid := 'a1fa7a10-0000-0000-0000-000000000014';
+  hashed text := extensions.crypt('santri123', extensions.gen_salt('bf', 12));
+begin
+  insert into auth.users (id, email)
+  values (sid, 'murid@sdnbaturaja.sch.id')
+  on conflict (id) do update set email = excluded.email;
+
+  insert into public.santri (id, nomor_induk_qiroati, nama_lengkap, nama_panggilan,
+                             kategori, jenis_kelamin, status, password)
+  values (sid, '2026041', 'Naila Rahmadani', 'Naila', 'Anak', 'Perempuan', 'Aktif', hashed)
+  on conflict (id) do update set
+    nomor_induk_qiroati = excluded.nomor_induk_qiroati,
+    nama_lengkap        = excluded.nama_lengkap,
+    nama_panggilan      = excluded.nama_panggilan,
+    status              = 'Aktif',
+    password            = excluded.password;
+
+  insert into public.user_profiles (id, role, display_name, email, status)
+  values (sid, 'santri'::public.app_role, 'Naila Rahmadani', 'murid@sdnbaturaja.sch.id', 'active')
+  on conflict (id) do update set
+    role         = excluded.role,
+    display_name = excluded.display_name,
+    status       = 'active';
+end $$;
+
+-- ── Report ───────────────────────────────────────────────────────────────────
+do $$
+declare n int;
+begin
+  select count(*) into n from public.user_profiles where status = 'active';
+  raise notice 'dummy accounts ready; active profiles: %', n;
+end $$;

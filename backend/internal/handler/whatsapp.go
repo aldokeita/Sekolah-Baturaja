@@ -54,7 +54,7 @@ const whatsappGroupColumns = `id, jilid, group_name, whatsapp_link, is_active,
 // 20260724000100_whatsapp_group_links_guru_read.sql — admin or guru. Guru needs
 // read access because JilidChangeModal is rendered from GuruDashboard.
 func staffCanReadWhatsApp(role string) bool {
-	return role == "admin" || role == "guru"
+	return role == "admin" || role == "guru" || role == "tata_usaha"
 }
 
 // GET /api/whatsapp/groups           — all rows

@@ -28,9 +28,17 @@ func (h *FileHandler) ServePublic(w http.ResponseWriter, r *http.Request) {
 	h.store.ServeFile(w, r, bucket, path)
 }
 
+// ServePrivate melayani bucket yang wajib signed URL. Bucket diambil dari URL
+// (bukan dipatok ke satu nilai) supaya satu handler cukup untuk avatars dan
+// documents; bucket publik ditolak agar route ini tidak bisa dipakai untuk
+// melewati pemeriksaan tanda tangan.
 func (h *FileHandler) ServePrivate(w http.ResponseWriter, r *http.Request) {
-	_, path := splitBucketPath(r.URL.Path, "/files/")
-	h.store.ServeFile(w, r, storage.BucketAvatars, path)
+	bucket, path := splitBucketPath(r.URL.Path, "/files/")
+	if !storage.IsPrivateBucket(bucket) {
+		http.NotFound(w, r)
+		return
+	}
+	h.store.ServeFile(w, r, bucket, path)
 }
 
 func (h *FileHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
@@ -45,6 +53,12 @@ func (h *FileHandler) UploadMusic(w http.ResponseWriter, r *http.Request) {
 	h.handleUpload(w, r, storage.BucketMusic)
 }
 
+// UploadDocument menerima arsip dokumen resmi (PDF atau hasil scan). Staf saja
+// — authorizeFileWrite menjatuhkannya ke cabang CanManage.
+func (h *FileHandler) UploadDocument(w http.ResponseWriter, r *http.Request) {
+	h.handleUpload(w, r, storage.BucketDocuments)
+}
+
 // ownsAvatarPath reports whether the caller may write or delete the avatar at
 // path. Avatar paths are "<guru|santri>/<ownerId>/profile.webp", so ownership is
 // derivable from the path itself — no DB lookup needed. Admin may touch any file.
@@ -53,7 +67,7 @@ func (h *FileHandler) UploadMusic(w http.ResponseWriter, r *http.Request) {
 // could pass "guru/<their-own-uuid>/..." and write into the guru tree. ".." is
 // rejected outright so a traversal can never be read as an ownerId match.
 func ownsAvatarPath(role, userID, path string) bool {
-	if role == "admin" {
+	if middleware.CanManage(role) {
 		return true
 	}
 	if role == "" || userID == "" || strings.Contains(path, "..") {
@@ -90,7 +104,7 @@ func authorizeFileWrite(r *http.Request, bucket, path string) (ok bool, message 
 		}
 		return false, "hanya pemilik atau admin yang dapat mengubah foto profil ini"
 	}
-	if role == "admin" {
+	if middleware.CanManage(role) {
 		return true, ""
 	}
 	return false, "hanya admin yang dapat mengubah file ini"

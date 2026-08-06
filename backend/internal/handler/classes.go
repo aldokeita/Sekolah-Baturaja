@@ -48,7 +48,7 @@ func (h *ClassesHandler) Routes() chi.Router {
 // Columns a client may set on create/update.
 var classesEditable = map[string]bool{
 	"nama_kelas": true, "sesi": true, "id_guru": true, "kategori": true,
-	"is_active": true, "sort_order": true,
+	"is_active": true, "sort_order": true, "kapasitas": true,
 }
 
 // GET /api/classes
@@ -217,7 +217,7 @@ func (h *ClassesHandler) Detail(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/classes
 func (h *ClassesHandler) Create(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -241,7 +241,7 @@ func (h *ClassesHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // PUT /api/classes/{id}
 func (h *ClassesHandler) Update(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -269,7 +269,7 @@ func (h *ClassesHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /api/classes/{id} — soft delete.
 func (h *ClassesHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -289,7 +289,7 @@ func (h *ClassesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 // PUT /api/classes/reorder — bulk update sort_order.
 // Body: [{"id": "...", "sort_order": N}, ...]
 func (h *ClassesHandler) Reorder(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -382,7 +382,7 @@ const mutationLogOrder = `
 
 // GET /api/classes/mutations — full mutation log (admin only).
 func (h *ClassesHandler) AllMutations(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -438,7 +438,7 @@ func nestMutationClass(nama, sesi, guru any) any {
 
 // DELETE /api/classes/mutations/{mutationID} — remove one log entry (admin only).
 func (h *ClassesHandler) DeleteMutation(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

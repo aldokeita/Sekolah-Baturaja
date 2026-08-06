@@ -99,7 +99,7 @@ func (h *GuruHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(ctx)
 	userID := middleware.UserIDFromCtx(ctx)
 
-	if role != "admin" && userID != id {
+	if !middleware.CanManage(role) && userID != id {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -128,7 +128,7 @@ func (h *GuruHandler) Update(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(ctx)
 	userID := middleware.UserIDFromCtx(ctx)
 
-	if role != "admin" && userID != id {
+	if !middleware.CanManage(role) && userID != id {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -215,6 +215,8 @@ func (h *GuruHandler) Create(w http.ResponseWriter, r *http.Request) {
 		profileRole = "pentashih"
 	case "admin":
 		profileRole = "admin"
+	case "tata_usaha":
+		profileRole = "tata_usaha"
 	case "guru", "":
 		profileRole = "guru"
 	default:
@@ -351,7 +353,7 @@ func normalizeSantriCategory(v string) (string, bool) {
 // The RPC read the actor from auth.uid(); here it comes from the JWT.
 func (h *GuruHandler) ChangeCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if middleware.RoleFromCtx(ctx) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(ctx)) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

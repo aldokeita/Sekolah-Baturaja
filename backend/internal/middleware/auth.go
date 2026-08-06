@@ -52,6 +52,21 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 	}
 }
 
+// CanManage reports whether the role holds back-office management privileges:
+// admin and tata_usaha. It gates the operational modules the Tata Usaha
+// dashboard shares with admin (data santri, kelas, rekap absensi, MMQ,
+// kalender, pembayaran/pengeluaran, konten, TV/media, app-config).
+//
+// It deliberately does NOT cover the admin-only areas, which keep an explicit
+// == "admin" check so tata_usaha can never reach them:
+//   - account & role provisioning (create/delete staff, assign role/status/password)
+//   - login logs
+//   - backup & restore
+//   - bisyaroh/salary
+func CanManage(role string) bool {
+	return role == "admin" || role == "tata_usaha"
+}
+
 func UserIDFromCtx(ctx context.Context) string {
 	v, _ := ctx.Value(CtxUserID).(string)
 	return v

@@ -59,6 +59,7 @@ var santriInsertable = map[string]bool{
 	"tanggal_pendaftaran": true, "nama_ayah": true, "nama_ibu": true, "no_kk": true,
 	"no_nik": true, "berkas_foto": true, "berkas_akta": true, "berkas_kk": true,
 	"berkas_form": true, "link_qiroati": true, "default_spp_amount": true,
+	"pekerjaan_ayah": true, "pekerjaan_ibu": true, "alamat_ortu": true,
 	"status": true, "points": true, "order_in_class": true, "password": true,
 	"email": true,
 }
@@ -260,7 +261,7 @@ func (h *SantriHandler) Detail(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/santri
 func (h *SantriHandler) Create(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -280,7 +281,7 @@ func (h *SantriHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/santri/bulk
 func (h *SantriHandler) BulkCreate(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -371,7 +372,7 @@ func (h *SantriHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /api/santri/{id} — soft delete.
 func (h *SantriHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -404,7 +405,7 @@ func (h *SantriHandler) Count(w http.ResponseWriter, r *http.Request) {
 func (h *SantriHandler) UpdateJilid(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	role := middleware.RoleFromCtx(ctx)
-	if role != "admin" && role != "guru" {
+	if !middleware.CanManage(role) && role != "guru" {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -454,7 +455,7 @@ func (h *SantriHandler) UpdateJilid(w http.ResponseWriter, r *http.Request) {
 
 // PUT /api/santri/{id}/order
 func (h *SantriHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -483,7 +484,7 @@ func (h *SantriHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 func (h *SantriHandler) MoveClass(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	role := middleware.RoleFromCtx(ctx)
-	if role != "admin" && role != "guru" {
+	if !middleware.CanManage(role) && role != "guru" {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -671,7 +672,7 @@ func (h *SantriHandler) Restore(w http.ResponseWriter, r *http.Request) {
 
 func (h *SantriHandler) setArchiveState(w http.ResponseWriter, r *http.Request, archived bool) {
 	ctx := r.Context()
-	if middleware.RoleFromCtx(ctx) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(ctx)) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -756,7 +757,7 @@ func (h *SantriHandler) TransferDestinations(w http.ResponseWriter, r *http.Requ
 	userID := middleware.UserIDFromCtx(ctx)
 	id := chi.URLParam(r, "id")
 
-	if role != "admin" && role != "guru" {
+	if !middleware.CanManage(role) && role != "guru" {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

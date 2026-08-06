@@ -32,7 +32,7 @@ func (h *AttendanceHandler) Routes() chi.Router {
 	// Record
 	r.Post("/", h.Create)
 	r.Put("/{id}", h.Update)
-	r.With(middleware.RequireRole("admin", "guru")).Put("/{id}/absent", h.MarkAbsent)
+	r.With(middleware.RequireRole("admin", "guru", "tata_usaha")).Put("/{id}/absent", h.MarkAbsent)
 
 	// Fetch
 	r.Get("/", h.List)
@@ -41,9 +41,16 @@ func (h *AttendanceHandler) Routes() chi.Router {
 	r.Get("/count", h.Count)
 	r.Get("/recap", h.Recap)
 
-	// Calendar
+	// Calendar. Reads are open to any authenticated user (the attendance recap,
+	// rapor generator and salary calculation all need the holiday list); writes
+	// are staff-only.
 	r.Get("/calendar", h.Calendar)
-	r.Post("/calendar", h.CreateCalendar)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.RequireRole("admin", "tata_usaha"))
+		r.Post("/calendar", h.CreateCalendar)
+		r.Put("/calendar/{id}", h.UpdateCalendar)
+		r.Delete("/calendar/{id}", h.DeleteCalendar)
+	})
 
 	// Stats
 	r.Get("/guru-stats", h.GuruStats)
@@ -632,8 +639,20 @@ func (h *AttendanceHandler) Calendar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Two shapes, deliberately. The default returns bare holiday dates because
+	// every attendance consumer (rapor, rekap, bisyaroh) only ever asks "is this
+	// day off?" — keeping that payload small matters on a year-wide range.
+	// `view=full` returns whole rows and is what the calendar admin panel needs
+	// to list, edit and delete individual agenda entries.
+	if q.Get("view") == "full" {
+		h.calendarFull(w, r, from, to)
+		return
+	}
+
+	// DISTINCT because a date may now carry several agenda entries; a duplicated
+	// date would make holiday counts in SalaryCalculation double-count.
 	rows, err := h.db.Query(r.Context(), `
-		SELECT date::text
+		SELECT DISTINCT date::text
 		FROM academic_calendar
 		WHERE is_holiday = true AND date BETWEEN $1 AND $2
 		ORDER BY date ASC
@@ -658,6 +677,49 @@ func (h *AttendanceHandler) Calendar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonOK(w, map[string]any{"data": dates})
+}
+
+// calendarFull returns every agenda entry in the range, holidays and school
+// days alike, ordered so that entries sharing a date keep a stable sequence.
+func (h *AttendanceHandler) calendarFull(w http.ResponseWriter, r *http.Request, from, to string) {
+	rows, err := h.db.Query(r.Context(), `
+		SELECT id::text, date::text, title, description, is_holiday, is_public, event_type
+		FROM academic_calendar
+		WHERE date BETWEEN $1 AND $2
+		ORDER BY date ASC, created_at ASC
+	`, from, to)
+	if err != nil {
+		jsonError(w, "gagal mengambil kalender akademik", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	items := make([]map[string]any, 0)
+	for rows.Next() {
+		var (
+			id, date, title           string
+			description, eventType    *string
+			isHoliday, isPublic       bool
+		)
+		if err := rows.Scan(&id, &date, &title, &description, &isHoliday, &isPublic, &eventType); err != nil {
+			jsonError(w, "gagal membaca kalender akademik", http.StatusInternalServerError)
+			return
+		}
+		items = append(items, map[string]any{
+			"id":          id,
+			"date":        date,
+			"title":       title,
+			"description": description,
+			"is_holiday":  isHoliday,
+			"is_public":   isPublic,
+			"event_type":  eventType,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		jsonError(w, "gagal membaca kalender akademik", http.StatusInternalServerError)
+		return
+	}
+	jsonOK(w, map[string]any{"data": items})
 }
 
 type calendarInput struct {
@@ -735,6 +797,56 @@ func (h *AttendanceHandler) CreateCalendar(w http.ResponseWriter, r *http.Reques
 	})
 }
 
+// Columns a client may change on an existing agenda entry. `date` is included
+// so a misdated event can be moved without deleting and re-creating it.
+var calendarEditable = map[string]bool{
+	"date": true, "title": true, "description": true,
+	"is_holiday": true, "is_public": true, "event_type": true,
+}
+
+// PUT /api/attendance/calendar/{id}
+func (h *AttendanceHandler) UpdateCalendar(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body map[string]any
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+	// The client sends created_by/updated_by for parity with the insert path;
+	// they are not in the allowlist and updateRow drops them silently.
+	item, err := updateRow(r.Context(), h.db, "academic_calendar", id, body, calendarEditable)
+	if err != nil {
+		if errors.Is(err, errNoFields) {
+			jsonError(w, "tidak ada field yang bisa diperbarui", http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, pgx.ErrNoRows) {
+			jsonError(w, "agenda tidak ditemukan", http.StatusNotFound)
+			return
+		}
+		jsonError(w, "gagal memperbarui agenda: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	jsonData(w, item)
+}
+
+// DELETE /api/attendance/calendar/{id} — hard delete. The table carries no
+// deleted_at column and an agenda entry has no downstream references, so a
+// soft delete would only leave rows the holiday query has to filter out.
+func (h *AttendanceHandler) DeleteCalendar(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	ct, err := h.db.Exec(r.Context(), `DELETE FROM academic_calendar WHERE id = $1`, id)
+	if err != nil {
+		jsonError(w, "gagal menghapus agenda", http.StatusInternalServerError)
+		return
+	}
+	if ct.RowsAffected() == 0 {
+		jsonError(w, "agenda tidak ditemukan", http.StatusNotFound)
+		return
+	}
+	jsonData(w, map[string]any{"id": id, "deleted": true})
+}
+
 // -----------------------------------------------------------------------------
 // Stats: GET /guru-stats, GET /santri-stats
 // -----------------------------------------------------------------------------
@@ -782,7 +894,7 @@ func (h *AttendanceHandler) SantriStats(w http.ResponseWriter, r *http.Request) 
 	ctxUser := middleware.UserIDFromCtx(r.Context())
 	ctxRole := middleware.RoleFromCtx(r.Context())
 	guruID := ctxUser
-	if ctxRole == "admin" {
+	if middleware.CanManage(ctxRole) {
 		if v := q.Get("guru_id"); v != "" {
 			guruID = v
 		}

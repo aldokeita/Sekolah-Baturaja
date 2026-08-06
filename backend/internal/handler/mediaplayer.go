@@ -135,7 +135,7 @@ func (h *MediaPlayerHandler) ListMusic(w http.ResponseWriter, r *http.Request) {
 // Records an already-uploaded file. Admin only, matching the migration's
 // music_files_admin_all policy (for all using public.is_admin()).
 func (h *MediaPlayerHandler) CreateMusic(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -178,7 +178,7 @@ func (h *MediaPlayerHandler) CreateMusic(w http.ResponseWriter, r *http.Request)
 // soft delete. Kept as a general partial update because the whitelist makes
 // that free. Admin only, per music_files_admin_all.
 func (h *MediaPlayerHandler) UpdateMusic(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -272,7 +272,7 @@ func (h *MediaPlayerHandler) GetSettings(w http.ResponseWriter, r *http.Request)
 	}
 
 	isSelf := targetID == callerID
-	if !isSelf && middleware.RoleFromCtx(ctx) != "admin" {
+	if !isSelf && !middleware.CanManage(middleware.RoleFromCtx(ctx)) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

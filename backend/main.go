@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -66,7 +67,8 @@ func main() {
 	// ── Public: static file serving ──────────────────────────────────────────
 	r.Get("/files/website-assets/*", fileHandler.ServePublic)
 	r.Get("/files/music-files/*", fileHandler.ServePublic)
-	r.Get("/files/avatars/*", fileHandler.ServePrivate) // signed URL required
+	r.Get("/files/avatars/*", fileHandler.ServePrivate)   // signed URL required
+	r.Get("/files/documents/*", fileHandler.ServePrivate) // signed URL required
 
 	// ── Public: counts (homepage stats) ──────────────────────────────────────
 	r.Get("/api/santri/count", santriHandler.Count)
@@ -97,6 +99,7 @@ func main() {
 		r.Post("/api/upload/avatar", fileHandler.UploadAvatar)
 		r.Post("/api/upload/asset", fileHandler.UploadAsset)
 		r.Post("/api/upload/music", fileHandler.UploadMusic)
+		r.Post("/api/upload/document", fileHandler.UploadDocument)
 		r.Delete("/api/files", fileHandler.DeleteFile)
 		r.Get("/api/files/signed", fileHandler.SignedURL)
 
@@ -164,11 +167,41 @@ func main() {
 	}
 }
 
+// corsMiddleware allows one or more origins. CORS_ORIGIN accepts a
+// comma-separated list so a dev machine can serve the frontend on a fallback
+// port (Vite moves to 3001 when 3000 is taken) without the browser silently
+// blocking every POST after a successful preflight.
 func corsMiddleware(next http.Handler) http.Handler {
+	allowed := func() []string {
+		raw := strings.TrimSpace(os.Getenv("CORS_ORIGIN"))
+		if raw == "" {
+			return nil
+		}
+		parts := strings.Split(raw, ",")
+		out := make([]string, 0, len(parts))
+		for _, p := range parts {
+			if p = strings.TrimSpace(p); p != "" {
+				out = append(out, p)
+			}
+		}
+		return out
+	}()
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := os.Getenv("CORS_ORIGIN")
-		if origin == "" {
-			origin = "*"
+		origin := "*"
+		if len(allowed) > 0 {
+			reqOrigin := r.Header.Get("Origin")
+			// Echo the caller's origin when it is on the allow-list; otherwise
+			// fall back to the first entry so misconfigured callers get a clear
+			// CORS failure rather than a wildcard that leaks the API.
+			origin = allowed[0]
+			for _, a := range allowed {
+				if a == reqOrigin {
+					origin = reqOrigin
+					w.Header().Set("Vary", "Origin")
+					break
+				}
+			}
 		}
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")

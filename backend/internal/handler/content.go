@@ -159,7 +159,7 @@ func (h *ContentHandler) GetWebsiteContent(w http.ResponseWriter, r *http.Reques
 // Body: {content, is_public}
 func (h *ContentHandler) UpsertWebsiteContent(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -298,7 +298,7 @@ func (h *ContentHandler) GetNews(w http.ResponseWriter, r *http.Request) {
 // CreateNews POST /api/content/news (admin only)
 func (h *ContentHandler) CreateNews(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -343,7 +343,7 @@ func (h *ContentHandler) CreateNews(w http.ResponseWriter, r *http.Request) {
 // UpdateNews PUT /api/content/news/:id (admin only)
 func (h *ContentHandler) UpdateNews(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -431,7 +431,7 @@ func (h *ContentHandler) UpdateNews(w http.ResponseWriter, r *http.Request) {
 // DeleteNews DELETE /api/content/news/:id (admin only)
 func (h *ContentHandler) DeleteNews(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -512,7 +512,7 @@ func (h *ContentHandler) ListAnnouncements(w http.ResponseWriter, r *http.Reques
 // CreateAnnouncement POST /api/content/announcements (admin only)
 func (h *ContentHandler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -565,7 +565,7 @@ func (h *ContentHandler) CreateAnnouncement(w http.ResponseWriter, r *http.Reque
 // UpdateAnnouncement PUT /api/content/announcements/:id (admin only)
 func (h *ContentHandler) UpdateAnnouncement(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -653,7 +653,7 @@ func (h *ContentHandler) UpdateAnnouncement(w http.ResponseWriter, r *http.Reque
 // DeleteAnnouncement DELETE /api/content/announcements/:id (admin only)
 func (h *ContentHandler) DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

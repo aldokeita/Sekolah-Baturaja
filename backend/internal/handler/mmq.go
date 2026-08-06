@@ -31,12 +31,12 @@ func (h *MMQHandler) Routes() chi.Router {
 	r.Get("/schedules/by-day/{day}", h.SchedulesByDay)
 
 	// Absensi
-	r.With(middleware.RequireRole("admin", "guru")).Post("/attendance", h.CreateAttendance)
-	r.With(middleware.RequireRole("admin", "guru")).Put("/attendance/{id}", h.UpdateAttendance)
+	r.With(middleware.RequireRole("admin", "guru", "tata_usaha")).Post("/attendance", h.CreateAttendance)
+	r.With(middleware.RequireRole("admin", "guru", "tata_usaha")).Put("/attendance/{id}", h.UpdateAttendance)
 	r.Get("/attendance", h.ListAttendance)
 
 	// Notulensi
-	r.With(middleware.RequireRole("admin", "guru")).Post("/notulensi", h.CreateNotulensi)
+	r.With(middleware.RequireRole("admin", "guru", "tata_usaha")).Post("/notulensi", h.CreateNotulensi)
 	r.Get("/notulensi", h.ListNotulensi)
 
 	return r
@@ -282,8 +282,9 @@ func (h *MMQHandler) CreateNotulensi(w http.ResponseWriter, r *http.Request) {
 	createdBy := middleware.UserIDFromCtx(r.Context())
 
 	// Verifikasi bahwa guru yang login memiliki is_notulen=true jika bukan admin.
+	// Tata usaha diperlakukan seperti admin di sini (boleh membuat notulensi).
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		var isNotulen bool
 		err := h.db.QueryRow(r.Context(), `
 			SELECT COALESCE(is_notulen, false) FROM guru WHERE id = $1

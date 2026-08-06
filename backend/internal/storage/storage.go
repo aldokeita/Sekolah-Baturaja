@@ -28,13 +28,28 @@ const (
 	BucketAvatars       = "avatars"
 	BucketWebsiteAssets = "website-assets"
 	BucketMusic         = "music-files"
+	// BucketDocuments menampung arsip dokumen resmi (scan ijazah, akta, KK,
+	// SK). Privat: hanya bisa diakses lewat signed URL, sama seperti avatars,
+	// karena isinya data pribadi.
+	BucketDocuments = "documents"
 )
 
 var allowedMIME = map[string]map[string]bool{
 	BucketAvatars:       {"image/jpeg": true, "image/png": true, "image/webp": true},
 	BucketWebsiteAssets: {"image/jpeg": true, "image/png": true, "image/webp": true, "application/pdf": true},
 	BucketMusic:         {"audio/mpeg": true, "audio/wav": true, "audio/ogg": true},
+	BucketDocuments:     {"application/pdf": true, "image/jpeg": true, "image/png": true, "image/webp": true},
 }
+
+// privateBuckets wajib signed URL untuk dibaca. Bucket lain dilayani langsung.
+var privateBuckets = map[string]bool{
+	BucketAvatars:   true,
+	BucketDocuments: true,
+}
+
+// IsPrivateBucket dipakai handler untuk menolak route privat yang diarahkan ke
+// bucket publik, sehingga daftar bucket privat hanya hidup di satu tempat.
+func IsPrivateBucket(bucket string) bool { return privateBuckets[bucket] }
 
 type Store struct {
 	root     string // e.g. /app/uploads
@@ -108,7 +123,6 @@ func (s *Store) PublicPath(bucket, path string) string {
 // ServeFile adalah handler untuk melayani file publik dan privat.
 // Privat (avatars): wajib signature. Publik (website-assets, music): langsung serve.
 func (s *Store) ServeFile(w http.ResponseWriter, r *http.Request, bucket, path string) {
-	privateBuckets := map[string]bool{BucketAvatars: true}
 	if privateBuckets[bucket] {
 		if err := s.VerifySignedURL(r, bucket, path); err != nil {
 			http.Error(w, err.Error(), http.StatusForbidden)

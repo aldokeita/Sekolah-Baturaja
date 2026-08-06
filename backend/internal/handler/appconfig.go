@@ -132,7 +132,7 @@ func (h *AppConfigHandler) GetMultipleConfigs(w http.ResponseWriter, r *http.Req
 // Only keys in validConfigKeys are accepted.
 func (h *AppConfigHandler) UpsertConfig(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
-	if role != "admin" {
+	if !middleware.CanManage(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
