@@ -28,7 +28,12 @@ const tryRefresh = async () => {
     setTokens(json);
     return json.access_token;
   })();
-  refreshPromise.finally(() => { refreshPromise = null; });
+  // Sengaja tidak memakai .finally(): promise turunan yang dihasilkannya tidak
+  // dipegang siapa pun, jadi refresh yang gagal memunculkan unhandled rejection
+  // di samping error yang sudah ditangani pemanggil. Dua handler pada .then()
+  // membereskan keduanya.
+  const done = () => { refreshPromise = null; };
+  refreshPromise.then(done, done);
   return refreshPromise;
 };
 
