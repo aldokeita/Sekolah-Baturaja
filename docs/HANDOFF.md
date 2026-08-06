@@ -1,6 +1,6 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-06 · **Branch:** `migrate-frontpage-baru` (belum pernah di-push) · **HEAD:** `6eae380`
+**Diperbarui:** 2026-08-06 · **Branch:** `migrate-frontpage-baru` (belum pernah di-push) · **HEAD:** `0093ca9`
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -84,16 +84,32 @@ model data.
 | Lapisan | Status |
 |---|---|
 | `npm run build` | Hijau, exit 0 |
-| Guard `scripts/validate-*.ps1` (4 skrip) | Hijau, exit 0 |
+| `npm run lint` | Bersih, exit 0 |
+| `npm test` | **40 test hijau** (Vitest 3, 3 berkas) |
+| Guard `scripts/validate-*.ps1` | **4 dari 5 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
-| `npm run lint` | **Bersih, exit 0** |
 | Login 6 akun | **Terbukti jalan** lewat API |
+| `resolveUser` tahan kegagalan | **Terbukti lewat uji suntik kerusakan** |
 | 18 tab dashboard admin | **Semua merender**, nol crash — disapu satu per satu di browser |
 | Panel Metode Mengaji | **Tuntas di browser**: pilih Iqro → simpan → DB → bertahan setelah muat ulang |
 | Tab Rapat Guru | **Tuntas**, tab merender bersih |
+| Dashboard guru — 4 tombol hafalan | **Tuntas di browser** (Doa/Sholat/Surat/Tahfizh, Tahfizh terbuka berisi) |
+| Dashboard murid — 4 bagian hafalan | **Tuntas lewat API + kode**: token murid biasa menerima Doa 44, Sholat 33, Surat 26, Tahfizh 98; kedua `program_scope` terkirim; 4 `<HafalanSection>` dirender tanpa syarat status |
 | Simpan murid baru + NISN | **Masih terhalang** — lihat jebakan "password `required`" di bawah |
 | `GET /api/content/feedback` | **200 OK** (sebelumnya 405) |
 | `ErrorBoundary` | Terpasang; tampilan fallback-nya **belum** diuji dengan crash sengaja |
+
+### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
+
+Ada **lima** skrip `validate-*.ps1`, bukan empat seperti tercatat sebelumnya.
+`validate-production-migration-local.ps1` selalu gagal dengan "Safe summary tidak
+ditemukan" karena menuntut `_private_reference/migration-work/prepared-production-data/safe-summary.json`
+dan container `supabase_db_*`. Keduanya **tidak ada** di repo maupun di Docker sini —
+skrip itu validator gladi resik migrasi produksi, bukan guard harian.
+
+Menjalankan kelimanya dalam satu loop akan berhenti di skrip ini dan
+`validate-seed-dummy-only.ps1` tak pernah ikut terjalankan. Jalankan satu per satu,
+atau lewati yang produksi.
 
 Verifikasi statis untuk NISN/Angkatan: field form (`SantriManagement.jsx:1132`) → validasi regex
 (`:677`, `:683`) → normalisasi adapter (`dataMasterAdapters.js:52`) → allowlist handler
@@ -275,18 +291,34 @@ Metode Mengaji, perbaiki celah API Konten, pasang `ErrorBoundary` dua lapis dan 
 prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, dan hapus
 `SantriDewasaManagement.jsx`.
 
+Tiga dari lima sudah tuntas: verifikasi hafalan sisi guru dan murid, jaring test, dan
+perbaikan `resolveUser`.
+
 Yang tersisa:
 
-1. **Verifikasi visual dashboard guru dan murid** untuk perubahan hafalan (commit `066a3cb`).
-   Keduanya belum dilihat langsung karena masuk sebagai peran itu menuntut pengisian kata sandi.
-   Yang perlu dicek: guru melihat empat tombol (Doa, Sholat, Surat, Tahfizh) pada setiap murid, dan
-   murid melihat keempat bagian hafalan.
-2. **Pasang jaring test.** Saat ini **nol** framework test. Delapan bug pada 2026-08-06 semuanya
-   ditemukan dengan tangan, dan tiga di antaranya membisu — tidak memunculkan pesan apa pun. Ini
-   prasyarat sebelum rename kosakata apa pun.
-3. Ganti email admin berdomain lama (butuh migrasi tersendiri, lihat jebakan di atas).
-4. Perbaiki `resolveUser` yang rapuh (lihat jebakan di atas).
-5. Modelkan ulang absensi: `sesi_mengaji` → jam pelajaran & mata pelajaran.
+1. **Ganti email admin berdomain lama** (butuh migrasi tersendiri, lihat jebakan di atas).
+2. **Modelkan ulang absensi**: `sesi_mengaji` → jam pelajaran & mata pelajaran. Ini perubahan
+   model data, bukan sekadar ganti nama — butuh keputusan desain dari pengguna lebih dulu.
+3. **Perluas jaring test.** 40 test yang ada hanya menutupi logika murni di `src/lib/`.
+   Belum ada satu pun test komponen (butuh `@testing-library/react`) maupun test Go
+   (`go test` hanya bisa lewat Docker). Penjagaan yang masih inline di dalam komponen
+   tetap tak terjangkau sampai diekstrak seperti `validateDefaultSppAmount`.
+4. Uji tampilan fallback `ErrorBoundary` dengan crash sengaja.
+
+### Cara memakai jaring test
+
+```powershell
+npm test          # sekali jalan
+npm run test:watch
+```
+
+Konfigurasi di `vitest.config.js` (berdiri sendiri, tidak memuat plugin build; environment
+`jsdom` karena beberapa modul menyinggung localStorage saat dimuat).
+
+**Test baru wajib dibuktikan menangkap sesuatu.** Cara yang dipakai di sini: kembalikan bug
+lamanya sebentar, pastikan test jatuh, lalu pulihkan. Tanpa langkah itu, test hijau tidak
+membuktikan apa pun — percobaan pertama pada `normalizeDefaultSppAmount` lulus terus
+meski bug-nya disuntik ulang, karena fungsi itu memang tidak pernah jadi sumber masalah.
 
 Sebelum menyentuh rename kosakata `santri`, baca dulu keputusan mengikat di bagian 2.
 
