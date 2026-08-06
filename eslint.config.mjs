@@ -4,7 +4,9 @@ import importPlugin from 'eslint-plugin-import';
 import globals from 'globals';
 
 export default [
-	{ ignores: ['node_modules/**', 'dist/**', 'build/**', 'vite.config.js'] },
+	// .claude/** berisi worktree sementara agen — melintasinya membuat resolver
+	// import menabrak node_modules milik repo utama dan ESLint gagal total.
+	{ ignores: ['node_modules/**', 'dist/**', 'build/**', 'vite.config.js', '.claude/**'] },
 	{
 		files: ['**/*.js', '**/*.jsx'],
 		plugins: { react, 'react-hooks': reactHooks, import: importPlugin },
