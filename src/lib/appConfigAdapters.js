@@ -8,6 +8,7 @@ export const APP_CONFIG_KEYS = {
   TV_CONFIG: 'tv_config',
   GURU_SESSION_OVERRIDES: 'guru_session_overrides',
   HAFALAN_VIDEOS: 'hafalanVideos',
+  TAHFIZH: 'tahfizh_config',
 };
 
 export const getAppConfigErrorMessage = (error) => {

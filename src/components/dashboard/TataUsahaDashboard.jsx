@@ -4,6 +4,7 @@ import {
   CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
+import { enableTahfizh } from '@/lib/featureFlags';
 
 // Tata Usaha (administrative staff) module set. Mirrors the Admin dashboard's
 // layout and flow via the shared DashboardWorkspace, but deliberately omits the
@@ -21,6 +22,7 @@ const tataUsahaTabs = [
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },
   { value: 'rapat-guru', label: 'Rapat Guru', icon: Users, group: 'akademik' },
+  ...(enableTahfizh ? [{ value: 'metode-mengaji', label: 'Metode Mengaji', icon: BookOpen, group: 'akademik' }] : []),
   { value: 'academic-calendar', label: 'Kalender', icon: Calendar, group: 'akademik' },
   { value: 'payment', label: 'Pembayaran', icon: DollarSign, group: 'keuangan' },
   { value: 'recap', label: 'Rekap SPP', icon: PieChart, group: 'keuangan' },

@@ -9,6 +9,7 @@ import { toast } from '@/components/ui/use-toast';
 import SantriManagement from '../admin/SantriManagement';
 import GuruManagement from '../admin/GuruManagement';
 import MMQManagement from '../admin/MMQManagement';
+import TahfizhConfiguration from '../admin/TahfizhConfiguration';
 import PaymentSystem from '../admin/PaymentSystem';
 import PaymentRecap from '../admin/PaymentRecap';
 import PaymentHistory from '../admin/PaymentHistory';
@@ -34,6 +35,8 @@ import { fetchSantriCount, fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import { fetchCashflowSummary } from '@/lib/financeAdapters';
 import { resolveAvatarRecord } from '@/lib/storageAdapters';
 import { enableGameFeatures } from '@/lib/featureFlags';
+import { fetchAppConfig, APP_CONFIG_KEYS } from '@/lib/appConfigAdapters';
+import { applyTahfizhConfig } from '@/lib/tahfizhLevels';
 import '@/styles/sdnb-dashboard.css';
 
 // Shared registry: Admin and Tata Usaha render from this, so the two never drift apart.
@@ -42,6 +45,7 @@ const renderModule = (value) => {
     case 'santri': return <SantriManagement />;
     case 'kelas': return <ClassManagement />;
     case 'rapat-guru': return <MMQManagement />;
+    case 'metode-mengaji': return <TahfizhConfiguration />;
     case 'guru': return <GuruManagement />;
     case 'rekap-absensi': return <AttendanceRecap />;
     case 'rekap-guru': return <GuruAttendanceRecap />;
@@ -94,6 +98,10 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
   const hasSantriTab = tabs.some((t) => t.value === 'santri');
 
   useEffect(() => {
+    fetchAppConfig(APP_CONFIG_KEYS.TAHFIZH)
+      .then((stored) => { if (stored) applyTahfizhConfig(stored); })
+      .catch(() => { /* daftar tingkat bawaan tetap dipakai */ });
+
     const fetchStats = async () => {
       setIsLoading(true);
       setError(null);

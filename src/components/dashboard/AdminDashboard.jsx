@@ -5,7 +5,7 @@ import {
   Database,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
-import { enableBackupRestore } from '@/lib/featureFlags';
+import { enableBackupRestore, enableTahfizh } from '@/lib/featureFlags';
 
 // Full module set for the Administrator. The Tata Usaha dashboard reuses the
 // same DashboardWorkspace shell with a narrower subset (see TataUsahaDashboard).
@@ -16,6 +16,7 @@ const adminTabs = [
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },
   { value: 'rapat-guru', label: 'Rapat Guru', icon: Users, group: 'akademik' },
+  ...(enableTahfizh ? [{ value: 'metode-mengaji', label: 'Metode Mengaji', icon: BookOpen, group: 'akademik' }] : []),
   { value: 'salary', label: 'Bisyaroh', icon: Calculator, group: 'akademik' },
   { value: 'academic-calendar', label: 'Kalender', icon: Calendar, group: 'akademik' },
   { value: 'payment', label: 'Pembayaran', icon: DollarSign, group: 'keuangan' },
