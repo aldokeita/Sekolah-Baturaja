@@ -37,7 +37,7 @@ var validConfigKeys = map[string]struct{}{
 	"hafalanVideos":             {},
 	"random_name_settings":      {},
 	"attendance_session_config": {},
-	"tahfizh_config":           {},
+	"tahfizh_config":            {},
 }
 
 func (h *AppConfigHandler) Routes() http.Handler {
