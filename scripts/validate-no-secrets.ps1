@@ -15,8 +15,12 @@ $violations = @()
 foreach ($path in $paths) {
   $files = Get-ChildItem $path -Recurse -File -ErrorAction SilentlyContinue
   foreach ($pattern in $secretPatterns) {
-    $matches = $files | Select-String -Pattern $pattern -ErrorAction SilentlyContinue
-    if ($matches) { $violations += $matches }
+    $hits = $files | Select-String -Pattern $pattern -ErrorAction SilentlyContinue
+    # Dokumentasi memuat contoh connection string berisi placeholder dalam kurung
+    # siku, misal postgresql://postgres:[DB_PASSWORD]@db.[PROJECT_REF].supabase.co
+    # Itu petunjuk pemakaian, bukan kredensial, jadi bukan pelanggaran.
+    $hits = $hits | Where-Object { $_.Line -notmatch '\[[A-Za-z_]+\]' }
+    if ($hits) { $violations += $hits }
   }
 }
 
