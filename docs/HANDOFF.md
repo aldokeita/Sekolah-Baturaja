@@ -27,6 +27,15 @@ dibongkar tanpa instruksi baru.
 | Hafalan | **Dipertahankan** di kode, hanya dicopot dari routing & dashboard | Sebagian sekolah umum punya program tahfizh |
 | Jilid/Sesi di Data Murid | Filter & kolom dihapus, field tetap ada di balik flag | Jadi isian bebas, bukan dropdown Qiroati |
 | Metode mengaji | Sekolah **memilih metode**, tingkat mengikuti | Qiroati/Iqro/Ummi/Wafa/Tilawati/Tahfizh-Juz/Kustom |
+| Kategori murid & kelas | **Dihapus seluruhnya.** Tidak ada kelas dewasa, tidak ada PTPT, istilah TPQ tidak dipakai | SD negeri dengan satu jenis murid |
+
+Manajemen Kelas kini **satu panel tanpa sub-tab**. Tiga sub-tab lama (Murid TPQ, Murid PTPT, Murid
+Dewasa) dicabut dan `AdultClassManagement.jsx` dihapus.
+
+Penyaringan kategori **dihapus, bukan dipatok ke `'Anak'`**. Basis data masih menyimpan 1 kelas dan
+3 murid berkategori `PTPT` dari era lama; mematoknya ke `'Anak'` akan membuat data itu tak terlihat
+dan tak terkelola. Semua kelas aktif dan semua murid aktif kini tampil dalam satu daftar. Nilai
+`kategori` hanya tersisa sebagai default saat membuat kelas baru.
 
 **Nilai `'Pentashih'` di database TIDAK diubah.** Hanya labelnya yang diterjemahkan lewat
 `ROLE_LABELS` di `GuruManagement.jsx`. Mengubah nilainya akan merusak data lama dan RLS.
@@ -267,10 +276,11 @@ prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, dan
 
 Yang tersisa:
 
-1. **Putuskan nasib `AdultClassManagement`.** Kategori murid dewasa sudah dihapus di `4170e3b`
-   ("sekolah ini satu lembaga umum"), tapi panel *kelas* dewasa masih hidup di dalam
-   `ClassManagement`. Timpang: kelasnya ada, muridnya tidak. Kalau SD negeri ini tidak
-   menyelenggarakan kelas dewasa, panel itu ikut dicopot.
+1. **Label TPQ/PTPT masih terlihat di fitur Hafalan.** Panel Konten punya tab "Hafalan TPQ" dan
+   "Hafalan PTPT" (`ContentManagement.jsx:814`), dan dashboard guru serta murid memakai
+   `programScope` bernilai `'TPQ'`/`'PTPT'` beserta `PTPT_TAHFIZH_TARGETS`. Hafalan sengaja
+   dipertahankan (lihat bagian 2), jadi ini soal **penamaan**, bukan pencabutan fitur. Belum
+   diputuskan mau dinamai apa.
 2. **Pasang jaring test.** Saat ini **nol** framework test. Delapan bug pada 2026-08-06 semuanya
    ditemukan dengan tangan, dan tiga di antaranya membisu — tidak memunculkan pesan apa pun. Ini
    prasyarat sebelum rename kosakata apa pun.
