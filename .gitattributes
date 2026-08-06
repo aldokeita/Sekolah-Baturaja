@@ -1,0 +1,20 @@
+# Enforce LF line endings for files that MUST stay LF regardless of the OS the
+# repo is cloned on. Shell scripts and SQL run inside Linux containers (bind-
+# mounted from the host via docker-compose), so CRLF would break bash
+# (`bad interpreter: /bin/bash^M`) and can confuse psql. Windows checkouts with
+# core.autocrlf=true would otherwise convert these to CRLF.
+*.sh   text eol=lf
+*.sql  text eol=lf
+*.bash text eol=lf
+
+# Normalize common text files but let Git pick the working-tree ending.
+*.js   text
+*.jsx  text
+*.ts   text
+*.tsx  text
+*.json text
+*.md   text
+*.css  text
+*.html text
+*.yml  text
+*.yaml text

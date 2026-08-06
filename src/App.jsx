@@ -3,31 +3,21 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import PublicLayout from '@/components/sdnb/PublicLayout';
 import HomePage from '@/pages/HomePage';
 import LoginPage from '@/pages/LoginPage';
 import DashboardPage from '@/pages/DashboardPage';
 import ProfilePage from '@/pages/ProfilePage';
-import RegistrationInfoPage from '@/pages/RegistrationInfoPage';
-import BrochurePage from '@/pages/BrochurePage';
 import ContactPage from '@/pages/ContactPage';
 import PaymentStatusPage from '@/pages/PaymentStatusPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
 import NewsPage from '@/pages/NewsPage';
-import NewsDetailPage from '@/pages/NewsDetailPage';
-import AnnouncementPage from '@/pages/AnnouncementPage';
-import AnnouncementDetailPage from '@/pages/AnnouncementDetailPage';
-import QiroatiMethodPage from '@/pages/QiroatiMethodPage';
 import FacilitiesPage from '@/pages/FacilitiesPage';
-import ParentingPage from '@/pages/ParentingPage';
-import ParentingArticlePage from '@/pages/ParentingArticlePage';
-import ForumPage from '@/pages/ForumPage';
-import ForumTopicPage from '@/pages/ForumTopicPage';
-import EduMediaPage from '@/pages/EduMediaPage';
-import SystemPage from '@/pages/SystemPage';
-import WaliDiscussionPage from '@/pages/WaliDiscussionPage';
+import ProgramPage from '@/pages/ProgramPage';
+import PpdbPage from '@/pages/PpdbPage';
+import PrestasiPage from '@/pages/PrestasiPage';
+import EkstrakurikulerPage from '@/pages/EkstrakurikulerPage';
 import DigitalAttendancePage from '@/pages/DigitalAttendancePage';
 import TvDisplayPage from '@/pages/TvDisplayPage';
 import QuizHafalanPage from '@/pages/QuizHafalanPage';
@@ -110,8 +100,8 @@ const DeferredFeaturePage = () => (
   </div>
 );
 
-const allDashboardRoles = ['admin', 'guru', 'santri', 'pentashih'];
-const operationalDisplayRoles = ['admin', 'guru', 'pentashih'];
+const allDashboardRoles = ['admin', 'guru', 'santri', 'pentashih', 'tata_usaha'];
+const operationalDisplayRoles = ['admin', 'guru', 'pentashih', 'tata_usaha'];
 
 function App() {
   /* ----------------------------------------------------------------
@@ -162,46 +152,37 @@ function App() {
                   </>
                 )}
 
+                {/* Login and the dashboard sit outside the public shell: the
+                    mockup's Login page is a standalone full-screen design with no
+                    nav/footer, and the dashboard has its own chrome (the public
+                    wrapper's font + overflow rules would bleed into it). */}
+                {/* Standalone full-screen mockups: no shared nav/footer. */}
+                <Route path="/pendaftaran" element={<PpdbPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/dashboard" element={<ProtectedRoute allowedRoles={allDashboardRoles}><DashboardPage /></ProtectedRoute>} />
+
                 <Route path="*" element={
-                  <>
-                    <Navbar />
+                  <PublicLayout>
                     <main className="flex-grow">
                       <Routes>
                         <Route path="/" element={<HomePage />} />
-                        <Route path="/login" element={<LoginPage />} />
                         <Route path="/profil" element={<ProfilePage />} />
                         <Route path="/profil/galeri" element={<GalleryPage />} />
-                        <Route path="/pendaftaran/informasi" element={<RegistrationInfoPage />} />
-                        <Route path="/pendaftaran/brosur" element={<BrochurePage />} />
-                        <Route path="/pendaftaran/sistem" element={<SystemPage />} />
-                        <Route path="/parenting" element={<ParentingPage />} />
-                        <Route path="/parenting/:articleId" element={<ParentingArticlePage />} />
-                        <Route path="/parenting/media-edukatif" element={<EduMediaPage />} />
-                        <Route path="/parenting/diskusi-wali" element={<WaliDiscussionPage />} />
-                        {enableDeferredFeatures ? (
-                          <>
-                            <Route path="/forum" element={<ForumPage />} />
-                            <Route path="/forum/:topicId" element={<ForumTopicPage />} />
-                          </>
-                        ) : (
-                          <>
-                            <Route path="/forum" element={<DeferredFeaturePage />} />
-                            <Route path="/forum/:topicId" element={<DeferredFeaturePage />} />
-                          </>
-                        )}
+                        {/* LPQ-only public pages (Parenting, Metode Qiroati, Forum,
+                            Brosur, Sistem Mengaji, Pengumuman, detail Berita) were
+                            removed with the switch to the SDN Baturaja template.
+                            Announcements are a Berita category now, and Berita has a
+                            built-in article reader, so no detail route is needed. */}
                         <Route path="/kontak" element={<ContactPage />} />
                         <Route path="/status-pembayaran/:paymentId" element={<PaymentStatusPage />} />
                         <Route path="/berita" element={<NewsPage />} />
-                        <Route path="/berita/:id" element={<NewsDetailPage />} />
-                        <Route path="/pengumuman" element={<AnnouncementPage />} />
-                        <Route path="/pengumuman/:id" element={<AnnouncementDetailPage />} />
-                        <Route path="/metode-qiroati" element={<QiroatiMethodPage />} />
                         <Route path="/fasilitas" element={<FacilitiesPage />} />
-                        <Route path="/dashboard" element={<ProtectedRoute allowedRoles={allDashboardRoles}><DashboardPage /></ProtectedRoute>} />
+                        <Route path="/program" element={<ProgramPage />} />
+                        <Route path="/prestasi" element={<PrestasiPage />} />
+                        <Route path="/ekstrakurikuler" element={<EkstrakurikulerPage />} />
                       </Routes>
                     </main>
-                    <Footer />
-                  </>
+                  </PublicLayout>
                 } />
               </Routes>
               <Toaster />

@@ -40,6 +40,10 @@ export const ThemeProvider = ({ children }) => {
       } else {
         document.documentElement.classList.remove('dark');
       }
+      // The ported public pages (sdnb.css) key their dark rules off
+      // `html[data-theme]`, matching the Claude Design mockups. Keep it in sync
+      // with the Tailwind `.dark` class so one toggle drives both.
+      document.documentElement.setAttribute('data-theme', isDarkTheme ? 'dark' : 'light');
   }
 
   const toggleTheme = () => {

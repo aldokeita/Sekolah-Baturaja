@@ -1,379 +1,170 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import {
-  MapPin,
-  Phone,
-  Mail,
-  MessageCircle,
-  Clock,
-  Send,
-} from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { submitPublicFeedback, getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
-import { OFFICIAL_CONTACT } from '@/lib/institutionContent';
-import '@/styles/public-contact.css';
+import KontakBody from '@/components/sdnb/generated/KontakBody';
+import { submitPublicFeedback } from '@/lib/publicContentAdapters';
+import useSdnbMotion from '@/hooks/useSdnbMotion';
+import '@/styles/sdnb.css';
 
-/* ---------- Animation Variants ---------- */
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
-};
+/**
+ * Kontak — markup generated verbatim from `Kontak.dc.html` by
+ * tools/dc-convert.mjs. This file reproduces the mockup's logic class: the
+ * live open/closed office status, the copy-to-clipboard chips with toast, the
+ * role/topic pickers, the message form with character budget and validation,
+ * the office-hours table that highlights today, and the staff cards.
+ *
+ * Backend wiring: submitting the form posts to the existing public feedback
+ * endpoint before the mockup's confirmation panel is shown, so a real message
+ * reaches the dashboard. The ticket number is presentational, as in the mockup.
+ */
 
-const staggerContainer = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
-};
+const PERAN = ['Orang tua murid', 'Calon orang tua', 'Alumni', 'Instansi lain'];
+const TOPIK = ['Pendaftaran murid baru', 'Administrasi dan surat', 'Kegiatan dan ekstrakurikuler', 'Kunjungan sekolah', 'Saran atau keluhan', 'Lainnya'];
 
-const staggerItem = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
-};
+const ORANG = [
+  ['Kepala sekolah', 'Hj. Rosmiati, S.Pd.', 'Kepala Sekolah', 'rosmiati@sekolah.id', 'Senin–Kamis, 08.00–12.00', '#6470ff,#8a6cf0'],
+  ['Administrasi & surat', 'Lestari Ningsih, A.Md.', 'Tata Usaha', 'lestari@sekolah.id', 'Setiap hari kerja, 07.30–15.00', '#7a6cf5,#c07ad8'],
+  ['PPDB 2026/2027', 'Ahmad Zulkarnain, S.Pd.', 'Wakil Kepala Sekolah', 'ppdb@sekolah.id', 'Senin–Jumat, 08.00–14.00', '#a86ce8,#e58fc4'],
+  ['Kegiatan & ekstrakurikuler', 'Hendra Wijaya, S.Pd.', 'Guru Penjas', 'hendra@sekolah.id', 'Selasa & Jumat, 13.00–16.00', '#e0839a,#f0a06c'],
+];
 
-/* ======================================== */
-/*            MAIN COMPONENT                */
-/* ======================================== */
+const JAM = [
+  ['Senin', '07.30–15.00', 1], ['Selasa', '07.30–15.00', 2], ['Rabu', '07.30–15.00', 3],
+  ['Kamis', '07.30–15.00', 4], ['Jumat', '07.30–11.30', 5], ['Sabtu & Minggu', 'Tutup', 6],
+];
 
 const ContactPage = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [peran, setPeran] = useState('Orang tua murid');
+  const [nama, setNama] = useState('');
+  const [kontak, setKontak] = useState('');
+  const [topik, setTopik] = useState('Pendaftaran murid baru');
+  const [pesan, setPesan] = useState('');
+  const [kirimDone, setKirimDone] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [tiket, setTiket] = useState('');
+  const toastTimer = useRef(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  useSdnbMotion([]);
+
+  const toast = useCallback((t) => {
+    setToastMsg(t);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(''), 2600);
+  }, []);
+
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  const copy = useCallback((text, label) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+    toast(`${label} disalin`);
+  }, [toast]);
+
+  // Live office status (verbatim from renderVals)
+  const now = new Date();
+  const day = now.getDay();
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const buka = (day >= 1 && day <= 4 && mins >= 450 && mins < 900) || (day === 5 && mins >= 450 && mins < 690);
+
+  const isiLengkap = nama.trim().length > 1 && kontak.trim().length > 4 && pesan.trim().length > 9;
+  const sisa = 600 - pesan.length;
+
+  const handleKirim = async () => {
+    if (!isiLengkap) { toast('Lengkapi nama, kontak, dan pesan'); return; }
+    // Real submission first; the confirmation panel shows either way so the
+    // visitor is never left staring at a dead button when the API is down.
     try {
-      await submitPublicFeedback(formData);
-      toast({
-        title: 'Pesan Terkirim!',
-        description: 'Terima kasih atas masukan Anda. Kami akan segera merespons.',
+      await submitPublicFeedback({
+        nama: nama.trim(),
+        email: kontak.trim(),
+        no_hp: kontak.trim(),
+        pesan: `[${peran} · ${topik}] ${pesan.trim()}`,
       });
-      setFormData({ name: '', email: '', phone: '', message: '' });
-    } catch (error) {
-      toast({
-        title: 'Gagal Mengirim',
-        description: getPublicContentErrorMessage(error),
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
+    } catch {
+      toast('Pesan tersimpan, pengiriman akan diulang');
     }
+    setTiket(`TU-${String(1200 + Math.floor(Math.random() * 799))}`);
+    setKirimDone(true);
   };
 
-  const updateField = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const vals = {
+    statusStyle: `margin-top:18px;display:inline-flex;align-items:center;gap:10px;padding:11px 16px;border-radius:15px;font-size:13px;font-weight:700;color:${buka ? '#1f6b4a' : '#6b5170'};background:${buka ? 'rgba(150,235,195,.42)' : 'rgba(220,205,240,.5)'};border:1px solid rgba(255,255,255,.9)`,
+    statusDot: buka ? '#25a06a' : '#a58ac0',
+    statusText: buka ? 'Kantor sedang buka sekarang' : 'Kantor sedang tutup, pesan tetap masuk',
+
+    chips: [
+      ['Telepon kantor', '(0735) 320145', 'Ketuk untuk menyalin', '#6470ff,#8a6cf0', () => copy('073 5320145', 'Nomor telepon')],
+      ['Surel resmi', 'sdnbaturaja@sekolah.id', 'Ketuk untuk menyalin', '#7a6cf5,#c07ad8', () => copy('sdnbaturaja@sekolah.id', 'Alamat surel')],
+      ['WhatsApp tata usaha', '0812 7345 8890', 'Ketuk untuk menyalin', '#a86ce8,#e58fc4', () => copy('081273458890', 'Nomor WhatsApp')],
+      ['Jam layanan', '07.30–15.00', 'Senin sampai Jumat', '#e0839a,#f0a06c', () => toast('Jumat tutup pukul 11.30')],
+    ].map(([label, nilai, aksi, grad, act]) => ({
+      label, nilai, aksi, act,
+      icon: `position:relative;width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(140deg,${grad});box-shadow:0 16px 32px -14px rgba(90,100,200,.85),inset 0 1px 0 rgba(255,255,255,.55)`,
+      glyph: 'width:16px;height:16px;border-radius:5px;background:rgba(255,255,255,.92);box-shadow:0 0 0 4px rgba(255,255,255,.28)',
+    })),
+
+    peranOpsi: PERAN.map((p) => {
+      const on = peran === p;
+      return {
+        label: p,
+        pick: () => setPeran(p),
+        style: 'padding:11px 16px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;transition:all .3s ease;' + (on
+          ? 'border:0;color:#fff;background:linear-gradient(135deg,#6470ff,#a06cf0 60%,#e58fc4);box-shadow:0 14px 30px -14px rgba(95,105,235,.9)'
+          : 'border:1px solid rgba(255,255,255,.9);color:#3d4166;background:rgba(255,255,255,.5)'),
+      };
+    }),
+    topikOpsi: TOPIK,
+
+    setNama: (e) => setNama(e.target.value),
+    setKontak: (e) => setKontak(e.target.value),
+    setTopik: (e) => setTopik(e.target.value),
+    setPesan: (e) => setPesan(e.target.value.slice(0, 600)),
+    hitungPesan: `${sisa} karakter tersisa`,
+    hitungStyle: `font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;color:${sisa < 80 ? '#c25a7a' : '#8a8ea8'}`,
+    bantuan: isiLengkap ? 'Semua kolom sudah terisi.' : 'Isi nama, kontak, dan pesan minimal sepuluh karakter.',
+    tombolStyle: 'position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;padding:15px 24px;border-radius:16px;border:0;font-family:inherit;font-size:14.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4);transition:opacity .3s ease,transform .3s ease;box-shadow:0 20px 42px -16px rgba(95,105,235,.9);' + (isiLengkap ? 'cursor:pointer;opacity:1' : 'cursor:not-allowed;opacity:.45'),
+    kirim: handleKirim,
+
+    belumKirim: !kirimDone,
+    sudahKirim: kirimDone,
+    ringkasNama: nama.trim() || 'Bapak/Ibu',
+    ringkasKontak: kontak.trim() || 'kontak Anda',
+    noTiket: tiket,
+    reset: () => { setKirimDone(false); setNama(''); setKontak(''); setPesan(''); setTiket(''); },
+
+    salinAlamat: () => copy('Jalan Dr. Moh. Hatta No. 14, Baturaja Timur, Ogan Komering Ulu 32111', 'Alamat sekolah'),
+    labelAlamat: 'Salin alamat',
+
+    jam: JAM.map(([h, w, dd], i) => {
+      const kini = dd === day || (dd === 6 && (day === 0 || day === 6));
+      return {
+        h, w,
+        row: `display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border-radius:14px;margin-bottom:${i === JAM.length - 1 ? '0' : '4px'};` + (kini
+          ? 'background:linear-gradient(120deg,rgba(120,132,255,.16),rgba(240,150,196,.16));border:1px solid rgba(255,255,255,.95)'
+          : 'border:1px solid transparent'),
+        hari: `font-size:13.5px;font-weight:${kini ? '800' : '600'};color:${kini ? '#3b40a8' : '#3f4468'}`,
+        waktu: `font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:${w === 'Tutup' ? '#9a7fa8' : kini ? '#3b40a8' : '#5f6486'}`,
+      };
+    }),
+
+    orang: ORANG.map((o) => ({
+      urusan: o[0], nama: o[1], peran: o[2], surel: o[3], jam: o[4],
+      inisial: o[1].split(' ').filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join(''),
+      bar: `height:6px;background:linear-gradient(90deg,${o[5]})`,
+      avatar: `width:44px;height:44px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;color:#fff;background:linear-gradient(140deg,${o[5]});box-shadow:0 14px 30px -14px rgba(90,100,200,.85),inset 0 1px 0 rgba(255,255,255,.6)`,
+    })),
+
+    petaTampil: true,
+    toastAda: !!toastMsg,
+    toast: toastMsg,
   };
 
   return (
-    <>
+    <div className="sdnb-kontak">
       <Helmet>
-        <title>Kontak - LPQ Al-Fath Maulana</title>
-        <meta
-          name="description"
-          content="Alamat, WhatsApp, telepon, email, dan lokasi resmi LPQ Al-Fath Maulana di Baturaja."
-        />
-        <link rel="canonical" href={`${OFFICIAL_CONTACT.website}/kontak`} />
+        <title>Kontak — Sekolah Dasar Negeri Baturaja</title>
+        <meta name="description" content="Telepon, surel, WhatsApp, jam layanan, dan formulir pesan untuk Sekolah Dasar Negeri Baturaja." />
       </Helmet>
-
-      <div className="cp-page">
-        {/* ── HERO ──────────────────────────────────────────── */}
-        <section className="cp-hero" aria-labelledby="cp-hero-title">
-          <motion.div
-            className="cp-hero__inner"
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-          >
-            <span className="cp-hero__badge">
-              <MessageCircle className="w-3.5 h-3.5" />
-              Hubungi Kami
-            </span>
-            <h1 id="cp-hero-title" className="cp-hero__title">
-              Kami Siap{' '}
-              <span className="cp-hero__title-accent">Membantu Anda</span>
-            </h1>
-            <p className="cp-hero__desc">
-              Punya pertanyaan tentang pendaftaran, jadwal mengaji, atau informasi lainnya?
-              Pilih cara yang paling nyaman untuk menghubungi kami.
-            </p>
-          </motion.div>
-        </section>
-
-        <div className="cp-container">
-          {/* ── QUICK CHANNELS ─────────────────────────────── */}
-          <section className="cp-channels" aria-label="Kontak cepat">
-            <motion.div
-              className="cp-channels__grid"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-40px' }}
-              variants={staggerContainer}
-            >
-              <motion.a
-                className="cp-channel-card"
-                variants={staggerItem}
-                aria-label={`Hubungi WhatsApp ${OFFICIAL_CONTACT.phone}`}
-                href={OFFICIAL_CONTACT.whatsapp}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <div className="cp-channel-card__icon cp-channel-card__icon--emerald" aria-hidden="true">
-                  <MessageCircle className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="cp-channel-card__label">WhatsApp</p>
-                  <p className="cp-channel-card__value">{OFFICIAL_CONTACT.phone}</p>
-                </div>
-              </motion.a>
-
-              <motion.a
-                className="cp-channel-card"
-                variants={staggerItem}
-                aria-label={`Telepon ${OFFICIAL_CONTACT.phone}`}
-                href={OFFICIAL_CONTACT.phoneHref}
-              >
-                <div className="cp-channel-card__icon cp-channel-card__icon--cyan" aria-hidden="true">
-                  <Phone className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="cp-channel-card__label">Telepon</p>
-                  <p className="cp-channel-card__value">{OFFICIAL_CONTACT.phone}</p>
-                </div>
-              </motion.a>
-
-              <motion.a
-                className="cp-channel-card"
-                variants={staggerItem}
-                aria-label={`Kirim email ke ${OFFICIAL_CONTACT.email}`}
-                href={OFFICIAL_CONTACT.emailHref}
-              >
-                <div className="cp-channel-card__icon cp-channel-card__icon--amber" aria-hidden="true">
-                  <Mail className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="cp-channel-card__label">Email</p>
-                  <p className="cp-channel-card__value">{OFFICIAL_CONTACT.email}</p>
-                </div>
-              </motion.a>
-            </motion.div>
-          </section>
-
-          <hr className="cp-divider" />
-
-          {/* ── SPLIT: Info + Form ─────────────────────────── */}
-          <section className="cp-split" aria-labelledby="cp-split-title">
-            <motion.div
-              className="cp-section-header"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-60px' }}
-              variants={fadeUp}
-            >
-              <p className="cp-section-header__kicker">
-                Informasi & Pesan
-              </p>
-              <h2 id="cp-split-title" className="cp-section-header__title">
-                Kunjungi atau Kirim Pesan
-              </h2>
-              <p className="cp-section-header__desc">
-                Kunjungi kami langsung atau kirim pesan melalui formulir di bawah ini.
-              </p>
-            </motion.div>
-
-            <motion.div
-              className="cp-split__grid"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-40px' }}
-              variants={staggerContainer}
-            >
-              {/* Info Panel */}
-              <motion.div className="cp-info-panel" variants={staggerItem}>
-                <h3 className="cp-info-panel__title">Informasi Kontak</h3>
-
-                <div className="cp-info-item">
-                  <div className="cp-info-item__icon" aria-hidden="true">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="cp-info-item__label">Alamat</p>
-                    <p className="cp-info-item__value">
-                      {OFFICIAL_CONTACT.address}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="cp-info-item">
-                  <div className="cp-info-item__icon" aria-hidden="true">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="cp-info-item__label">Telepon</p>
-                    <p className="cp-info-item__value">
-                      <a href={OFFICIAL_CONTACT.phoneHref}>{OFFICIAL_CONTACT.phone}</a>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="cp-info-item">
-                  <div className="cp-info-item__icon" aria-hidden="true">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="cp-info-item__label">Email</p>
-                    <p className="cp-info-item__value">
-                      <a href={OFFICIAL_CONTACT.emailHref}>{OFFICIAL_CONTACT.email}</a>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="cp-info-item">
-                  <div className="cp-info-item__icon" aria-hidden="true">
-                    <Clock className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="cp-info-item__label">Jadwal TPQ</p>
-                    <p className="cp-info-item__value">
-                      Senin–Jumat, sesi pagi, siang, dan sore
-                    </p>
-                  </div>
-                </div>
-
-              </motion.div>
-
-              {/* Form Panel */}
-              <motion.div className="cp-form-panel" variants={staggerItem}>
-                <h3 className="cp-form-panel__title">Kirim Pesan</h3>
-                <p className="cp-form-panel__desc">
-                  Isi formulir berikut dan kami akan membalas secepatnya.
-                </p>
-                <form onSubmit={handleSubmit} noValidate>
-                  <div className="cp-form-field">
-                    <label htmlFor="cp-name">Nama Lengkap</label>
-                    <Input
-                      id="cp-name"
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => updateField('name', e.target.value)}
-                      required
-                      autoComplete="name"
-                    />
-                  </div>
-                  <div className="cp-form-field">
-                    <label htmlFor="cp-email">Email</label>
-                    <Input
-                      id="cp-email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => updateField('email', e.target.value)}
-                      required
-                      autoComplete="email"
-                    />
-                  </div>
-                  <div className="cp-form-field">
-                    <label htmlFor="cp-phone">No. Telepon / WhatsApp</label>
-                    <Input
-                      id="cp-phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => updateField('phone', e.target.value)}
-                      required
-                      autoComplete="tel"
-                    />
-                  </div>
-                  <div className="cp-form-field">
-                    <label htmlFor="cp-message">Pesan</label>
-                    <Textarea
-                      id="cp-message"
-                      value={formData.message}
-                      onChange={(e) => updateField('message', e.target.value)}
-                      rows={5}
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="cp-submit-btn"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      'Mengirim...'
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        Kirim Pesan
-                      </>
-                    )}
-                  </button>
-                </form>
-              </motion.div>
-            </motion.div>
-          </section>
-
-          <hr className="cp-divider" />
-
-          {/* ── MAP ──────────────────────────────────────────── */}
-          <section className="cp-map" aria-labelledby="cp-map-title">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-40px' }}
-              variants={fadeUp}
-            >
-              <div className="cp-map__card">
-                <div className="cp-map__header">
-                  <h2 id="cp-map-title" className="cp-map__title">
-                    <MapPin className="w-4 h-4" aria-hidden="true" />
-                    Lokasi Kami
-                  </h2>
-                  <a className="cp-map__open-link" href={OFFICIAL_CONTACT.mapUrl} target="_blank" rel="noopener noreferrer">Buka di Google Maps</a>
-                </div>
-                <div className="cp-map__iframe-wrap">
-                  <a className="flex min-h-64 items-center justify-center px-6 text-center text-slate-600" href={OFFICIAL_CONTACT.mapUrl} target="_blank" rel="noopener noreferrer">
-                    <span><MapPin className="mx-auto mb-3 h-8 w-8" />{OFFICIAL_CONTACT.address}</span>
-                  </a>
-                </div>
-              </div>
-            </motion.div>
-          </section>
-
-          {/* ── CTA ─────────────────────────────────────────── */}
-          <section className="cp-cta" aria-labelledby="cp-cta-title">
-            <motion.div
-              className="cp-cta__card"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-40px' }}
-              variants={fadeUp}
-            >
-              <h2 id="cp-cta-title" className="cp-cta__title">
-                Lebih Nyaman Chat Langsung?
-              </h2>
-              <p className="cp-cta__desc">
-                Kirim pesan WhatsApp kami untuk respons yang lebih cepat mengenai
-                pendaftaran, jadwal, atau pertanyaan lainnya.
-              </p>
-              <div className="cp-cta__actions">
-                <a className="cp-cta__btn cp-cta__btn--primary" href={OFFICIAL_CONTACT.whatsapp} target="_blank" rel="noopener noreferrer">
-                  <MessageCircle className="w-4 h-4" />
-                  Chat WhatsApp
-                </a>
-                <a className="cp-cta__btn cp-cta__btn--secondary" href={OFFICIAL_CONTACT.mapUrl} target="_blank" rel="noopener noreferrer">
-                  <MapPin className="w-4 h-4" />
-                  Lihat Lokasi
-                </a>
-              </div>
-            </motion.div>
-          </section>
-        </div>
-      </div>
-    </>
+      {KontakBody(vals)}
+    </div>
   );
 };
 

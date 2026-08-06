@@ -18,13 +18,13 @@ export const OFFICIAL_PROFILE = Object.freeze({
     "LPQ Al-Fath Maulana adalah lembaga pendidikan Al-Qur'an yang menerapkan metode Qiroati, sebuah sistem pembelajaran yang efektif dalam mengajarkan bacaan Al-Qur'an dengan tartil dan sesuai kaidah tajwid.",
     "Berlokasi di Baturaja, LPQ Al-Fath Maulana berkomitmen mencetak generasi Qur'ani yang mampu membaca Al-Qur'an dengan benar serta memahami dan mengamalkan nilai-nilai luhur di dalamnya.",
   ],
-  secondaryDescription: 'Pembelajaran menekankan tahsin, tahqiq, pembinaan adab, pendampingan sesuai kemampuan, serta lingkungan belajar yang kondusif bagi santri dan keluarga.',
+  secondaryDescription: 'Pembelajaran menekankan tahsin, tahqiq, pembinaan adab, pendampingan sesuai kemampuan, serta lingkungan belajar yang kondusif bagi murid dan keluarga.',
   vision: "Menjadi lembaga pendidikan Al-Qur'an terdepan yang mencetak generasi Qur'ani berakhlak mulia.",
   missions: [
     "Mengajarkan Al-Qur'an dengan metode Qiroati yang terstruktur dan efektif.",
-    'Membina akhlak santri sesuai dengan nilai-nilai Islam.',
+    'Membina akhlak murid sesuai dengan nilai-nilai Islam.',
     'Menyediakan lingkungan belajar yang kondusif dan menyenangkan.',
-    'Mengembangkan potensi santri secara optimal.',
+    'Mengembangkan potensi murid secara optimal.',
   ],
 });
 
@@ -68,7 +68,7 @@ export const OFFICIAL_FACILITIES = Object.freeze([
   {
     id: 'official-classroom',
     name: 'Ruang Kelas',
-    description: 'Ruang kelas yang bersih dan nyaman mendukung santri belajar Al-Qur’an dengan lebih fokus.',
+    description: 'Ruang kelas yang bersih dan nyaman mendukung murid belajar Al-Qur’an dengan lebih fokus.',
     image_url: '/institution/classroom.webp',
   },
 ]);
@@ -76,9 +76,9 @@ export const OFFICIAL_FACILITIES = Object.freeze([
 export const OFFICIAL_GALLERY = Object.freeze([
   {
     id: 'official-gallery-quiz',
-    title: 'Quiz bersama santri',
-    caption: 'Quiz tanya jawab bersama santri LPQ Al-Fath Maulana.',
-    description: 'Kegiatan interaktif untuk menguatkan pemahaman dan kebersamaan santri.',
+    title: 'Quiz bersama murid',
+    caption: 'Quiz tanya jawab bersama murid LPQ Al-Fath Maulana.',
+    description: 'Kegiatan interaktif untuk menguatkan pemahaman dan kebersamaan murid.',
     url: '/institution/gallery-quiz.webp',
   },
 ]);
@@ -97,13 +97,13 @@ export const OFFICIAL_FAQS = Object.freeze([
   {
     id: 'requirements',
     question: 'Apa saja syarat pendaftaran TPQ?',
-    answer: 'Wali dan calon santri hadir saat pendaftaran, mengisi formulir, serta membawa fotokopi akta kelahiran, Kartu Keluarga, dua pasfoto 3×4, dan materai Rp10.000.',
+    answer: 'Wali dan calon murid hadir saat pendaftaran, mengisi formulir, serta membawa fotokopi akta kelahiran, Kartu Keluarga, dua pasfoto 3×4, dan materai Rp10.000.',
   },
 ]);
 
 export const INSTITUTION_PROOF_POINTS = Object.freeze([
   { id: 'qiroati', title: 'Metode Qiroati terstruktur', text: 'Pembelajaran bacaan berlangsung bertahap, tartil, dan sesuai kaidah tajwid.' },
-  { id: 'small-class', title: 'Kelas maksimal 15 santri', text: 'Kelas kecil memberi ruang bagi guru untuk mendampingi perkembangan setiap santri.' },
+  { id: 'small-class', title: 'Kelas maksimal 15 murid', text: 'Kelas kecil memberi ruang bagi guru untuk mendampingi perkembangan setiap murid.' },
   { id: 'progress', title: 'Progres tercatat', text: 'Buku prestasi membantu guru dan wali memantau bacaan serta tindak lanjut belajar.' },
 ]);
 

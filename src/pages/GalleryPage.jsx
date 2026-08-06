@@ -1,378 +1,252 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { Image as ImageIcon, AlertTriangle, RefreshCw, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import GaleriBody from '@/components/sdnb/generated/GaleriBody';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
-import '@/styles/public-gallery.css';
+import useSdnbMotion from '@/hooks/useSdnbMotion';
+import '@/styles/sdnb.css';
 
-/* ── Size assignment (deterministic mosaic rhythm) ──────────────────── */
-const SIZES = ['normal', 'normal', 'wide', 'tall', 'normal', 'large', 'normal', 'normal', 'wide', 'normal'];
-const getSize = (index) => SIZES[index % SIZES.length];
+/**
+ * Galeri — the markup is generated verbatim from `Galeri.dc.html` by
+ * tools/dc-convert.mjs (see components/sdnb/generated/GaleriBody.jsx). This
+ * file reproduces the mockup's logic class: state (`kat`, `view`, `idx`), the
+ * category filter, the mosaic/sinema switch, the lightbox with keyboard
+ * navigation, the pointer glow, and the parallax scroll handler.
+ *
+ * Backend fill-in: when the CMS has gallery photos they replace the mockup's
+ * gradient placeholders (caption + image), keeping every layout span intact.
+ */
 
-/* ── Helpers ────────────────────────────────────────────────────────── */
-const formatDate = (dateStr) => {
-  if (!dateStr) return '';
-  try {
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      year: 'numeric', month: 'long', day: 'numeric',
-    });
-  } catch {
-    return String(dateStr);
-  }
-};
+const FOTO = [
+  ['Kelas membaca pagi', 'Belajar', '15 menit sebelum pelajaran dimulai, seluruh kelas membaca buku pilihan sendiri.', 'Agustus 2025', 'linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)', 2, 2],
+  ['Praktik sains kelas V', 'Belajar', 'Percobaan penjernihan air memakai kerikil, ijuk, dan arang dari kebun sekolah.', 'September 2025', 'linear-gradient(150deg,#bcd6ff,#9fb6f8)', 1, 1],
+  ['Latihan pramuka', 'Ekstrakurikuler', 'Regu penggalang berlatih tali dan sandi setiap Jumat sore di halaman belakang.', 'Oktober 2025', 'linear-gradient(150deg,#bbf7d0,#86efac)', 1, 1],
+  ['Pentas seni tahunan', 'Acara', 'Tari daerah, drama kelas, dan paduan suara di panggung halaman depan.', 'Desember 2025', 'linear-gradient(150deg,#ffc9dc,#f2a9c8)', 2, 1],
+  ['Panen kebun sekolah', 'Belajar', 'Kangkung dan bayam hasil petak kelas empat, dimasak bersama di kantin.', 'November 2025', 'linear-gradient(150deg,#ffe0b3,#ffc39c 55%,#b6f0e0)', 1, 1],
+  ['Tim atletik', 'Ekstrakurikuler', 'Latihan lari 60 meter menjelang seleksi O2SN tingkat kecamatan.', 'Februari 2026', 'linear-gradient(150deg,#c9e8ff,#a5c8f5)', 1, 2],
+  ['Peringatan 17 Agustus', 'Acara', 'Lomba balap karung, makan kerupuk, dan upacara bendera pagi hari.', 'Agustus 2025', 'linear-gradient(150deg,#ffd8ea,#e8b6f0)', 2, 1],
+  ['Perpustakaan', 'Fasilitas', 'Empat ribu judul buku anak, buka setiap hari sekolah sampai pukul 14.00.', 'Januari 2026', 'linear-gradient(150deg,#d7d2ff,#b4b8f8)', 1, 1],
+  ['Sanggar tari', 'Ekstrakurikuler', 'Latihan tari Gending Sriwijaya untuk pembukaan pentas seni.', 'November 2025', 'linear-gradient(150deg,#f6c6e8,#c6b6f6)', 1, 1],
+  ['Juara MTQ kabupaten', 'Prestasi', 'Dua murid kelas enam membawa piala tilawah tingkat kabupaten.', 'Maret 2026', 'linear-gradient(150deg,#ffeab3,#ffd08c)', 1, 1],
+  ['Literasi digital', 'Belajar', 'Enam belas komputer dipakai bergantian oleh kelas empat sampai enam.', 'Februari 2026', 'linear-gradient(150deg,#b6e8f0,#8fd8ec)', 2, 1],
+  ['Halaman bermain', 'Fasilitas', 'Lapangan serbaguna, ayunan, dan area pasir saat jam istirahat kedua.', 'Oktober 2025', 'linear-gradient(150deg,#a9eede,#9fc4f8)', 1, 1],
+  ['Klub mendongeng', 'Ekstrakurikuler', 'Murid membacakan cerita rakyat Sumatera Selatan di depan kelas satu.', 'Januari 2026', 'linear-gradient(150deg,#ffc6c6,#f2a9c8)', 1, 1],
+  ['Wisuda kelas VI', 'Acara', 'Enam puluh delapan lulusan menerima rapor terakhir bersama orang tua.', 'Juni 2026', 'linear-gradient(150deg,#c8b6ff,#9fb6f8 60%,#ffc9dc)', 2, 2],
+  ['Adiwiyata nasional', 'Prestasi', 'Penyerahan penghargaan sekolah berbudaya lingkungan tingkat nasional.', 'Mei 2026', 'linear-gradient(150deg,#b6f0c8,#8fe0c0)', 1, 1],
+  ['Musala sekolah', 'Fasilitas', 'Salat Zuhur berjamaah bergantian antar kelas sebelum pulang.', 'September 2025', 'linear-gradient(150deg,#b6f0e0,#8fd8ec)', 1, 1],
+  ['Pasar murid', 'Acara', 'Kelas lima berjualan hasil karya sendiri selama dua hari di aula.', 'April 2026', 'linear-gradient(150deg,#ffd9b3,#f7b7a0)', 1, 1],
+  ['Kunjungan orang tua', 'Acara', 'Pertemuan bulanan wali murid di ruang kelas masing-masing.', 'Maret 2026', 'linear-gradient(150deg,#cfd6ff,#b4b8f8)', 1, 1],
+];
 
-const fallbackCaption = (index) => `Kegiatan ${index + 1}`;
+const KAT = ['Semua', 'Belajar', 'Ekstrakurikuler', 'Acara', 'Fasilitas', 'Prestasi'];
 
-/* ── Image with error fallback ──────────────────────────────────────── */
-const GalleryImage = ({ src, alt, className, style, onLoad, onError }) => {
-  const [errored, setErrored] = useState(false);
-  if (errored) {
-    return (
-      <div className="gallery-item__broken" role="img" aria-label={alt || 'Gambar tidak tersedia'}>
-        <ImageIcon />
-      </div>
-    );
-  }
-  return (
-    <img
-      src={src}
-      alt={alt || 'Gambar galeri'}
-      className={className}
-      style={style}
-      loading="lazy"
-      onLoad={onLoad}
-      onError={() => setErrored(true)}
-      draggable={false}
-    />
-  );
-};
+const ALBUM = [
+  ['Pentas seni 2025', 42, '#ffc9dc', '#f2a9c8', '#c6b6f6'],
+  ['Pramuka & atletik', 31, '#bbf7d0', '#86efac', '#9fc4f8'],
+  ['Kebun sekolah', 26, '#ffe0b3', '#ffc39c', '#b6f0e0'],
+  ['Wisuda kelas VI', 55, '#c8b6ff', '#9fb6f8', '#ffd8ea'],
+];
 
-/* ── Loading skeleton ───────────────────────────────────────────────── */
-const LoadingSkeleton = () => (
-  <div aria-label="Memuat galeri..." role="status">
-    <Helmet>
-      <title>Galeri Kegiatan - LPQ Al-Fath Maulana</title>
-    </Helmet>
+const HERO_GRADS = [
+  'linear-gradient(150deg,#c6b6f6,#9fc4f8)', 'linear-gradient(150deg,#ffc9dc,#f2a9c8)',
+  'linear-gradient(150deg,#a9eede,#8fd8ec)', 'linear-gradient(150deg,#ffe0b3,#ffc39c)',
+  'linear-gradient(150deg,#d7d2ff,#b4b8f8)', 'linear-gradient(150deg,#bbf7d0,#86efac)',
+  'linear-gradient(150deg,#ffd8ea,#e8b6f0)', 'linear-gradient(150deg,#c9e8ff,#a5c8f5)',
+];
+const HEIGHTS = [104, 138, 92, 124, 110, 150, 118, 132];
+const COLS = 4;
 
-    {/* Hero skeleton — text lines */}
-    <div className="gallery-skeleton-hero" aria-hidden="true">
-      <div className="gallery-skeleton-hero__lines">
-        <div className="gallery-skeleton-hero__line gallery-skeleton-hero__line--eyebrow" />
-        <div className="gallery-skeleton-hero__line gallery-skeleton-hero__line--title" />
-        <div className="gallery-skeleton-hero__line gallery-skeleton-hero__line--subtitle" />
-        <div className="gallery-skeleton-hero__line gallery-skeleton-hero__line--subtitle" style={{ width: '70%' }} />
-        <div className="gallery-skeleton-hero__line gallery-skeleton-hero__line--meta" />
-      </div>
-    </div>
-
-    {/* Grid skeleton */}
-    <div className="gallery-skeleton-grid" aria-hidden="true">
-      {['normal', 'wide', 'tall', 'normal', 'large', 'normal', 'normal', 'wide'].map((size, i) => (
-        <div key={i} className="gallery-skeleton-item" data-size={size} />
-      ))}
-    </div>
-  </div>
-);
-
-/* ── Empty state ────────────────────────────────────────────────────── */
-const EmptyState = () => (
-  <>
-    <Helmet>
-      <title>Galeri Kegiatan - LPQ Al-Fath Maulana</title>
-    </Helmet>
-    <div className="gallery-page">
-      <div className="gallery-empty">
-        <ImageIcon className="gallery-empty__icon" />
-        <p className="gallery-empty__title">Belum ada foto di galeri</p>
-        <p className="gallery-empty__desc">
-          Dokumentasi kegiatan santri akan muncul di sini setelah ditambahkan oleh admin.
-        </p>
-      </div>
-    </div>
-  </>
-);
-
-/* ── Error state ────────────────────────────────────────────────────── */
-const ErrorState = ({ onRetry }) => (
-  <>
-    <Helmet>
-      <title>Galeri Kegiatan - LPQ Al-Fath Maulana</title>
-    </Helmet>
-    <div className="gallery-page">
-      <div className="gallery-error">
-        <AlertTriangle className="gallery-error__icon" />
-        <p className="gallery-error__title">Gagal memuat galeri</p>
-        <p className="gallery-error__desc">
-          Terjadi kesalahan saat mengambil data. Silakan coba lagi.
-        </p>
-        <button className="gallery-error__retry" onClick={onRetry} type="button">
-          <RefreshCw className="w-4 h-4" />
-          Muat ulang
-        </button>
-      </div>
-    </div>
-  </>
-);
-
-/* ── Lightbox ───────────────────────────────────────────────────────── */
-const Lightbox = ({ photos, index, onClose, onPrev, onNext, originRef }) => {
-  const closeRef = useRef(null);
-  const prevFocusRef = useRef(null);
-  const photo = photos[index];
-
-  // Store original focus element on mount
-  useEffect(() => {
-    prevFocusRef.current = document.activeElement;
-    // Focus the close button after a tick
-    requestAnimationFrame(() => closeRef.current?.focus());
-  }, []);
-
-  // Restore focus on unmount
-  useEffect(() => {
-    return () => {
-      prevFocusRef.current?.focus();
-    };
-  }, []);
-
-  // Body scroll lock
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-
-  // Keyboard handling
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft') onPrev();
-      if (e.key === 'ArrowRight') onNext();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose, onPrev, onNext]);
-
-  // Touch swipe
-  const touchRef = useRef({ startX: 0, startY: 0, active: false });
-
-  const onTouchStart = useCallback((e) => {
-    const t = e.touches[0];
-    touchRef.current = { startX: t.clientX, startY: t.clientY, active: true };
-  }, []);
-
-  const onTouchEnd = useCallback((e) => {
-    if (!touchRef.current.active) return;
-    touchRef.current.active = false;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchRef.current.startX;
-    const dy = t.clientY - touchRef.current.startY;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-      if (dx > 0) onPrev();
-      else onNext();
-    } else if (dy > 80) {
-      onClose();
-    }
-  }, [onClose, onPrev, onNext]);
-
-  if (!photo) return null;
-
-  const caption = photo.caption || null;
-
-  return (
-    <div
-      className="gallery-lightbox"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Preview gambar galeri"
-      data-animate="enter"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
-      <div className="gallery-lightbox__backdrop" onClick={onClose} />
-
-      <button
-        ref={closeRef}
-        className="gallery-lightbox__close"
-        onClick={onClose}
-        aria-label="Tutup preview"
-        type="button"
-      >
-        <X className="w-5 h-5" />
-      </button>
-
-      {index > 0 && (
-        <button
-          className="gallery-lightbox__nav gallery-lightbox__nav--prev"
-          onClick={onPrev}
-          aria-label="Gambar sebelumnya"
-          type="button"
-        >
-          <ChevronLeft />
-        </button>
-      )}
-
-      {index < photos.length - 1 && (
-        <button
-          className="gallery-lightbox__nav gallery-lightbox__nav--next"
-          onClick={onNext}
-          aria-label="Gambar berikutnya"
-          type="button"
-        >
-          <ChevronRight />
-        </button>
-      )}
-
-      <div className="gallery-lightbox__content">
-        <div className="gallery-lightbox__image-wrap">
-          <img
-            className="gallery-lightbox__img"
-            src={photo.url}
-            alt={caption || 'Gambar galeri'}
-            draggable={false}
-          />
-        </div>
-        <div className="gallery-lightbox__panel">
-          {caption && <p className="gallery-lightbox__caption">{caption}</p>}
-          <p className="gallery-lightbox__counter">
-            {index + 1} dari {photos.length}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ── Main Gallery Page ──────────────────────────────────────────────── */
 const GalleryPage = () => {
-  const [photos, setPhotos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(null);
-  const itemRefs = useRef([]);
+  const [kat, setKat] = useState('Semua');
+  const [view, setView] = useState('mosaic');
+  const [idx, setIdx] = useState(-1);
+  const [cmsPhotos, setCmsPhotos] = useState([]);
 
-  const fetchGallery = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      const contentMap = await fetchWebsiteContentMap({ keys: ['galleryPhotos'], publicOnly: true });
-      const galleryPhotos = contentMap.galleryPhotos;
-
-      setPhotos(Array.isArray(galleryPhotos) ? galleryPhotos : []);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  useSdnbMotion([]);
 
   useEffect(() => {
-    fetchGallery();
-  }, [fetchGallery]);
-
-  /* Lightbox navigation */
-  const closeLightbox = useCallback(() => setSelectedIndex(null), []);
-
-  const goPrev = useCallback(() => {
-    setSelectedIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+    let mounted = true;
+    fetchWebsiteContentMap({ keys: ['galleryPhotos'], publicOnly: true })
+      .then((map) => { if (mounted && Array.isArray(map.galleryPhotos)) setCmsPhotos(map.galleryPhotos); })
+      .catch(() => {});
+    return () => { mounted = false; };
   }, []);
 
-  const goNext = useCallback(() => {
-    setSelectedIndex((prev) => (prev !== null && prev < photos.length - 1 ? prev + 1 : prev));
-  }, [photos.length]);
+  // Mockup: photos filtered by the active category, keeping original indices.
+  const items = useMemo(
+    () => FOTO.map((f, i) => ({ f, i })).filter((o) => kat === 'Semua' || o.f[1] === kat),
+    [kat],
+  );
 
-  /* States */
-  if (loading) return <LoadingSkeleton />;
-  if (error) return <ErrorState onRetry={fetchGallery} />;
-  if (photos.length === 0) return <EmptyState />;
+  const move = useCallback((dir) => {
+    setIdx((current) => {
+      const at = items.findIndex((o) => o.i === current);
+      if (at === -1 || items.length === 0) return current;
+      return items[(at + dir + items.length) % items.length].i;
+    });
+  }, [items]);
+
+  // keyboard (verbatim from componentDidMount)
+  useEffect(() => {
+    const onKey = (e) => {
+      if (idx < 0) return;
+      if (e.key === 'Escape') setIdx(-1);
+      if (e.key === 'ArrowRight') move(1);
+      if (e.key === 'ArrowLeft') move(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [idx, move]);
+
+  // parallax on [data-par] (verbatim)
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        document.querySelectorAll('[data-par]').forEach((el) => {
+          const k = parseFloat(el.getAttribute('data-par')) || 0.1;
+          const r = el.getBoundingClientRect();
+          const off = (r.top + r.height / 2 - window.innerHeight / 2) * -k;
+          el.style.transform = `translate3d(0,${off.toFixed(1)}px,0)`;
+        });
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
+  }, [view, kat]);
+
+  // pointer glow over the mosaic (verbatim hookGlow)
+  useEffect(() => {
+    const wrap = document.getElementById('mos-wrap');
+    const glow = document.getElementById('mos-glow');
+    if (!wrap || !glow) return undefined;
+    const onMove = (e) => {
+      const r = wrap.getBoundingClientRect();
+      glow.style.transform = `translate3d(${e.clientX - r.left}px,${e.clientY - r.top}px,0)`;
+      glow.style.opacity = '1';
+    };
+    const onLeave = () => { glow.style.opacity = '0'; };
+    wrap.addEventListener('pointermove', onMove);
+    wrap.addEventListener('pointerleave', onLeave);
+    return () => { wrap.removeEventListener('pointermove', onMove); wrap.removeEventListener('pointerleave', onLeave); };
+  }, [view, kat]);
+
+  const scrollCine = (dir) => {
+    const el = document.getElementById('cine');
+    if (el) el.scrollBy({ left: dir * Math.min(760, el.clientWidth * 0.72), behavior: 'smooth' });
+  };
+
+  // CMS photo (if any) for slot i — replaces the gradient placeholder.
+  const photoFill = (i, fallbackGrad) => {
+    const url = cmsPhotos[i]?.url || cmsPhotos[i]?.image_url;
+    return url ? `background:url("${url}") center/cover no-repeat` : `background:${fallbackGrad}`;
+  };
+  const photoName = (i, fallback) => cmsPhotos[i]?.caption || fallback;
+
+  const heroCols = useMemo(() => Array.from({ length: 5 }).map((_, c) => {
+    const base = Array.from({ length: 9 }).map((__, t) => {
+      const g = (c * 7 + t * 3) % 8;
+      return { style: `flex:none;height:${HEIGHTS[(c + t) % HEIGHTS.length]}px;border-radius:16px;background:${HERO_GRADS[g]};border:1px solid rgba(255,255,255,.75);box-shadow:0 16px 34px -18px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.85)` };
+    });
+    return { tiles: base.concat(base), cls: c % 2 ? 'dcol rev' : 'dcol', style: `animation-duration:${38 + c * 7}s` };
+  }), []);
+
+  const cur = idx >= 0 ? FOTO[idx] : null;
+  const at = items.findIndex((o) => o.i === idx);
+
+  const vals = {
+    heroCols,
+    heroStats: [
+      { n: 428, suf: '', label: 'foto terkumpul' },
+      { n: 12, suf: ' bulan', label: 'dokumentasi berjalan' },
+      { n: 9, suf: '', label: 'album kegiatan' },
+    ],
+    bandStats: [
+      { n: 624, suf: '', label: 'murid dalam bingkai' },
+      { n: 38, suf: '', label: 'kegiatan terdokumentasi' },
+      { n: 18, suf: '', label: 'rombongan belajar' },
+    ],
+
+    kategori: KAT.map((k) => {
+      const n = k === 'Semua' ? FOTO.length : FOTO.filter((f) => f[1] === k).length;
+      const on = kat === k;
+      return {
+        label: k,
+        n,
+        pick: () => { setKat(k); setIdx(-1); },
+        style: 'display:inline-flex;align-items:center;gap:8px;padding:11px 15px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;transition:background .3s ease,color .3s ease,box-shadow .3s ease,transform .3s cubic-bezier(.4,1.3,.4,1);' + (on
+          ? 'border:0;color:#fff;background:linear-gradient(135deg,#6470ff,#a06cf0 60%,#e58fc4);box-shadow:0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(-1px)'
+          : 'border:1px solid rgba(255,255,255,.85);color:#3d4166;background:rgba(255,255,255,.5)'),
+        badge: 'font-size:11px;font-weight:800;padding:2px 7px;border-radius:8px;font-variant-numeric:tabular-nums;' + (on ? 'background:rgba(255,255,255,.26);color:#fff' : 'background:rgba(120,130,190,.14);color:#6a6f95'),
+      };
+    }),
+
+    views: [['mosaic', 'Mosaik'], ['sinema', 'Sinema']].map(([k, label]) => {
+      const on = view === k;
+      return {
+        label,
+        pick: () => setView(k),
+        style: 'padding:9px 16px;border-radius:12px;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:700;transition:all .3s ease;' + (on
+          ? 'border:0;color:#fff;background:linear-gradient(135deg,#5b6cff,#9a6cf0);box-shadow:0 10px 22px -10px rgba(95,105,235,.9)'
+          : 'border:0;background:transparent;color:#5c6188'),
+      };
+    }),
+    isMosaic: view === 'mosaic',
+    isSinema: view === 'sinema',
+
+    mosStyle: `display:grid;grid-template-columns:repeat(${COLS},1fr);grid-auto-rows:186px;grid-auto-flow:dense;gap:18px;position:relative;z-index:1`,
+
+    foto: items.map(({ f, i }) => ({
+      nama: photoName(i, f[0]),
+      kat: f[1],
+      ket: f[2],
+      tanggal: f[3],
+      open: () => setIdx(i),
+      cell: `grid-column:span ${Math.min(COLS, f[5])};grid-row:span ${f[6]};border:1px solid rgba(255,255,255,.72);box-shadow:0 28px 58px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.8)`,
+      frame: 'position:relative;width:min(72vw,880px);height:min(66vh,560px);border-radius:30px;border:1px solid rgba(255,255,255,.72);box-shadow:0 40px 84px -30px rgba(50,60,125,.62),inset 0 1px 0 rgba(255,255,255,.8)',
+      fill: photoFill(i, f[4]),
+    })),
+    cinePrev: () => scrollCine(-1),
+    cineNext: () => scrollCine(1),
+
+    album: ALBUM.map((a) => ({
+      nama: a[0],
+      n: a[1],
+      open: () => { setKat('Semua'); setIdx(0); },
+      l1: `position:absolute;inset:0;border-radius:24px;background:linear-gradient(150deg,${a[2]},${a[4]});border:1px solid rgba(255,255,255,.7);box-shadow:0 20px 42px -20px rgba(55,65,120,.5)`,
+      l2: `position:absolute;inset:0;border-radius:24px;background:linear-gradient(150deg,${a[3]},${a[2]});border:1px solid rgba(255,255,255,.7);box-shadow:0 20px 42px -20px rgba(55,65,120,.5)`,
+      l3: `position:relative;height:250px;border-radius:24px;overflow:hidden;background:linear-gradient(150deg,${a[2]},${a[3]} 60%,${a[4]});border:1px solid rgba(255,255,255,.78);box-shadow:0 30px 62px -24px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.85)`,
+    })),
+
+    lightOpen: idx >= 0,
+    cur: cur ? {
+      nama: photoName(idx, cur[0]),
+      kat: cur[1],
+      ket: cur[2],
+      tanggal: cur[3],
+      pos: `${at + 1} / ${items.length}`,
+      frame: `position:relative;flex:1;max-width:1080px;height:100%;max-height:74vh;border-radius:28px;overflow:hidden;${photoFill(idx, cur[4])};border:1px solid rgba(255,255,255,.5);box-shadow:0 50px 110px -34px rgba(15,20,60,.8);animation:zoomin .42s cubic-bezier(.2,.9,.25,1) both`,
+    } : { nama: '', kat: '', ket: '', tanggal: '', pos: '', frame: '' },
+    thumbs: items.map(({ f, i }) => ({
+      go: () => setIdx(i),
+      style: `flex:none;width:${i === idx ? '104px' : '74px'};height:56px;border-radius:12px;cursor:pointer;padding:0;${photoFill(i, f[4])};transition:width .35s cubic-bezier(.4,1.3,.4,1),opacity .3s ease,border-color .3s ease;opacity:${i === idx ? '1' : '.55'};border:2px solid ${i === idx ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.3)'}`,
+    })),
+    prev: () => move(-1),
+    next: () => move(1),
+    close: () => setIdx(-1),
+    stop: (e) => e.stopPropagation(),
+  };
 
   return (
-    <>
+    <div className="sdnb-galeri">
       <Helmet>
-        <title>Galeri Kegiatan - LPQ Al-Fath Maulana</title>
-        <meta
-          name="description"
-          content="Dokumentasi visual kegiatan dan momen berharga santri LPQ Al-Fath Maulana."
-        />
+        <title>Galeri — Sekolah Dasar Negeri Baturaja</title>
+        <meta name="description" content="Dokumentasi kegiatan belajar, ekstrakurikuler, acara, dan fasilitas Sekolah Dasar Negeri Baturaja." />
       </Helmet>
-
-      <div className="gallery-page">
-        {/* ── Hero ────────────────────────────────────────────────── */}
-        <section className="gallery-hero">
-          <div className="gallery-hero__inner">
-            <div className="gallery-hero__text">
-              <p className="gallery-hero__eyebrow">A Living Archive</p>
-              <h1 className="gallery-hero__label">
-                Galeri Kegiatan
-              </h1>
-              <p className="gallery-hero__subtitle">
-                Momen-momen berharga yang terekam dari kegiatan sehari-hari santri dalam menuntut ilmu —
-                mulai dari pembelajaran di kelas, latihan tahfidz, hingga perayaan bersama.
-                Setiap foto adalah satu cerita dari perjalanan spiritual dan intelektual mereka.
-              </p>
-              <div className="gallery-hero__meta">
-                <span className="gallery-hero__count" aria-label={`${photos.length} foto`}>
-                  {photos.length} Foto
-                </span>
-                <span className="gallery-hero__divider" aria-hidden="true" />
-                <span className="gallery-hero__tagline">LPQ Al-Fath Maulana · Metode Qiroati</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Mosaic grid ────────────────────────────────────────── */}
-        <section className="gallery-grid-wrap">
-          <h2 className="sr-only">Galeri Kegiatan</h2>
-          <div className="gallery-mosaic" role="list">
-            {photos.map((photo, index) => {
-              const size = getSize(index);
-              const caption = photo.caption || fallbackCaption(index);
-              return (
-                <button
-                  key={photo.id || index}
-                  ref={(el) => { itemRefs.current[index] = el; }}
-                  className="gallery-item"
-                  data-size={size}
-                  role="listitem"
-                  type="button"
-                  aria-label={`${caption}. Tekan untuk melihat ukuran penuh.`}
-                  onClick={() => setSelectedIndex(index)}
-                >
-                  <div className="gallery-item__img-wrap">
-                    <GalleryImage
-                      src={photo.url}
-                      alt={caption}
-                      className="gallery-item__img"
-                    />
-
-                    {/* Overlay with caption — always on mobile via CSS */}
-                    <div className="gallery-item__overlay" aria-hidden="true">
-                      <p className="gallery-item__caption">{caption}</p>
-                    </div>
-
-                    {/* Expand icon — visible on hover */}
-                    <div className="gallery-item__icon" aria-hidden="true">
-                      <Maximize2 />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ── Lightbox ───────────────────────────────────────────── */}
-        {selectedIndex !== null && (
-          <Lightbox
-            photos={photos}
-            index={selectedIndex}
-            onClose={closeLightbox}
-            onPrev={goPrev}
-            onNext={goNext}
-            originRef={itemRefs.current[selectedIndex]}
-          />
-        )}
-      </div>
-    </>
+      {GaleriBody(vals)}
+    </div>
   );
 };
 

@@ -74,7 +74,7 @@ export const getHomepagePrograms = ({ schedules = [], quotas = {} }) => {
       id: 'qiroati',
       eyebrow: 'Metode inti',
       title: 'Metode Qiroati',
-      description: 'Pembinaan bacaan dilakukan bertahap agar santri terbiasa membaca dengan benar, tartil, dan terpantau.',
+      description: 'Pembinaan bacaan dilakukan bertahap agar murid terbiasa membaca dengan benar, tartil, dan terpantau.',
       route: '/metode-qiroati',
       featured: true,
     },
@@ -98,7 +98,7 @@ export const getHomepagePrograms = ({ schedules = [], quotas = {} }) => {
       id: 'adab',
       eyebrow: 'Pembinaan',
       title: 'Adab sebelum capaian',
-      description: 'Rutinitas kelas disusun agar santri tumbuh dalam disiplin, sopan santun, dan kecintaan pada Al-Qur’an.',
+      description: 'Rutinitas kelas disusun agar murid tumbuh dalam disiplin, sopan santun, dan kecintaan pada Al-Qur’an.',
       route: '/profil',
     },
     {

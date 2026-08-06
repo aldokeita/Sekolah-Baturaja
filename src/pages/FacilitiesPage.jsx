@@ -1,461 +1,167 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import {
-  Building,
-  ArrowRight,
-  Maximize2,
-  AlertTriangle,
-  RefreshCw,
-  Leaf,
-  Sun,
-  ShieldCheck,
-  Heart,
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { OFFICIAL_FACILITIES, OFFICIAL_WEBSITE } from '@/lib/institutionContent';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import FasilitasBody from '@/components/sdnb/generated/FasilitasBody';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
-import '@/styles/public-facilities.css';
+import useSdnbMotion from '@/hooks/useSdnbMotion';
+import '@/styles/sdnb.css';
 
-/* ---------- Animation Variants ---------- */
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
-};
+/**
+ * Fasilitas — markup generated verbatim from `Fasilitas.dc.html` by
+ * tools/dc-convert.mjs. This file reproduces the mockup's logic class: the
+ * auto-advancing tour (`jalan`), the active room stage, the chip strip, the
+ * progress bar, keyboard arrows, and the mosaic.
+ *
+ * Backend fill-in: when the CMS has `facilities` entries their name and photo
+ * replace the mockup's placeholders for the matching slot; every layout span,
+ * category and metadata block stays exactly as designed.
+ */
 
-const staggerContainer = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
-};
-
-const staggerItem = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
-};
-
-/* ---------- Ambient Highlights (static copy, not fake data) ---------- */
-const ambientHighlights = [
-  {
-    icon: <Leaf className="w-5 h-5" />,
-    accent: 'emerald',
-    title: 'Lingkungan Asri',
-    text: 'Area belajar yang bersih, rindang, dan nyaman untuk mendukung konsentrasi santri.',
-  },
-  {
-    icon: <Sun className="w-5 h-5" />,
-    accent: 'amber',
-    title: 'Pencahayaan Optimal',
-    text: 'Ruang kelas dirancang dengan pencahayaan yang baik demi kenyamanan membaca.',
-  },
-  {
-    icon: <ShieldCheck className="w-5 h-5" />,
-    accent: 'cyan',
-    title: 'Keamanan Terjaga',
-    text: 'Area belajar yang aman dan terawat, memberikan ketenangan bagi wali santri.',
-  },
-  {
-    icon: <Heart className="w-5 h-5" />,
-    accent: 'violet',
-    title: 'Suasana Kekeluargaan',
-    text: 'Lingkungan yang hangat dan penuh kebersamaan antara guru, santri, dan wali.',
-  },
+const F = [
+  ['Ruang kelas', 'Belajar', '12 ruang, @56 m²', '#6470ff,#8a6cf0',
+    'Dua belas ruang untuk delapan belas rombongan belajar, dipakai bergiliran pagi dan siang. Setiap ruang memuat 28 murid dengan meja tunggal, papan tulis putih, dan rak buku kelas.',
+    'Dipakai bergilir pagi dan siang',
+    [['Kapasitas', '28 murid'], ['Cahaya', 'Jendela dua sisi'], ['Papan', 'Putih magnetik'], ['Diperiksa', 'Awal bulan']], 2, 2],
+  ['Perpustakaan', 'Penunjang', '96 m²', '#7a6cf5,#c07ad8',
+    'Empat ribu judul buku anak, dua puluh empat kursi baca, dan kotak buku bergilir untuk tiap kelas yang diganti setiap dua pekan. Buka sampai pukul 14.00 setiap hari sekolah.',
+    'Empat ribu judul buku anak',
+    [['Koleksi', '4.000 judul'], ['Kursi baca', '24 kursi'], ['Jam buka', '07.30–14.00'], ['Petugas', 'Lestari Ningsih']], 2, 1],
+  ['Ruang komputer', 'Penunjang', '64 m²', '#6ab8f0,#8fd8ec',
+    'Enam belas unit komputer dan jaringan internet, dipakai kelas empat sampai enam masing-masing satu jam per pekan untuk kelas literasi digital.',
+    'Enam belas unit, satu jam per kelas',
+    [['Unit', '16 komputer'], ['Jaringan', '50 Mbps'], ['Pemakaian', '1 jam per kelas'], ['Pengampu', 'Ahmad Zulkarnain']], 1, 1],
+  ['Musala', 'Ibadah', '72 m²', '#5fb8a0,#8fe0c0',
+    'Tempat salat Zuhur berjamaah bergantian antar kelas sebelum pulang, dilengkapi tempat wudu terpisah putra dan putri serta rak mukena.',
+    'Salat Zuhur berjamaah bergilir',
+    [['Kapasitas', '60 jamaah'], ['Tempat wudu', '12 keran'], ['Jadwal', 'Zuhur bergilir'], ['Pengampu', 'Ratna Dewi']], 1, 1],
+  ['Lapangan serbaguna', 'Olahraga', '640 m²', '#e0839a,#f0a06c',
+    'Dipakai upacara bendera, senam pagi Jumat, latihan atletik, dan jam istirahat kedua. Permukaan beton dengan garis lapangan bola voli dan kasti.',
+    'Upacara, senam, dan atletik',
+    [['Luas', '640 m²'], ['Permukaan', 'Beton bergaris'], ['Peneduh', '4 trembesi'], ['Pemakaian', 'Setiap hari']], 2, 1],
+  ['Kebun sekolah', 'Lingkungan', '320 m²', '#7bbf6a,#b6e8a0',
+    'Petak sayur dibagi per kelas empat sampai enam, masing-masing dirawat empat murid bergilir. Hasil panen dimasak bersama di kantin atau dibagikan ke wali murid.',
+    'Sembilan petak sayur per kelas',
+    [['Petak', '9 petak kelas'], ['Tanaman', 'Kangkung, bayam'], ['Panen', '2 kali setahun'], ['Pendamping', 'Dedi Kurniawan']], 1, 2],
+  ['Ruang UKS', 'Kesehatan', '32 m²', '#f08a8a,#ffc9dc',
+    'Dua tempat tidur, kotak obat lengkap, timbangan, dan pengukur tinggi badan. Dijaga bergilir oleh anggota dokter kecil pada jam istirahat.',
+    'Dijaga dokter kecil bergilir',
+    [['Tempat tidur', '2 unit'], ['Petugas', 'Dokter kecil'], ['Pemeriksaan', 'Tiap semester'], ['Pengampu', 'Lestari Ningsih']], 1, 1],
+  ['Kantin sekolah', 'Penunjang', '48 m²', '#ffd08c,#ffe0b3',
+    'Empat penjual dengan menu yang diperiksa guru piket setiap pekan. Sejak November 2025 tidak lagi menjual minuman berpemanis.',
+    'Tanpa minuman berpemanis',
+    [['Penjual', '4 penjual'], ['Menu', 'Diperiksa mingguan'], ['Kursi', '40 kursi'], ['Aturan', 'Tanpa gula tambahan']], 1, 1],
+  ['Ruang guru', 'Kantor', '80 m²', '#8a6cf0,#c8a4f0',
+    'Meja untuk dua puluh empat guru, ruang rapat kecil, dan lemari arsip kelas. Pertemuan wali murid bulanan diadakan di ruang kelas masing-masing, bukan di sini.',
+    'Dua puluh empat meja guru',
+    [['Meja', '24 meja'], ['Rapat', '1 ruang kecil'], ['Arsip', 'Per rombel'], ['Jam', '07.00–15.30']], 1, 1],
+  ['Ruang tata usaha', 'Kantor', '40 m²', '#6470ff,#b4b8f8',
+    'Layanan surat, pendaftaran murid baru, dan legalisir dokumen. Antrean maksimal enam orang dengan kursi tunggu di teras depan.',
+    'Layanan surat dan PPDB',
+    [['Layanan', 'Surat & PPDB'], ['Jam', '07.30–15.00'], ['Petugas', '3 orang'], ['Kursi tunggu', '6 kursi']], 2, 1],
 ];
 
-/* ---------- Image with Error Fallback ---------- */
-const FacilityImage = ({ src, alt, className, style }) => {
-  const [errored, setErrored] = useState(false);
-  if (errored) {
-    return (
-      <div className="fp-image-broken" role="img" aria-label={alt || 'Gambar tidak tersedia'}>
-        <Building className="w-8 h-8" />
-      </div>
-    );
-  }
-  return (
-    <img
-      src={src}
-      alt={alt || 'Fasilitas LPQ Al-Fath Maulana'}
-      className={className}
-      style={style}
-      loading="lazy"
-      onError={() => setErrored(true)}
-      draggable={false}
-    />
-  );
-};
-
-/* ---------- Loading Skeleton ---------- */
-const LoadingSkeleton = () => (
-  <div className="fp-page" role="status" aria-label="Memuat fasilitas...">
-    <Helmet>
-      <title>Fasilitas - LPQ Al-Fath Maulana</title>
-    </Helmet>
-    <div className="fp-skeleton-hero" aria-hidden="true">
-      <div className="fp-skeleton-hero__inner">
-        <div className="fp-skeleton-line fp-skeleton-line--badge" />
-        <div className="fp-skeleton-line fp-skeleton-line--title" />
-        <div className="fp-skeleton-line fp-skeleton-line--desc" />
-        <div className="fp-skeleton-line fp-skeleton-line--desc2" />
-      </div>
-    </div>
-    <div className="fp-skeleton-grid" aria-hidden="true">
-      {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="fp-skeleton-card" />
-      ))}
-    </div>
-  </div>
-);
-
-/* ---------- Empty State ---------- */
-const EmptyState = () => (
-  <div className="fp-page">
-    <Helmet>
-      <title>Fasilitas - LPQ Al-Fath Maulana</title>
-    </Helmet>
-    <div className="fp-empty">
-      <Building className="fp-empty__icon" />
-      <p className="fp-empty__title">Fasilitas belum tersedia</p>
-      <p className="fp-empty__desc">
-        Informasi fasilitas LPQ Al-Fath Maulana akan muncul di sini setelah ditambahkan oleh admin.
-      </p>
-    </div>
-  </div>
-);
-
-/* ---------- Error State ---------- */
-const ErrorState = ({ onRetry }) => (
-  <div className="fp-page">
-    <Helmet>
-      <title>Fasilitas - LPQ Al-Fath Maulana</title>
-    </Helmet>
-    <div className="fp-error">
-      <AlertTriangle className="fp-error__icon" />
-      <p className="fp-error__title">Gagal memuat fasilitas</p>
-      <p className="fp-error__desc">
-        Terjadi kesalahan saat mengambil data. Silakan coba lagi.
-      </p>
-      <button className="fp-error__retry" onClick={onRetry} type="button">
-        <RefreshCw className="w-4 h-4" />
-        Muat ulang
-      </button>
-    </div>
-  </div>
-);
-
-/* ======================================== */
-/*            MAIN COMPONENT                */
-/* ======================================== */
-
-/* ---------- Default Facilities (fallback when backend has no data) ---------- */
-const defaultFacilities = OFFICIAL_FACILITIES;
+const TOUR_MS = 6000;
 
 const FacilitiesPage = () => {
-  const [facilities, setFacilities] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [lightboxFacility, setLightboxFacility] = useState(null);
+  const [aktif, setAktif] = useState(0);
+  const [jalan, setJalan] = useState(true);
+  const [cms, setCms] = useState([]);
 
-  const fetchFacilities = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      const contentMap = await fetchWebsiteContentMap({ keys: ['facilities'], publicOnly: true });
-      const raw = contentMap.facilities;
+  useSdnbMotion([]);
 
-      if (Array.isArray(raw) && raw.length > 0) {
-        setFacilities(raw);
-      } else {
-        setFacilities(defaultFacilities);
-      }
-    } catch {
-      setFacilities(defaultFacilities);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    let mounted = true;
+    fetchWebsiteContentMap({ keys: ['facilities'], publicOnly: true })
+      .then((map) => { if (mounted && Array.isArray(map.facilities)) setCms(map.facilities); })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  // auto tour
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (jalan) setAktif((s) => (s + 1) % F.length);
+    }, TOUR_MS);
+    return () => clearInterval(id);
+  }, [jalan]);
+
+  const geser = useCallback((dir) => {
+    setAktif((s) => (s + dir + F.length) % F.length);
+    setJalan(false);
   }, []);
 
   useEffect(() => {
-    fetchFacilities();
-  }, [fetchFacilities]);
-
-  /* Lightbox handlers */
-  const closeLightbox = useCallback(() => setLightboxFacility(null), []);
-
-  /* Keyboard handling for lightbox */
-  useEffect(() => {
-    if (!lightboxFacility) return;
-    const handler = (e) => {
-      if (e.key === 'Escape') closeLightbox();
+    const onKey = (e) => {
+      if (e.key === 'ArrowRight') geser(1);
+      if (e.key === 'ArrowLeft') geser(-1);
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [lightboxFacility, closeLightbox]);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [geser]);
 
-  /* States */
-  if (loading) return <LoadingSkeleton />;
-  if (error) return <ErrorState onRetry={fetchFacilities} />;
-  if (facilities.length === 0) return <EmptyState />;
+  const pilih = (i) => { setAktif(i); setJalan(false); };
 
-  /* Split: first facility is featured, rest go to showcase */
-  const featured = facilities[0];
-  const showcase = facilities.slice(1);
+  // CMS photo for slot k, else the mockup's layered gradient (verbatim foto()).
+  const foto = (f, k) => {
+    const url = cms[k]?.image_url || cms[k]?.url;
+    if (url) return `background-image:url("${url}");background-size:cover;background-position:center`;
+    const c = f[3].split(',');
+    return `background-image:radial-gradient(62% 120% at 76% 14%,${c[1]} 0%,rgba(255,255,255,0) 62%),`
+      + `radial-gradient(52% 104% at 18% 92%,${c[0]} 0%,rgba(255,255,255,0) 58%),`
+      + `linear-gradient(122deg,${c[0]} 0%,${c[1]} 54%,${c[0]} 100%)`;
+  };
+  const nama = (f, k) => cms[k]?.name || f[0];
 
-  const getImageSrc = (f) =>
-    f?.image_url || f?.url || '/logo-lpq-al-fath-maulana.webp';
+  const i = aktif;
+  const a = F[i];
+
+  const vals = {
+    panggung: F.map((f, k) => ({ on: k === i ? '1' : '0', foto: foto(f, k) })),
+
+    sorot: {
+      nama: nama(a, i), kategori: a[1], luas: a[2], cerita: a[4],
+      posisi: `${i + 1} dari ${F.length}`,
+      meta: a[6].map(([k, v]) => ({ k, v })),
+    },
+
+    progres: `height:100%;width:${Math.round(((i + 1) / F.length) * 100)}%;background:linear-gradient(90deg,#7d8bff,#e58fc4);transition:width .6s cubic-bezier(.22,.9,.28,1)`,
+
+    jalanDot: jalan ? '#8ee0b8' : '#f0b48c',
+    jalanTeks: jalan ? 'Tur berjalan otomatis' : 'Tur dijeda',
+    jalanLabel: jalan ? 'Jeda' : 'Lanjut',
+    tglJalan: () => setJalan((v) => !v),
+    maju: () => geser(1),
+    mundur: () => geser(-1),
+
+    chip: F.map((f, k) => ({
+      nama: nama(f, k),
+      on: k === i ? '1' : '0',
+      foto: foto(f, k),
+      pick: () => pilih(k),
+    })),
+
+    ringkas: [
+      { n: 4200, suf: ' m²', label: 'Luas lahan' },
+      { n: 12, suf: '', label: 'Ruang kelas' },
+      { n: 10, suf: '', label: 'Ruang penunjang' },
+      { n: 24, suf: '', label: 'Guru dan staf' },
+    ].map((r, k) => ({ ...r, box: `padding:28px 28px 28px ${k === 0 ? '0' : '28px'};border-right:${k === 3 ? 'none' : '1px solid rgba(255,255,255,.16)'}` })),
+
+    mozaik: F.map((f, k) => ({
+      nama: nama(f, k), kategori: f[1], luas: f[2], ringkas: f[5],
+      foto: foto(f, k),
+      pick: () => pilih(k),
+      cell: `grid-column:span ${f[7]};grid-row:span ${f[8]};border-radius:24px;border:1px solid rgba(255,255,255,.16);box-shadow:0 30px 64px -26px rgba(6,10,42,.9)`,
+    })),
+  };
 
   return (
-    <>
+    <div className="sdnb-fasilitas">
       <Helmet>
-        <title>Fasilitas - LPQ Al-Fath Maulana</title>
-        <meta
-          name="description"
-          content="Lingkungan belajar yang nyaman, aman, dan mendukung — lihat fasilitas lengkap LPQ Al-Fath Maulana."
-        />
-        <link rel="canonical" href={`${OFFICIAL_WEBSITE}/fasilitas`} />
+        <title>Fasilitas — Sekolah Dasar Negeri Baturaja</title>
+        <meta name="description" content="Ruang kelas, perpustakaan, musala, lapangan, kebun sekolah, dan fasilitas penunjang lainnya." />
       </Helmet>
-
-      <div className="fp-page">
-        {/* ── HERO ──────────────────────────────────────────── */}
-        <section className="fp-hero" aria-labelledby="fp-hero-title">
-          <motion.div
-            className="fp-hero__inner"
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-          >
-            <span className="fp-hero__badge">
-              <Building className="w-3.5 h-3.5" />
-              Fasilitas Kami
-            </span>
-            <h1 id="fp-hero-title" className="fp-hero__title">
-              Lingkungan Belajar yang{' '}
-              <span className="fp-hero__title-accent">Nyaman & Mendukung</span>
-            </h1>
-            <p className="fp-hero__desc">
-              Setiap ruang dan fasilitas di LPQ Al-Fath Maulana dirancang untuk menciptakan suasana
-              belajar yang kondusif — agar santri dapat fokus menuntut ilmu Al-Qur'an dengan tenang.
-            </p>
-          </motion.div>
-        </section>
-
-        <div className="fp-container">
-          {/* ── FEATURED FACILITY ──────────────────────────── */}
-          {featured && (
-            <section className="fp-featured" aria-label={`Fasilitas utama: ${featured.name}`}>
-              <motion.div
-                className="fp-featured__card"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: '-60px' }}
-                variants={fadeUp}
-              >
-                <div className="fp-featured__image-wrap">
-                  <FacilityImage
-                    src={getImageSrc(featured)}
-                    alt={featured.name}
-                  />
-                  <span className="fp-featured__image-badge" aria-hidden="true">
-                    Utama
-                  </span>
-                </div>
-                <div className="fp-featured__content">
-                  <h2 className="fp-featured__name">{featured.name}</h2>
-                  <p className="fp-featured__desc">{featured.description}</p>
-                  {featured.image_url && (
-                    <button
-                      className="fp-featured__expand-btn"
-                      type="button"
-                      onClick={() => setLightboxFacility(featured)}
-                      aria-label={`Lihat foto ${featured.name}`}
-                    >
-                      <Maximize2 className="w-4 h-4" />
-                      Lihat Foto
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            </section>
-          )}
-
-          {/* ── SHOWCASE (Alternating) ─────────────────────── */}
-          {showcase.length > 0 && (
-            <section className="fp-showcase" aria-labelledby="fp-showcase-title">
-              <motion.div
-                className="fp-section-header"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: '-60px' }}
-                variants={fadeUp}
-              >
-                <p className="fp-section-header__kicker">
-                  Fasilitas Lainnya
-                </p>
-                <h2 id="fp-showcase-title" className="fp-section-header__title">
-                  Setiap Ruang Punya Cerita
-                </h2>
-                <p className="fp-section-header__desc">
-                  Fasilitas pendukung yang melengkapi pengalaman belajar santri sehari-hari.
-                </p>
-              </motion.div>
-
-              <div className="fp-showcase__list">
-                {showcase.map((facility, index) => {
-                  const isReverse = index % 2 === 1;
-                  const displayIndex = index + 2; // +2 because featured is #1
-                  return (
-                    <motion.div
-                      key={facility.name || index}
-                      className={`fp-showcase__item ${isReverse ? 'fp-showcase__item--reverse' : ''}`}
-                      initial="hidden"
-                      whileInView="visible"
-                      viewport={{ once: true, margin: '-40px' }}
-                      variants={staggerItem}
-                    >
-                      <div className="fp-showcase__image-col">
-                        <div
-                          className="fp-showcase__number"
-                          aria-hidden="true"
-                        >
-                          {String(displayIndex).padStart(2, '0')}
-                        </div>
-                        <button
-                          className="fp-showcase__image-wrap"
-                          type="button"
-                          onClick={() => setLightboxFacility(facility)}
-                          aria-label={`Lihat foto ${facility.name}`}
-                        >
-                          <FacilityImage
-                            src={getImageSrc(facility)}
-                            alt={facility.name}
-                          />
-                        </button>
-                      </div>
-                      <div className="fp-showcase__content-col">
-                        <p className="fp-showcase__index">
-                          Fasilitas {String(displayIndex).padStart(2, '0')}
-                        </p>
-                        <h3 className="fp-showcase__name">{facility.name}</h3>
-                        <p className="fp-showcase__desc">{facility.description}</p>
-                        {facility.image_url && (
-                          <button
-                            className="fp-showcase__view-btn"
-                            type="button"
-                            onClick={() => setLightboxFacility(facility)}
-                            aria-label={`Lihat foto ${facility.name}`}
-                          >
-                            <Maximize2 className="w-3.5 h-3.5" />
-                            Lihat Foto
-                          </button>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          <hr className="fp-divider" />
-
-          {/* ── AMBIENT STRIP ──────────────────────────────── */}
-          <section className="fp-ambient" aria-labelledby="fp-ambient-title">
-            <motion.div
-              className="fp-section-header"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-60px' }}
-              variants={fadeUp}
-            >
-              <p className="fp-section-header__kicker">
-                Lingkungan Belajar
-              </p>
-              <h2 id="fp-ambient-title" className="fp-section-header__title">
-                Suasana yang Mendukung
-              </h2>
-              <p className="fp-section-header__desc">
-                Lebih dari sekadar bangunan — LPQ Al-Fath Maulana menghadirkan lingkungan yang
-                membuat santri nyaman dan wali santri tenang.
-              </p>
-            </motion.div>
-
-            <motion.div
-              className="fp-ambient__grid"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-40px' }}
-              variants={staggerContainer}
-            >
-              {ambientHighlights.map((item) => (
-                <motion.div
-                  key={item.title}
-                  className="fp-ambient__card"
-                  variants={staggerItem}
-                >
-                  <div
-                    className={`fp-ambient__card-icon fp-ambient__card-icon--${item.accent}`}
-                    aria-hidden="true"
-                  >
-                    {item.icon}
-                  </div>
-                  <h3 className="fp-ambient__card-title">{item.title}</h3>
-                  <p className="fp-ambient__card-text">{item.text}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </section>
-
-          {/* ── CTA ─────────────────────────────────────────── */}
-          <section className="fp-cta" aria-labelledby="fp-cta-title">
-            <motion.div
-              className="fp-cta__card"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-40px' }}
-              variants={fadeUp}
-            >
-              <h2 id="fp-cta-title" className="fp-cta__title">
-                Ingin Melihat Fasilitas Kami Secara Langsung?
-              </h2>
-              <p className="fp-cta__desc">
-                Kunjungi LPQ Al-Fath Maulana dan rasakan langsung lingkungan belajar yang nyaman
-                untuk putra-putri Anda.
-              </p>
-              <div className="fp-cta__actions">
-                <Link to="/pendaftaran/informasi" className="fp-cta__btn fp-cta__btn--primary">
-                  Informasi Pendaftaran
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link to="/kontak" className="fp-cta__btn fp-cta__btn--secondary">
-                  Hubungi Kami
-                </Link>
-              </div>
-            </motion.div>
-          </section>
-        </div>
-      </div>
-
-      {/* ── Lightbox ────────────────────────────────────────── */}
-      {lightboxFacility && (
-        <Dialog open onOpenChange={closeLightbox}>
-          <DialogContent className="fp-lightbox-content">
-            <div className="fp-lightbox__image-wrap">
-              <img
-                src={getImageSrc(lightboxFacility)}
-                alt={lightboxFacility.name}
-                draggable={false}
-              />
-            </div>
-            <div className="fp-lightbox__info">
-              <h3 className="fp-lightbox__name">{lightboxFacility.name}</h3>
-              {lightboxFacility.description && (
-                <p className="fp-lightbox__desc">{lightboxFacility.description}</p>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </>
+      {FasilitasBody(vals)}
+    </div>
   );
 };
 

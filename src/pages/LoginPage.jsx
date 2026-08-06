@@ -1,459 +1,138 @@
-import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useNavigate, useLocation } from 'react-router-dom';
+import LoginBody from '@/components/sdnb/generated/LoginBody';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { LOGIN_SECURITY_CONSENT_KEY, recordLoginAttempt } from '@/lib/loginSecurityAdapters';
-import TextType from '@/components/reactbits/TextType/TextType';
-import { useTheme } from '@/contexts/ThemeContext';
-import '@/styles/public-login.css';
-import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
+import '@/styles/sdnb.css';
 
-/* Lazy load DarkVeil to avoid blocking initial render */
-const DarkVeil = lazy(() => import('@/components/reactbits/DarkVeil/DarkVeil'));
+/**
+ * Login — markup generated verbatim from `Login.dc.html` by
+ * tools/dc-convert.mjs. Standalone full-screen page (no shared nav/footer).
+ *
+ * Scope decision: the mockup also contains a *simulated* post-login dashboard
+ * for Tata Usaha / Guru / Wali built on invented data. This app already has the
+ * real dashboards behind /dashboard with real data and role permissions, so
+ * only the sign-in screen is used here: `sudahMasuk` stays false and a
+ * successful sign-in navigates to the real dashboard instead.
+ *
+ * Wiring: the mockup's in-memory credential check is replaced by the app's JWT
+ * auth (`signInWithUsername`). The role tabs keep their design role — they set
+ * the field label and placeholder — while the backend resolves the actual role.
+ */
 
-/* ---------- Animation Variants ---------- */
-const cardVariants = {
-  hidden: { opacity: 0, y: 24, scale: 0.97 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
-  },
-};
-
-const brandVariants = {
-  hidden: { opacity: 0, y: -12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 },
-  },
-};
-
-const staggerContainer = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } },
-};
-
-const staggerItem = {
-  hidden: { opacity: 0, y: 14 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
-  },
-};
-
-/* ---------- Error Mapping ---------- */
-const mapErrorMessage = (error) => {
-  if (!error) return null;
-  const msg = error.message?.toLowerCase() || '';
-
-  if (msg.includes('server tidak dapat dihubungi') || msg.includes('failed to fetch')) {
-    return 'Server tidak dapat dihubungi. Periksa koneksi internet Anda.';
-  }
-  if (msg.includes('fetch') || msg.includes('network')) {
-    return 'Koneksi ke server gagal. Periksa koneksi internet Anda.';
-  }
-  if (
-    msg.includes('invalid') ||
-    msg.includes('salah') ||
-    msg.includes('format') ||
-    msg.includes('credentials')
-  ) {
-    return 'Email/Username atau Password salah.';
-  }
-  if (msg.includes('not found') || msg.includes('tidak ditemukan')) {
-    return 'Akun tidak ditemukan. Periksa kembali kredensial Anda.';
-  }
-  return 'Terjadi kesalahan, silakan coba lagi.';
-};
-
-const getDeviceCategory = () => {
-  if (typeof navigator === 'undefined') return 'Unknown';
-  const userAgent = navigator.userAgent || '';
-  if (/tablet|ipad/i.test(userAgent)) return 'Tablet';
-  if (/mobile|iphone|android/i.test(userAgent)) return 'Mobile';
-  return 'Desktop';
-};
-
-const recordLoginResult = ({ username, status }) => recordLoginAttempt({
-  username,
-  status,
-  device: getDeviceCategory(),
-});
-
-/* ======================================== */
-/*            MAIN COMPONENT                */
-/* ======================================== */
+const PERAN = [
+  ['Orang tua', 'Nomor induk murid', 'Contoh: 2026041'],
+  ['Guru', 'Nomor induk pegawai', 'Contoh: 198703142009'],
+  ['Tata usaha', 'Nama pengguna', 'Contoh: tu.baturaja'],
+];
 
 const LoginPage = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [logoUrl, setLogoUrl] = useState('/logo-lpq-al-fath-maulana.webp');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState(null);
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [securityNoticeAccepted, setSecurityNoticeAccepted] = useState(() => (
-    typeof window !== 'undefined' && window.localStorage.getItem(LOGIN_SECURITY_CONSENT_KEY) === 'accepted'
-  ));
+  const [peran, setPeran] = useState('Orang tua');
+  const [akun, setAkun] = useState('');
+  const [sandi, setSandi] = useState('');
+  const [lihat, setLihat] = useState(false);
+  const [ingat, setIngat] = useState(true);
+  const [toastMsg, setToastMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const toastTimer = useRef(null);
 
-  const { signInWithUsername, user, role, loading, profileLoading } = useAuth();
-  const { isDark } = useTheme();
+  const { signInWithUsername, user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const prefersReducedMotion = useReducedMotion();
+  const location = useLocation();
 
-  const usernameRef = useRef(null);
-  const passwordRef = useRef(null);
-
-  /* --- Redirect if already authenticated --- */
-  useEffect(() => {
-    if (user && role && !loading && !profileLoading) {
-      navigate('/dashboard');
-    }
-  }, [user, role, loading, profileLoading, navigate]);
-
-  /* --- Fetch dynamic logo --- */
-  useEffect(() => {
-    fetchWebsiteContentMap({ keys: ['logoUrl'], publicOnly: false })
-      .then((map) => { if (map.logoUrl) setLogoUrl(map.logoUrl); })
-      .catch(() => {});
+  const pesan = useCallback((t) => {
+    setToastMsg(t);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(''), 2600);
   }, []);
 
-  /* --- Form Validation --- */
-  const validate = useCallback(() => {
-    const errors = {};
-    if (!username.trim()) {
-      errors.username = 'Masukkan email atau username Anda.';
-    }
-    if (!password.trim()) {
-      errors.password = 'Masukkan password Anda.';
-    }
-    return errors;
-  }, [username, password]);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
-  /* --- Submit Handler --- */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError(null);
-    setFieldErrors({});
+  // Already signed in → straight to the real dashboard.
+  useEffect(() => {
+    if (user) navigate(location.state?.from?.pathname || '/dashboard', { replace: true });
+  }, [user, navigate, location.state]);
 
-    const errors = validate();
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      if (errors.username) {
-        usernameRef.current?.focus();
-      } else if (errors.password) {
-        passwordRef.current?.focus();
-      }
-      return;
-    }
+  const cur = PERAN.find((p) => p[0] === peran) || PERAN[0];
+  const siap = akun.trim().length > 3 && sandi.length > 5;
 
-    setIsSubmitting(true);
-
-    const trimmedUsername = username.trim();
-    const trimmedPassword = password.trim();
-
+  const masuk = async () => {
+    if (!siap || busy) { if (!siap) pesan('Lengkapi akun dan kata sandi'); return; }
+    setBusy(true);
     try {
-      const { user: loggedInUser, error } = await signInWithUsername(
-        trimmedUsername,
-        trimmedPassword,
-      );
-
-      if (error) {
-        await recordLoginResult({ username: trimmedUsername, status: 'failed' });
-        const errorMsg = mapErrorMessage(error);
-        setFormError(errorMsg);
-        setPassword('');
-        setTimeout(() => passwordRef.current?.focus(), 100);
-      } else if (loggedInUser) {
-        await recordLoginResult({ username: trimmedUsername, status: 'success' });
-        toast({
-          title: 'Login berhasil!',
-          description: 'Mengalihkan ke dashboard...',
-          className: 'bg-green-600 text-white border-none',
-        });
-        navigate('/dashboard');
+      const { error } = await signInWithUsername(akun.trim(), sandi);
+      if (error) { pesan(error.message || 'Akun atau kata sandi tidak cocok'); return; }
+      if (ingat === false) {
+        // "Ingat saya" unchecked: drop the refresh token so the session ends
+        // when the tab closes; the access token stays in memory for this visit.
+        try { localStorage.removeItem('refresh_token'); } catch { /* ignore */ }
       }
+      navigate(location.state?.from?.pathname || '/dashboard', { replace: true });
     } catch (err) {
-      await recordLoginResult({ username: trimmedUsername, status: 'failed' });
-      setFormError('Terjadi kesalahan, silakan coba lagi.');
-      setPassword('');
+      pesan(err?.message || 'Gagal masuk, coba lagi');
     } finally {
-      setIsSubmitting(false);
+      setBusy(false);
     }
   };
 
-  const acceptSecurityNotice = () => {
-    window.localStorage.setItem(LOGIN_SECURITY_CONSENT_KEY, 'accepted');
-    setSecurityNoticeAccepted(true);
-    window.setTimeout(() => usernameRef.current?.focus(), 100);
+  const vals = {
+    belumMasuk: true,
+    sudahMasuk: false,
+
+    peran: PERAN.map(([label]) => {
+      const on = peran === label;
+      return {
+        label,
+        pick: () => { setPeran(label); setAkun(''); setSandi(''); },
+        style: on
+          ? 'border:0;color:#fff;background:linear-gradient(135deg,#6470ff,#a06cf0 60%,#e58fc4);box-shadow:0 14px 30px -14px rgba(110,120,255,.95)'
+          : 'border:0;color:#a9b2ff;background:transparent',
+      };
+    }),
+
+    labelAkun: cur[1],
+    contohAkun: cur[2],
+    nilaiAkun: akun,
+    nilaiSandi: sandi,
+    setAkun: (e) => setAkun(e.target.value),
+    setSandi: (e) => setSandi(e.target.value),
+    tipeSandi: lihat ? 'text' : 'password',
+    toggleSandi: () => setLihat((v) => !v),
+    toggleIngat: () => setIngat((v) => !v),
+    kotakIngat: 'width:20px;height:20px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .25s ease,border-color .25s ease;' + (ingat
+      ? 'background:linear-gradient(140deg,#8ee0b8,#a9b2ff);border:1px solid rgba(255,255,255,.6)'
+      : 'background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28)'),
+    centangIngat: `opacity:${ingat ? '1' : '0'};transition:opacity .2s ease`,
+    statusIsi: busy ? 'Memeriksa…' : siap ? 'Siap masuk' : 'Isi akun dan sandi',
+    tombolMasuk: 'position:relative;overflow:hidden;margin-top:18px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 22px;border-radius:16px;border:0;font-family:inherit;font-size:15px;font-weight:800;letter-spacing:-.01em;color:#fff;background:linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4);box-shadow:0 22px 46px -18px rgba(110,120,255,.95);transition:opacity .3s ease;' + (siap && !busy ? 'cursor:pointer;opacity:1' : 'cursor:not-allowed;opacity:.45'),
+    masuk,
+
+    // The mockup listed three demo accounts that auto-fill the form. Those
+    // credentials only existed for the prototype and would fail against the
+    // real backend, so the list is empty here (the section renders nothing).
+    contoh: [],
+
+    toastAda: !!toastMsg,
+    toast: toastMsg,
+
+    // Bindings used only by the mockup's simulated dashboard. `sudahMasuk` is
+    // false so that branch never renders; these keep the markup safe.
+    sesi: {}, kartu: [], pil: [], grup: [], subTab: [], barisTU: [], aksiTU: [], saring: [],
+    guru: { murid: [] }, wali: { mini: [], tab: [], progres: [], isi: [] },
+    isTU: false, isGuru: false, isWali: false,
+    judul: '', sub: '', jumlahTU: '', kosongTU: false, tabAktif: '',
+    modulMurid: [], modulLain: [], modulKet: '',
+    setCari: () => {}, tambah: () => {}, keluar: () => {}, kembaliMurid: () => {},
   };
 
-  /* --- Loading / Redirect state --- */
-  if (loading) {
-    return (
-      <div className="login-page">
-        <Helmet>
-          <title>Login - LPQ Al-Fath Maulana</title>
-        </Helmet>
-        <div className="login-bg">
-          <Suspense fallback={null}>
-            <DarkVeil hueShift={58} speed={0.5} scanlineIntensity={0} invert={isDark ? 0 : 0.85} resolutionScale={0.5} />
-          </Suspense>
-        </div>
-        <div className="login-content">
-          <div className="login-spinner" style={{ width: 32, height: 32 }} aria-label="Memuat..." />
-        </div>
-      </div>
-    );
-  }
-
-  /* --- Render --- */
   return (
-    <>
+    <div className="sdnb sdnb-login">
       <Helmet>
-        <title>Login - LPQ Al-Fath Maulana</title>
-        <meta
-          name="description"
-          content="Login ke sistem LPQ Al-Fath Maulana untuk mengakses dashboard"
-        />
+        <title>Masuk — Sekolah Dasar Negeri Baturaja</title>
+        <meta name="description" content="Masuk ke portal Sekolah Dasar Negeri Baturaja untuk orang tua, guru, dan tata usaha." />
       </Helmet>
-
-      <div className="login-page">
-        {/* ===== DarkVeil Background ===== */}
-        <div className="login-bg" aria-hidden="true">
-          <Suspense fallback={null}>
-            <DarkVeil
-              hueShift={58}
-              noiseIntensity={0.08}
-              scanlineIntensity={0}
-              speed={0.6}
-              scanlineFrequency={0}
-              warpAmount={0.15}
-              invert={isDark ? 0 : 0.85}
-            />
-          </Suspense>
-        </div>
-
-        {/* ===== Content Layer ===== */}
-        <main className="login-content" role="main">
-          {/* Brand */}
-          <motion.div
-            className="login-brand"
-            variants={brandVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <div className="login-brand-logo">
-              <img src={logoUrl} alt="Logo LPQ Al-Fath Maulana" />
-            </div>
-            <h1 className="login-brand-name font-cinzel">LPQ Al-Fath Maulana</h1>
-            <p className="login-brand-sub font-montserrat">Metode Qiroati</p>
-          </motion.div>
-
-          {/* Glass Card */}
-          <motion.div
-            className="login-card"
-            variants={prefersReducedMotion ? undefined : cardVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {/* Header with TextType */}
-            <motion.div
-              className="login-card-header"
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-            >
-              <motion.div variants={staggerItem} className="login-card-greeting">
-                <TextType
-                  text={['Selamat Datang']}
-                  typingSpeed={75}
-                  initialDelay={300}
-                  pauseDuration={4000}
-                  loop={false}
-                  showCursor={true}
-                  cursorCharacter="|"
-                  cursorClassName="login-text-cursor"
-                  as="span"
-                  textColors={['rgba(78, 190, 120, 0.9)']}
-                />
-              </motion.div>
-              <motion.p variants={staggerItem} className="login-card-description">
-                Masukkan kredensial Anda untuk mengakses dashboard.
-              </motion.p>
-            </motion.div>
-
-            {/* Inline Error Alert */}
-            {formError && (
-              <div
-                className="login-alert"
-                role="alert"
-                aria-live="assertive"
-              >
-                <AlertCircle className="login-alert-icon" aria-hidden="true" />
-                <div className="login-alert-content">
-                  <p className="login-alert-title">Login Gagal</p>
-                  <p className="login-alert-message">{formError}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Login Form */}
-            <form className="login-form" onSubmit={handleSubmit} noValidate>
-              {/* Username Field */}
-              <div className="login-field-group">
-                <label htmlFor="login-username" className="login-field-label">
-                  Email atau Nama Panggilan Santri
-                </label>
-                <div className="login-input-wrapper">
-                  <User className="login-input-icon" aria-hidden="true" />
-                  <input
-                    ref={usernameRef}
-                    id="login-username"
-                    type="text"
-                    autoComplete="username"
-                    autoCapitalize="none"
-                    spellCheck="false"
-                    placeholder="Email pengajar atau Nama Panggilan Santri"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      if (fieldErrors.username) {
-                        setFieldErrors((prev) => ({ ...prev, username: null }));
-                      }
-                    }}
-                    disabled={isSubmitting}
-                    className={`login-input${fieldErrors.username ? ' login-input--error' : ''}`}
-                    aria-describedby={fieldErrors.username ? 'login-username-error' : undefined}
-                    aria-invalid={!!fieldErrors.username}
-                    required
-                  />
-                </div>
-                <div
-                  id="login-username-error"
-                  className="login-field-error"
-                  role="status"
-                  aria-live="polite"
-                >
-                  {fieldErrors.username && (
-                    <>
-                      <AlertCircle aria-hidden="true" />
-                      {fieldErrors.username}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div className="login-field-group">
-                <label htmlFor="login-password" className="login-field-label">
-                  Password
-                </label>
-                <div className="login-input-wrapper">
-                  <Lock className="login-input-icon" aria-hidden="true" />
-                  <input
-                    ref={passwordRef}
-                    id="login-password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    placeholder="Masukkan password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (fieldErrors.password) {
-                        setFieldErrors((prev) => ({ ...prev, password: null }));
-                      }
-                    }}
-                    disabled={isSubmitting}
-                    className={`login-input login-input--password${fieldErrors.password ? ' login-input--error' : ''}`}
-                    aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
-                    aria-invalid={!!fieldErrors.password}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="login-password-toggle lpq-shiny-button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isSubmitting}
-                    aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                    tabIndex={0}
-                  >
-                    {showPassword ? (
-                      <EyeOff aria-hidden="true" />
-                    ) : (
-                      <Eye aria-hidden="true" />
-                    )}
-                  </button>
-                </div>
-                <div
-                  id="login-password-error"
-                  className="login-field-error"
-                  role="status"
-                  aria-live="polite"
-                >
-                  {fieldErrors.password && (
-                    <>
-                      <AlertCircle aria-hidden="true" />
-                      {fieldErrors.password}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="login-submit-btn lpq-shiny-button"
-                disabled={isSubmitting}
-                aria-busy={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="login-spinner" aria-hidden="true" />
-                    <span>Memproses...</span>
-                  </>
-                ) : (
-                  'Masuk'
-                )}
-              </button>
-            </form>
-
-            {/* Footer */}
-            <div className="login-footer" aria-hidden="true">
-              <p>&copy; {new Date().getFullYear()} LPQ Al-Fath Maulana</p>
-              <p>Metode Qiroati</p>
-            </div>
-          </motion.div>
-        </main>
-
-        {!securityNoticeAccepted && (
-          <div className="login-privacy-overlay" role="presentation">
-            <section className="login-privacy-dialog" role="dialog" aria-modal="true" aria-labelledby="login-privacy-title" aria-describedby="login-privacy-description">
-              <div className="login-privacy-icon"><Lock aria-hidden="true" /></div>
-              <div>
-                <p className="login-privacy-kicker">Keamanan akun</p>
-                <h2 id="login-privacy-title">Privasi dan keamanan login</h2>
-                <p id="login-privacy-description">
-                  Untuk melindungi akun, sistem mencatat waktu login, jenis perangkat, alamat IP, dan perkiraan lokasi jaringan. Penyimpanan lokal digunakan untuk mempertahankan sesi serta pilihan ini.
-                </p>
-                <p className="login-privacy-note">Kami tidak merekam password, isi sesi, GPS, atau lokasi presisi perangkat.</p>
-              </div>
-              <button type="button" onClick={acceptSecurityNotice} className="login-privacy-action">
-                Izinkan &amp; lanjutkan
-              </button>
-            </section>
-          </div>
-        )}
-      </div>
-    </>
+      {LoginBody(vals)}
+    </div>
   );
 };
 

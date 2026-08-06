@@ -2,7 +2,7 @@ export const DEFAULT_ENROLLMENT_DATA = {
   categories: [
     {
       id: 'tpq',
-      name: 'Santri TPQ (Anak)',
+      name: 'Murid TPQ (Anak)',
       description: 'Program pembelajaran Al-Qur\'an untuk mulai dari usia 3 - 16 tahun dengan kurikulum terstruktur dan lingkungan belajar yang menyenangkan.',
       icon: '👦',
       fees: [
@@ -16,12 +16,12 @@ export const DEFAULT_ENROLLMENT_DATA = {
       totalFee: 'Rp 450.000',
       notes: [
         { id: 'n1', icon: '💰', text: 'Biaya pendaftaran dapat dicicil selama satu bulan.' },
-        { id: 'n2', icon: '👨‍👩‍👧‍👦', text: 'Tersedia paket khusus untuk keluarga dengan lebih dari satu santri.' },
+        { id: 'n2', icon: '👨‍👩‍👧‍👦', text: 'Tersedia paket khusus untuk keluarga dengan lebih dari satu murid.' },
         { id: 'n3', icon: '📚', text: 'Pembelajaran dimulai setelah seluruh syarat administrasi terpenuhi.' },
-        { id: 'n4', icon: '🤝', text: 'Kedua orang tua/wali mendampingi calon santri saat pendaftaran.' },
+        { id: 'n4', icon: '🤝', text: 'Kedua orang tua/wali mendampingi calon murid saat pendaftaran.' },
       ],
       requirements: [
-        { id: 'r1', text: 'Kedua wali dan calon santri hadir saat mengisi formulir pendaftaran.' },
+        { id: 'r1', text: 'Kedua wali dan calon murid hadir saat mengisi formulir pendaftaran.' },
         { id: 'r2', text: 'Mengisi formulir pendaftaran dengan lengkap dan benar.' },
         { id: 'r3', text: 'Fotokopi Akta Kelahiran satu lembar.' },
         { id: 'r4', text: 'Fotokopi Kartu Keluarga satu lembar.' },
@@ -32,7 +32,7 @@ export const DEFAULT_ENROLLMENT_DATA = {
     },
     {
       id: 'dewasa',
-      name: 'Santri Dewasa',
+      name: 'Murid Dewasa',
       description: 'Program pembelajaran Al-Qur\'an untuk usia dewasa di atas 17 tahun dengan jadwal fleksibel dan pendekatan personal.',
       icon: '🎓',
       fees: [

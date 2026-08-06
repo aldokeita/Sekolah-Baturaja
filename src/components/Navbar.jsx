@@ -1,195 +1,122 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, LayoutDashboard, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
+import { ChevronDown, ArrowRight, LayoutDashboard, LogIn, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
-import GlassSurface from '@/components/reactbits/GlassSurface/GlassSurface';
-import '@/styles/navbar.css';
+import { SCHOOL } from '@/lib/schoolProfile';
+import '@/styles/school-home.css';
 
+// Only routes that actually exist in this app are linked. The Claude Design
+// reference lists Prestasi/Program/Ekstrakurikuler too; those pages don't exist
+// yet, so they're omitted rather than pointing at dead links.
 const navGroups = [
   { label: 'Beranda', to: '/' },
   {
-    label: 'Berita',
-    items: [
-      { label: 'Berita Lembaga', to: '/berita' },
-      { label: 'Pengumuman', to: '/pengumuman' },
-    ],
-  },
-  {
-    label: 'Pendaftaran',
-    items: [
-      { label: 'Informasi', to: '/pendaftaran/informasi' },
-      { label: 'Brosur', to: '/pendaftaran/brosur' },
-      { label: 'Sistem Mengaji', to: '/pendaftaran/sistem' },
-    ],
-  },
-  {
-    label: 'Parenting',
-    items: [
-      { label: 'Artikel Parenting', to: '/parenting' },
-      { label: 'Media Edukatif', to: '/parenting/media-edukatif' },
-      { label: 'Diskusi Wali Santri', to: '/parenting/diskusi-wali' },
-    ],
-  },
-  {
     label: 'Profil',
     items: [
-      { label: 'Tentang Kami', to: '/profil' },
+      { label: 'Tentang Sekolah', to: '/profil' },
       { label: 'Galeri', to: '/profil/galeri' },
-      { label: 'Metode Qiroati', to: '/metode-qiroati' },
+      { label: 'Prestasi', to: '/prestasi' },
+      { label: 'Program', to: '/program' },
+      { label: 'Ekstrakurikuler', to: '/ekstrakurikuler' },
       { label: 'Fasilitas', to: '/fasilitas' },
+    ],
+  },
+  {
+    label: 'Berita',
+    items: [
+      { label: 'Berita Sekolah', to: '/berita' },
+      { label: 'Pengumuman', to: '/pengumuman' },
     ],
   },
   { label: 'Kontak', to: '/kontak' },
 ];
 
-const isActivePath = (pathname, target) => target === '/' ? pathname === '/' : pathname.startsWith(target);
-
-const NavbarLogo = ({ logoUrl, logoFailed, setLogoFailed }) => (
-  <Link to="/" className="navbar-logo" aria-label="LPQ Al-Fath Maulana beranda">
-    {logoFailed ? (
-      <span className="navbar-logo__fallback">LPQ</span>
-    ) : (
-      <img src={logoUrl} alt="Logo LPQ Al-Fath Maulana" onError={() => setLogoFailed(true)} />
-    )}
-    <span className="font-cinzel">
-      LPQ Al-Fath Maulana
-      <small>Metode Qiroati</small>
-    </span>
-  </Link>
-);
-
-const DesktopNav = ({ pathname }) => (
-  <div className="navbar-desktop-nav" aria-label="Navigasi utama">
-    {navGroups.map((group) => group.to ? (
-      <Link key={group.label} to={group.to} className={isActivePath(pathname, group.to) ? 'is-active' : ''}>
-        {group.label}
-      </Link>
-    ) : (
-      <div key={group.label} className="navbar-dropdown">
-        <button type="button" aria-haspopup="true" className="lpq-shiny-button">
-          {group.label}
-          <ChevronDown className="h-4 w-4" />
-        </button>
-        <div className="navbar-dropdown__panel">
-          {group.items.map((item) => (
-            <Link key={item.to} to={item.to} className={isActivePath(pathname, item.to) ? 'is-active' : ''}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-    ))}
-  </div>
-);
+const isActivePath = (pathname, target) => (target === '/' ? pathname === '/' : pathname.startsWith(target));
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [mobileDropdown, setMobileDropdown] = useState('');
-  const [scrolled, setScrolled] = useState(false);
-  const [logoUrl, setLogoUrl] = useState('/logo-lpq-al-fath-maulana.webp');
-  const [logoFailed, setLogoFailed] = useState(false);
   const { user, signOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    let mounted = true;
-    const fetchLogo = async () => {
-      try {
-        const map = await fetchWebsiteContentMap({ keys: ['logoUrl'] });
-        if (mounted && map.logoUrl) {
-          setLogoFailed(false);
-          setLogoUrl(map.logoUrl);
-        }
-      } catch {
-        // Keep the bundled fallback logo — a missing remote logo is not worth a toast.
-      }
-    };
-    fetchLogo();
-    return () => { mounted = false; };
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') setIsOpen(false);
-    };
+    const onKeyDown = (e) => { if (e.key === 'Escape') setIsOpen(false); };
     if (isOpen) window.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', onKeyDown);
-    };
+    return () => { document.body.style.overflow = ''; window.removeEventListener('keydown', onKeyDown); };
   }, [isOpen]);
 
-  useEffect(() => {
-    setIsOpen(false);
-    setMobileDropdown('');
-  }, [location.pathname]);
+  useEffect(() => { setIsOpen(false); setMobileDropdown(''); }, [location.pathname]);
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
+  const handleLogout = async () => { await signOut(); navigate('/'); };
+
+  const ThemeButton = () => (
+    <button type="button" onClick={toggleTheme} className="sh-nav__iconbtn" aria-label="Ubah tema terang atau gelap">
+      {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+    </button>
+  );
 
   return (
-    <nav className={`navbar-shell ${scrolled ? 'is-scrolled' : ''}`}>
-      <div className="navbar-shell__inner">
-        <GlassSurface
-          width="100%"
-          height={72}
-          borderRadius={24}
-          borderWidth={0.06}
-          brightness={55}
-          opacity={scrolled ? 0.94 : 0.88}
-          blur={scrolled ? 14 : 10}
-          displace={1}
-          backgroundOpacity={scrolled ? 0.16 : 0.08}
-          saturation={1.25}
-          distortionScale={-110}
-          redOffset={2}
-          greenOffset={7}
-          blueOffset={12}
-          mixBlendMode="screen"
-          className="navbar-glass"
-        >
-          <div className="navbar-content">
-            <NavbarLogo logoUrl={logoUrl} logoFailed={logoFailed} setLogoFailed={setLogoFailed} />
-            <DesktopNav pathname={location.pathname} />
-            <div className="navbar-actions">
-              {user ? (
-                <>
-                  <Button asChild variant="ghost" size="icon" className="navbar-icon-button"><Link to="/dashboard" aria-label="Dashboard"><LayoutDashboard className="h-5 w-5" /></Link></Button>
-                  <Button onClick={handleLogout} variant="ghost" size="icon" className="navbar-icon-button is-danger" aria-label="Logout"><LogOut className="h-5 w-5" /></Button>
-                </>
-              ) : (
-                <Button asChild className="navbar-login"><Link to="/login">Login</Link></Button>
-              )}
-              <Button onClick={toggleTheme} variant="ghost" size="icon" className="navbar-icon-button" aria-label="Ubah tema">
-                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
+    <nav className="sh-nav" aria-label="Navigasi utama">
+      <div className="sh-nav__inner sh-glass">
+        <Link to="/" className="sh-nav__brand" aria-label={`${SCHOOL.name} beranda`}>
+          <span className="sh-nav__logo">{SCHOOL.logoAbbr}</span>
+          <span>
+            <span className="sh-nav__title">{SCHOOL.name}</span>
+            <span className="sh-nav__sub">{SCHOOL.location}</span>
+          </span>
+        </Link>
+
+        <div className="sh-nav__links">
+          {navGroups.map((group) => (group.to ? (
+            <Link key={group.label} to={group.to} className={`sh-nav__link${isActivePath(location.pathname, group.to) ? ' is-active' : ''}`}>
+              {group.label}
+            </Link>
+          ) : (
+            <div key={group.label} className="sh-navdd">
+              <button type="button" className="sh-nav__link sh-navdd__trigger" aria-haspopup="true">
+                {group.label}
+                <ChevronDown className="sh-navdd__caret h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+              <div className="sh-navdd__menu">
+                <div className="sh-navdd__panel">
+                  {group.items.map((item) => (
+                    <Link key={item.to} to={item.to} className="sh-navdd__link">
+                      {item.label}
+                      <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="navbar-mobile-actions">
-              <Button onClick={toggleTheme} variant="ghost" size="icon" className="navbar-icon-button" aria-label="Ubah tema">
-                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
-              <Button onClick={() => setIsOpen((value) => !value)} variant="ghost" size="icon" className="navbar-icon-button" aria-label="Buka menu" aria-expanded={isOpen}>
-                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </Button>
-            </div>
+          )))}
+        </div>
+
+        <div className="sh-nav__actions">
+          <ThemeButton />
+          <div className="sh-nav__login-wrap" style={{ display: 'contents' }}>
+            {user ? (
+              <>
+                <Link to="/dashboard" className="sh-nav__login" aria-label="Dashboard">
+                  <LayoutDashboard className="h-4 w-4" aria-hidden="true" /> Dashboard
+                </Link>
+                <button type="button" onClick={handleLogout} className="sh-nav__iconbtn" aria-label="Logout"><LogOut className="h-5 w-5" /></button>
+              </>
+            ) : (
+              <Link to="/login" className="sh-nav__login sh-shine" aria-label="Login">
+                <LogIn className="h-4 w-4" aria-hidden="true" /> Login
+              </Link>
+            )}
+            <Link to="/pendaftaran/informasi" className="sh-nav__cta sh-shine">Daftar PPDB</Link>
           </div>
-        </GlassSurface>
+          <button type="button" className="sh-nav__iconbtn sh-nav__burger" onClick={() => setIsOpen((v) => !v)} aria-label="Buka menu" aria-expanded={isOpen}>
+            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -198,33 +125,35 @@ const Navbar = () => {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="navbar-mobile-drawer"
+            className="sh-wrap"
+            style={{ paddingTop: 12 }}
           >
-            <div className="navbar-mobile-drawer__panel">
-              {navGroups.map((group) => group.to ? (
-                <Link key={group.label} to={group.to} className={isActivePath(location.pathname, group.to) ? 'is-active' : ''}>{group.label}</Link>
+            <div className="sh-glass" style={{ borderRadius: 22, padding: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {navGroups.map((group) => (group.to ? (
+                <Link key={group.label} to={group.to} className={`sh-nav__link${isActivePath(location.pathname, group.to) ? ' is-active' : ''}`}>{group.label}</Link>
               ) : (
-                <div key={group.label} className="navbar-mobile-group">
-                  <button type="button" onClick={() => setMobileDropdown(mobileDropdown === group.label ? '' : group.label)} className="lpq-shiny-button">
+                <div key={group.label}>
+                  <button type="button" className="sh-nav__link sh-navdd__trigger" style={{ width: '100%', justifyContent: 'space-between' }} onClick={() => setMobileDropdown(mobileDropdown === group.label ? '' : group.label)}>
                     {group.label}
-                    <ChevronDown className={`h-4 w-4 ${mobileDropdown === group.label ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 ${mobileDropdown === group.label ? 'rotate-180' : ''}`} aria-hidden="true" />
                   </button>
                   {mobileDropdown === group.label && (
-                    <div>
-                      {group.items.map((item) => <Link key={item.to} to={item.to}>{item.label}</Link>)}
+                    <div style={{ paddingLeft: 10, display: 'flex', flexDirection: 'column' }}>
+                      {group.items.map((item) => <Link key={item.to} to={item.to} className="sh-nav__link">{item.label}</Link>)}
                     </div>
                   )}
                 </div>
-              ))}
-              <div className="navbar-mobile-session">
+              )))}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 {user ? (
                   <>
-                    <Button asChild className="w-full"><Link to="/dashboard">Dashboard</Link></Button>
-                    <Button onClick={handleLogout} variant="outline" className="w-full border-red-200 text-red-700">Logout</Button>
+                    <Link to="/dashboard" className="sh-btn sh-btn--ghost sh-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>Dashboard</Link>
+                    <button type="button" onClick={handleLogout} className="sh-btn sh-btn--ghost sh-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>Logout</button>
                   </>
                 ) : (
-                  <Button asChild className="w-full"><Link to="/login">Login</Link></Button>
+                  <Link to="/login" className="sh-btn sh-btn--ghost sh-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>Login</Link>
                 )}
+                <Link to="/pendaftaran/informasi" className="sh-btn sh-btn--primary sh-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>Daftar PPDB</Link>
               </div>
             </div>
           </motion.div>
