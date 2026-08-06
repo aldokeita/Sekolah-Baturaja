@@ -209,7 +209,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
 
             const cleanName = santri.nama_lengkap.replace(/[^a-zA-Z0-9]/g, '_');
             const cleanPeriod = dateRange.periodText.replace(/[^a-zA-Z0-9]/g, '_');
-            doc.save(`Rapor_LPQ_${cleanName}_${cleanPeriod}.pdf`);
+            doc.save(`Rapor_${cleanName}_${cleanPeriod}.pdf`);
 
             toast({ title: "Rapor Berhasil Diunduh!", description: "File PDF rapor akademik & karakter telah tersimpan." });
         } catch (error) {
@@ -405,7 +405,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 Preview & Cetak Rapor Murid
                             </DialogTitle>
                             <DialogDescription className="text-xs">
-                                Rapor Akademik & Karakter LPQ Aurora Neo Glass.
+                                Rapor akademik dan karakter murid.
                             </DialogDescription>
                         </div>
 

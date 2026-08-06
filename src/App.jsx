@@ -69,7 +69,7 @@ const DynamicLogo = ({ className = '', width = 48, height = 48 }) => {
       {/* Local logo — always present */}
       <img
         src="/logo-lpq-al-fath-maulana.webp"
-        alt="Logo LPQ Al-Fath Maulana"
+        alt="Logo sekolah"
         width={width}
         height={height}
         className="absolute inset-0 w-full h-full object-contain"
@@ -79,7 +79,7 @@ const DynamicLogo = ({ className = '', width = 48, height = 48 }) => {
       {dynamicUrl && (
         <img
           src={dynamicUrl}
-          alt="Logo LPQ Al-Fath Maulana"
+          alt="Logo sekolah"
           width={width}
           height={height}
           className="absolute inset-0 w-full h-full object-contain"

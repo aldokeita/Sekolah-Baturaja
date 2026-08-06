@@ -5,7 +5,7 @@ const HeroImage = () => {
     <div className='flex justify-center items-center'>
       <img
         src='/logo-lpq-al-fath-maulana.webp'
-        alt='Placeholder logo LPQ Al-Fath Maulana'
+        alt='Placeholder logo sekolah'
       />
     </div>
   );

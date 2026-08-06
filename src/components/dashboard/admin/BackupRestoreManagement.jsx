@@ -352,7 +352,7 @@ const BackupRestoreManagement = () => {
 
         const extension = file.name.split('.').pop()?.toLowerCase();
         if (!['json', 'xlsx', 'csv'].includes(extension)) {
-            toast({ variant: 'destructive', title: 'Format Tidak Didukung', description: 'Gunakan file JSON, XLSX, atau CSV hasil backup LPQ.' });
+            toast({ variant: 'destructive', title: 'Format Tidak Didukung', description: 'Gunakan file JSON, XLSX, atau CSV hasil backup aplikasi ini.' });
             event.target.value = '';
             return;
         }
@@ -402,7 +402,7 @@ const BackupRestoreManagement = () => {
 
                     const recognizedTables = BACKUP_TABLES.filter((tableName) => Array.isArray(parsedData[tableName]));
                     if (recognizedTables.length === 0) {
-                        throw new Error('File tidak berisi tabel LPQ yang dikenali.');
+                        throw new Error('File tidak berisi tabel yang dikenali.');
                     }
 
                     setRestoreData(parsedData);

@@ -117,7 +117,7 @@ const MMQScheduleForm = ({ initialData, onSave, onCancel, isSaving }) => {
                     <MapPin className="w-4 h-4 text-red-500" /> Lokasi
                 </Label>
                 <Input
-                    placeholder="Contoh: Gedung Utama LPQ"
+                    placeholder="Contoh: Ruang Guru"
                     value={formData.location}
                     onChange={(e) => handleChange('location', e.target.value)}
                     required
