@@ -1,6 +1,6 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-06 · **Branch:** `migrate-frontpage-baru` (belum pernah di-push) · **HEAD:** `779473c`
+**Diperbarui:** 2026-08-06 · **Branch:** `migrate-frontpage-baru` (belum pernah di-push) · **HEAD:** `6eae380`
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -33,6 +33,40 @@ dibongkar tanpa instruksi baru.
 
 Rencana migrasi drop-table untuk MMQ/jilid **dibatalkan**.
 
+### Dashboard TIDAK ditulis ulang dari nol
+
+Opsi menyapu bersih seluruh dashboard dan membangun ulang dari konteks "Sekolah Umum Baturaja"
+sudah dipertimbangkan dan **ditolak**. Jangan diajukan ulang tanpa alasan baru.
+
+Alasannya, kosakata lama tidak tinggal di dashboard melainkan di skema:
+
+| Lapisan | `santri` | `jilid` | `mmq` | `pentashih` |
+|---|---|---|---|---|
+| `src/` | 2372 | 712 | 269 | 79 |
+| `backend/` | 532 | 143 | 45 | 22 |
+| `supabase/migrations/` | 554 | 65 | 77 | 113 |
+
+Ditambah 11 tabel bernama lama (`santri`, `santri_notes`, `santri_character_scores`,
+`santri_behavior_records`, `jilid_history`, `mmq_*`, `hafalan_*`). Dashboard yang ditulis ulang
+tetap harus memanggil `/api/santri`, membaca `santri.jilid`, dan join ke `santri_notes` — jadi
+biaya penulisan ulang dibayar penuh sementara masalah penamaannya utuh.
+
+Bukti tambahan: dari delapan bug yang ditemukan pada 2026-08-06, hanya **satu** (prop `categories`)
+yang merupakan regresi migrasi. Tujuh sisanya bug backend, kontrak API, sisa scaffold, dan tooling —
+tidak tersentuh oleh penulisan ulang dashboard.
+
+**Arahnya: ganti nama, jangan tulis ulang.** Bila kosakata `santri` mau dibereskan, lakukan di
+lapisan frontend saja dan manfaatkan seam yang sudah ada (`mapSantriForLegacyUi` di
+`dataMasterAdapters.js`) sebagai penerjemah. API dan DB tetap `santri`. **Jangan** mengganti nama
+tabel: 554 kemunculan di migrasi, dan migrasi lama tidak boleh diedit.
+
+Dua prasyarat sebelum rename apa pun: pasang jaring test lebih dulu (saat ini **nol** framework
+test), karena rename tanpa test persis melahirkan kelas bug "penghapusan meninggalkan lubang".
+
+Satu pengecualian yang memang layak dimodelkan ulang, bukan sekadar diganti nama: **absensi**.
+`sesi_mengaji` adalah konsep ngaji; SD negeri butuh jam pelajaran dan mata pelajaran. Itu perubahan
+model data.
+
 ---
 
 ## 3. Status verifikasi
@@ -42,11 +76,14 @@ Rencana migrasi drop-table untuk MMQ/jilid **dibatalkan**.
 | `npm run build` | Hijau, exit 0 |
 | Guard `scripts/validate-*.ps1` (4 skrip) | Hijau, exit 0 |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
-| `npm run lint` | **Bisa dijalankan lagi**; sisa 5 error, semuanya dari file yatim |
+| `npm run lint` | **Bersih, exit 0** |
 | Login 6 akun | **Terbukti jalan** lewat API |
-| Simpan murid baru + NISN | Rantai kode **terverifikasi statis** ujung ke ujung; klik-tayang belum |
-| Panel Metode Mengaji | Penyimpanan & hidrasi **terverifikasi statis**; klik-tayang belum |
-| Tab Rapat Guru | Tab & tabel DB ada; klik-tayang belum |
+| 18 tab dashboard admin | **Semua merender**, nol crash — disapu satu per satu di browser |
+| Panel Metode Mengaji | **Tuntas di browser**: pilih Iqro → simpan → DB → bertahan setelah muat ulang |
+| Tab Rapat Guru | **Tuntas**, tab merender bersih |
+| Simpan murid baru + NISN | **Masih terhalang** — lihat jebakan "password `required`" di bawah |
+| `GET /api/content/feedback` | **200 OK** (sebelumnya 405) |
+| `ErrorBoundary` | Terpasang; tampilan fallback-nya **belum** diuji dengan crash sengaja |
 
 Verifikasi statis untuk NISN/Angkatan: field form (`SantriManagement.jsx:1132`) → validasi regex
 (`:677`, `:683`) → normalisasi adapter (`dataMasterAdapters.js:52`) → allowlist handler
@@ -55,9 +92,12 @@ Verifikasi statis untuk NISN/Angkatan: field form (`SantriManagement.jsx:1132`) 
 
 Metode Mengaji: `tahfizh_config` disimpan di tabel `website_content`, dan **dihidrasi untuk semua
 peran** lewat `DashboardWorkspace.jsx:101`, bukan hanya di panel admin — jadi guru ikut melihat
-metode pilihan sekolah. localStorage murni singgahan.
+metode pilihan sekolah. localStorage murni singgahan. Nilai tersimpan
+`{"method": "iqro", "customLevels": []}`; `customLevels` kosong **memang benar** — textarea
+menampilkan preset sebagai placeholder, dan kosong berarti "pakai bawaan metode".
 
-Yang tersisa pada ketiga item itu murni klik-tayang di browser, bukan risiko kode.
+Vite menangkap perubahan `.env.local` sendiri; mengaktifkan `VITE_ENABLE_TAHFIZH` tidak perlu
+restart dev server manual.
 
 ---
 
@@ -103,6 +143,59 @@ karena masih dipegang handle proses). Tidak berbahaya — nol file di dalamnya, 
 di `git worktree list`, dan `.claude/**` kini diabaikan ESLint. Akan hilang sendiri setelah proses
 yang memegangnya berakhir atau setelah reboot.
 
+### Handler yang menjaga diri sendiri butuh `OptionalAuth`, bukan tanpa middleware
+
+Seluruh panel Konten hanya bisa membaca dan **tidak pernah bisa menyimpan**. `/api/content`
+di-mount di grup publik, sementara handler tulisnya menjaga diri lewat
+`CanManage(RoleFromCtx(ctx))` — dan `RoleFromCtx` hanya terisi oleh `RequireAuth`. Role selalu
+string kosong, `CanManage("")` selalu `false`, jadi admin pun ditolak.
+
+Sudah diperbaiki dengan `middleware.OptionalAuth` (commit `0590ef0`): mengisi context bila ada token
+valid, meneruskan tanpa menolak bila tidak ada.
+
+**Pola yang perlu diwaspadai:** rute publik yang mencampur baca-bebas dengan tulis-khusus-admin
+wajib memakai `OptionalAuth`. Tanpa middleware sama sekali, penjagaan di dalam handler jadi mustahil
+lolos.
+
+### Layar putih = crash render, bukan role kosong
+
+Tidak ada `ErrorBoundary` sama sekali di `src/` sampai commit `63ca161`. Satu error saat render
+melepas seluruh pohon React: putih total tanpa pesan.
+
+Cara membedakan gejala:
+
+- **Putih total** → exception saat render. Cek console, bukan role.
+- **Spinner "Menyiapkan Dashboard…"** → role belum terdeteksi (`DashboardPage.jsx:103`).
+- **Kartu merah "Role Tidak Terdeteksi"** → ada user tapi tanpa role (`:86`).
+
+### Form murid terhalang password `required` tanpa pesan
+
+`SantriManagement.jsx:692` mengisi password otomatis dari NISN bila kosong, tetapi `:1192`
+menandainya `required={!editingSantri}`. Fallback itu **mustahil tercapai**: browser memblokir
+submit lebih dulu, tanpa toast dan tanpa request — sangat membingungkan saat dilacak.
+
+Salah satu dari keduanya keliru dan itu keputusan produk: (a) password wajib → hapus fallback dan
+beri tanda wajib di label, atau (b) password opsional → hapus `required`. **Belum diputuskan.**
+
+### Semua avatar patah dengan status 200
+
+`backend/internal/handler/file.go:191`: `baseURL := r.URL.Scheme + "://" + r.Host`. Pada request
+sisi server `r.URL.Scheme` **selalu kosong** — hanya `r.Host` terisi. Hasilnya `://localhost:8080`.
+Guard di baris 192 hanya menangkap kasus keduanya kosong (`"://"`), jadi tidak pernah menolong.
+
+`src` avatar menjadi `://localhost:8080/files/avatars/...`, diresolusi browser relatif ke origin
+jadi `http://localhost:3000/://localhost:8080/...`, lalu Vite membalas index.html dengan **200 OK**.
+Karena statusnya 200, tidak ada error apa pun — avatar diam-diam jatuh ke inisial.
+
+Perbaikan: turunkan skema dari `r.TLS` dan header `X-Forwarded-Proto`, dan jadikan `r.Host == ""`
+sebagai syarat fallback. **Belum dikerjakan.**
+
+### Request yang kena 401 tidak diulang setelah refresh
+
+Token akses berumur 15 menit (`ACCESS_TOKEN_TTL_MINUTES`, default 15). Saat kedaluwarsa,
+`POST /api/auth/refresh` berhasil dan sesi pulih, tetapi request yang sudah kena 401 memunculkan
+toast error alih-alih diulang. Bukan kerusakan, tapi pengguna melihat kegagalan palsu tiap 15 menit.
+
 ### Email admin masih berdomain lama
 
 `admin@lpqalfathmaulana.id` dikunci oleh constraint `user_profiles_admin_email_check` dan
@@ -139,15 +232,22 @@ Go tidak terpasang di mesin dev, jadi **Docker adalah satu-satunya cara memverif
 
 ## 7. Langkah berikutnya
 
-1. Uji simpan murid baru dengan NISN + Angkatan, pastikan bertahan setelah refresh.
-2. Uji panel Metode Mengaji (`VITE_ENABLE_TAHFIZH=true`) — pilih Iqro, simpan, muat ulang.
-3. Uji tab Rapat Guru.
-4. ~~Hapus tiga file mati~~ — **selesai.** `src/components/Navbar.jsx`,
-   `src/components/Footer.jsx`, dan `lib/customSupabaseClient.js` dihapus. Ketiganya yatim dan
-   digantikan `src/components/sdnb/SiteNav.jsx` / `SiteFooter.jsx` / `src/lib/apiClient.js`.
-   `npm run lint` kini **bersih, exit 0**.
-5. ~~Segarkan `CLAUDE.md`~~ — **selesai.** Lihat di bawah.
+Sudah selesai: hapus tiga file mati, segarkan `CLAUDE.md`, uji Rapat Guru, uji Metode Mengaji,
+perbaiki celah API Konten, pasang `ErrorBoundary`, perbaiki prop `dismiss` pada toast.
+
+Yang tersisa, berurutan:
+
+1. **Putuskan password wajib atau opsional** (lihat jebakan di atas), lalu selesaikan uji simpan
+   murid baru dengan NISN + Angkatan sampai bertahan setelah refresh.
+2. **Perbaiki URL avatar** di `file.go:191` — dampaknya di seluruh aplikasi, perbaikannya kecil.
+3. Uji tampilan fallback `ErrorBoundary` dengan crash sengaja.
+4. Putuskan nasib `SantriDewasaManagement.jsx` — **yatim**, tak ada `.jsx` yang mengimpornya, hanya
+   disebut di `AGENTS.md`. Padahal `AdultClassManagement` (kelas dewasa) masih hidup di dalam
+   `ClassManagement`, jadi timpang: kelas dewasa ada, panel muridnya tidak terjangkau.
+5. Ulangi request yang kena 401 setelah refresh berhasil.
 6. Push branch agar Vercel membuat Preview Deployment. **Belum dilakukan.**
+
+Sebelum menyentuh rename kosakata `santri`, baca dulu keputusan mengikat di bagian 2.
 
 ### CLAUDE.md sudah disegarkan
 
