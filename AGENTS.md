@@ -2,6 +2,10 @@
 
 **Generated:** 2026-08-06 | **Commit:** 7f61898 | **Branch:** migrate-frontpage-baru
 
+> **Melanjutkan pekerjaan yang tertunda?** Baca [`docs/HANDOFF.md`](docs/HANDOFF.md) lebih dulu.
+> File itu berisi keputusan yang mengikat, status verifikasi, dan jebakan yang sudah ditemukan —
+> konteks yang tidak tersimpan di `git log`.
+
 ## Struktur proyek
 
 ```
