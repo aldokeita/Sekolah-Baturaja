@@ -27,6 +27,7 @@ import {
   pickChangedSantriProfileFields,
   pickSantriProfileFields,
   updateSantri,
+    validateDefaultSppAmount,
 } from '@/lib/dataMasterAdapters';
 import { getStorageErrorMessage, resolveAvatarUrl, uploadAvatar } from '@/lib/storageAdapters';
 import { getBirthdaysThisMonth } from '@/lib/birthdayUtils';
@@ -696,18 +697,14 @@ const SantriManagement = () => {
       return;
     }
 
-    // Perlakukan undefined sama seperti kosong. Sebelumnya hanya '' dan null yang
-    // dilewati, sehingga field yang tidak diinisialisasi resetForm lolos ke
-    // Number(undefined) = NaN dan memunculkan galat "minimal Rp10.000" pada field
-    // yang jelas-jelas kosong — tidak mungkin dilewati pengguna.
-    if (String(finalFormData.default_spp_amount ?? '').trim() !== '') {
-      const defaultSppAmount = Number(finalFormData.default_spp_amount);
-      if (!Number.isFinite(defaultSppAmount) || defaultSppAmount < 10000) {
-        toast({ title: "Default SPP Tidak Valid", description: "Default SPP minimal Rp10.000 atau kosongkan jika belum ditentukan.", variant: "destructive" });
-        return;
-      }
-      finalFormData.default_spp_amount = defaultSppAmount;
+    // Kosong (termasuk undefined dari resetForm) lolos sebagai null; lihat
+    // validateDefaultSppAmount di dataMasterAdapters.js beserta test-nya.
+    const sppCheck = validateDefaultSppAmount(finalFormData.default_spp_amount);
+    if (!sppCheck.ok) {
+      toast({ title: "Default SPP Tidak Valid", description: "Default SPP minimal Rp10.000 atau kosongkan jika belum ditentukan.", variant: "destructive" });
+      return;
     }
+    finalFormData.default_spp_amount = sppCheck.amount;
 
     try {
       let targetId = editingSantri?.id;

@@ -8,7 +8,9 @@
     "generate:llms": "node tools/generate-llms.js",
     "build": "node tools/build.js",
     "preview": "vite preview --host :: --port 3000",
-    "lint": "eslint . --quiet"
+    "lint": "eslint . --quiet",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "overrides": {
     "eslint-config-react-app": {
@@ -93,8 +95,10 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^15.14.0",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^3.2.7"
   }
 }

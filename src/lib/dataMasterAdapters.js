@@ -44,6 +44,21 @@ export const normalizeDefaultSppAmount = (value) => {
   return Number.isFinite(amount) ? amount : null;
 };
 
+// Penjagaan Default SPP, dipisah dari komponen supaya bisa diuji.
+//
+// Nilai kosong harus lolos sebagai null, BUKAN ditolak. Bentuk kosongnya ada
+// empat: undefined (field tidak diinisialisasi resetForm), null, string kosong,
+// dan spasi belaka. Penjagaan lama hanya mengenali dua di antaranya, sehingga
+// form tambah murid menolak dirinya sendiri tanpa jalan keluar bagi pengguna.
+export const SPP_MINIMUM = 10000;
+
+export const validateDefaultSppAmount = (value) => {
+  if (String(value ?? '').trim() === '') return { ok: true, amount: null };
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < SPP_MINIMUM) return { ok: false, amount: null };
+  return { ok: true, amount };
+};
+
 export const pickSantriProfileFields = (input) => {
   const nomorInduk = normalizeNomorIndukQiroati(input.nomor_induk_qiroati);
 
