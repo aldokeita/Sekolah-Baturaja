@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -109,26 +110,36 @@ type userRow struct {
 
 // resolveUser mencari user di santri (NISN/NIS/panggilan) atau guru (email).
 // Santri dicek duluan; jika tidak ketemu baru coba guru/admin/pentashih.
+//
+// Kegagalan nyata pada salah satu query (kolom hilang, tabel rusak) TIDAK boleh
+// menghentikan pencarian di tabel lain: santri dan guru adalah dua jalur yang
+// berdiri sendiri. Dulu error apa pun dari query santri langsung menghentikan
+// fungsi ini, sehingga satu migrasi yang belum diterapkan menjatuhkan login
+// SEMUA peran — termasuk admin yang datanya tidak tersentuh.
 func (h *AuthHandler) resolveUser(ctx context.Context, username string) (id, role, hash string, err error) {
 	// Murid login pakai NISN atau NIS. nomor_induk_qiroati tetap diterima sebagai
 	// fallback agar murid lama tidak terkunci sebelum NISN mereka terisi.
 	var row userRow
-	err = h.db.QueryRow(ctx, `
+	santriErr := h.db.QueryRow(ctx, `
 		SELECT id, 'santri', COALESCE(password,'')
 		FROM santri
 		WHERE (nisn = $1 OR nis = $1 OR nomor_induk_qiroati = $1 OR LOWER(nama_panggilan) = LOWER($1))
 		  AND status = 'Aktif'
 		LIMIT 1
 	`, username).Scan(&row.id, &row.role, &row.hash)
-	if err == nil {
+	if santriErr == nil {
 		return row.id, row.role, row.hash, nil
 	}
-	if !errors.Is(err, pgx.ErrNoRows) {
-		return "", "", "", err
+	if errors.Is(santriErr, pgx.ErrNoRows) {
+		// Bukan murid — wajar, lanjut ke guru.
+		santriErr = nil
+	} else {
+		// Rusak sungguhan. Dicatat supaya tidak membisu, tapi pencarian diteruskan.
+		log.Printf("resolveUser: query santri gagal: %v", santriErr)
 	}
 
 	// Coba guru/admin/pentashih: login by email
-	err = h.db.QueryRow(ctx, `
+	guruErr := h.db.QueryRow(ctx, `
 		SELECT g.id, up.role, COALESCE(g.password,'')
 		FROM guru g
 		JOIN user_profiles up ON up.id = g.id
@@ -137,13 +148,19 @@ func (h *AuthHandler) resolveUser(ctx context.Context, username string) (id, rol
 		  AND up.status = 'active'
 		LIMIT 1
 	`, username).Scan(&row.id, &row.role, &row.hash)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return "", "", "", errors.New("user tidak ditemukan")
-		}
-		return "", "", "", err
+	if guruErr == nil {
+		return row.id, row.role, row.hash, nil
 	}
-	return row.id, row.role, row.hash, nil
+	if !errors.Is(guruErr, pgx.ErrNoRows) {
+		log.Printf("resolveUser: query guru gagal: %v", guruErr)
+		return "", "", "", guruErr
+	}
+	// Guru memang tidak ada. Bila query santri tadi rusak, laporkan kerusakan itu —
+	// bukan "user tidak ditemukan" yang menyesatkan saat skema sedang bermasalah.
+	if santriErr != nil {
+		return "", "", "", santriErr
+	}
+	return "", "", "", errors.New("user tidak ditemukan")
 }
 
 // VerifyPassword re-checks the logged-in user's own password. Used as a
