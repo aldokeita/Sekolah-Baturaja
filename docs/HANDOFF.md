@@ -542,7 +542,36 @@ prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, hap
 Absensi **sengaja tidak dirombak** — alasannya di bagian 2, jangan diajukan ulang tanpa alasan baru.
 
 Sudah tuntas juga: peran superadmin, direktori staf dari data guru, jadwal pelajaran di dashboard
-guru dan murid, serta guard bentrok jadwal.
+guru dan murid, guard bentrok jadwal, penyembunyian akun superadmin dari pembeli, dan
+**`SETUP.md` sebagai panduan pemasangan untuk pembeli**.
+
+### `SETUP.md` sekarang dokumen pembeli, bukan dokumen developer
+
+Isinya ditulis untuk orang yang membeli template dan belum pernah melihat kodenya: pemasangan,
+penyalaan, penempatan di internet, lalu **bagian 7** yang mengubah sekolah contoh menjadi sekolah
+pembeli — ganti sandi admin, ganti data contoh, isi konten, dan penjelasan bahwa identitas produk
+dikunci untuk penjual.
+
+Kalau mengubah alur pemasangan, `SETUP.md` harus ikut diperbarui. Catatan lama di sana pernah salah
+selama berbulan-bulan: judulnya masih "LPQ Al-Fath Maulana", email admin masih
+`admin@lpqalfathmaulana.id`, jumlah migrasi masih 45, dan tabel troubleshooting-nya menyuruh memasang
+`docker-compose` v1 padahal proyek ini memakai `docker compose` v2. Pembeli tidak punya cara
+mengetahui bahwa panduannya keliru.
+
+`backend/.env.example` juga **tidak memuat `POSTGRES_PASSWORD`** padahal `docker-compose.yml`
+mewajibkannya — jadi `cp .env.example .env` diikuti `docker compose up` selalu gagal. Sudah
+ditambahkan.
+
+### Yang perlu diperiksa penjual sebelum menyerahkan salinan
+
+1. `docs/` berisi 50+ catatan pengembangan internal dan `HANDOFF.md` ini, termasuk keputusan
+   komersial. Pertimbangkan menyerahkan salinan tanpa `docs/`, atau repo terpisah untuk pembeli.
+2. Sandi superadmin tidak boleh pernah masuk repo. Lihat §5.
+3. Jalankan `scripts/validate-data-dummy-pembeli.ps1` — 22 pemeriksaan yang membuktikan pembeli bisa
+   mengganti seluruh data contoh dan tidak bisa menyentuh akun penjual.
+4. Kendali `logoUrl` sudah dipindah ke tab **Identitas Sekolah** (superadmin saja). Sebelumnya ada di
+   tab **Halaman Depan** yang dilihat pembeli, jadi pembeli mengunggah logo lalu ditolak 403 tanpa
+   tahu sebabnya. Kalau menambah kunci ke `brandKeys`, pindahkan kendalinya sekalian.
 
 ### Bentrok jadwal diuji lewat API, bukan unit test Go — dan itu memang benar
 

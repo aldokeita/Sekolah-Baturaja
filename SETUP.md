@@ -1,214 +1,342 @@
-# Setup LPQ Al-Fath Maulana
+# Panduan Pemasangan — Sistem Informasi Sekolah
 
-Panduan ini untuk menjalankan aplikasi secara lokal atau di VPS.  
-Stack: **React + Vite** (frontend) · **Go + chi** (backend) · **Postgres 16** (database) · **Docker Compose** (orkestrasi)
+Panduan ini untuk **pembeli template**: memasang aplikasi, menjalankannya, lalu mengubah isinya
+menjadi milik sekolah Anda sendiri.
+
+Bacalah sampai **bagian 7**. Bagian 1–6 membuat aplikasi hidup; bagian 7 yang membuatnya menjadi
+sekolah Anda. Aplikasi yang baru dipasang berisi sekolah contoh bernama "Sekolah Dasar Negeri
+Baturaja" dengan guru dan murid contoh — semuanya bisa Anda ganti dari dalam aplikasi, tanpa
+menyentuh kode.
+
+**Susunannya:** situs publik (React) · API (Go) · database (PostgreSQL). API dan database berjalan
+bersama lewat Docker, jadi Anda tidak perlu memasang Go atau PostgreSQL satu per satu.
 
 ---
 
 ## Prasyarat
 
-| Tool | Versi minimal | Catatan |
+| Kebutuhan | Versi | Untuk apa |
 |---|---|---|
-| Docker | 24+ | |
-| docker-compose | v2 | `docker-compose` (tanda hubung) |
-| Node.js | 22 | Hanya untuk dev frontend |
-| npm | bawaan Node 22 | |
-| Git | | |
+| Docker Desktop | 24 atau lebih baru | menjalankan API dan database |
+| Node.js | 22 | membangun situs publik |
+| Git | apa saja | mengambil kode |
+
+Node 22 dianjurkan persis; berkas `.nvmrc` sudah menyebutkannya. Kalau Anda memakai `nvm`, cukup
+jalankan `nvm use` di folder proyek.
 
 ---
 
-## 1 · Clone dan masuk ke folder
+## 1 · Ambil kodenya
 
 ```bash
-git clone <repo-url> Sekolah-Baturaja
-cd Sekolah-Baturaja
+git clone <url-repo> sekolah
+cd sekolah
 ```
 
 ---
 
-## 2 · Konfigurasi backend
+## 2 · Siapkan pengaturan API
 
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-Edit `backend/.env` — isi nilai yang ditandai `# wajib diisi`:
+Buka `backend/.env` dan isi **tiga** nilai yang wajib. Penjelasan masing-masing ada di dalam berkas
+itu sendiri:
 
-```env
-PORT=8080
-
-# wajib diisi — generate dengan: openssl rand -hex 32
-JWT_SECRET=ganti_dengan_string_acak_32_byte
-JWT_REFRESH_SECRET=ganti_dengan_string_acak_lain_32_byte
-
-ACCESS_TOKEN_TTL_MINUTES=60
-REFRESH_TOKEN_TTL_DAYS=30
-
-UPLOAD_DIR=/app/uploads
-MAX_UPLOAD_MB=20
-
-# Origin frontend untuk CORS (dev: localhost:3000, prod: domain kamu)
-CORS_ORIGIN=http://localhost:3000
-
-# Wajib — password postgres container
-POSTGRES_PASSWORD=ganti_password_db
-```
-
-> `DATABASE_URL` **tidak perlu diisi** — di-set otomatis oleh docker-compose.
-
----
-
-## 3 · Jalankan backend + database
-
-```bash
-# dari folder backend/
-docker-compose up -d --build
-```
-
-Perintah ini akan:
-- Membangun image API dari `Dockerfile`
-- Menjalankan Postgres 16
-- Menerapkan semua migrasi otomatis (45 file di `supabase/migrations/`)
-- Membuat akun admin awal
-
-Cek status:
-
-```bash
-docker-compose ps
-docker-compose logs -f api   # lihat log API
-```
-
-API siap saat log menampilkan `server running on :8080`.
-
-### Akun admin default
-
-| Field | Nilai |
+| Nilai | Isi dengan |
 |---|---|
-| Username / email | `admin@lpqalfathmaulana.id` |
-| Password | `admin123` |
+| `POSTGRES_PASSWORD` | sandi acak apa pun untuk database |
+| `JWT_SECRET` | 32 karakter acak |
+| `JWT_REFRESH_SECRET` | 32 karakter acak **yang lain** |
+| `CORS_ORIGIN` | `http://localhost:3000` untuk mencoba di komputer sendiri |
 
-**Ganti password setelah login pertama.**
+Cara cepat membuat nilai acak:
+
+```bash
+openssl rand -hex 32
+```
+
+Di Windows tanpa `openssl`:
+
+```powershell
+-join ((1..64) | ForEach-Object { '0123456789abcdef'[(Get-Random -Maximum 16)] })
+```
+
+**Jangan biarkan nilai bawaan.** Dua kunci JWT itu yang menjaga sesi login; kalau nilainya bisa
+ditebak, orang lain bisa membuat sesi palsu.
 
 ---
 
-## 4 · Konfigurasi frontend
+## 3 · Nyalakan API dan database
+
+Masih dari folder `backend/`:
 
 ```bash
-# dari root repo (bukan backend/)
+docker compose up -d --build
+```
+
+Sekali jalan, perintah ini akan:
+
+- membangun API dari kode Go,
+- menyalakan PostgreSQL 16,
+- menerapkan seluruh 53 berkas migrasi database secara berurutan,
+- mengisi data contoh (sekolah, guru, murid, kelas) supaya aplikasi tidak kosong saat pertama dibuka.
+
+Pertama kali biasanya 2–5 menit karena Docker harus mengunduh dan membangun. Periksa keadaannya:
+
+```bash
+docker compose ps
+```
+
+Lihat log API sampai muncul `server running on :8080`:
+
+```bash
+docker compose logs -f api
+```
+
+> **Kalau `docker compose` tidak dikenali,** Docker Desktop Anda terlalu lama. Perbarui ke versi 24
+> atau lebih baru. Perintah lama `docker-compose` (dengan tanda hubung) tidak dipakai proyek ini.
+
+---
+
+## 4 · Siapkan pengaturan situs
+
+Kembali ke folder utama:
+
+```bash
 cd ..
 cp .env.example .env.local
 ```
 
-`.env.local` sudah benar untuk dev lokal:
+Untuk mencoba di komputer sendiri, isinya sudah benar apa adanya. Yang perlu diubah hanya saat
+dipasang di internet:
 
 ```env
-VITE_API_URL=http://localhost:8080
+VITE_API_URL=https://api.sekolahmu.sch.id
 ```
 
-Untuk production, ubah ke domain/IP VPS:
+Alamat ini **harus cocok** dengan `CORS_ORIGIN` di `backend/.env` — satu menyebut alamat situs, satu
+menyebut alamat API. Salah pasangan membuat login gagal tanpa pesan yang jelas.
 
-```env
-VITE_API_URL=https://api.domainmu.id
-```
+Pengaturan opsional di berkas yang sama:
+
+| Nilai | Bila dinyalakan |
+|---|---|
+| `VITE_ENABLE_TAHFIZH` | menampilkan modul hafalan Al-Qur'an. Biarkan `false` untuk sekolah umum. |
+| `VITE_ENABLE_DEFERRED_FEATURES` | membuka fitur permainan kelas yang masih dikembangkan |
+| `VITE_ENABLE_EDGE_FUNCTIONS` | jangan diubah; peninggalan arsitektur lama |
 
 ---
 
-## 5 · Jalankan frontend (dev)
+## 5 · Jalankan situsnya
 
 ```bash
 npm install
 npm run dev
 ```
 
-Buka `http://localhost:3000`.
+Buka `http://localhost:3000`. Halaman depan sekolah contoh akan muncul, dan Anda bisa masuk ke
+dashboard di `http://localhost:3000/login`.
 
 ---
 
-## 6 · Build frontend (production)
+## 6 · Pasang di internet
+
+**Situs publik** cukup berkas statis:
 
 ```bash
 npm run build
-# hasilnya di dist/ — serve dengan nginx / caddy / dll
 ```
+
+Hasilnya di folder `dist/`. Unggah ke Vercel, Netlify, atau server web apa pun.
+
+Kalau memakai Vercel, `vercel.json` sudah disiapkan. Isi pengaturannya:
+
+| Kolom | Nilai |
+|---|---|
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| Environment Variable | `VITE_API_URL` = alamat API Anda |
+
+Kalau memakai server web sendiri, arahkan **semua** alamat ke `index.html`. Tanpa itu, halaman
+seperti `/berita` akan menunjukkan "404" saat dimuat ulang.
+
+**API dan database** perlu server yang menyala terus (VPS). Salin folder proyek ke sana, buat
+`backend/.env` seperti bagian 2 tapi dengan `CORS_ORIGIN` berisi domain situs Anda, lalu jalankan
+`docker compose up -d --build`. Pasang HTTPS di depannya dengan Caddy atau Nginx.
 
 ---
 
-## Arsitektur lokal
+## 7 · Jadikan milik sekolah Anda
 
-```
-┌─────────────────────────────────────────────┐
-│  Browser / Tim                              │
-│  localhost:3000  (Vite dev server)          │
-└────────────────────┬────────────────────────┘
-                     │ HTTP
-┌────────────────────▼────────────────────────┐
-│  backend-api-1  :8080  (Go + chi)           │
-│  backend/                                   │
-└────────────────────┬────────────────────────┘
-                     │ pgx
-┌────────────────────▼────────────────────────┐
-│  backend-db-1   :5432  (Postgres 16)        │
-│  volume: pgdata                             │
-│  volume: uploads  (file avatar & aset)      │
-└─────────────────────────────────────────────┘
-```
+Ini bagian yang paling penting dan sering dilewati. Semuanya dikerjakan dari dalam aplikasi.
+
+### 7.1 · Masuk sebagai admin
+
+| Kolom | Nilai |
+|---|---|
+| Email | `admin@sdnbaturaja.sch.id` |
+| Sandi | `admin123` |
+
+### 7.2 · Ganti sandi itu sekarang
+
+Sandi di atas tertulis dalam panduan ini, jadi bukan rahasia. Selama belum diganti, siapa pun yang
+tahu alamat situs Anda bisa masuk sebagai admin.
+
+Caranya: **Data Guru** → cari baris **Administrator** → tombol ubah → isi kolom sandi → simpan.
+Sandi lama langsung mati begitu disimpan.
+
+Lakukan hal yang sama untuk akun contoh lain yang akan Anda pakai. Semuanya bersandi lemah:
+
+| Peran | Email | Sandi bawaan |
+|---|---|---|
+| Tata Usaha | `tatausaha@sdnbaturaja.sch.id` | `tatausaha123` |
+| Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
+| Wakil Kepala Sekolah | `pentashih@sdnbaturaja.sch.id` | `pentashih123` |
+
+Murid masuk memakai **nomor induk**, bukan email. Murid contoh bernomor `2026041` bersandi
+`santri123`.
+
+### 7.3 · Ganti data contoh
+
+Semua data contoh bisa diubah atau dinonaktifkan tanpa risiko. Tombol hapus di aplikasi ini
+sebenarnya **menonaktifkan**, bukan menghapus permanen — jadi Anda tidak akan pernah kena pesan
+galat gara-gara data itu masih terpakai di absensi atau jadwal.
+
+| Yang perlu diganti | Di mana |
+|---|---|
+| Guru contoh ("Guru Demo A/B", "Pentashih Demo") | **Data Guru** |
+| Murid contoh ("Santri Demo …", "Naila Rahmadani") | **Data Murid** |
+| Kelas contoh ("Kelas Demo A/B") | **Manajemen Kelas** |
+| Jadwal pelajaran contoh | **Jadwal Pelajaran** |
+| Berita contoh ("Berita Demo") | **Konten → Media & Galeri → Berita** |
+
+Urutan yang paling lancar: buat guru dulu, lalu kelas, lalu murid. Kelas memilih guru pengampu dari
+daftar guru yang sudah ada, dan murid ditempatkan ke kelas yang sudah ada.
+
+### 7.4 · Isi konten situs
+
+Semuanya di menu **Konten**:
+
+| Tab | Yang bisa Anda ubah |
+|---|---|
+| **Halaman Depan** | tiga kartu program, testimoni, dan tanya-jawab di beranda |
+| **Apresiasi** | murid dan guru berprestasi |
+| **Media & Galeri** | galeri foto, berita, pengumuman, dan daftar fasilitas |
+| **Informasi Pendaftaran** | keterangan penerimaan murid baru |
+| **Pesan Masuk** | pesan yang dikirim pengunjung dari halaman Kontak |
+
+Dua catatan tentang tab-tab ini:
+
+- Beberapa kendali di **Halaman Depan** diberi tanda **"belum tampil di halaman depan"** —
+  slideshow, latar CTA, kuota, jadwal pembelajaran, dan keunggulan. Itu peninggalan desain beranda
+  sebelumnya. Mengisinya tersimpan tapi tidak mengubah apa pun di situs. Lewati saja.
+- Di **Media & Galeri**, tiga bagian tidak tampil di mana pun dan boleh diabaikan: "Video Qiroati",
+  "Artikel Parenting", dan "Diskusi Wali Murid". Sedangkan "Video Hafalan" hanya muncul di dashboard
+  murid, dan hanya bila `VITE_ENABLE_TAHFIZH` dinyalakan. Yang benar-benar tampil di situs dari tab
+  ini adalah **Galeri**, **Berita**, **Pengumuman**, dan **Fasilitas**.
+
+### 7.5 · Yang tidak bisa Anda ubah sendiri
+
+Nama sekolah, logo, dan warna aksen situs dikunci untuk pemegang lisensi template. Kalau Anda
+membutuhkannya diganti, **hubungi penjual** — perubahannya cepat.
+
+Semua hal lain — seluruh isi administrasi sekolah, seluruh konten situs, semua akun — sepenuhnya
+milik Anda.
 
 ---
 
-## Perintah berguna
+## Perintah yang sering dipakai
+
+Semuanya dijalankan dari folder `backend/` kecuali disebut lain.
 
 ```bash
-# restart API setelah ubah kode Go
-docker-compose up -d --build api
+docker compose ps                      # keadaan API dan database
+docker compose logs -f api             # ikuti log API
+docker compose up -d --build api       # nyalakan ulang API setelah ubah kode
+docker compose down                    # matikan, data tetap aman
+docker compose exec db psql -U postgres -d lpq_db   # masuk ke database
+```
 
-# lihat log real-time
-docker-compose logs -f
+Mengulang dari nol — **menghapus seluruh data**, termasuk yang sudah Anda isi:
 
-# masuk ke psql
-docker exec -it backend-db-1 psql -U postgres -d lpq_db
-
-# reset database (hapus semua data, init ulang)
-docker-compose down -v
-docker-compose up -d --build
-
-# stop semua container
-docker-compose down
+```bash
+docker compose down -v
+docker compose up -d --build
 ```
 
 ---
 
-## Troubleshooting
+## Kalau ada masalah
 
-| Masalah | Kemungkinan penyebab | Solusi |
+| Yang terlihat | Sebabnya biasanya | Yang harus dilakukan |
 |---|---|---|
-| `server returned error: 401` | Password salah / token expired | Login ulang |
-| `dial error: connection refused` | Container API belum siap | Tunggu `server running on :8080` di log |
-| `docker-compose: command not found` | Docker Compose v1 | Pastikan `docker-compose` (v1) terinstall, bukan `docker compose` |
-| Port 8080 sudah dipakai | Proses lain | `lsof -i :8080` lalu matikan prosesnya |
-| Data hilang setelah `down` | Volume terhapus | Jangan pakai `-v` kecuali memang mau reset |
-| Image tidak bisa di-pull | Registry diblokir | Build offline tidak didukung; pastikan akses internet |
+| Login gagal, browser bilang soal CORS | `CORS_ORIGIN` tidak cocok dengan alamat situs | samakan keduanya, tanpa garis miring di akhir, lalu `docker compose up -d api` |
+| Situs kosong, tidak ada data | API belum siap atau `VITE_API_URL` salah | tunggu `server running on :8080` di log, periksa alamatnya |
+| `docker compose up` langsung berhenti | `POSTGRES_PASSWORD` masih kosong | isi di `backend/.env` |
+| API berhenti sendiri saat menyala | `JWT_SECRET` atau `JWT_REFRESH_SECRET` kosong | isi keduanya dengan nilai berbeda |
+| Port 8080 sudah dipakai | ada aplikasi lain di port itu | matikan aplikasi itu, atau ubah `PORT` di `backend/.env` |
+| `/berita` jadi 404 setelah dimuat ulang | server web belum diarahkan ke `index.html` | pakai `vercel.json`, atau atur *fallback* di server web |
+| Data hilang setelah dimatikan | memakai `down -v` | jangan pakai `-v` kecuali memang ingin mengosongkan |
+| Foto guru tidak muncul | API diakses lewat alamat berbeda dari yang menyimpan foto | pastikan `VITE_API_URL` konsisten sejak awal |
+
+Membaca pesan galat API secara langsung:
+
+```bash
+docker compose logs --tail 100 api
+```
 
 ---
 
-## Variabel environment ringkas
+## Daftar pengaturan
 
 ### `backend/.env`
 
-| Key | Wajib | Keterangan |
+| Nilai | Wajib | Keterangan |
 |---|---|---|
-| `POSTGRES_PASSWORD` | ✅ | Password postgres |
-| `JWT_SECRET` | ✅ | Min 32 karakter acak |
-| `JWT_REFRESH_SECRET` | ✅ | Min 32 karakter acak, berbeda dari JWT_SECRET |
-| `CORS_ORIGIN` | ✅ | Origin frontend (tanpa trailing slash) |
-| `PORT` | — | Default `8080` |
-| `ACCESS_TOKEN_TTL_MINUTES` | — | Default `60` |
-| `REFRESH_TOKEN_TTL_DAYS` | — | Default `30` |
-| `UPLOAD_DIR` | — | Default `/app/uploads` |
-| `MAX_UPLOAD_MB` | — | Default `20` |
+| `POSTGRES_PASSWORD` | ya | sandi database |
+| `JWT_SECRET` | ya | minimal 32 karakter acak |
+| `JWT_REFRESH_SECRET` | ya | minimal 32 karakter acak, berbeda dari di atas |
+| `CORS_ORIGIN` | ya | alamat situs, tanpa garis miring di akhir |
+| `PORT` | tidak | bawaan `8080` |
+| `ACCESS_TOKEN_TTL_MINUTES` | tidak | bawaan `60` |
+| `REFRESH_TOKEN_TTL_DAYS` | tidak | bawaan `30` |
+| `UPLOAD_DIR` | tidak | bawaan `/app/uploads` |
+| `MAX_UPLOAD_MB` | tidak | bawaan `20` |
 
-### `.env.local` (frontend)
+`DATABASE_URL` diisi otomatis oleh Docker; jangan disetel sendiri.
 
-| Key | Wajib | Keterangan |
+### `.env.local` (situs)
+
+| Nilai | Wajib | Keterangan |
 |---|---|---|
-| `VITE_API_URL` | ✅ | URL backend, tanpa trailing slash |
+| `VITE_API_URL` | ya | alamat API, tanpa garis miring di akhir |
+| `VITE_ENABLE_TAHFIZH` | tidak | bawaan `false` |
+| `VITE_ENABLE_DEFERRED_FEATURES` | tidak | bawaan `false` |
+| `VITE_ENABLE_EDGE_FUNCTIONS` | tidak | biarkan `false` |
+
+---
+
+## Susunan saat berjalan
+
+```
+┌────────────────────────────────────────────┐
+│  Pengunjung / staf sekolah                 │
+│  situs publik + dashboard  (React)         │
+└───────────────────┬────────────────────────┘
+                    │ HTTPS
+┌───────────────────▼────────────────────────┐
+│  API  :8080  (Go)                          │
+│  volume uploads — foto guru, murid, galeri  │
+└───────────────────┬────────────────────────┘
+                    │
+┌───────────────────▼────────────────────────┐
+│  PostgreSQL 16  :5432                      │
+│  volume pgdata — seluruh data sekolah      │
+└────────────────────────────────────────────┘
+```
+
+Dua volume Docker itu yang menyimpan segalanya. Sertakan keduanya dalam rencana pencadangan Anda;
+menu **Backup & Restore** di dashboard mencadangkan isi database, bukan berkas foto.

@@ -575,8 +575,19 @@ const ContentManagement = () => {
             </div>
         </div>
 
-        <TabsContent value="identitas" className="animate-in fade-in slide-in-from-bottom-2">
+        <TabsContent value="identitas" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
             <SchoolIdentitySettings />
+
+            {/* Logo ada di sini, bukan di tab Halaman Depan. `logoUrl` termasuk
+                brandKeys di content.go, jadi hanya superadmin yang boleh
+                menyimpannya — kalau kendalinya tampil untuk pembeli, ia akan
+                mengunggah logo lalu ditolak server tanpa tahu sebabnya. */}
+            <div className="admin-card p-4">
+                <h3 className="font-bold text-xl mb-1">Logo Website</h3>
+                <p className="text-xs text-muted-foreground mb-4">Dipakai di navigasi situs dan kuitansi pembayaran.</p>
+                <Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} />
+                {content.logoUrl && <img src={content.logoUrl} alt="Pratinjau logo" className="w-24 h-24 mt-2 bg-gray-200 p-2 rounded-md" />}
+            </div>
         </TabsContent>
 
         <TabsContent value="homepage" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
@@ -584,14 +595,13 @@ const ContentManagement = () => {
 
             {/* Kendali di bawah ini milik desain beranda LAMA dan belum dirender
                 halaman publik SDN yang sekarang (slideshow, CTA, kuota, jadwal,
-                keunggulan). Logo tetap terpakai untuk kuitansi pembayaran.
+                keunggulan). Logo sudah dipindah ke tab Identitas Sekolah.
                 Lihat docs/HANDOFF.md bagian "Panel Konten". */}
             <div className="admin-error-state" role="note">
                 <p className="text-sm font-medium">Bagian di bawah ini belum tampil di halaman depan.</p>
-                <p className="text-xs">Kendali slideshow, CTA, kuota, jadwal, dan keunggulan berasal dari desain beranda sebelumnya. Logo tetap dipakai pada kuitansi pembayaran.</p>
+                <p className="text-xs">Kendali slideshow, CTA, kuota, jadwal, dan keunggulan berasal dari desain beranda sebelumnya. Menyimpannya tidak mengubah tampilan situs.</p>
             </div>
 
-            <div className="admin-card p-4"><h3 className="font-bold text-xl mb-4">Logo Website</h3><Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} />{content.logoUrl && <img src={content.logoUrl} alt="Logo Preview" className="w-24 h-24 mt-2 bg-gray-200 p-2 rounded-md" />}</div>
             <div className="admin-card p-4">
                 <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Slideshow</h3><Button onClick={addHeroSlide} size="sm"><Plus className="w-4 h-4 mr-2" /> Tambah Slide</Button></div>
                 <div className="mb-4"><label className="block text-sm font-medium mb-1">Timer Slideshow (ms)</label><Input type="number" value={content.slideshowTimer} onChange={e => setContent(p => ({...p, slideshowTimer: parseInt(e.target.value, 10)}))} /></div>
