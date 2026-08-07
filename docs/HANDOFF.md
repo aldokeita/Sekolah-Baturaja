@@ -232,6 +232,11 @@ Jangan mengikuti kalimat lama itu.
 | Panel Identitas Sekolah (klik-tayang) | **Belum** — menuntut login admin, dan agen tidak boleh mengisi kata sandi. Jalur simpannya memakai `saveWebsiteContentItem` yang sudah dipakai panel Konten lain |
 | **Isi beranda tersambung** | **Tuntas lewat DB + browser**: menulis `home_content` berbeda membuat kartu program (beserta labelnya), testimoni, dan FAQ di beranda ikut berubah; bawaan hilang; satu kartu tetap merender rapi dengan ikonnya; setelah baris uji dihapus semuanya kembali ke bawaan |
 | Panel Isi Halaman Depan (klik-tayang) | **Belum** — alasan sama seperti panel Identitas |
+| **Izin superadmin vs admin** | **Tuntas lewat API**: admin 403 pada `school_identity` dan `logoUrl`, superadmin 200, admin tetap 200 pada `home_content` |
+| **Direktori staf halaman Kontak** | **Tuntas di browser**: staf asli tampil, nama karangan dan surel pribadi hilang, akun sistem tidak bocor |
+| **Bentrok jam jadwal** | **Tuntas, 6 kasus batas**, lewat `scripts/validate-jadwal-bentrok.ps1` yang dapat diulang |
+| **Penyaring jadwal guru & murid** | **Tuntas lewat API**: `guru_id` mengembalikan 2 jadwal guru itu, `class_id` mengembalikan 1 jadwal kelas beserta nama gurunya |
+| Tampilan `JadwalSaya` di dashboard guru/murid | **Belum dilihat** — menuntut login sebagai peran itu |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
@@ -495,6 +500,27 @@ prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, hap
 `resolveUser`, **ganti email admin**, dan **bangun jadwal pelajaran beserta CRUD-nya**.
 
 Absensi **sengaja tidak dirombak** — alasannya di bagian 2, jangan diajukan ulang tanpa alasan baru.
+
+Sudah tuntas juga: peran superadmin, direktori staf dari data guru, jadwal pelajaran di dashboard
+guru dan murid, serta guard bentrok jadwal.
+
+### Bentrok jadwal diuji lewat API, bukan unit test Go — dan itu memang benar
+
+Irisan jam dihitung di **SQL** (`jam_mulai < $selesai AND jam_selesai > $mulai`), bukan di Go.
+Menguji `periksaBentrok` tanpa basis data hanya menguji pembacaan parameter, bukan logika yang
+menentukan hasil. Karena itu pengujiannya berupa `scripts/validate-jadwal-bentrok.ps1` yang menembak
+API sungguhan, memakai hari Sabtu agar tidak menabrak jadwal hari kerja, dan menghapus jadwal ujinya
+sendiri di blok `finally`.
+
+Enam kasus yang dijaga: slot dasar diterima, batas **bersentuhan tepat** diterima (09:50 setelah
+08:40–09:50 bukan bentrok), beririsan satu menit ditolak, membungkus penuh ditolak, guru sama di
+kelas lain beririsan ditolak, dan guru lain di kelas lain beririsan diterima.
+
+**Jebakan saat menguji lewat skrip:** `$hasil += Fungsi ...` di PowerShell menangkap **seluruh**
+keluaran fungsi termasuk `Write-Output` di dalamnya, sehingga skrip tampak "tidak menghasilkan apa
+pun" padahal sudah menyisipkan data. Kejadian ini sempat membuat hasil uji terbaca salah — jalankan
+berikutnya menolak duplikat buatan jalankan sebelumnya, dan itu disalahartikan sebagai bug aplikasi.
+Cetak dengan `Write-Output` eksplisit, jangan lewat nilai balik fungsi.
 
 Yang tersisa:
 
