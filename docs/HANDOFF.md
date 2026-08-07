@@ -59,6 +59,37 @@ tampil bolong walau pembeli baru mengisi sebagiannya.
 `index.html` statis dan dimuat sebelum React, jadi judulnya tidak bisa membaca basis data. Judul
 bawaan ada di sana, dan `App.jsx` menyelaraskan `document.title` setelah identitas dimuat.
 
+### Panel Konten: mana yang benar-benar tampil di halaman publik
+
+Ini pernah menjadi cacat serius dan **sebagian masih tersisa**, jadi periksa daftar ini sebelum
+menambah field ke panel Konten.
+
+Panel Konten dibangun untuk desain beranda **lama**. Halaman publik SDN yang sekarang punya isinya
+sendiri, sehingga banyak field di panel itu dulu tersimpan dengan sukses tanpa memengaruhi apa pun —
+pembeli menyunting, menekan simpan, dan situsnya tidak berubah, tanpa pesan galat apa pun.
+
+| Kunci | Status |
+|---|---|
+| `school_identity` | **Tampil** — nav, footer, Kontak, dashboard, kuitansi |
+| `home_content` | **Tampil** — kartu program, testimoni, FAQ di beranda |
+| `galleryPhotos` | **Tampil** — beranda dan halaman Galeri |
+| `facilities` | **Tampil** — halaman Fasilitas |
+| berita & pengumuman | **Tampil** — lewat endpoint tersendiri |
+| `level_config` | **Tampil** — Absensi Digital (gamifikasi) |
+| `logoUrl` | **Tampil**, tapi hanya di kuitansi pembayaran |
+| `heroSlides`, `slideshowTimer`, `heroOverlayOpacity` | **Tidak tampil** — sisa desain lama |
+| `quotas`, `schedules`, `proofPoints` | **Tidak tampil** — sisa desain lama |
+| `ctaBackgroundUrl`, `ctaBackgroundOverlayOpacity` | **Tidak tampil** — sisa desain lama |
+
+Yang belum tampil sudah diberi peringatan di dalam panel supaya tidak menyesatkan pembeli, tetapi
+**belum dicabut** karena `institutionContent.js` masih menyediakan nilai awalnya dan pencabutan
+menyentuh `homeUtils.mergeHomepageContent`.
+
+Pola pemisahannya: **teks disunting pembeli, tampilan tetap di kode.** Gradasi, ikon, dan warna peran
+ada di `PROGRAM_STYLE` serta `TESTI_STYLE` di `HomePage.jsx`, dipasangkan dengan teks berdasarkan
+posisi memakai modulo — jadi jumlah item boleh berubah tanpa merusak tampilan. Jangan memindahkan
+gradasi atau ikon ke basis data; pembeli sekolah tidak perlu memilih warna.
+
 Manajemen Kelas kini **satu panel tanpa sub-tab**. Tiga sub-tab lama (Murid TPQ, Murid PTPT, Murid
 Dewasa) dicabut dan `AdultClassManagement.jsx` dihapus.
 
@@ -170,6 +201,8 @@ Jangan mengikuti kalimat lama itu.
 | `ErrorBoundary` | **Sudah diuji** dengan crash sengaja di kedua lapisan — lihat bagian 4 |
 | **Identitas sekolah tersambung** | **Tuntas lewat DB + browser**: menulis identitas berbeda ke `website_content` membuat judul tab, nama di nav, inisial logo, nama & alamat footer, serta telepon & surel halaman Kontak ikut berubah; nilai lama hilang; setelah baris uji dihapus semuanya kembali ke bawaan |
 | Panel Identitas Sekolah (klik-tayang) | **Belum** — menuntut login admin, dan agen tidak boleh mengisi kata sandi. Jalur simpannya memakai `saveWebsiteContentItem` yang sudah dipakai panel Konten lain |
+| **Isi beranda tersambung** | **Tuntas lewat DB + browser**: menulis `home_content` berbeda membuat kartu program (beserta labelnya), testimoni, dan FAQ di beranda ikut berubah; bawaan hilang; satu kartu tetap merender rapi dengan ikonnya; setelah baris uji dihapus semuanya kembali ke bawaan |
+| Panel Isi Halaman Depan (klik-tayang) | **Belum** — alasan sama seperti panel Identitas |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
