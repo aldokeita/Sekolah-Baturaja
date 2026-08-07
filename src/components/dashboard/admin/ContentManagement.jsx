@@ -12,6 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { RotateCcw, ClipboardList, GripVertical, PlusCircle, MinusCircle, ArrowUp, ArrowDown, Building2 } from 'lucide-react';
 import SchoolIdentitySettings from '@/components/dashboard/admin/SchoolIdentitySettings';
+import HomeContentSettings from '@/components/dashboard/admin/HomeContentSettings';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import { motion } from 'framer-motion';
 import HafalanDisplay from '@/components/dashboard/shared/HafalanDisplay';
@@ -573,6 +574,17 @@ const ContentManagement = () => {
         </TabsContent>
 
         <TabsContent value="homepage" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+            <HomeContentSettings />
+
+            {/* Kendali di bawah ini milik desain beranda LAMA dan belum dirender
+                halaman publik SDN yang sekarang (slideshow, CTA, kuota, jadwal,
+                keunggulan). Logo tetap terpakai untuk kuitansi pembayaran.
+                Lihat docs/HANDOFF.md bagian "Panel Konten". */}
+            <div className="admin-error-state" role="note">
+                <p className="text-sm font-medium">Bagian di bawah ini belum tampil di halaman depan.</p>
+                <p className="text-xs">Kendali slideshow, CTA, kuota, jadwal, dan keunggulan berasal dari desain beranda sebelumnya. Logo tetap dipakai pada kuitansi pembayaran.</p>
+            </div>
+
             <div className="admin-card p-4"><h3 className="font-bold text-xl mb-4">Logo Website</h3><Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} />{content.logoUrl && <img src={content.logoUrl} alt="Logo Preview" className="w-24 h-24 mt-2 bg-gray-200 p-2 rounded-md" />}</div>
             <div className="admin-card p-4">
                 <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Slideshow</h3><Button onClick={addHeroSlide} size="sm"><Plus className="w-4 h-4 mr-2" /> Tambah Slide</Button></div>

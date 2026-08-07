@@ -3,6 +3,8 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { publicFetch } from '@/lib/apiClient';
 import { fetchPublishedNews, fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
+import { DEFAULT_HOME_CONTENT, fetchHomeContent } from '@/lib/homeContent';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
 
@@ -56,10 +58,12 @@ const ARROW_R = (size = 16, sw = 2.4) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
 );
 
-const PROGRAM = [
-  { grad: 'linear-gradient(140deg,#b9c4ff,#8b9bff)', shadow: '0 14px 28px -12px rgba(110,125,240,.9)', title: 'Kelas I–III', desc: 'Fokus membaca, menulis, dan berhitung lewat permainan. Satu guru wali mendampingi penuh sepanjang hari.', tags: ['9 rombel', 'Literasi dasar'], icon: <><path d="M9 3v4" /><path d="M15 3v4" /><path d="M9 7h6l3 8a6 6 0 1 1-12 0z" /></> },
-  { grad: 'linear-gradient(140deg,#ffc0d8,#f79ac0)', shadow: '0 14px 28px -12px rgba(240,140,180,.9)', title: 'Kelas IV–V', desc: 'Belajar lewat proyek tematik: menanam di kebun sekolah, membuat majalah dinding, dan kunjungan ke pasar kota.', tags: ['6 rombel', 'Proyek tematik'], icon: <><path d="M3 5.5A18 18 0 0 1 12 7a18 18 0 0 1 9-1.5v12A18 18 0 0 0 12 19a18 18 0 0 0-9-1.5z" /><path d="M12 7v12" /></> },
-  { grad: 'linear-gradient(140deg,#a9eede,#79cfe6)', shadow: '0 14px 28px -12px rgba(120,205,220,.9)', title: 'Kelas VI', desc: 'Pendalaman materi dan pendampingan memilih SMP, termasuk simulasi asesmen dan konsultasi bersama orang tua.', tags: ['3 rombel', 'Persiapan SMP'], icon: <><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></> },
+// Hanya gaya visual. Teksnya datang dari panel Konten (lihat lib/homeContent.js)
+// dan dipasangkan berdasarkan posisi, berputar bila jumlah kartunya lebih banyak.
+const PROGRAM_STYLE = [
+  { grad: 'linear-gradient(140deg,#b9c4ff,#8b9bff)', shadow: '0 14px 28px -12px rgba(110,125,240,.9)', icon: <><path d="M9 3v4" /><path d="M15 3v4" /><path d="M9 7h6l3 8a6 6 0 1 1-12 0z" /></> },
+  { grad: 'linear-gradient(140deg,#ffc0d8,#f79ac0)', shadow: '0 14px 28px -12px rgba(240,140,180,.9)', icon: <><path d="M3 5.5A18 18 0 0 1 12 7a18 18 0 0 1 9-1.5v12A18 18 0 0 0 12 19a18 18 0 0 0-9-1.5z" /><path d="M12 7v12" /></> },
+  { grad: 'linear-gradient(140deg,#a9eede,#79cfe6)', shadow: '0 14px 28px -12px rgba(120,205,220,.9)', icon: <><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></> },
 ];
 
 const GALLERY = [
@@ -76,22 +80,14 @@ const NEWS_FALLBACK = [
   { media: 'linear-gradient(150deg,#b3eee0,#8ed4ea)', cat: 'Pengumuman', catColor: '#20707f', catBg: 'rgba(142,212,234,.3)', date: '28 Juni 2026', title: 'Jadwal daftar ulang murid baru gelombang pertama', excerpt: 'Daftar ulang dibuka 5 sampai 12 Agustus di ruang tata usaha, pukul 08.00 hingga 14.00.' },
 ];
 
-const TESTI = [
-  { avatar: 'linear-gradient(140deg,#a5b4fc,#c7d2fe)', quote: 'Bu guru hafal nama semua teman di kelas. Waktu saya belum bisa perkalian, saya diajari lagi sepulang sekolah.', name: 'Naila Rahmadani', role: 'Murid kelas VI A', roleColor: '#5b6cff' },
-  { avatar: 'linear-gradient(140deg,#fbcfe8,#f9a8d4)', quote: 'Kebiasaan membaca setiap pagi terbawa sampai SMP. Waktu masuk sekolah baru saya sudah tidak canggung bertanya.', name: 'Bayu Prasetyo', role: 'Alumni 2023, kini di SMP Negeri 1', roleColor: '#d9698f' },
-  { avatar: 'linear-gradient(140deg,#a7f3d0,#99f6e4)', quote: 'Laporan perkembangan anak dikirim tiap bulan lewat grup wali murid. Sebagai orang tua saya tidak perlu menebak-nebak.', name: 'Ibu Sri Wahyuni', role: 'Orang tua murid kelas II', roleColor: '#2b9b96' },
-  { avatar: 'linear-gradient(140deg,#bfdbfe,#93c5fd)', quote: 'Perpustakaan buka sampai sore. Saya dan teman regu pramuka sering latihan di halaman sebelum lomba.', name: 'Rangga Aditya', role: 'Murid kelas V B', roleColor: '#4a7fd6' },
-  { avatar: 'linear-gradient(140deg,#fde68a,#fed7aa)', quote: 'Kelas mendongeng membuat anak berani bicara. Yang dulu diam sekarang jadi pembawa acara pentas seni.', name: 'Ibu Marlina', role: 'Guru Bahasa Indonesia', roleColor: '#bd8433' },
-  { avatar: 'linear-gradient(140deg,#ddd6fe,#c4b5fd)', quote: 'Kebun sekolah bikin saya suka pelajaran IPA. Sekarang saya ikut kelompok ilmiah remaja di SMP.', name: 'Dimas Saputra', role: 'Alumni 2021, kini di SMP Negeri 3', roleColor: '#7c5fe0' },
-];
-
-const FAQ_DATA = [
-  ['Berapa usia minimal untuk masuk kelas satu?', 'Anak berusia enam tahun pada 1 Juli 2026. Usia lima tahun enam bulan dapat diterima bila ada rekomendasi tertulis dari psikolog atau dewan guru.'],
-  ['Kapan pendaftaran murid baru dibuka?', 'Gelombang pertama dibuka 1 Juli dan ditutup 20 Agustus 2026. Gelombang kedua menyusul pada September apabila kuota belum terpenuhi.'],
-  ['Berapa biaya masuk dan SPP bulanan?', 'Sebagai sekolah negeri, tidak ada biaya masuk maupun SPP. Orang tua hanya menanggung seragam, buku penunjang, dan kegiatan tertentu yang disepakati komite.'],
-  ['Apa saja dokumen yang perlu disiapkan?', 'Kartu keluarga, akta kelahiran, pas foto berwarna, dan surat keterangan dari TK atau RA bila anak pernah bersekolah sebelumnya.'],
-  ['Apakah anak harus sudah bisa membaca?', 'Tidak. Calistung tidak diujikan saat pendaftaran. Kemampuan membaca, menulis, dan berhitung dibangun bertahap di kelas satu sampai tiga.'],
-  ['Sampai jam berapa anak berada di sekolah?', 'Kelas satu dan dua pulang pukul 10.30, kelas tiga sampai enam pukul 12.30. Kegiatan ekstrakurikuler berlangsung sore hari pada Selasa dan Kamis.'],
+// Sama seperti PROGRAM_STYLE: hanya gaya, teks dari panel Konten.
+const TESTI_STYLE = [
+  { avatar: 'linear-gradient(140deg,#a5b4fc,#c7d2fe)', roleColor: '#5b6cff' },
+  { avatar: 'linear-gradient(140deg,#fbcfe8,#f9a8d4)', roleColor: '#d9698f' },
+  { avatar: 'linear-gradient(140deg,#a7f3d0,#99f6e4)', roleColor: '#2b9b96' },
+  { avatar: 'linear-gradient(140deg,#bfdbfe,#93c5fd)', roleColor: '#4a7fd6' },
+  { avatar: 'linear-gradient(140deg,#fde68a,#fed7aa)', roleColor: '#bd8433' },
+  { avatar: 'linear-gradient(140deg,#ddd6fe,#c4b5fd)', roleColor: '#7c5fe0' },
 ];
 
 const AvatarSvg = () => (
@@ -117,27 +113,42 @@ const TestiCard = ({ t }) => (
 );
 
 const HomePage = () => {
+  const sekolah = useSchoolIdentity();
   const [counts, setCounts] = useState({ siswa: 624, guru: 34 });
   const [news, setNews] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [open, setOpen] = useState(0);
+  // Bawaan dipakai lebih dulu supaya halaman tidak kosong selagi menunggu server.
+  const [isi, setIsi] = useState(DEFAULT_HOME_CONTENT);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const [siswa, guru, newsResult, contentMap] = await Promise.all([
+      const [siswa, guru, newsResult, contentMap, homeContent] = await Promise.all([
         publicFetch('/api/santri/count').then((d) => d?.total || 0).catch(() => 0),
         publicFetch('/api/guru/count').then((d) => d?.total || 0).catch(() => 0),
         fetchPublishedNews({ limit: 3 }).catch(() => []),
         fetchWebsiteContentMap({ keys: ['galleryPhotos'], publicOnly: true }).catch(() => ({})),
+        fetchHomeContent().catch(() => null),
       ]);
       if (!mounted) return;
       setCounts({ siswa: siswa || 624, guru: guru || 34 });
       if (Array.isArray(newsResult)) setNews(newsResult);
       if (Array.isArray(contentMap.galleryPhotos)) setPhotos(contentMap.galleryPhotos);
+      if (homeContent) setIsi(homeContent);
     })();
     return () => { mounted = false; };
   }, []);
+
+  // Teks dari panel Konten dipasangkan dengan gaya visual berdasarkan posisi.
+  const programCards = useMemo(
+    () => isi.program.map((p, i) => ({ ...p, ...PROGRAM_STYLE[i % PROGRAM_STYLE.length] })),
+    [isi.program],
+  );
+  const testiCards = useMemo(
+    () => isi.testimonials.map((t, i) => ({ ...t, ...TESTI_STYLE[i % TESTI_STYLE.length] })),
+    [isi.testimonials],
+  );
 
   useSdnbMotion([counts.siswa, counts.guru, news.length, photos.length]);
 
@@ -161,11 +172,11 @@ const HomePage = () => {
 
   const galleryTiles = useMemo(() => GALLERY.map((g, i) => ({ ...g, image: photos[i]?.url || '', caption: photos[i]?.caption || g.caption })), [photos]);
 
-  const faqs = FAQ_DATA.map(([q, a], i) => {
+  const faqs = isi.faq.map(({ question, answer }, i) => {
     const isOpen = open === i;
     return {
-      q,
-      a,
+      q: question,
+      a: answer,
       toggle: () => setOpen((prev) => (prev === i ? -1 : i)),
       iconStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', width: 28, height: 28, borderRadius: 9, background: `rgba(255,255,255,${isOpen ? '.92' : '.6'})`, border: '1px solid rgba(255,255,255,.9)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)', transition: 'transform .25s ease', transform: `rotate(${isOpen ? '180deg' : '0deg'})` },
       bodyStyle: { position: 'relative', display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .28s ease', overflow: 'hidden' },
@@ -175,8 +186,8 @@ const HomePage = () => {
   return (
     <>
       <Helmet>
-        <title>Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Sekolah Dasar Negeri Baturaja — terakreditasi A, Sekolah Adiwiyata Nasional. Informasi program, berita, galeri, dan pendaftaran peserta didik baru." />
+        <title>{sekolah.name}</title>
+        <meta name="description" content={`${sekolah.name} — informasi program, berita, galeri, dan pendaftaran peserta didik baru.`} />
       </Helmet>
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
@@ -274,7 +285,7 @@ const HomePage = () => {
         </div>
 
         <div className="sdnb-grid3" style={{ marginTop: 30, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }}>
-          {PROGRAM.map((p) => (
+          {programCards.map((p) => (
             <div key={p.title} className="h-lift-shadow" style={{ ...glassCard, padding: 26, borderRadius: 24, boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)', transition: 'transform .25s ease,box-shadow .25s ease' }}>
               <Before height="55%" alpha=".62" />
               <div style={{ position: 'relative', width: 52, height: 52, borderRadius: 16, background: p.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `${p.shadow},inset 0 1px 0 rgba(255,255,255,.85)` }}>
@@ -367,7 +378,7 @@ const HomePage = () => {
         </div>
         <div className="mq-wrap" style={{ marginTop: 28, overflow: 'hidden', padding: '10px 0 70px', WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)' }}>
           <div className="mq-track" style={{ padding: '0 11px' }}>
-            {[...TESTI, ...TESTI].map((t, i) => <TestiCard key={i} t={t} />)}
+            {[...testiCards, ...testiCards].map((t, i) => <TestiCard key={i} t={t} />)}
           </div>
         </div>
       </section>
