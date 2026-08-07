@@ -35,15 +35,25 @@ const TEXT_FIELDS = [
 
 const AREA_FIELDS = [
   { key: 'address', label: 'Alamat', rows: 2, placeholder: 'Jalan …, Kabupaten …, Provinsi … 32111' },
-  { key: 'description', label: 'Deskripsi singkat', rows: 3, hint: 'Satu paragraf pengantar untuk halaman publik.' },
-  { key: 'vision', label: 'Visi', rows: 2 },
+  { key: 'description', label: 'Deskripsi singkat', rows: 3, hint: 'Pengantar satu paragraf. Tampil di halaman Profil.' },
+  { key: 'vision', label: 'Visi', rows: 2, hint: 'Satu kalimat. Tampil di tab Visi pada halaman Profil.' },
 ];
 
+// Field bertipe daftar. Disunting sebagai teks multi-baris lalu dipecah per baris
+// oleh normalizeSchoolIdentity; harus sejalan dengan LIST_FIELDS di schoolIdentity.js.
+const DAFTAR_FIELDS = [
+  { key: 'missions', label: 'Misi', placeholder: 'Satu misi per baris', hint: 'Satu baris satu misi. Baris kosong diabaikan. Tampil di tab Misi pada halaman Profil.' },
+  { key: 'goals', label: 'Tujuan', placeholder: 'Satu tujuan per baris', hint: 'Satu baris satu tujuan. Tampil di tab Tujuan pada halaman Profil.' },
+];
+
+// missions dan goals disimpan sebagai array tapi disunting sebagai teks.
+const keFormulir = (identity) => ({
+  ...identity,
+  ...Object.fromEntries(DAFTAR_FIELDS.map(({ key }) => [key, (identity[key] || []).join('\n')])),
+});
+
 const SchoolIdentitySettings = () => {
-  const [form, setForm] = useState(() => {
-    const current = getSchoolIdentity();
-    return { ...current, missions: (current.missions || []).join('\n') };
-  });
+  const [form, setForm] = useState(() => keFormulir(getSchoolIdentity()));
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
@@ -58,7 +68,7 @@ const SchoolIdentitySettings = () => {
         // Terapkan ke sumber global juga, supaya header dan footer langsung ikut
         // menampilkan nilai tersimpan begitu panel ini dibuka.
         const applied = applySchoolIdentity(stored || getSchoolIdentity());
-        setForm({ ...applied, missions: (applied.missions || []).join('\n') });
+        setForm(keFormulir(applied));
       } catch (error) {
         if (active) setLoadError(getPublicContentErrorMessage(error));
       } finally {
@@ -78,7 +88,7 @@ const SchoolIdentitySettings = () => {
     setIsSaving(true);
     try {
       const applied = await saveSchoolIdentity(form);
-      setForm({ ...applied, missions: (applied.missions || []).join('\n') });
+      setForm(keFormulir(applied));
       toast({ title: 'Tersimpan', description: 'Identitas sekolah diperbarui di seluruh aplikasi.' });
     } catch (error) {
       toast({ title: 'Gagal menyimpan', description: getPublicContentErrorMessage(error), variant: 'destructive' });
@@ -88,7 +98,7 @@ const SchoolIdentitySettings = () => {
   };
 
   const handleReset = () => {
-    setForm({ ...DEFAULT_SCHOOL_IDENTITY, missions: DEFAULT_SCHOOL_IDENTITY.missions.join('\n') });
+    setForm(keFormulir(DEFAULT_SCHOOL_IDENTITY));
     toast({ title: 'Kembali ke bawaan', description: 'Belum tersimpan — tekan Simpan bila memang diinginkan.' });
   };
 
@@ -181,17 +191,19 @@ const SchoolIdentitySettings = () => {
           </div>
         ))}
 
-        <div className="admin-edit-field">
-          <label htmlFor="identitas-missions">Misi</label>
-          <Textarea
-            id="identitas-missions"
-            rows={5}
-            value={form.missions ?? ''}
-            placeholder={'Satu misi per baris'}
-            onChange={(e) => setField('missions', e.target.value)}
-          />
-          <p className="mt-1 text-xs text-muted-foreground">Satu baris satu misi. Baris kosong diabaikan.</p>
-        </div>
+        {DAFTAR_FIELDS.map((field) => (
+          <div key={field.key} className="admin-edit-field">
+            <label htmlFor={`identitas-${field.key}`}>{field.label}</label>
+            <Textarea
+              id={`identitas-${field.key}`}
+              rows={5}
+              value={form[field.key] ?? ''}
+              placeholder={field.placeholder}
+              onChange={(e) => setField(field.key, e.target.value)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">{field.hint}</p>
+          </div>
+        ))}
       </div>
     </section>
   );

@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import { fetchPublicTeachers } from '@/lib/publicContentAdapters';
 import '@/styles/sdnb.css';
 import '@/styles/sdnb-profil.css';
 
@@ -26,16 +28,38 @@ const glass = { background: 'rgba(255,255,255,.5)', backdropFilter: 'blur(26px) 
 const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#5b6cff' };
 const h2 = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.032em', fontWeight: 800, color: '#171827' };
 
-const TIM = [
-  ['Hj. Rosmiati, S.Pd.', 'Kepala Sekolah', 'KS', '#a5b4fc', '#c7d2fe', 'Sejak 2019', 'Mengajar sejak 1998 dan memimpin sekolah ini sejak 2019. Fokusnya adalah menjaga kelas tetap kecil dan memastikan guru wali mengenal karakter setiap murid.', [['Pendidikan', 'S1 PGSD Unsri'], ['Masa kerja', '28 tahun'], ['Sertifikasi', 'Pendidik 2009'], ['Email', 'rosmiati@sekolah.id']]],
-  ['Ahmad Zulkarnain, S.Pd.', 'Wakil Kepala Sekolah', 'WK', '#bfdbfe', '#93c5fd', 'Sejak 2016', 'Menangani kurikulum dan jadwal pelajaran. Menginisiasi waktu membaca lima belas menit setiap pagi yang kini berjalan di seluruh kelas.', [['Pendidikan', 'S1 PGSD UNJ'], ['Masa kerja', '19 tahun'], ['Bidang', 'Kurikulum'], ['Email', 'zulkarnain@sekolah.id']]],
-  ['Siti Aminah, S.Pd.SD', 'Guru Kelas I', 'G1', '#fbcfe8', '#f9a8d4', 'Sejak 2012', 'Mendampingi murid pada tahun pertama mereka bersekolah. Menyusun kartu bacaan bergambar yang dipakai seluruh guru kelas awal.', [['Pendidikan', 'S1 PGSD Unsri'], ['Masa kerja', '14 tahun'], ['Wali kelas', 'I A'], ['Email', 'aminah@sekolah.id']]],
-  ['Yuliana Sari, S.Pd.SD', 'Guru Kelas II', 'G2', '#a7f3d0', '#99f6e4', 'Sejak 2014', 'Mengajar membaca dan berhitung tahap lanjut. Membina kelompok mendongeng yang tampil pada pentas seni tahunan.', [['Pendidikan', 'S1 PGSD UT'], ['Masa kerja', '12 tahun'], ['Wali kelas', 'II B'], ['Email', 'yuliana@sekolah.id']]],
-  ['Dedi Kurniawan, S.Pd.', 'Guru Kelas IV', 'G4', '#fde68a', '#fed7aa', 'Sejak 2011', 'Menjalankan pembelajaran berbasis proyek dengan memakai kebun sekolah dan pasar kota sebagai ruang belajar.', [['Pendidikan', 'S1 PGSD Unsri'], ['Masa kerja', '15 tahun'], ['Wali kelas', 'IV A'], ['Email', 'dedi@sekolah.id']]],
-  ['Ratna Dewi, S.Pd.SD', 'Guru Kelas VI', 'G6', '#ddd6fe', '#c4b5fd', 'Sejak 2009', 'Menyiapkan murid menghadapi asesmen akhir dan mendampingi orang tua memilih SMP yang sesuai untuk anaknya.', [['Pendidikan', 'S1 PGSD UT'], ['Masa kerja', '17 tahun'], ['Wali kelas', 'VI A'], ['Email', 'ratna@sekolah.id']]],
-  ['Hendra Wijaya, S.Pd.', 'Guru Pendidikan Jasmani', 'PJ', '#bbf7d0', '#86efac', 'Sejak 2017', 'Melatih regu pramuka dan tim atletik sekolah. Membuka halaman bermain sebagai kelas terbuka setiap Jumat pagi.', [['Pendidikan', 'S1 Penjaskes UNY'], ['Masa kerja', '9 tahun'], ['Ekstrakurikuler', 'Pramuka, atletik'], ['Email', 'hendra@sekolah.id']]],
-  ['Lestari Ningsih, A.Md.', 'Pustakawan & Tata Usaha', 'TU', '#fecdd3', '#fda4af', 'Sejak 2015', 'Menjaga perpustakaan tetap buka setiap hari dan mengurus administrasi murid, termasuk pendaftaran murid baru.', [['Pendidikan', 'D3 Perpustakaan'], ['Masa kerja', '11 tahun'], ['Layanan', 'PPDB & arsip'], ['Email', 'lestari@sekolah.id']]],
+/* Kartu guru: HANYA gradasi latarnya yang tinggal di kode.
+ *
+ * Nama, jabatan, dan fotonya datang dari Data Guru lewat GET /api/content/teachers
+ * (publik, dan sudah mengecualikan akun admin serta superadmin di sisi server).
+ * Sebelumnya di sini ada delapan guru karangan lengkap dengan surel palsu
+ * seperti `rosmiati@sekolah.id` — pada salinan yang terjual, itu berarti halaman
+ * Profil sekolah pembeli memperkenalkan orang-orang yang tidak ada. Pola yang
+ * dipakai sama dengan halaman Kontak: teks dari basis data, gaya dari kode,
+ * dipasangkan berdasarkan posisi. */
+const ORANG_GRADASI = [
+  ['var(--sekolah-aksen-muda)', 'var(--sekolah-aksen-samar)'],
+  ['var(--sekolah-aksen)', 'var(--sekolah-aksen-tengah)'],
+  ['var(--sekolah-aksen-tengah)', 'var(--sekolah-aksen-tengah-2)'],
+  ['var(--sekolah-aksen-tengah-2)', 'var(--sekolah-aksen-ujung)'],
 ];
+
+// Peran internal diterjemahkan ke sebutan yang dipahami orang tua murid.
+const SEBUTAN_PERAN = { Pentashih: 'Wakil Kepala Sekolah', Pengajar: 'Guru', 'Tata Usaha': 'Tata Usaha' };
+
+const sebutanStaf = (guru) => {
+  const jabatan = String(guru?.jabatan || '').trim();
+  if (jabatan) return jabatan;
+  const peran = (Array.isArray(guru?.roles) ? guru.roles : []).find(Boolean);
+  return SEBUTAN_PERAN[peran] || peran || 'Staf sekolah';
+};
+
+const inisialNama = (nama) => String(nama || '')
+  .split(' ')
+  .filter((w) => /^[A-Z]/.test(w))
+  .slice(0, 2)
+  .map((w) => w[0])
+  .join('') || '—';
 
 const FASILITAS = [
   ['Ruang kelas', 'Delapan belas ruang kelas dengan jendela besar dan ventilasi silang, masing-masing berisi paling banyak dua puluh delapan murid.', 'linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)', 'span 2', 'span 2'],
@@ -57,33 +81,24 @@ const RIWAYAT = [
 
 const TICKER = ['Terakreditasi A', 'Adiwiyata Nasional', 'Kurikulum Merdeka', '18 rombongan belajar', 'Perpustakaan buka setiap hari', 'Kebun sekolah', 'Kelas kecil', 'Guru bersertifikat pendidik'];
 
-const MISI = [
-  'Membiasakan doa bersama dan perilaku jujur sejak kelas satu.',
-  'Menuntaskan kemampuan membaca, menulis, dan berhitung sebelum naik ke kelas empat.',
-  'Membuka perpustakaan setiap hari dan menyediakan waktu membaca lima belas menit setiap pagi.',
-  'Menyelenggarakan pembelajaran berbasis proyek yang memakai lingkungan sekitar sekolah.',
-  'Menjaga kebersihan, memilah sampah, dan merawat kebun sekolah bersama murid.',
-  'Melibatkan orang tua lewat pertemuan bulanan dan laporan perkembangan anak.',
-];
+/* Visi, misi, tujuan, dan data pokok sekolah TIDAK lagi ditulis di sini —
+ * semuanya disunting lewat panel Identitas Sekolah. Daftar lama di berkas ini
+ * bahkan berisi kalimat yang berbeda dari yang tersimpan di form, jadi pembeli
+ * bisa menulis misinya dengan benar dan halaman ini tetap menampilkan misi lain.
+ * Lihat DEFAULT_SCHOOL_IDENTITY di src/lib/schoolIdentity.js untuk bawaannya. */
 
-const TUJUAN = [
-  'Seluruh murid kelas tiga mampu membaca lancar dan memahami isi bacaan sederhana.',
-  'Sekurang-kurangnya sembilan puluh lima persen lulusan diterima di SMP negeri pilihan pertama.',
-  'Setiap murid mengikuti sedikitnya satu kegiatan ekstrakurikuler setiap tahun ajaran.',
-  'Sekolah mempertahankan predikat Adiwiyata dan nilai akreditasi A pada penilaian berikutnya.',
-];
-
-const IDENTITAS = [
-  { k: 'Nama sekolah', v: 'SD Negeri Baturaja' },
-  { k: 'NPSN', v: '10645512' },
-  { k: 'Jenjang', v: 'Sekolah Dasar' },
-  { k: 'Status', v: 'Negeri' },
-  { k: 'Akreditasi', v: 'A (96,4)' },
-  { k: 'Kurikulum', v: 'Kurikulum Merdeka' },
-  { k: 'Kepala sekolah', v: 'Hj. Rosmiati, S.Pd.' },
-  { k: 'Waktu belajar', v: 'Pagi, 07.15–12.30' },
-  { k: 'Luas lahan', v: '4.200 m²' },
-];
+/** Baris "Data pokok sekolah", seluruhnya dari identitas yang bisa disunting. */
+const dataPokok = (sekolah) => [
+  ['Nama sekolah', sekolah.name],
+  ['Nama singkat', sekolah.shortName],
+  ['Tahun ajaran', sekolah.academicYear],
+  ['Kota', sekolah.city],
+  ['Jam layanan', sekolah.officeHours],
+  ['Telepon', sekolah.phone],
+  ['Email', sekolah.email],
+  ['Situs web', String(sekolah.website || '').replace(/^https?:\/\//, '')],
+  ['Alamat', sekolah.address],
+].filter(([, nilai]) => String(nilai || '').trim());
 
 const PersonSvg = ({ size, style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,.9)" style={style}><circle cx="12" cy="8.4" r="4" /><path d="M3.6 22c.6-4.6 4.2-7.2 8.4-7.2s7.8 2.6 8.4 7.2z" /></svg>
@@ -97,15 +112,52 @@ const TiltCard = ({ style, label }) => (
 );
 
 const ProfilePage = () => {
+  const sekolah = useSchoolIdentity();
   const [tab, setTab] = useState('visi');
   const [gIdx, setGIdx] = useState(0);
   const [person, setPerson] = useState(-1);
   const [light, setLight] = useState(-1);
   const [perView, setPerView] = useState(4);
+  const [staf, setStaf] = useState([]);
   const vpRef = useRef(null);
   const pausedRef = useRef(false);
 
-  useSdnbMotion([]);
+  useEffect(() => {
+    let aktif = true;
+    fetchPublicTeachers()
+      .then((rows) => { if (aktif && Array.isArray(rows)) setStaf(rows); })
+      .catch(() => { /* bagian lain halaman ini tetap tampil tanpa daftar guru */ });
+    return () => { aktif = false; };
+  }, []);
+
+  // Data guru dipasangkan dengan gradasi berdasarkan posisi, sama seperti kartu
+  // program di halaman depan.
+  const tim = useMemo(() => staf.map((g, i) => {
+    const nama = String(g.nama || '').trim();
+    const [dari, ke] = ORANG_GRADASI[i % ORANG_GRADASI.length];
+    return {
+      nama,
+      peran: sebutanStaf(g),
+      inisial: inisialNama(nama),
+      foto: g.foto_url || '',
+      gradasi: `linear-gradient(150deg,${dari},${ke})`,
+      // Hanya fakta yang benar-benar ada di basis data. Kolom "pendidikan",
+      // "masa kerja", dan "sertifikasi" pada versi lama semuanya karangan.
+      rincian: [
+        ['Jabatan', sebutanStaf(g)],
+        ...(g.jenis_kelamin ? [['Jenis kelamin', g.jenis_kelamin]] : []),
+        ['Kontak sekolah', sekolah.email],
+        ['Jam layanan', sekolah.officeHours],
+      ],
+    };
+  }), [staf, sekolah.email, sekolah.officeHours]);
+
+  const kepalaSekolah = useMemo(
+    () => tim.find((t) => /kepala\s+sekolah/i.test(t.peran) && !/wakil/i.test(t.peran)) || null,
+    [tim],
+  );
+
+  useSdnbMotion([tim.length]);
 
   // measure()
   useEffect(() => {
@@ -123,13 +175,14 @@ const ProfilePage = () => {
 
   const slide = useCallback((dir) => {
     setGIdx((prev) => {
-      const max = Math.max(0, TIM.length - perView);
+      const max = Math.max(0, tim.length - perView);
       let n = prev + dir;
       if (n > max) n = 0;
       if (n < 0) n = max;
       return n;
     });
-  }, [perView]);
+    // tim.length ikut karena jumlah guru datang dari server setelah render pertama.
+  }, [perView, tim.length]);
 
   // autoplay every 4200ms, paused on hover or while a modal is open
   useEffect(() => {
@@ -151,7 +204,7 @@ const ProfilePage = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [light]);
 
-  const movePerson = (dir) => setPerson((p) => (p + dir + TIM.length) % TIM.length);
+  const movePerson = (dir) => setPerson((p) => (p + dir + tim.length) % tim.length);
   const moveLight = (dir) => setLight((p) => (p + dir + FASILITAS.length) % FASILITAS.length);
   const closeAll = () => { setPerson(-1); setLight(-1); };
 
@@ -159,9 +212,9 @@ const ProfilePage = () => {
   const tabIdx = tabKeys.indexOf(tab);
   const PILL_W = 118;
 
-  const p = person >= 0 ? TIM[person] : null;
+  const p = person >= 0 ? tim[person] : null;
   const l = light >= 0 ? FASILITAS[light] : null;
-  const dotCount = Math.max(1, TIM.length - perView + 1);
+  const dotCount = Math.max(1, tim.length - perView + 1);
 
   return (
     <div className="sdnb-profil">
@@ -251,10 +304,17 @@ const ProfilePage = () => {
           <div style={{ position: 'relative', flex: 'none', width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(140deg,#c6b6f6,#9fc4f8 60%,#a9eede)', boxShadow: '0 20px 40px -16px rgba(60,70,140,.55)' }}>
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}><PersonSvg size={66} /></div>
           </div>
+          {/* Penanda tangan kutipan diambil dari Data Guru: baris yang jabatannya
+              memuat "Kepala Sekolah". Kalau sekolah belum mengisinya, yang tampil
+              adalah nama sekolah — bukan nama orang karangan seperti versi lama. */}
           <div>
-            <div style={{ fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>Hj. Rosmiati, S.Pd.</div>
-            <div style={{ marginTop: 3, fontSize: 13.5, color: '#6b7093' }}>Kepala Sekolah · menjabat sejak 2019</div>
-            <div style={{ marginTop: 10, width: 120, height: 2, background: 'linear-gradient(90deg,#5b6cff,#f0779f)' }} />
+            <div style={{ fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>
+              {kepalaSekolah ? kepalaSekolah.nama : sekolah.name}
+            </div>
+            <div style={{ marginTop: 3, fontSize: 13.5, color: '#6b7093' }}>
+              {kepalaSekolah ? kepalaSekolah.peran : 'Kepala Sekolah'}
+            </div>
+            <div style={{ marginTop: 10, width: 120, height: 2, background: 'linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))' }} />
           </div>
         </div>
       </section>
@@ -274,11 +334,11 @@ const ProfilePage = () => {
         <div style={{ ...glass, marginTop: 20, position: 'relative', overflow: 'hidden', padding: '36px 38px', borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '45%', background: 'linear-gradient(168deg,rgba(255,255,255,.58),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           {tab === 'visi' && (
-            <p className="tabpane" style={{ position: 'relative', margin: 0, maxWidth: 900, fontFamily: HEADING_FONT, fontSize: 26, lineHeight: 1.42, letterSpacing: '-.02em', fontWeight: 700, color: '#22243c', textWrap: 'pretty' }}>Terwujudnya murid yang beriman, gemar membaca, dan berani mencoba, tumbuh sehat di lingkungan sekolah yang bersih dan ramah.</p>
+            <p className="tabpane" style={{ position: 'relative', margin: 0, maxWidth: 900, fontFamily: HEADING_FONT, fontSize: 26, lineHeight: 1.42, letterSpacing: '-.02em', fontWeight: 700, color: '#22243c', textWrap: 'pretty' }}>{sekolah.vision}</p>
           )}
           {tab === 'misi' && (
             <div className="tabpane sdnb-profil-misi" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-              {MISI.map((t, i) => (
+              {sekolah.missions.map((t, i) => (
                 <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '16px 18px', borderRadius: 16, background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.9)' }}>
                   <div style={{ flex: 'none', width: 28, height: 28, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg,#6470ff,#a06cf0)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.5)' }}>{i + 1}</div>
                   <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#3f4468' }}>{t}</p>
@@ -288,7 +348,7 @@ const ProfilePage = () => {
           )}
           {tab === 'tujuan' && (
             <div className="tabpane" style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {TUJUAN.map((t2, i) => (
+              {sekolah.goals.map((t2, i) => (
                 <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                   <div style={{ flex: 'none', marginTop: 6, width: 8, height: 8, borderRadius: '50%', background: 'linear-gradient(135deg,#6470ff,#e58fc4)' }} />
                   <p style={{ margin: 0, fontSize: 15, lineHeight: 1.62, color: '#3f4468' }}>{t2}</p>
@@ -328,7 +388,13 @@ const ProfilePage = () => {
           <div>
             <div style={kicker}>Tim</div>
             <h2 style={h2}>Guru dan staf</h2>
-            <p style={{ margin: '12px 0 0', maxWidth: 440, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>Tiga puluh empat orang, dua puluh empat di antaranya guru kelas bersertifikat pendidik. Klik kartu untuk membaca profil lengkap.</p>
+            {/* Jumlahnya dihitung dari data guru, bukan angka tetap. Versi lama
+                menuliskan "tiga puluh empat orang" walau datanya berapa pun. */}
+            <p style={{ margin: '12px 0 0', maxWidth: 440, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>
+              {tim.length > 0
+                ? `${tim.length} guru dan tenaga kependidikan. Klik kartu untuk melihat rinciannya.`
+                : 'Daftar guru dan staf belum diisi.'}
+            </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={() => slide(-1)} className="shine h-glass92" aria-label="Sebelumnya" style={{ position: 'relative', overflow: 'hidden', width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.62)', boxShadow: '0 14px 30px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
@@ -348,19 +414,22 @@ const ProfilePage = () => {
           style={{ marginTop: 28, overflow: 'hidden', padding: '8px 2px 64px' }}
         >
           <div style={{ display: 'flex', gap: 20, transition: 'transform .62s cubic-bezier(.3,.9,.3,1)', transform: `translate3d(${-gIdx * 308}px,0,0)` }}>
-            {TIM.map((t, i) => (
-              <div key={t[0]} onClick={() => setPerson(i)} className="lift" style={{ flex: 'none', width: 288, cursor: 'pointer', position: 'relative', overflow: 'hidden', borderRadius: 26, background: 'rgba(255,255,255,.52)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
-                <div style={{ position: 'relative', height: 210, overflow: 'hidden', background: `linear-gradient(150deg,${t[3]},${t[4]})` }}>
+            {tim.map((t, i) => (
+              <div key={`${t.nama}-${i}`} onClick={() => setPerson(i)} className="lift" style={{ flex: 'none', width: 288, cursor: 'pointer', position: 'relative', overflow: 'hidden', borderRadius: 26, background: 'rgba(255,255,255,.52)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+                <div style={{ position: 'relative', height: 210, overflow: 'hidden', background: t.gradasi }}>
                   <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
-                  <PersonSvg size={120} style={{ position: 'absolute', left: '50%', bottom: -6, transform: 'translateX(-50%)' }} />
-                  <div style={{ position: 'absolute', left: 14, top: 14, padding: '6px 11px', borderRadius: 10, fontSize: 11, fontWeight: 800, letterSpacing: '.04em', color: '#2c2f4d', background: 'rgba(255,255,255,.62)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>{t[2]}</div>
+                  {/* Foto asli bila guru sudah mengunggahnya; kalau belum, siluet
+                      seperti sebelumnya supaya tinggi kartu tidak berubah. */}
+                  {t.foto
+                    ? <img src={t.foto} alt={t.nama} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <PersonSvg size={120} style={{ position: 'absolute', left: '50%', bottom: -6, transform: 'translateX(-50%)' }} />}
+                  <div style={{ position: 'absolute', left: 14, top: 14, padding: '6px 11px', borderRadius: 10, fontSize: 11, fontWeight: 800, letterSpacing: '.04em', color: '#2c2f4d', background: 'rgba(255,255,255,.62)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>{t.inisial}</div>
                 </div>
                 <div style={{ position: 'relative', padding: '20px 22px 22px' }}>
-                  <div style={{ fontFamily: HEADING_FONT, fontSize: 16, fontWeight: 800, letterSpacing: '-.018em', color: '#1e2035' }}>{t[0]}</div>
-                  <div style={{ marginTop: 4, fontSize: 12.5, fontWeight: 600, color: '#6b7093' }}>{t[1]}</div>
-                  <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,.85)' }}>
-                    <span style={{ fontSize: 11.5, color: '#7b7fa0' }}>{t[5]}</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#5b6cff' }}>Lihat profil
+                  <div style={{ fontFamily: HEADING_FONT, fontSize: 16, fontWeight: 800, letterSpacing: '-.018em', color: '#1e2035' }}>{t.nama}</div>
+                  <div style={{ marginTop: 4, fontSize: 12.5, fontWeight: 600, color: '#6b7093' }}>{t.peran}</div>
+                  <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,.85)' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--sekolah-aksen-pekat)' }}>Lihat profil
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
                     </span>
                   </div>
@@ -408,10 +477,10 @@ const ProfilePage = () => {
           <div style={{ position: 'relative', ...kicker }}>Identitas</div>
           <h3 style={{ position: 'relative', margin: '10px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-.022em', color: '#1b1c2c' }}>Data pokok sekolah</h3>
           <div style={{ position: 'relative', marginTop: 20, display: 'flex', flexDirection: 'column' }}>
-            {IDENTITAS.map((i) => (
-              <div key={i.k} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 20, padding: '13px 2px', borderBottom: '1px solid rgba(255,255,255,.75)' }}>
-                <span style={{ fontSize: 13, color: '#6b7093' }}>{i.k}</span>
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1e2035', textAlign: 'right' }}>{i.v}</span>
+            {dataPokok(sekolah).map(([label, nilai]) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 20, padding: '13px 2px', borderBottom: '1px solid rgba(255,255,255,.75)' }}>
+                <span style={{ flex: 'none', fontSize: 13, color: '#6b7093' }}>{label}</span>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1e2035', textAlign: 'right' }}>{nilai}</span>
               </div>
             ))}
           </div>
@@ -432,23 +501,27 @@ const ProfilePage = () => {
       {p && (
         <div onClick={closeAll} style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28, background: 'rgba(40,46,80,.42)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', animation: 'fadeup .3s ease both' }}>
           <div onClick={(e) => e.stopPropagation()} className="sdnb-person-modal" style={{ position: 'relative', width: 'min(860px,100%)', maxHeight: '88vh', overflow: 'auto', display: 'grid', gridTemplateColumns: '300px 1fr', gap: 0, borderRadius: 30, background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(30px) saturate(190%)', WebkitBackdropFilter: 'blur(30px) saturate(190%)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 50px 100px -30px rgba(40,50,110,.7),inset 0 1px 0 rgba(255,255,255,1)' }}>
-            <div style={{ position: 'relative', minHeight: 330, overflow: 'hidden', background: `linear-gradient(150deg,${p[3]},${p[4]})` }}>
+            <div style={{ position: 'relative', minHeight: 330, overflow: 'hidden', background: p.gradasi }}>
               <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
-              <PersonSvg size={150} style={{ position: 'absolute', left: '50%', bottom: -8, transform: 'translateX(-50%)' }} />
+              {p.foto
+                ? <img src={p.foto} alt={p.nama} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <PersonSvg size={150} style={{ position: 'absolute', left: '50%', bottom: -8, transform: 'translateX(-50%)' }} />}
             </div>
             <div style={{ padding: '34px 36px 36px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
                 <div>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#5b6cff' }}>{p[1]}</div>
-                  <h3 style={{ margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 28, lineHeight: 1.16, letterSpacing: '-.028em', fontWeight: 800, color: '#1b1c2c' }}>{p[0]}</h3>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>{p.peran}</div>
+                  <h3 style={{ margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 28, lineHeight: 1.16, letterSpacing: '-.028em', fontWeight: 800, color: '#1b1c2c' }}>{p.nama}</h3>
                 </div>
                 <button type="button" onClick={closeAll} className="shine" aria-label="Tutup" style={{ position: 'relative', overflow: 'hidden', flex: 'none', width: 38, height: 38, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.7)' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
                 </button>
               </div>
-              <p style={{ margin: '18px 0 0', fontSize: 15, lineHeight: 1.68, color: '#4a4f74' }}>{p[6]}</p>
+              {/* Deskripsi sekolah, bukan biografi per orang: basis data guru
+                  tidak menyimpan biografi, dan versi lama mengarangnya. */}
+              <p style={{ margin: '18px 0 0', fontSize: 15, lineHeight: 1.68, color: '#4a4f74' }}>{sekolah.description}</p>
               <div style={{ marginTop: 22, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {p[7].map(([k, v]) => (
+                {p.rincian.map(([k, v]) => (
                   <div key={k} style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)' }}>
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#8a8ea8' }}>{k}</div>
                     <div style={{ marginTop: 5, fontSize: 13.5, fontWeight: 700, color: '#1e2035' }}>{v}</div>

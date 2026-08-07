@@ -33,9 +33,9 @@ export const DEFAULT_SCHOOL_IDENTITY = Object.freeze({
   mapUrl: '',
   officeHours: 'Senin–Jumat, 07.30–15.00',
   academicYear: '2026/2027',
-  // Aksen warna sekolah. Dipasang sebagai CSS custom property --sekolah-aksen
-  // pada elemen root oleh applySchoolIdentity, jadi CSS mana pun bisa
-  // memakainya tanpa perlu menyentuh JavaScript.
+  // Aksen warna sekolah. Seluruh palet halaman publik diturunkan dari satu nilai
+  // ini oleh turunkanPalet, lalu dipasang sebagai CSS custom property pada elemen
+  // root, jadi CSS mana pun bisa memakainya tanpa menyentuh JavaScript.
   accentColor: '#6470ff',
   vision: 'Menjadi sekolah dasar yang menumbuhkan murid berkarakter, cakap berpikir, dan senang belajar.',
   missions: [
@@ -44,11 +44,17 @@ export const DEFAULT_SCHOOL_IDENTITY = Object.freeze({
     'Mendampingi setiap murid sesuai kebutuhan dan kecepatan belajarnya.',
     'Membangun kerja sama yang erat antara sekolah, orang tua, dan masyarakat.',
   ],
+  goals: [
+    'Seluruh murid tuntas membaca, menulis, dan berhitung sesuai jenjangnya.',
+    'Setiap murid mengikuti sedikitnya satu kegiatan ekstrakurikuler tiap tahun ajaran.',
+    'Kehadiran murid dan guru terjaga di atas sembilan puluh lima persen.',
+    'Sekolah mempertahankan nilai akreditasi pada penilaian berikutnya.',
+  ],
   description: 'Sekolah dasar negeri yang mendampingi anak belajar dengan tenang lewat kelas yang tertata, guru wali yang mengenal setiap murid, dan lingkungan yang aman.',
 });
 
 // Field bertipe daftar perlu penanganan terpisah saat normalisasi.
-const LIST_FIELDS = ['missions'];
+const LIST_FIELDS = ['missions', 'goals'];
 
 const sanitizeList = (value) => {
   if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
@@ -107,6 +113,101 @@ export const subscribeSchoolIdentity = (listener) => {
 // bisa menyuntikkan nilai CSS sembarangan ke elemen root.
 const WARNA_HEKS = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
+/* ─── Palet turunan ────────────────────────────────────────────────────────
+ *
+ * Halaman publik memakai satu sapuan warna, bukan satu warna tunggal: tombol
+ * dan judulnya bergradasi dari aksen menuju ungu lalu merona. Dulu keduabelas
+ * warnanya ditulis langsung di 19 berkas (151 kemunculan), jadi pemilih "Aksen
+ * warna" di panel Identitas tersimpan tanpa mengubah apa pun.
+ *
+ * Ternyata sapuan itu sangat teratur: seluruh warna adalah aksen yang digeser
+ * rona (hue) sambil menurun kejenuhannya, pada terang yang hampir sama. Jadi
+ * palet lengkapnya dapat DITURUNKAN dari satu heks pilihan pembeli memakai
+ * selisih tetap di bawah — yang diukur dari palet asli desain, sehingga pada
+ * aksen bawaan #6470ff hasilnya kembali ke warna aslinya.
+ */
+
+// Selisih dari aksen dalam HSL: [rona, kejenuhan, terang].
+// Nilai acuan pada #6470ff (H 235,4 · S 100 · L 69,6) tercantum di komentar.
+const SELISIH_PALET = {
+  'aksen': [0, 0, 0],                       // #6470ff — warna utama
+  'aksen-pekat': [-1.6, 0, -1.8],           // #5b6cff — awal gradasi, sedikit lebih dalam
+  'aksen-tengah': [18.3, -18.5, -1.4],      // #8a6cf0 — ungu
+  'aksen-tengah-2': [28.3, -18.5, -1.4],    // #a06cf0 — ungu terang
+  'aksen-ujung': [87.7, -37.7, 3.3],        // #e58fc4 — merona, ujung gradasi
+  'aksen-muda': [-5.7, -6.5, 12.2],         // #a5b4fc — tint
+  'aksen-samar': [-7.4, -3.5, 19.2],        // #c7d2fe — tint paling pucat
+};
+
+const jepit = (n, min, max) => Math.min(max, Math.max(min, n));
+
+/** '#abc' atau '#aabbcc' menjadi {h, s, l} dengan s dan l dalam persen. */
+const keHsl = (hex) => {
+  const bersih = hex.slice(1);
+  const penuh = bersih.length === 3 ? bersih.split('').map((c) => c + c).join('') : bersih;
+  const r = parseInt(penuh.slice(0, 2), 16) / 255;
+  const g = parseInt(penuh.slice(2, 4), 16) / 255;
+  const b = parseInt(penuh.slice(4, 6), 16) / 255;
+
+  const maks = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (maks + min) / 2;
+  const beda = maks - min;
+  if (beda === 0) return { h: 0, s: 0, l: l * 100 };
+
+  const s = l > 0.5 ? beda / (2 - maks - min) : beda / (maks + min);
+  let h;
+  if (maks === r) h = ((g - b) / beda) % 6;
+  else if (maks === g) h = (b - r) / beda + 2;
+  else h = (r - g) / beda + 4;
+  h *= 60;
+  if (h < 0) h += 360;
+  return { h, s: s * 100, l: l * 100 };
+};
+
+/** {h, s, l} menjadi tiga kanal 0–255. */
+const keRgb = ({ h, s, l }) => {
+  const sn = s / 100;
+  const ln = l / 100;
+  const c = (1 - Math.abs(2 * ln - 1)) * sn;
+  const hp = (((h % 360) + 360) % 360) / 60;
+  const x = c * (1 - Math.abs((hp % 2) - 1));
+  const m = ln - c / 2;
+  const urut = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]];
+  const [r, g, b] = urut[Math.floor(hp) % 6];
+  return [r, g, b].map((v) => Math.round((v + m) * 255));
+};
+
+const keHeks = (hsl) => `#${keRgb(hsl).map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+
+/**
+ * Menurunkan seluruh palet halaman publik dari satu warna aksen.
+ *
+ * @param {string} hexAksen heks yang sudah lolos WARNA_HEKS
+ * @returns {Record<string, string>} nama properti CSS (tanpa `--sekolah-`) ke nilainya
+ */
+export const turunkanPalet = (hexAksen) => {
+  const dasar = keHsl(hexAksen);
+  const palet = {};
+
+  Object.entries(SELISIH_PALET).forEach(([nama, [dh, ds, dl]]) => {
+    palet[nama] = keHeks({
+      h: dasar.h + dh,
+      // Dijepit supaya aksen yang nyaris kelabu atau nyaris putih tidak
+      // menghasilkan nilai di luar rentang HSL yang sah.
+      s: jepit(dasar.s + ds, 0, 100),
+      l: jepit(dasar.l + dl, 0, 100),
+    });
+  });
+
+  // Kanal terpisah untuk bayangan: `rgb(var(--sekolah-aksen-rgb) / .95)`.
+  // Bayangan di halaman publik memakai rgba dengan alfa, dan alfa tidak bisa
+  // ditempelkan pada nilai heks di dalam var().
+  palet['aksen-rgb'] = keRgb(dasar).join(' ');
+
+  return palet;
+};
+
 export const applySchoolIdentity = (identity) => {
   cached = normalizeSchoolIdentity(identity);
   try {
@@ -116,7 +217,10 @@ export const applySchoolIdentity = (identity) => {
   }
   try {
     const warna = WARNA_HEKS.test(cached.accentColor) ? cached.accentColor : DEFAULT_SCHOOL_IDENTITY.accentColor;
-    document.documentElement.style.setProperty('--sekolah-aksen', warna);
+    const akar = document.documentElement.style;
+    Object.entries(turunkanPalet(warna)).forEach(([nama, nilai]) => {
+      akar.setProperty(`--sekolah-${nama}`, nilai);
+    });
   } catch {
     // Lingkungan tanpa DOM (test) tidak perlu properti CSS.
   }
@@ -139,3 +243,8 @@ export const saveSchoolIdentity = async (identity) => {
   await saveWebsiteContentItem({ key: SCHOOL_IDENTITY_KEY, content: normalized, isPublic: true });
   return applySchoolIdentity(normalized);
 };
+
+// Palet dipasang dari singgahan begitu modul dimuat, sebelum hydrateSchoolIdentity
+// selesai memanggil server. Tanpa ini pengunjung yang kembali akan melihat warna
+// bawaan sekejap lalu berkedip ke warna sekolahnya.
+applySchoolIdentity(cached);

@@ -4,6 +4,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Palet aksen sekolah — nilai bawaan.
+ *
+ * Yang berlaku sehari-hari adalah nilai yang dipasang applySchoolIdentity ke
+ * elemen <html> dari warna pilihan pembeli (lihat turunkanPalet di
+ * src/lib/schoolIdentity.js). Blok ini bawaannya, dan ia bukan hiasan: tanpa
+ * ini, cat pertama sebelum JavaScript selesai akan merender `var(--sekolah-…)`
+ * tanpa nilai, sehingga tombol dan judul kehilangan warnanya sekejap.
+ *
+ * Nilai di bawah SAMA PERSIS dengan hasil turunkanPalet('#6470ff'), yaitu palet
+ * asli desain. Kalau mengubah SELISIH_PALET, samakan juga daftar ini. */
+:root {
+  --sekolah-aksen: #6470ff;
+  --sekolah-aksen-pekat: #5b6cff;
+  --sekolah-aksen-tengah: #8a6cf0;
+  --sekolah-aksen-tengah-2: #a06cf0;
+  --sekolah-aksen-ujung: #e58fc4;
+  --sekolah-aksen-muda: #a5b4fc;
+  --sekolah-aksen-samar: #c7d2fe;
+  --sekolah-aksen-rgb: 100 112 255;
+}
+
 @layer base {
   :root {
     --background: 215 50% 98%;
