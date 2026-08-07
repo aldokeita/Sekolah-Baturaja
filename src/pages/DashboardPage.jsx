@@ -6,6 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import useAdminBodyClass from '@/hooks/useAdminBodyClass';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import DashboardTopBar from '@/components/dashboard/shared/DashboardTopBar';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import TataUsahaDashboard from '@/components/dashboard/TataUsahaDashboard';
 import GuruDashboard from '@/components/dashboard/GuruDashboard';
@@ -150,6 +151,10 @@ const DashboardPage = () => {
           </div>
         )}
         <div className="relative" style={{ zIndex: 1 }}>
+          {/* Di luar ErrorBoundary dengan sengaja: kalau dashboard gagal dirender,
+              tombol Keluar dan Lihat situs justru paling dibutuhkan. */}
+          <DashboardTopBar />
+
           {/* Tanpa boundary, satu error saat render memutihkan seluruh aplikasi
               tanpa pesan apa pun. key={role} mereset boundary ketika peran
               berubah, supaya error lama tidak menempel setelah login ulang. */}

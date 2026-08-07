@@ -40,7 +40,14 @@ html { scroll-behavior: smooth; }
 .nav-cta, .nav-login, .nav-brandtitle { white-space: nowrap; }
 @media (max-width: 1120px) { .nav-sub { display: none; } }
 @media (max-width: 1040px) { .nav-links a { padding: 9px 10px; font-size: 13px; } }
-@media (max-width: 940px) { .nav-links { display: none; } .nav-login { display: none; } }
+/* Tombol hamburger HANYA muncul pada lebar yang menyembunyikan baris tautan.
+   Kalau keduanya tampil bersamaan, ada dua navigasi yang saling menduplikasi. */
+.nav-burger { display: none; }
+@media (max-width: 940px) {
+  .nav-links { display: none; }
+  .nav-login { display: none; }
+  .nav-burger { display: flex; }
+}
 
 /* ── verbatim: keyframes ─────────────────────────────────────────────────── */
 @keyframes floaty { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -18px, 0); } }

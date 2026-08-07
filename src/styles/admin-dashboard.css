@@ -6456,3 +6456,10 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
     animation: none;
   }
 }
+
+/* Bilah atas dashboard (DashboardTopBar).
+   Label tombol disembunyikan di layar sempit; ikonnya tetap, jadi "Keluar" dan
+   "Lihat situs" tidak pernah hilang di ponsel. */
+@media (max-width: 560px) {
+  .dash-topbar__label { display: none; }
+}

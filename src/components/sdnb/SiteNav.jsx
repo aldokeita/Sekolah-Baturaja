@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -19,9 +19,11 @@ import '@/styles/sdnb.css';
  *  - the Login button becomes Dashboard/Logout when a user is signed in, so the
  *    real auth flow keeps working (design of the button is unchanged)
  *
- * Note: per DESIGN.md §11 the mockup intentionally hides the link row and the
- * secondary button below 940px and defines no hamburger menu. That behaviour is
- * kept as-is rather than inventing a mobile menu.
+ * Menu ponsel DITAMBAHKAN, tidak ada di mockup. Di bawah 940px mockup
+ * menyembunyikan seluruh baris tautan dan tidak menyediakan penggantinya, jadi
+ * pengunjung ponsel tidak punya navigasi sama sekali — hanya logo dan tombol
+ * Daftar PPDB. Untuk situs sekolah yang sebagian besar dibuka orang tua dari
+ * ponsel, itu berarti halaman Profil, Berita, dan Kontak tidak dapat dijangkau.
  */
 
 const ARROW = (
@@ -43,18 +45,42 @@ const linkBase = { padding: '9px 14px', borderRadius: 12, fontSize: 13.5 };
 const activeLink = { ...linkBase, fontWeight: 700, color: '#4a4fd0', background: 'rgba(255,255,255,.72)' };
 const passiveLink = { ...linkBase, fontWeight: 600, color: '#2c2f45' };
 
+// Semua tautan navigasi dalam satu daftar rata untuk menu ponsel. Di layar lebar
+// enam tautan Profil bersarang di dropdown; di ponsel dropdown melayang tidak
+// bisa dipakai, jadi semuanya ditampilkan berurutan.
+const MENU_PONSEL = [
+  { label: 'Beranda', to: '/' },
+  { label: 'Profil', to: '/profil' },
+  ...PROFILE_LINKS.filter((l) => l.to !== '/profil'),
+  { label: 'Berita', to: '/berita' },
+  { label: 'Kontak', to: '/kontak' },
+];
+
 const SiteNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toggleTheme } = useTheme();
   const sekolah = useSchoolIdentity();
+  const [menuTerbuka, setMenuTerbuka] = useState(false);
 
   const isHome = location.pathname === '/';
   const isProfileGroup = PROFILE_LINKS.some((l) => location.pathname.startsWith(l.to));
   const at = (p) => location.pathname.startsWith(p);
 
   const handleLogout = async () => { await signOut(); navigate('/'); };
+
+  // Menu ditutup setiap kali halaman berganti, supaya panelnya tidak menutupi
+  // halaman baru setelah pengunjung menekan salah satu tautan.
+  useEffect(() => { setMenuTerbuka(false); }, [location.pathname]);
+
+  // Escape menutup menu, sama seperti dialog lain di aplikasi ini.
+  useEffect(() => {
+    if (!menuTerbuka) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuTerbuka(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuTerbuka]);
 
   return (
     <div style={{ position: 'sticky', top: 0, zIndex: 40, padding: '14px 28px' }}>
@@ -96,6 +122,23 @@ const SiteNav = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+          {/* Hanya tampil di bawah 940px, tepat ketika baris tautan disembunyikan. */}
+          <button
+            type="button"
+            className="nav-burger th-toggle"
+            onClick={() => setMenuTerbuka((v) => !v)}
+            aria-label={menuTerbuka ? 'Tutup menu' : 'Buka menu'}
+            aria-expanded={menuTerbuka}
+            aria-controls="menu-ponsel"
+            style={{ position: 'relative', flex: 'none', width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.62)', boxShadow: '0 10px 24px -12px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}
+          >
+            {menuTerbuka ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3d4166" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3d4166" strokeWidth="2.6" strokeLinecap="round"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>
+            )}
+          </button>
+
           <button
             type="button"
             onClick={toggleTheme}
@@ -129,6 +172,42 @@ const SiteNav = () => {
             Daftar PPDB
           </Link>
         </div>
+
+        {menuTerbuka && (
+          <div
+            id="menu-ponsel"
+            className="nav-sheet"
+            style={{ position: 'absolute', left: 0, right: 0, top: 'calc(100% + 10px)', padding: 10, borderRadius: 20, background: 'rgba(255,255,255,.86)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 28px 60px -20px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}
+          >
+            <nav aria-label="Menu utama" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {MENU_PONSEL.map((l) => {
+                const aktif = l.to === '/' ? isHome : at(l.to);
+                return (
+                  <Link
+                    key={l.to}
+                    to={l.to}
+                    style={{ padding: '12px 14px', borderRadius: 12, fontSize: 14.5, fontWeight: aktif ? 700 : 600, color: aktif ? '#4a4fd0' : '#2c2f45', background: aktif ? 'rgba(255,255,255,.9)' : 'transparent' }}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Tombol Login dan Dashboard juga tersembunyi di bawah 940px
+                (.nav-login), jadi keduanya perlu tempat di sini. */}
+            <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px solid rgba(120,132,200,.2)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {user ? (
+                <>
+                  <Link to="/dashboard" style={{ padding: '12px 14px', borderRadius: 12, fontSize: 14.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.72)', border: '1px solid rgba(255,255,255,.95)' }}>Dashboard</Link>
+                  <button type="button" onClick={handleLogout} style={{ padding: '12px 14px', borderRadius: 12, fontFamily: 'inherit', fontSize: 14.5, fontWeight: 700, textAlign: 'left', cursor: 'pointer', color: '#b04a5a', background: 'rgba(255,255,255,.72)', border: '1px solid rgba(255,255,255,.95)' }}>Keluar</button>
+                </>
+              ) : (
+                <Link to="/login" style={{ padding: '12px 14px', borderRadius: 12, fontSize: 14.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.72)', border: '1px solid rgba(255,255,255,.95)' }}>Login</Link>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
