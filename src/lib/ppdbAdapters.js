@@ -88,6 +88,43 @@ export const hapusPendaftaran = async (id) => {
   await apiClient.delete(`${BASE}/${id}`);
 };
 
+/**
+ * Memeriksa status pendaftaran dari halaman publik, tanpa login.
+ *
+ * Tanggal lahir wajib bersama nomornya: nomor pendaftaran berurutan dan mudah
+ * diterka, jadi tanpa pasangan kedua siapa pun bisa menyisir nomor dan memanen
+ * nama seluruh pendaftar.
+ */
+export const cekStatusPendaftaran = async ({ nomor, tanggalLahir }) => {
+  const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8080'}${BASE}/cek`;
+  const res = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nomor_pendaftaran: nomor, tanggal_lahir: tanggalLahir }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `Gagal memeriksa pendaftaran (${res.status}).`);
+  return body.data || null;
+};
+
+/** Nomor induk berikutnya yang belum terpakai. Usulan, bukan jaminan. */
+export const usulanNomorInduk = async (tahunAjaran) => {
+  const data = await apiClient.get(`${BASE}/usulan-nomor?tahun=${encodeURIComponent(tahunAjaran || '')}`);
+  return data?.nomor_induk || '';
+};
+
+/**
+ * Mencatat pendaftaran yang sudah diterima sebagai murid.
+ *
+ * Server mengerjakan pembuatan akun, penempatan kelas, dan penautannya dalam satu
+ * transaksi — jadi kegagalan di tengah tidak meninggalkan murid tanpa kelas yang
+ * pendaftarannya masih tampak belum tercatat.
+ */
+export const jadikanMurid = async (id, { nomorInduk, classId, angkatan } = {}) => apiClient.post(
+  `${BASE}/${id}/murid`,
+  { nomor_induk: nomorInduk, class_id: classId || '', angkatan: angkatan || '' },
+);
+
 /* ─── Ekspor ke berkas ────────────────────────────────────────────────────────
  *
  * Tata usaha tetap perlu memindahkan data ke Dapodik dan mencetak daftar hadir

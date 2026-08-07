@@ -6463,3 +6463,36 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 @media (max-width: 560px) {
   .dash-topbar__label { display: none; }
 }
+
+/* Bilah sub-tab panel di layar sempit.
+   ---------------------------------------------------------------------------
+   `.admin-segmented-control` (sub-tab panel Konten: Info Sekolah, Halaman Depan,
+   Apresiasi, …) dan `.admin-glass-tab-list` (Pengaturan TV) keduanya
+   `display: inline-flex` tanpa pembungkus yang bisa digeser. Di layar 375px
+   bilahnya melebar sampai 1144px dan menarik SELURUH halaman ikut bergeser
+   mendatar — jadi setiap panel di bawahnya juga meleset dari layar.
+
+   Yang benar adalah bilahnya sendiri yang bergeser, bukan halamannya. Pilnya
+   dijaga `flex: none` supaya tidak gepeng, dan bilah gesernya disembunyikan
+   karena pil-pilnya sendiri sudah menandakan ada lanjutan di sebelah kanan. */
+@media (max-width: 900px) {
+  .admin-segmented-control,
+  .admin-glass-tab-list {
+    display: flex;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .admin-segmented-control::-webkit-scrollbar,
+  .admin-glass-tab-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-segmented-control-item,
+  .admin-glass-tab-button {
+    flex: none;
+    white-space: nowrap;
+  }
+}

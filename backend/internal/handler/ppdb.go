@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -40,13 +43,18 @@ func NewPpdbHandler(db *pgxpool.Pool) *PpdbHandler {
 func (h *PpdbHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 
-	// Publik: formulir pendaftaran di halaman /ppdb.
+	// Publik: formulir pendaftaran, dan pemeriksaan status oleh orang tua.
+	// Keduanya dibatasi laju — lihat batasiLaju.
 	r.Post("/", h.Submit)
+	r.Post("/cek", h.CekStatus)
 
 	// Back-office: tata usaha, admin, superadmin. Dijaga CanManage di tiap handler.
 	r.Get("/", h.List)
 	r.Get("/statistik", h.Stats)
+	// Sebelum /{id} supaya "usulan-nomor" tidak dibaca sebagai id.
+	r.Get("/usulan-nomor", h.UsulanNomorInduk)
 	r.Get("/{id}", h.Get)
+	r.Post("/{id}/murid", h.JadikanMurid)
 	// PUT, bukan PATCH: corsMiddleware hanya mengizinkan GET/POST/PUT/DELETE, jadi
 	// PATCH akan ditolak browser sebelum sampai ke sini. Muatannya tetap sebagian —
 	// pola yang sama dipakai endpoint konten.
@@ -87,8 +95,11 @@ type pendaftaranRow struct {
 	Status            string         `json:"status"`
 	Catatan           *string        `json:"catatan"`
 	DiprosesPada      *string        `json:"diproses_pada"`
-	CreatedAt         string         `json:"created_at"`
-	UpdatedAt         string         `json:"updated_at"`
+	// Terisi bila pendaftaran ini sudah dicatat sebagai murid; panel memakainya
+	// untuk mematikan tombol "Jadikan murid".
+	SantriID  *string `json:"santri_id"`
+	CreatedAt string  `json:"created_at"`
+	UpdatedAt string  `json:"updated_at"`
 }
 
 // Daftar kolom dipakai bersama oleh List dan Get supaya keduanya tidak pernah
@@ -98,7 +109,7 @@ const pendaftaranKolom = `
 	tempat_lahir, tanggal_lahir::text, jenis_kelamin, alamat, no_hp, email,
 	sekolah_asal, npsn_asal, usia_keterangan, jalur, jalur_label, minat,
 	nama_ayah, nama_ibu, pekerjaan_orang_tua, no_hp_wali, berkas_siap,
-	status, catatan, diproses_pada::text, created_at::text, updated_at::text
+	status, catatan, diproses_pada::text, santri_id, created_at::text, updated_at::text
 `
 
 func scanPendaftaran(row pgx.Row) (pendaftaranRow, error) {
@@ -108,7 +119,7 @@ func scanPendaftaran(row pgx.Row) (pendaftaranRow, error) {
 		&p.TempatLahir, &p.TanggalLahir, &p.JenisKelamin, &p.Alamat, &p.NoHp, &p.Email,
 		&p.SekolahAsal, &p.NpsnAsal, &p.UsiaKeterangan, &p.Jalur, &p.JalurLabel, &p.Minat,
 		&p.NamaAyah, &p.NamaIbu, &p.PekerjaanOrangTua, &p.NoHpWali, &p.BerkasSiap,
-		&p.Status, &p.Catatan, &p.DiprosesPada, &p.CreatedAt, &p.UpdatedAt,
+		&p.Status, &p.Catatan, &p.DiprosesPada, &p.SantriID, &p.CreatedAt, &p.UpdatedAt,
 	)
 	return p, err
 }
@@ -246,11 +257,65 @@ func (in *ppdbInput) periksa() error {
 }
 
 // ---------------------------------------------------------------------------
+// Pembatas laju
+// ---------------------------------------------------------------------------
+
+/* Kedua endpoint publik dibatasi lewat RPC `consume_auth_rate_limit` yang sudah
+ * ada di basis data (20260624001500_rls_helper_functions.sql), BUKAN pencacah di
+ * memori seperti loginlogs.go.
+ *
+ * Alasannya: pencacah di memori hilang setiap kali kontainer dimuat ulang dan
+ * tidak berlaku lintas proses — catatan di loginlogs.go sendiri menyebut
+ * "move to Postgres or Redis if the backend is ever scaled horizontally". RPC ini
+ * memakai `select ... for update` jadi aman terhadap request bersamaan, dan
+ * fungsinya sudah terpasang tanpa perlu tabel baru. Sebelumnya hanya dipanggil
+ * edge function Deno yang sudah tidak dipakai.
+ *
+ * IP di-hash, tidak disimpan apa adanya: tabelnya menyimpan `ip_hash`, dan alamat
+ * IP pengunjung adalah data pribadi yang tidak perlu kami pegang. */
+func hashLaju(nilai string) string {
+	sum := sha256.Sum256([]byte(nilai))
+	return hex.EncodeToString(sum[:])
+}
+
+// Mengembalikan true bila request masih boleh diteruskan.
+//
+// Bila RPC-nya gagal (fungsinya belum ada, misalnya pada basis data yang belum
+// dimigrasi penuh), request DIIZINKAN. Menolak pendaftaran karena pembatas lajunya
+// sendiri rusak jauh lebih buruk daripada melewatkan satu pembatasan.
+func (h *PpdbHandler) batasiLaju(ctx context.Context, tujuan, ip string, maks, jendela, blokir int) bool {
+	if ip == "" {
+		ip = "unknown"
+	}
+	var boleh bool
+	err := h.db.QueryRow(ctx, `
+		SELECT allowed FROM public.consume_auth_rate_limit($1, $2, $3, $4, $5, $6)
+	`, tujuan, hashLaju(ip), hashLaju(tujuan), maks, jendela, blokir).Scan(&boleh)
+	if err != nil {
+		return true
+	}
+	return boleh
+}
+
+// ---------------------------------------------------------------------------
 // Submit — publik
 // ---------------------------------------------------------------------------
 
 // Submit POST /api/ppdb (publik, tanpa auth)
 func (h *PpdbHandler) Submit(w http.ResponseWriter, r *http.Request) {
+	/* 12 pendaftaran per jam per IP, lalu diblokir 30 menit. Batasnya dilonggarkan
+	 * dari nilai bawaan RPC (5) karena satu keluarga wajar mendaftarkan beberapa
+	 * anak, dan satu warnet atau satu jaringan sekolah bisa dipakai banyak orang
+	 * dalam sehari. Yang mau dicegah adalah pembanjiran skrip, bukan orang tua. */
+	if !h.batasiLaju(r.Context(), "ppdb_submit", clientIP(r), 12, 3600, 1800) {
+		jsonError(w, "terlalu banyak pendaftaran dari jaringan ini. Coba lagi setengah jam lagi, atau hubungi tata usaha sekolah.", http.StatusTooManyRequests)
+		return
+	}
+
+	// Muatan dibatasi supaya kiriman raksasa tidak menghabiskan memori; formulir
+	// terpanjang pun jauh di bawah 32 KB.
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
+
 	var in ppdbInput
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
@@ -363,6 +428,86 @@ func (h *PpdbHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonCreated(w, map[string]any{"id": id, "nomor_pendaftaran": nomor, "duplikat": false})
+}
+
+// ---------------------------------------------------------------------------
+// Cek status — publik
+// ---------------------------------------------------------------------------
+
+/* CekStatus POST /api/ppdb/cek (publik, tanpa auth)
+ *
+ * Orang tua memasukkan nomor pendaftaran BESERTA tanggal lahir anaknya. Tanggal
+ * lahir bukan hiasan: nomor pendaftaran berurutan dan mudah diterka, jadi tanpa
+ * pasangan kedua siapa pun bisa menyisir PPDB-2026-0001 sampai 9999 dan memanen
+ * nama seluruh pendaftar. Nomor saja tidak cukup untuk membuka data anak.
+ *
+ * Yang dikembalikan sengaja sedikit: nomor, nama, tahun ajaran, jalur, dan status.
+ * TIDAK ada NIK, alamat, nomor telepon, maupun catatan verifikasi — catatan itu
+ * tulisan internal petugas dan tidak ditulis untuk dibaca orang tua.
+ */
+func (h *PpdbHandler) CekStatus(w http.ResponseWriter, r *http.Request) {
+	// Lebih ketat daripada Submit: menerka pasangan nomor + tanggal lahir menuntut
+	// banyak percobaan, dan justru itu yang harus dibuat tidak sepadan.
+	if !h.batasiLaju(r.Context(), "ppdb_cek", clientIP(r), 15, 900, 1800) {
+		jsonError(w, "terlalu banyak percobaan. Coba lagi setengah jam lagi, atau hubungi tata usaha sekolah.", http.StatusTooManyRequests)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 2<<10)
+
+	var body struct {
+		Nomor        string `json:"nomor_pendaftaran"`
+		TanggalLahir string `json:"tanggal_lahir"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	nomor := strings.ToUpper(strings.TrimSpace(body.Nomor))
+	lahir := strings.TrimSpace(body.TanggalLahir)
+	if nomor == "" || lahir == "" {
+		jsonError(w, "nomor pendaftaran dan tanggal lahir wajib diisi", http.StatusBadRequest)
+		return
+	}
+	if _, err := time.Parse("2006-01-02", lahir); err != nil {
+		jsonError(w, "tanggal lahir tidak terbaca", http.StatusBadRequest)
+		return
+	}
+
+	var (
+		namaLengkap string
+		tahunAjaran string
+		status      string
+		jalurLabel  *string
+		sudahMurid  bool
+	)
+	err := h.db.QueryRow(r.Context(), `
+		SELECT nama_lengkap, tahun_ajaran, status, jalur_label, santri_id IS NOT NULL
+		FROM pendaftaran_ppdb
+		WHERE upper(nomor_pendaftaran) = $1 AND tanggal_lahir = $2::date
+		LIMIT 1
+	`, nomor, lahir).Scan(&namaLengkap, &tahunAjaran, &status, &jalurLabel, &sudahMurid)
+	if errors.Is(err, pgx.ErrNoRows) {
+		/* Satu pesan untuk "nomor tidak ada" dan "tanggal lahir tidak cocok".
+		 * Membedakan keduanya akan memberi tahu penyisir bahwa nomornya benar dan
+		 * hanya tanggalnya yang perlu ditebak — 365 tebakan alih-alih tak terhingga. */
+		jsonError(w, "pendaftaran tidak ditemukan. Periksa kembali nomor pendaftaran dan tanggal lahirnya.", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		jsonError(w, "gagal memeriksa pendaftaran", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, map[string]any{"data": map[string]any{
+		"nomor_pendaftaran": nomor,
+		"nama_lengkap":      namaLengkap,
+		"tahun_ajaran":      tahunAjaran,
+		"jalur_label":       jalurLabel,
+		"status":            status,
+		"sudah_jadi_murid":  sudahMurid,
+	}})
 }
 
 // ---------------------------------------------------------------------------
@@ -565,6 +710,261 @@ func (h *PpdbHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonOK(w, map[string]any{"data": p})
+}
+
+// ---------------------------------------------------------------------------
+// Diterima → Data Murid
+// ---------------------------------------------------------------------------
+
+// UsulanNomorInduk GET /api/ppdb/usulan-nomor?tahun=2026/2027
+//
+// Mengusulkan nomor induk berikutnya yang belum terpakai, berbentuk tahun pembuka
+// diikuti tiga angka: `2026001`, `2026002`, … mengikuti pola data contoh
+// (`2026041`). Petugas tetap bisa menggantinya; ini hanya menghemat pengetikan dan
+// mencegah tabrakan yang paling sering.
+//
+// Ini USULAN, bukan jaminan. Penjaga sebenarnya indeks unik
+// `santri_nomor_induk_qiroati_unique`; dua petugas yang membuka dialog pada detik
+// yang sama akan menerima usulan yang sama, dan yang kedua ditolak basis data.
+func (h *PpdbHandler) UsulanNomorInduk(w http.ResponseWriter, r *http.Request) {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	tahun := strings.TrimSpace(r.URL.Query().Get("tahun"))
+	prefiks := tahun
+	if len(tahun) >= 4 && angkaSaja.MatchString(tahun[:4]) {
+		prefiks = tahun[:4]
+	}
+	if !angkaSaja.MatchString(prefiks) {
+		jsonError(w, "tahun ajaran tidak terbaca", http.StatusBadRequest)
+		return
+	}
+
+	/* Mengambil angka terbesar di antara nomor induk yang berawalan tahun ini.
+	 * Baris yang sisanya bukan angka diabaikan lewat penyaring `~` — data contoh
+	 * lama memakai bentuk seperti `AFMLOCAL-ANAK-A01` dan tidak boleh membuat
+	 * konversi ini gagal. */
+	var terpakai *int
+	err := h.db.QueryRow(r.Context(), `
+		SELECT max(substring(nomor_induk_qiroati from '^' || $1 || '(\d+)$')::int)
+		FROM santri
+		WHERE nomor_induk_qiroati ~ ('^' || $1 || '\d+$')
+	`, prefiks).Scan(&terpakai)
+	if err != nil {
+		jsonError(w, "gagal menghitung nomor induk", http.StatusInternalServerError)
+		return
+	}
+
+	berikut := 1
+	if terpakai != nil {
+		berikut = *terpakai + 1
+	}
+
+	jsonOK(w, map[string]any{"data": map[string]any{
+		"nomor_induk": fmt.Sprintf("%s%03d", prefiks, berikut),
+	}})
+}
+
+// JadikanMurid POST /api/ppdb/{id}/murid
+//
+// Membuat baris murid dari sebuah pendaftaran, menempatkannya di kelas, lalu
+// menautkan keduanya — seluruhnya dalam SATU transaksi.
+//
+// Kenapa satu transaksi dan bukan tiga panggilan dari browser seperti yang
+// dilakukan panel Data Murid: bila penempatan kelas gagal setelah muridnya dibuat,
+// hasilnya murid tanpa kelas yang pendaftarannya tetap tampak "belum jadi murid" —
+// dan menekan tombolnya lagi akan membuat murid kedua. Di sini kegagalan apa pun
+// membatalkan semuanya.
+//
+// Pembuatan akunnya memakai `insertSantriTx`, fungsi yang sama dipakai
+// POST /api/santri, supaya murid dari PPDB tidak berbeda sedikit pun dari murid
+// yang diketik tangan: baris `auth.users`, `user_profiles`, dan `santri` sekaligus,
+// dengan sandi awal dari NISN.
+func (h *PpdbHandler) JadikanMurid(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if !middleware.CanManage(middleware.RoleFromCtx(ctx)) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	var body struct {
+		NomorInduk string `json:"nomor_induk"`
+		ClassID     string `json:"class_id"`
+		Angkatan    string `json:"angkatan"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+	nomorInduk := strings.TrimSpace(body.NomorInduk)
+	if nomorInduk == "" {
+		jsonError(w, "nomor induk wajib diisi", http.StatusBadRequest)
+		return
+	}
+	if strings.ContainsAny(nomorInduk, " \t\n") {
+		jsonError(w, "nomor induk tidak boleh memuat spasi", http.StatusBadRequest)
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		jsonError(w, "gagal memulai transaksi", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	/* Barisnya dikunci (`FOR UPDATE`) supaya dua petugas yang menekan tombol
+	 * bersamaan tidak sama-sama lolos pemeriksaan "belum jadi murid" dan membuat
+	 * dua murid untuk satu anak. Yang kedua menunggu, lalu melihat santri_id sudah
+	 * terisi dan ditolak. */
+	var p pendaftaranRow
+	p, err = scanPendaftaran(tx.QueryRow(ctx,
+		`SELECT `+pendaftaranKolom+` FROM pendaftaran_ppdb WHERE id = $1 FOR UPDATE`, id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		jsonError(w, "pendaftaran tidak ditemukan", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		jsonError(w, "gagal membaca pendaftaran", http.StatusInternalServerError)
+		return
+	}
+	if p.SantriID != nil {
+		jsonError(w, "pendaftaran ini sudah dicatat sebagai murid", http.StatusConflict)
+		return
+	}
+	// Hanya yang sudah diterima. Mencatat pendaftar yang belum diputuskan sebagai
+	// murid mendahului keputusan seleksi.
+	if p.Status != "diterima" {
+		jsonError(w, "hanya pendaftaran berstatus Diterima yang bisa dijadikan murid", http.StatusBadRequest)
+		return
+	}
+
+	angkatan := strings.TrimSpace(body.Angkatan)
+	if angkatan == "" {
+		angkatan = p.TahunAjaran
+	}
+	// Kolom `santri.angkatan` menuntut bentuk YYYY/YYYY; tahun ajaran sudah
+	// berbentuk itu, tapi pembeli boleh menulisnya bebas di Info Sekolah.
+	if !regexp.MustCompile(`^\d{4}/\d{4}$`).MatchString(angkatan) {
+		angkatan = ""
+	}
+
+	// Bentuk muatannya mengikuti pickSantriProfileFields di dataMasterAdapters.js.
+	profil := map[string]any{
+		"nomor_induk_qiroati": nomorInduk,
+		"nama_lengkap":        p.NamaLengkap,
+		"kategori":            "Anak",
+		"status":              "Aktif",
+		"points":              0,
+	}
+	// Field opsional hanya dikirim bila ada isinya, supaya tidak menimpa kolom
+	// dengan string kosong yang bisa melanggar CHECK format (NISN, misalnya).
+	tetapkan := func(kolom string, nilai *string) {
+		if nilai != nil && strings.TrimSpace(*nilai) != "" {
+			profil[kolom] = strings.TrimSpace(*nilai)
+		}
+	}
+	tetapkan("nisn", p.Nisn)
+	tetapkan("no_nik", p.Nik)
+	tetapkan("tempat_lahir", p.TempatLahir)
+	tetapkan("tanggal_lahir", p.TanggalLahir)
+	tetapkan("alamat", p.Alamat)
+	tetapkan("nama_ayah", p.NamaAyah)
+	tetapkan("nama_ibu", p.NamaIbu)
+	tetapkan("pekerjaan_ayah", p.PekerjaanOrangTua)
+	tetapkan("pekerjaan_ibu", p.PekerjaanOrangTua)
+	tetapkan("email", p.Email)
+	if angkatan != "" {
+		profil["angkatan"] = angkatan
+	}
+	// Nomor orang tua: nomor wali dipakai bila ada, kalau tidak nomor pendaftar.
+	if p.NoHpWali != nil && strings.TrimSpace(*p.NoHpWali) != "" {
+		profil["no_hp_ortu"] = strings.TrimSpace(*p.NoHpWali)
+	} else {
+		profil["no_hp_ortu"] = p.NoHp
+	}
+	if p.JenisKelamin != nil {
+		// Kolom santri menyimpan kata penuh, formulir PPDB menyimpan satu huruf.
+		if *p.JenisKelamin == "L" {
+			profil["jenis_kelamin"] = "Laki-laki"
+		} else if *p.JenisKelamin == "P" {
+			profil["jenis_kelamin"] = "Perempuan"
+		}
+	}
+	// Tanggal pendaftaran = tanggal formulirnya masuk, bukan hari ini.
+	if len(p.CreatedAt) >= 10 {
+		profil["tanggal_pendaftaran"] = p.CreatedAt[:10]
+	}
+	// Kesiapan berkas yang dinyatakan orang tua ikut terbawa.
+	for kunci, kolom := range map[string]string{"kk": "berkas_kk", "akta": "berkas_akta", "foto": "berkas_foto"} {
+		if siap, ok := p.BerkasSiap[kunci].(bool); ok && siap {
+			profil[kolom] = true
+		}
+	}
+
+	murid, err := insertSantriTx(ctx, tx, profil)
+	if err != nil {
+		pesan := err.Error()
+		if strings.Contains(pesan, "santri_nomor_induk_qiroati_unique") {
+			jsonError(w, "nomor induk "+nomorInduk+" sudah dipakai murid lain. Ganti nomornya.", http.StatusConflict)
+			return
+		}
+		if strings.Contains(pesan, "santri_nisn_unique_idx") {
+			jsonError(w, "NISN pendaftar ini sudah tercatat pada murid lain.", http.StatusConflict)
+			return
+		}
+		jsonError(w, "gagal membuat murid: "+pesan, http.StatusBadRequest)
+		return
+	}
+
+	muridID, _ := murid["id"].(string)
+	if muridID == "" {
+		jsonError(w, "gagal membaca id murid baru", http.StatusInternalServerError)
+		return
+	}
+
+	// Penempatan kelas mengikuti alur MoveClass di santri.go: mutasinya dicatat,
+	// bukan hanya kolomnya diperbarui — supaya riwayat kelas murid utuh sejak awal.
+	if strings.TrimSpace(body.ClassID) != "" {
+		pelaku := middleware.UserIDFromCtx(ctx)
+		var pelakuArg any
+		if pelaku != "" {
+			pelakuArg = pelaku
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO class_mutations (santri_id, from_class_id, to_class_id, reason, created_by, mutation_date)
+			VALUES ($1, NULL, $2, $3, $4, now())
+		`, muridID, body.ClassID, "Penerimaan PPDB "+p.NomorPendaftaran, pelakuArg); err != nil {
+			jsonError(w, "gagal mencatat mutasi kelas", http.StatusInternalServerError)
+			return
+		}
+		if _, err := tx.Exec(ctx,
+			`UPDATE santri SET current_class_id = $1 WHERE id = $2`, body.ClassID, muridID); err != nil {
+			jsonError(w, "gagal menempatkan kelas", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE pendaftaran_ppdb SET santri_id = $1 WHERE id = $2`, muridID, id); err != nil {
+		jsonError(w, "gagal menautkan pendaftaran ke murid", http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		jsonError(w, "gagal menyimpan murid baru", http.StatusInternalServerError)
+		return
+	}
+
+	jsonCreated(w, map[string]any{
+		"santri_id":   muridID,
+		"nomor_induk": nomorInduk,
+		"nama":        p.NamaLengkap,
+	})
 }
 
 // Delete DELETE /api/ppdb/{id} — hanya admin.

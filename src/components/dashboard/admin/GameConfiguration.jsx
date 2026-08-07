@@ -648,6 +648,24 @@ const TEMPLATE_FIELDS = [
         description: 'Pesan yang menyertai rincian transaksi pembayaran kepada wali murid.',
         variables: ['nama_santri', 'nomor_induk', 'rincian', 'nominal', 'tanggal', 'periode', 'metode', 'transaction_id', 'status', 'nama_lembaga'],
     },
+    {
+        key: 'ppdbDiverifikasi',
+        title: 'PPDB — Berkas Sudah Diperiksa',
+        description: 'Pesan ke orang tua setelah pendaftaran diperiksa, sebelum hasil seleksi keluar.',
+        variables: ['nama_santri', 'nama_ortu', 'nomor_pendaftaran', 'tahun_ajaran', 'jalur', 'telepon', 'nama_lembaga'],
+    },
+    {
+        key: 'ppdbDiterima',
+        title: 'PPDB — Diterima',
+        description: 'Pesan pengumuman bahwa calon murid diterima, beserta ajakan daftar ulang.',
+        variables: ['nama_santri', 'nama_ortu', 'nomor_pendaftaran', 'tahun_ajaran', 'jalur', 'telepon', 'nama_lembaga'],
+    },
+    {
+        key: 'ppdbDitolak',
+        title: 'PPDB — Tidak Diterima',
+        description: 'Pesan pengumuman bahwa calon murid belum dapat diterima.',
+        variables: ['nama_santri', 'nama_ortu', 'nomor_pendaftaran', 'tahun_ajaran', 'jalur', 'telepon', 'nama_lembaga'],
+    },
 ];
 
 const WhatsAppTemplateSettings = () => {

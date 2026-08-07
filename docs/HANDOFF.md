@@ -247,8 +247,8 @@ Jangan mengikuti kalimat lama itu.
 |---|---|
 | `npm run build` | Hijau, exit 0 |
 | `npm run lint` | Bersih, exit 0 |
-| `npm test` | **123 test hijau** (Vitest 3, 8 berkas) |
-| Guard `scripts/validate-*.ps1` | **5 dari 6 hijau** — lihat catatan di bawah |
+| `npm test` | **145 test hijau** (Vitest 3, 9 berkas) |
+| Guard `scripts/validate-*.ps1` | **6 dari 7 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
 | Login 6 akun | **Terbukti jalan** lewat API |
 | `resolveUser` tahan kegagalan | **Terbukti lewat uji suntik kerusakan** (rename kolom `nisn`) |
@@ -282,10 +282,17 @@ Jangan mengikuti kalimat lama itu.
 | **Info Sekolah (pembeli) di browser** | **Tuntas**: visi, telepon, dan misi disimpan lewat panel → masuk `school_info`, `school_identity` tidak tersentuh, terbaca publik tanpa token; nilai uji sudah dipulihkan |
 | **Pemilih dua warna di browser** | **Tuntas sebagai superadmin**: mode solid menyembunyikan warna kedua dan meratakan seluruh sapuan; hijau→jingga menghasilkan rona 146→124→111→38 tanpa satu pun keluar rentang, `aksen-hangat` rona 38° sama dengan warna akhir (dulu magenta). Tidak disimpan — identitas tersimpan tetap bawaan |
 | **Tampilan ponsel 375px** | **Tuntas, 10 halaman publik** nol geser mendatar; formulir PPDB dari terpotong-tanpa-bilah-geser menjadi satu kolom penuh; panel PPDB dashboard nol elemen keluar layar |
+| **PPDB — Diterima jadi murid** | **Tuntas lewat API + browser**: dialog terisi usulan nomor `2026042` & daftar kelas; tersimpan membuat baris `santri` berisi 16 field yang benar (jenis kelamin jadi "Perempuan", nomor wali diutamakan), `class_mutations` tercatat dengan `from_class_id` NULL, `user_profiles` peran santri dibuat, pendaftaran tertaut |
+| **PPDB — murid baru bisa login** | **Tuntas**: NISN `0011223344` maupun nomor induk `2026042` keduanya menerima token dengan sandi awal NISN |
+| **PPDB — konversi ganda ditolak** | **Tuntas**: penekanan kedua menerima 409 "sudah dicatat sebagai murid"; konversi sebelum status Diterima juga ditolak |
+| **PPDB — pembatas laju** | **Tuntas**: kiriman ke-1 sampai 12 diterima, ke-13 dan ke-14 menerima **429** beserta pesan Indonesia |
+| **PPDB — cek status publik** | **Tuntas di browser tanpa login**: nomor + tanggal lahir benar menampilkan status; tanggal lahir salah menampilkan pesan yang sama dengan nomor tidak ada (tidak membocorkan bahwa nomornya benar) |
+| **PPDB — pesan WhatsApp** | **Tuntas di browser**: `window.open` disadap, tautan `wa.me/6281299887766` dengan pesan lengkap berisi nama ibu, nama anak, nomor pendaftaran, telepon & nama sekolah |
+| **Tampilan ponsel dashboard** | **Tuntas, 19 panel disapu** pada 375px. Dua ditemukan rusak dan diperbaiki (bilah sub-tab Konten 1144px, Pengaturan TV 444px); sapuan ulang nol panel bergeser |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
-Ada **enam** skrip `validate-*.ps1`.
+Ada **tujuh** skrip `validate-*.ps1`.
 `validate-production-migration-local.ps1` selalu gagal dengan "Safe summary tidak
 ditemukan" karena menuntut `_private_reference/migration-work/prepared-production-data/safe-summary.json`
 dan container `supabase_db_*`. Keduanya **tidak ada** di repo maupun di Docker sini —
@@ -596,26 +603,32 @@ Tuntas pada 2026-08-07: **modul PPDB penuh** (migrasi, handler, adapter, panel, 
 **palet dua warna tanpa rona ketiga**, **tab Info Sekolah dan pemilih dua warna diuji klik di
 browser**, dan **tampilan ponsel sepuluh halaman publik**.
 
+Tuntas pada 2026-08-08: **Diterima → Data Murid dalam satu transaksi**, **pembatas laju pada kedua
+endpoint publik**, **halaman cek status publik beserta pesan WhatsApp per status**, dan **sapuan
+ponsel 19 panel dashboard**.
+
 ### Yang masih terbuka
 
 Diurutkan dari yang paling berdampak ke penjualan.
 
-1. **Murid yang Diterima belum otomatis menjadi Data Murid.** Tata usaha harus menyalin ulang dua
-   puluh kolom per anak dengan tangan, atau lewat CSV. Penyambungannya menuntut keputusan yang tidak
-   boleh dikarang: aturan pembentukan nomor induk, dan penempatan kelas awal. Bentuk yang masuk akal:
-   tombol "Jadikan murid" pada pendaftaran berstatus **Diterima** yang membuka dialog berisi kelas
-   dan nomor induk (dengan usulan otomatis), lalu memakai endpoint pembuatan murid yang sudah ada.
-2. **Tidak ada pembatasan laju pada `POST /api/ppdb`.** Endpointnya publik. Pencegah ganda yang ada
-   hanya pencocokan nama + tanggal lahir; seseorang yang mengirim ribuan nama berbeda tetap bisa
-   membanjiri tabelnya. `loginlogs.go` sudah punya pola pencatatan per-IP yang bisa dicontoh.
-3. **Tidak ada pemberitahuan ke pendaftar.** Orang tua hanya melihat nomornya di layar. Tidak ada
-   surel maupun WhatsApp saat status berubah menjadi Diterima atau Tidak diterima, dan tidak ada
-   halaman "cek status pakai nomor pendaftaran". Ketiganya lazim diharapkan pada PPDB sungguhan.
-4. **Pendaftaran lama di `feedbacks` tidak dipindahkan.** Migrasinya sengaja tidak menyentuhnya —
+1. **Pengiriman pemberitahuan masih manual.** Petugas menekan tombol, WhatsApp terbuka, dia menekan
+   kirim. Untuk gelombang berisi 200 pendaftar itu 200 kali. Otomatisasi menuntut gerbang WhatsApp
+   berbayar atau kredensial SMTP yang **harus disediakan pembeli**, plus antrean dan penanganan
+   kegagalan kirim — jangan menambahkannya tanpa keputusan pemilik. Lihat bagian
+   "Pemberitahuan ke orang tua manual".
+2. **Tidak ada kuota daya tampung per kelas atau per jalur.** Tabel `classes` sudah punya kolom
+   `kapasitas` tapi PPDB tidak membacanya, jadi tidak ada yang mencegah penerimaan melebihi kursi
+   yang tersedia, dan tidak ada peringkat otomatis untuk jalur zonasi (jarak) atau prestasi (nilai).
+   Sekolah yang pendaftarnya melebihi daya tampung akan merasakan ini lebih dulu.
+3. **Pendaftaran lama di `feedbacks` tidak dipindahkan.** Migrasinya sengaja tidak menyentuhnya —
    memindahkan berarti mengurai teks bebas, yang bisa salah tanpa bisa dibatalkan. Baris berpenanda
    `[Pendaftaran PPDB …]` tetap terbaca di Pesan Masuk.
-5. **Tampilan ponsel dashboard belum disapu menyeluruh.** Panel PPDB sudah diperiksa pada 375px,
-   tetapi panel lain yang memuat tabel lebar (Rekap SPP, Riwayat Bayar, Rekap Absensi) belum.
+4. **Tidak ada cetak bukti pendaftaran.** Orang tua hanya punya nomor di layar dan pesan WhatsApp.
+   `PaymentStatusPage` sudah memakai `html2canvas` untuk kuitansi; pola yang sama bisa dipakai untuk
+   lembar bukti pendaftaran yang bisa dicetak.
+5. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
+   tapi sekolah besar dengan beberapa gelombang akan melewatinya. Batasnya dicatat di panel, tidak
+   disembunyikan — tapi `paginate()` di `santri.go` adalah pola yang sudah ada bila perlu.
 
 ### `SETUP.md` sekarang dokumen pembeli, bukan dokumen developer
 
@@ -839,8 +852,103 @@ dan ditampilkan apa adanya di formulir. Pemeriksaan di browser (`kurang` di
 `PpdbPage.jsx`) hanya menutup kesalahan yang paling sering, **bukan salinan seluruh
 aturannya** — supaya keduanya tidak bisa berbeda pendapat.
 
-Belum terhubung: murid yang **Diterima** masih harus dicatat ulang di Data Murid
-dengan tangan. Lihat §7.
+### Diterima → Data Murid dikerjakan di SATU transaksi Go, bukan tiga panggilan browser
+
+`POST /api/ppdb/{id}/murid` membuat baris murid, menempatkannya di kelas, dan
+menautkan pendaftarannya sekaligus. Panel Data Murid melakukan hal setara lewat
+**tiga** panggilan terpisah dari browser (`createSantri` → `updateSantri` →
+`moveSantriClass`); di sini tidak boleh begitu, karena bila penempatan kelas gagal
+setelah muridnya dibuat, hasilnya murid tanpa kelas yang pendaftarannya masih
+tampak "belum jadi murid" — dan menekan tombolnya lagi membuat murid **kedua**.
+
+Empat hal yang menjaganya:
+
+- **`insertSantriTx` dipakai ulang**, fungsi yang sama dipanggil `POST /api/santri`.
+  Jadi murid dari PPDB tidak berbeda sedikit pun: baris `auth.users`,
+  `user_profiles`, dan `santri` sekaligus, sandi awal dari NISN. Jangan menyalin
+  logikanya — panggil fungsinya.
+- **`SELECT … FOR UPDATE`** pada barisnya. Dua petugas yang menekan tombol
+  bersamaan tidak sama-sama lolos pemeriksaan "belum jadi murid"; yang kedua
+  menunggu lalu ditolak 409.
+- **`pendaftaran_ppdb.santri_id`** dengan indeks unik parsial. Ini penanda tunggal
+  "sudah jadi murid"; jangan menyimpulkannya dari kesamaan nama, karena nama boleh
+  sama antar anak dan boleh diperbaiki ejaannya setelah dicatat.
+- **Penempatan kelas menulis `class_mutations`**, bukan hanya `current_class_id` —
+  mengikuti `MoveClass` di santri.go, supaya riwayat kelas murid utuh sejak awal.
+
+Nomor induk: `GET /api/ppdb/usulan-nomor` mengembalikan `<tahun><NNN>` berikutnya
+yang belum terpakai (`2026042` setelah data contoh `2026041`). Ia **usulan, bukan
+jaminan** — penjaga sebenarnya indeks unik `santri_nomor_induk_qiroati_unique`, dan
+petugas boleh menggantinya. Penyaring `~ '^<tahun>\d+$'` mengabaikan nomor lama
+berbentuk `AFMLOCAL-ANAK-A01` supaya data contoh lama tidak membuat konversi gagal.
+
+Konversi hanya menerima status `diterima`; mencatat pendaftar yang belum diputuskan
+sebagai murid mendahului keputusan seleksi.
+
+### Pembatas laju memakai RPC yang sudah ada, bukan pencacah di memori
+
+Kedua endpoint publik (`POST /api/ppdb` dan `POST /api/ppdb/cek`) memanggil
+`consume_auth_rate_limit`, RPC yang sudah terpasang sejak
+`20260624001500_rls_helper_functions.sql` tapi **hanya pernah dipakai edge function
+Deno yang sudah mati**. Tidak ada tabel baru.
+
+Kenapa bukan `attemptLimiter` di `loginlogs.go`: pencacah itu di memori, hilang
+setiap kontainer dimuat ulang, dan tidak berlaku lintas proses — catatannya sendiri
+menyebut "move to Postgres or Redis if the backend is ever scaled horizontally".
+RPC-nya memakai `select … for update`, jadi aman terhadap request bersamaan.
+
+| Endpoint | Batas | Blokir |
+|---|---|---|
+| `POST /api/ppdb` | 12 / jam per IP | 30 menit |
+| `POST /api/ppdb/cek` | 15 / 15 menit per IP | 30 menit |
+
+Batas submit dilonggarkan dari bawaan RPC (5) karena satu keluarga wajar
+mendaftarkan beberapa anak dan satu jaringan bisa dipakai banyak orang. Yang mau
+dicegah pembanjiran skrip, bukan orang tua.
+
+Dua hal yang sengaja: **IP di-hash** (`sha256`) karena tabelnya menyimpan `ip_hash`
+dan alamat IP adalah data pribadi; dan **bila RPC-nya gagal, request DIIZINKAN** —
+menolak pendaftaran karena pembatas lajunya sendiri rusak jauh lebih buruk daripada
+melewatkan satu pembatasan.
+
+### Cek status publik: tanggal lahir bukan formalitas
+
+`POST /api/ppdb/cek` menuntut nomor pendaftaran **beserta** tanggal lahir. Nomornya
+berurutan dan mudah diterka, jadi tanpa pasangan kedua siapa pun bisa menyisir
+`PPDB-2026-0001` sampai `9999` dan memanen nama seluruh pendaftar.
+
+Dua keputusan yang menyertainya:
+
+- **Satu pesan untuk "nomor tidak ada" dan "tanggal tidak cocok".** Membedakan
+  keduanya memberi tahu penyisir bahwa nomornya benar dan hanya tanggalnya yang
+  perlu ditebak — 365 tebakan alih-alih tak terhingga.
+- **Muatan balasannya sengaja sedikit**: nomor, nama, tahun ajaran, jalur, status.
+  TIDAK ada NIK, alamat, telepon, maupun `catatan` — catatan itu tulisan internal
+  petugas dan tidak ditulis untuk dibaca orang tua.
+
+Halamannya `src/pages/CekPendaftaranPage.jsx` di rute `/cek-pendaftaran`, tertaut
+dari footer, menu ponsel, dan layar konfirmasi formulir. Ia dirender **tanpa**
+`PublicLayout` sendiri: blok rute publik di `App.jsx` sudah memasangnya.
+
+### Pemberitahuan ke orang tua manual, dan itu bukan kelalaian
+
+Aplikasi ini **tidak punya kemampuan mengirim apa pun**: nol SMTP (tidak ada
+pustaka mail di `go.mod`, tidak ada templat surel, `[local_smtp]` di
+`supabase/config.toml` hanya Inbucket untuk uji lokal), dan `whatsapp.go` hanya
+menyimpan tautan grup — ia tidak mengirim pesan.
+
+Jadi pola yang dipakai sama dengan bukti pembayaran dan kenaikan jilid yang sudah
+ada: tombol menyusun pesan, `wa.me` membuka WhatsApp, petugas menekan kirim. Tiga
+template baru (`ppdbDiverifikasi`, `ppdbDiterima`, `ppdbDitolak`) ada di
+`whatsappTemplateAdapters.js` dan disunting pembeli di Konfigurasi → Pesan WhatsApp.
+
+Bahasanya **netral tanpa salam keagamaan**, berbeda dari tiga template lama yang
+peninggalan sekolah Al-Qur'an — ini template untuk sekolah negeri mana pun. Uji di
+`whatsappTemplateAdapters.test.js` mengunci sifat itu, plus memastikan tidak ada
+penanda `{{…}}` yang lolos belum terisi ke pesan yang terkirim.
+
+Mengirim otomatis menuntut gerbang WhatsApp berbayar atau kredensial SMTP yang
+harus disediakan pembeli. Jangan menambahkannya tanpa keputusan pemilik.
 
 ### Formulir PPDB tidak responsif sama sekali — SUDAH DIPERBAIKI
 
@@ -868,6 +976,30 @@ Span-nya harus dinetralkan juga:
 
 Kesepuluh halaman publik sudah diperiksa pada 375px: tidak ada yang menyisakan
 geser mendatar.
+
+### Dua bilah sub-tab dashboard menarik seluruh halaman ikut bergeser
+
+Disapu pada 375px, **17 dari 19** panel dashboard bersih. Dua tidak:
+
+| Panel | Penyebab | Lebar di layar 375px |
+|---|---|---|
+| Konten | `.admin-segmented-control` (8 sub-tab) | **1144px** → halaman 759px |
+| Pengaturan TV | `.admin-glass-tab-list` | 444px → halaman 409px |
+
+Keduanya `display: inline-flex` tanpa pembungkus yang bisa digeser, jadi bilahnya
+menarik **seluruh halaman** ikut bergeser mendatar — setiap panel di bawahnya juga
+meleset dari layar. Yang benar adalah bilahnya sendiri yang bergeser. Diperbaiki di
+`admin-dashboard.css` dengan `overflow-x: auto` di bawah 900px, `flex: none` pada
+pilnya supaya tidak gepeng, dan bilah gesernya disembunyikan.
+
+Panel bertabel lebar (Rekap SPP, Riwayat Bayar, Rekap Absensi) **sudah punya**
+pembungkus yang bisa digeser sendiri — dugaan sebelumnya di dokumen ini bahwa
+merekalah yang bermasalah ternyata salah.
+
+**Cara mengulang sapuan ini:** ukur `documentElement.scrollWidth >
+clientWidth` setelah mengeklik tiap `[role=tab]`. Jangan mengandalkan pencarian
+elemen lebar saja — elemen yang melampaui layar di dalam pembungkus
+`overflow-x: auto` memang benar dan bukan kerusakan.
 
 ### Yang perlu diperiksa penjual sebelum menyerahkan salinan
 

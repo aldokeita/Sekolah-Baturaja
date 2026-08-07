@@ -81,7 +81,7 @@ Sekali jalan, perintah ini akan:
 
 - membangun API dari kode Go,
 - menyalakan PostgreSQL 16,
-- menerapkan seluruh 54 berkas migrasi database secara berurutan,
+- menerapkan seluruh 56 berkas migrasi database secara berurutan,
 - mengisi data contoh (sekolah, guru, murid, kelas) supaya aplikasi tidak kosong saat pertama dibuka.
 
 Pertama kali biasanya 2–5 menit karena Docker harus mengunduh dan membangun. Periksa keadaannya:
@@ -297,8 +297,42 @@ langkah ketiga formulir hanyalah pernyataan "sudah saya siapkan"; berkas aslinya
 ulang. Ini disengaja — membuka unggahan untuk pengunjung yang tidak dikenal berarti menerima berkas
 dari siapa saja.
 
-Setelah seorang murid **Diterima**, catat dia di **Data Murid** seperti biasa. Kedua menu itu belum
-terhubung otomatis.
+Formulir pendaftaran juga **dibatasi 12 kiriman per jam dari satu jaringan.** Itu untuk mencegah
+pembanjiran otomatis, bukan menghalangi orang tua. Kalau ada yang mengeluh terkena batas — misalnya
+beberapa orang mendaftar dari satu warnet — mereka bisa mencoba lagi setengah jam kemudian, atau
+mendaftar di sekolah.
+
+#### Mencatat murid yang diterima
+
+Pada pendaftaran berstatus **Diterima**, tombol **Jadikan murid** memindahkan seluruh datanya ke Data
+Murid sekaligus: NISN, NIK, tempat dan tanggal lahir, alamat, nama orang tua, dan nomor WhatsApp.
+Anda hanya perlu memeriksa tiga hal di kotak yang muncul:
+
+| Kolom | Keterangan |
+|---|---|
+| **Nomor induk** | sudah diusulkan otomatis dari nomor yang belum terpakai; boleh Anda ganti |
+| **Kelas** | boleh dikosongkan dan ditentukan nanti di Manajemen Kelas |
+| **Angkatan** | terisi dari tahun ajaran |
+
+Akun murid langsung dibuat, dengan **NISN sebagai sandi awal**. Ingatkan orang tua menggantinya.
+
+Satu pendaftaran hanya bisa dijadikan murid **sekali** — setelah itu tombolnya berganti menjadi
+penanda "Sudah jadi murid", jadi satu anak tidak akan tercatat dua kali.
+
+#### Mengabari orang tua
+
+Tombol **Kabari** membuka WhatsApp dengan pesan yang sudah terisi lengkap: nama anak, nomor
+pendaftaran, dan nama sekolah Anda. Isi pesannya berbeda menurut status, dan **semuanya bisa Anda
+ubah** di **Konfigurasi → Pesan WhatsApp** (tiga template: PPDB Berkas Sudah Diperiksa, PPDB
+Diterima, PPDB Tidak Diterima).
+
+**Pengirimannya tidak otomatis.** Aplikasi ini tidak mengirim WhatsApp maupun surel sendiri —
+tombolnya menyiapkan pesan, Anda yang menekan kirim. Ini disengaja: pengiriman otomatis menuntut
+layanan gerbang WhatsApp berbayar yang harus Anda daftarkan sendiri.
+
+Orang tua juga bisa memeriksa sendiri lewat halaman **Cek pendaftaran** (tertaut di footer situs),
+memakai nomor pendaftaran beserta tanggal lahir anaknya. Halaman itu hanya menampilkan status —
+bukan NIK, alamat, maupun catatan verifikasi Anda.
 
 ---
 

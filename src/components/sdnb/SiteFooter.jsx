@@ -38,6 +38,9 @@ const kolomInformasi = (sekolah) => [
   { label: 'Berita', to: '/berita' },
   { label: 'Galeri', to: '/profil/galeri' },
   { label: labelPpdb(sekolah), to: '/pendaftaran' },
+  // Orang tua yang sudah mendaftar butuh jalan kembali; tanpa tautan ini satu-satunya
+  // cara mengetahui hasil adalah menelepon sekolah.
+  { label: 'Cek pendaftaran', to: '/cek-pendaftaran' },
   { label: 'FAQ', to: '/#faq' },
 ];
 

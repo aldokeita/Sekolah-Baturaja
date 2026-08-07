@@ -278,7 +278,9 @@ const PpdbBody = (vals = {}) => {
                   ? "Nama dan tanggal lahir ini sudah terdaftar sebelumnya, jadi pendaftaran tidak digandakan. Nomornya tetap "
                   : "Nomor pendaftaran Anda "}
                 <strong style={{ color: "var(--sekolah-aksen-pekat)" }}>{nomorPendaftaran || "—"}</strong>
-                . Catat nomor ini dan sebutkan saat menghubungi tata usaha atau saat daftar ulang.
+                . Catat nomor ini — dengan nomor itu beserta tanggal lahir ananda, Anda bisa{" "}
+                <a href="/cek-pendaftaran" style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: 700 }}>memeriksa status pendaftaran</a>
+                {" "}kapan saja.
               </p>
               <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <a className="shine" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 24px", borderRadius: "15px", fontSize: "14px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)" }}>Kembali ke beranda</a>

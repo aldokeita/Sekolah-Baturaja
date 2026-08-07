@@ -1,18 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Check, ChevronDown, Download, Inbox, RefreshCw, Search, Trash2, UserCheck, UserX,
+  Check, ChevronDown, Download, GraduationCap, Inbox, MessageCircle, RefreshCw, Search,
+  Trash2, UserCheck, UserX,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import {
   URUTAN_STATUS, fetchPendaftaran, fetchStatistikPpdb, getPpdbErrorMessage,
-  hapusPendaftaran, labelStatus, ubahPendaftaran, unduhCsvPendaftaran,
+  hapusPendaftaran, jadikanMurid, labelStatus, ubahPendaftaran, unduhCsvPendaftaran,
+  usulanNomorInduk,
 } from '@/lib/ppdbAdapters';
 import { fetchPpdbContent } from '@/lib/ppdbContent';
+import { fetchClassList } from '@/lib/dataMasterAdapters';
+import { fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 
 /**
  * Panel Pendaftaran PPDB — tempat tata usaha memverifikasi calon murid.
@@ -70,8 +78,17 @@ const tautanWa = (hp) => {
   return `https://wa.me/62${bersih.replace(/^0+/, '')}`;
 };
 
+/* Template mana yang dipakai untuk tiap status. Status `baru` tidak punya pesan:
+ * belum ada yang bisa dikabarkan. */
+const TEMPLATE_STATUS = {
+  diverifikasi: 'ppdbDiverifikasi',
+  diterima: 'ppdbDiterima',
+  ditolak: 'ppdbDitolak',
+};
+
 const PpdbRegistrations = () => {
   const { role } = useAuth();
+  const sekolah = useSchoolIdentity();
   // Hanya admin yang boleh menghapus; tata usaha memverifikasi dan menolak.
   // Server menerapkan aturan yang sama — ini sekadar tidak memajang tombol mati.
   const bolehHapus = ['admin', 'superadmin'].includes(role);
@@ -94,16 +111,99 @@ const PpdbRegistrations = () => {
    * disunting pembeli dan bisa berubah. Nama bacanya diambil dari isi halaman
    * pendaftaran supaya panel tidak menampilkan id mentah kepada tata usaha. */
   const [namaBerkasPpdb, setNamaBerkasPpdb] = useState({});
+  const [kelasList, setKelasList] = useState([]);
+  const [templatePesan, setTemplatePesan] = useState({});
+
   useEffect(() => {
     let aktif = true;
+    // Ketiganya dimuat sekali dan tidak menghalangi daftar pendaftaran: kalau salah
+    // satu gagal, panel tetap berguna — hanya tombolnya yang kurang lengkap.
     fetchPpdbContent()
       .then((konten) => {
         if (!aktif) return;
         setNamaBerkasPpdb(Object.fromEntries(konten.berkas.map((b) => [b.id, b.name])));
       })
       .catch(() => { /* id mentah tetap terbaca, sekadar kurang ramah */ });
+    fetchClassList({ is_active: true })
+      .then((rows) => { if (aktif) setKelasList(rows || []); })
+      .catch(() => { /* dialog tetap bisa dipakai tanpa memilih kelas */ });
+    fetchWhatsAppTemplates()
+      .then((t) => { if (aktif) setTemplatePesan(t || {}); })
+      .catch(() => { /* tombol WhatsApp disembunyikan bila template tidak ada */ });
     return () => { aktif = false; };
   }, []);
+
+  /* Dialog "Jadikan murid". `pendaftar` null berarti tertutup. */
+  const [dialog, setDialog] = useState(null);
+  const [formMurid, setFormMurid] = useState({ nomorInduk: '', classId: '', angkatan: '' });
+  const [sedangCatat, setSedangCatat] = useState(false);
+
+  const bukaDialogMurid = async (row) => {
+    setDialog(row);
+    setFormMurid({ nomorInduk: '', classId: '', angkatan: row.tahun_ajaran || '' });
+    try {
+      // Usulan diminta saat dialog dibuka, bukan saat panel dimuat: nomor bisa
+      // terpakai oleh petugas lain di antara keduanya.
+      const usulan = await usulanNomorInduk(row.tahun_ajaran);
+      setFormMurid((s) => ({ ...s, nomorInduk: usulan }));
+    } catch {
+      /* dibiarkan kosong; petugas mengisi sendiri */
+    }
+  };
+
+  const simpanMurid = async () => {
+    if (!dialog) return;
+    if (!formMurid.nomorInduk.trim()) {
+      toast({ title: 'Nomor induk belum diisi', variant: 'destructive' });
+      return;
+    }
+    setSedangCatat(true);
+    try {
+      const hasil = await jadikanMurid(dialog.id, formMurid);
+      toast({
+        title: 'Tercatat sebagai murid',
+        description: `${hasil.nama} — nomor induk ${hasil.nomor_induk}. Sandi awalnya NISN murid.`,
+      });
+      setDialog(null);
+      await muat({ diam: true });
+      // Panel Data Murid menyegarkan dirinya lewat peristiwa ini.
+      window.dispatchEvent(new Event('lpq:santri-data-changed'));
+    } catch (error) {
+      toast({ title: 'Gagal mencatat murid', description: getPpdbErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setSedangCatat(false);
+    }
+  };
+
+  /* Membuka WhatsApp dengan pesan yang sudah terisi.
+   *
+   * Pengirimannya TIDAK otomatis — tidak ada gerbang WhatsApp di aplikasi ini.
+   * Petugas menekan tombol, WhatsApp terbuka, dan dia yang menekan kirim. Pola yang
+   * sama dipakai bukti pembayaran dan pemberitahuan kenaikan jilid. */
+  const kabariOrangTua = (row) => {
+    const kunci = TEMPLATE_STATUS[row.status];
+    const template = kunci && templatePesan[kunci];
+    if (!template) {
+      toast({ title: 'Template pesan belum tersedia', description: 'Isi dulu di Konfigurasi → Pesan WhatsApp.', variant: 'destructive' });
+      return;
+    }
+    const nomor = String(row.no_hp_wali || row.no_hp || '').replace(/[^0-9]/g, '');
+    if (!nomor) {
+      toast({ title: 'Tidak ada nomor WhatsApp', description: 'Pendaftaran ini tidak mencantumkan nomor.', variant: 'destructive' });
+      return;
+    }
+    const pesan = renderWhatsAppTemplate(template, {
+      nama_santri: row.nama_lengkap,
+      // Nama ibu lebih sering yang memegang nomor; ayah jadi cadangan.
+      nama_ortu: row.nama_ibu || row.nama_ayah || 'Ayah/Bunda',
+      nomor_pendaftaran: row.nomor_pendaftaran,
+      tahun_ajaran: row.tahun_ajaran,
+      jalur: row.jalur_label || '-',
+      telepon: sekolah.phone,
+      nama_lembaga: sekolah.name,
+    });
+    window.open(`https://wa.me/62${nomor.replace(/^0+/, '')}?text=${encodeURIComponent(pesan)}`, '_blank', 'noopener');
+  };
 
   // Pencarian ditunda supaya tiap ketukan tidak memanggil server.
   useEffect(() => {
@@ -322,6 +422,11 @@ const PpdbRegistrations = () => {
                   </button>
                   <div className="flex flex-none flex-wrap items-center gap-2">
                     <Lencana status={row.status} />
+                    {row.santri_id && (
+                      <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        <GraduationCap className="mr-1 h-3.5 w-3.5" /> Sudah jadi murid
+                      </span>
+                    )}
                     {row.status !== 'diverifikasi' && row.status !== 'diterima' && (
                       <Button type="button" size="sm" variant="outline" disabled={sibuk} onClick={() => ubahStatus(row, 'diverifikasi')}>
                         <Check className="mr-1 h-4 w-4" /> Sudah diperiksa
@@ -330,6 +435,25 @@ const PpdbRegistrations = () => {
                     {row.status !== 'diterima' && (
                       <Button type="button" size="sm" disabled={sibuk} onClick={() => ubahStatus(row, 'diterima')}>
                         <UserCheck className="mr-1 h-4 w-4" /> Terima
+                      </Button>
+                    )}
+                    {/* Hanya yang sudah diterima dan belum tercatat. Server menolak
+                        keduanya juga — ini sekadar tidak memajang tombol mati. */}
+                    {row.status === 'diterima' && !row.santri_id && (
+                      <Button type="button" size="sm" disabled={sibuk} onClick={() => bukaDialogMurid(row)}>
+                        <GraduationCap className="mr-1 h-4 w-4" /> Jadikan murid
+                      </Button>
+                    )}
+                    {TEMPLATE_STATUS[row.status] && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={sibuk}
+                        onClick={() => kabariOrangTua(row)}
+                        title="Membuka WhatsApp dengan pesan yang sudah terisi. Anda yang menekan kirim."
+                      >
+                        <MessageCircle className="mr-1 h-4 w-4" /> Kabari
                       </Button>
                     )}
                     {row.status !== 'ditolak' && (
@@ -427,6 +551,73 @@ const PpdbRegistrations = () => {
         Menampilkan {rows.length} pendaftaran{statistik.total ? ` dari ${statistik.total} total` : ''}.
         Daftar dibatasi 500 baris terbaru; gunakan penyaring bila lebih dari itu.
       </p>
+
+      <Dialog open={!!dialog} onOpenChange={(buka) => { if (!buka) setDialog(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Jadikan murid</DialogTitle>
+            <DialogDescription>
+              {dialog ? `${dialog.nama_lengkap} — ${dialog.nomor_pendaftaran}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="admin-edit-field">
+              <label htmlFor="murid-nomor-induk">Nomor induk</label>
+              <Input
+                id="murid-nomor-induk"
+                value={formMurid.nomorInduk}
+                placeholder="2026001"
+                onChange={(e) => setFormMurid((s) => ({ ...s, nomorInduk: e.target.value }))}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Diusulkan otomatis dari nomor yang belum terpakai. Boleh Anda ganti.
+              </p>
+            </div>
+
+            <div className="admin-edit-field">
+              <label htmlFor="murid-kelas">Kelas</label>
+              <select
+                id="murid-kelas"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={formMurid.classId}
+                onChange={(e) => setFormMurid((s) => ({ ...s, classId: e.target.value }))}
+              >
+                <option value="">Belum ditempatkan</option>
+                {kelasList.map((k) => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
+              </select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Boleh dikosongkan dan ditentukan nanti di Manajemen Kelas.
+              </p>
+            </div>
+
+            <div className="admin-edit-field">
+              <label htmlFor="murid-angkatan">Angkatan</label>
+              <Input
+                id="murid-angkatan"
+                value={formMurid.angkatan}
+                placeholder="2026/2027"
+                onChange={(e) => setFormMurid((s) => ({ ...s, angkatan: e.target.value }))}
+              />
+            </div>
+
+            <div className="admin-card bg-muted/40 p-3 text-xs text-muted-foreground">
+              Seluruh data calon murid ikut dipindahkan: NISN, NIK, tempat & tanggal lahir, alamat,
+              nama orang tua, dan nomor WhatsApp. Akun muridnya langsung dibuat, dengan
+              <strong> NISN sebagai sandi awal</strong>. Data selebihnya bisa dilengkapi di Data Murid.
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDialog(null)} disabled={sedangCatat}>
+              Batal
+            </Button>
+            <Button type="button" onClick={simpanMurid} disabled={sedangCatat}>
+              {sedangCatat ? 'Mencatat…' : 'Catat sebagai murid'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

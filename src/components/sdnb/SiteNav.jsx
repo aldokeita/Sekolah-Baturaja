@@ -54,6 +54,9 @@ const MENU_PONSEL = [
   ...PROFILE_LINKS.filter((l) => l.to !== '/profil'),
   { label: 'Berita', to: '/berita' },
   { label: 'Kontak', to: '/kontak' },
+  // Hanya di menu ponsel dan footer, bukan di baris menu utama: yang membutuhkannya
+  // sudah mendaftar, jadi tidak perlu bersaing tempat dengan tombol Daftar PPDB.
+  { label: 'Cek pendaftaran', to: '/cek-pendaftaran' },
 ];
 
 const SiteNav = () => {

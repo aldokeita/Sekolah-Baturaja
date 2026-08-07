@@ -18,6 +18,7 @@ import NewsPage from '@/pages/NewsPage';
 import FacilitiesPage from '@/pages/FacilitiesPage';
 import ProgramPage from '@/pages/ProgramPage';
 import PpdbPage from '@/pages/PpdbPage';
+import CekPendaftaranPage from '@/pages/CekPendaftaranPage';
 import PrestasiPage from '@/pages/PrestasiPage';
 import EkstrakurikulerPage from '@/pages/EkstrakurikulerPage';
 import DigitalAttendancePage from '@/pages/DigitalAttendancePage';
@@ -199,6 +200,9 @@ function App() {
                         <Route path="/program" element={<ProgramPage />} />
                         <Route path="/prestasi" element={<PrestasiPage />} />
                         <Route path="/ekstrakurikuler" element={<EkstrakurikulerPage />} />
+                        {/* Cek status PPDB pakai nomor pendaftaran. Publik dengan
+                            sengaja — orang tua calon murid tidak punya akun. */}
+                        <Route path="/cek-pendaftaran" element={<CekPendaftaranPage />} />
                       </Routes>
                     </main>
                   </PublicLayout>

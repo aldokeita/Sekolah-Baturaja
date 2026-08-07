@@ -45,6 +45,55 @@ Terima kasih atas kepercayaannya. Semoga menjadi amal jariyah dan keberkahan bag
 
 Wassalamualaikum Warahmatullahi Wabarakatuh,
 *Admin {{nama_lembaga}}*`,
+
+  /* Pemberitahuan hasil PPDB.
+   *
+   * Bahasanya sengaja netral, tanpa salam keagamaan seperti ketiga template di
+   * atas: aplikasi ini template untuk sekolah dasar NEGERI, dan tiga template lama
+   * itu peninggalan sekolah Al-Qur'an. Sekolah yang menginginkannya tinggal
+   * menambahkan sendiri — semuanya disunting pembeli di Konfigurasi → Pesan
+   * WhatsApp.
+   *
+   * Pengirimannya TIDAK otomatis. Tidak ada gerbang WhatsApp maupun SMTP di
+   * aplikasi ini; petugas menekan tombol dan WhatsApp terbuka dengan pesan yang
+   * sudah terisi, pola yang sama dipakai bukti pembayaran dan kenaikan jilid. */
+  ppdbDiterima: `Selamat, {{nama_ortu}}.
+
+Berdasarkan hasil seleksi penerimaan peserta didik baru {{tahun_ajaran}}, ananda *{{nama_santri}}* dinyatakan *DITERIMA* di {{nama_lembaga}}.
+
+Nomor pendaftaran: *{{nomor_pendaftaran}}*
+Jalur: {{jalur}}
+
+Langkah berikutnya adalah daftar ulang di ruang tata usaha. Mohon membawa berkas asli beserta fotokopinya: kartu keluarga, akta kelahiran, dan pas foto.
+
+Bila ada yang ingin ditanyakan, silakan hubungi kami di {{telepon}}.
+
+Terima kasih,
+*Panitia PPDB {{nama_lembaga}}*`,
+
+  ppdbDitolak: `{{nama_ortu}}, terima kasih telah mendaftarkan ananda *{{nama_santri}}* di {{nama_lembaga}}.
+
+Setelah melalui proses seleksi penerimaan peserta didik baru {{tahun_ajaran}}, kami menyampaikan bahwa ananda *belum dapat kami terima* pada tahun ajaran ini.
+
+Nomor pendaftaran: *{{nomor_pendaftaran}}*
+
+Keputusan ini bukan penilaian atas kemampuan ananda, melainkan karena keterbatasan daya tampung. Kami mendoakan ananda mendapatkan sekolah terbaik.
+
+Bila ada yang ingin ditanyakan, silakan hubungi kami di {{telepon}}.
+
+Terima kasih,
+*Panitia PPDB {{nama_lembaga}}*`,
+
+  ppdbDiverifikasi: `{{nama_ortu}}, terima kasih telah mendaftarkan ananda *{{nama_santri}}* di {{nama_lembaga}}.
+
+Pendaftaran dengan nomor *{{nomor_pendaftaran}}* sudah kami terima dan berkasnya sudah kami periksa.
+
+Hasil seleksi akan kami sampaikan sesuai jadwal yang tertera di halaman pendaftaran. Nomor pendaftaran di atas dapat Anda pakai untuk memeriksa status kapan saja.
+
+Bila ada yang ingin ditanyakan, silakan hubungi kami di {{telepon}}.
+
+Terima kasih,
+*Panitia PPDB {{nama_lembaga}}*`,
 });
 
 export const normalizeWhatsAppTemplates = (content) => {
