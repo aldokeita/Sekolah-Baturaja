@@ -15,11 +15,12 @@ const BAWAAN_AKHIR = DEFAULT_SCHOOL_IDENTITY.accentColor2;
 
 /**
  * Yang diuji di sini adalah janji produk: sekolah memilih dua warna (atau satu
- * bila solid), dan seluruh palet halaman publik mengikutinya.
+ * bila solid), dan seluruh palet halaman publik mengikutinya — TANPA memunculkan
+ * warna ketiga yang tidak dipilih siapa pun.
  *
- * Uji terpenting adalah yang pertama — pada pilihan bawaan, palet turunan harus
- * kembali PERSIS ke warna asli desain. Kalau meleset satu digit pun, setiap
- * pemasangan baru berubah tampilannya tanpa ada yang memintanya.
+ * Uji pertama mengunci palet bawaan digit per digit. Kalau meleset, setiap
+ * pemasangan baru berubah tampilannya tanpa ada yang memintanya. Satu nilai
+ * memang sengaja berbeda dari desain aslinya: lihat catatannya di bawah.
  */
 describe('turunkanPalet', () => {
   it('mengembalikan palet asli desain pada pilihan bawaan', () => {
@@ -29,7 +30,11 @@ describe('turunkanPalet', () => {
       'aksen-tengah': '#8a6cf0',
       'aksen-tengah-2': '#a06cf0',
       'aksen-ujung': '#e58fc4',
-      'aksen-hangat': '#f0a06c',
+      /* Desain aslinya jingga (#f0a06c) — warna KETIGA, di luar dua warna yang
+       * dipilih sekolah. Sekarang merah muda yang lebih dalam: rona yang sama
+       * dengan `aksen-ujung`, hanya lebih pekat. Lihat `describe('dua warna
+       * saja')` untuk alasan lengkapnya. */
+      'aksen-hangat': '#f06cbd',
       'aksen-muda': '#a5b4fc',
       'aksen-samar': '#c7d2fe',
       'aksen-rgb': '100 112 255',
@@ -74,8 +79,8 @@ describe('turunkanPalet', () => {
       expect(palet['aksen-tengah']).toBe('#12a150');
       expect(palet['aksen-tengah-2']).toBe('#12a150');
       expect(palet['aksen-ujung']).toBe('#12a150');
-      // Warna jingga di luar rentang juga tidak diputar: sekolah memilih satu warna.
-      expect(palet['aksen-hangat']).toBe('#12a150');
+      // Warna kedua yang diabaikan tidak boleh menyisakan jejak jingga sedikit pun.
+      expect(palet['aksen-hangat']).not.toMatch(/^#f/);
     });
 
     it('tetap membedakan tint supaya perannya tidak hilang', () => {
@@ -109,18 +114,45 @@ describe('turunkanPalet', () => {
     });
   });
 
-  /* Warna "hangat" adalah pasangan gradasi terakhir. Ronanya melanjutkan arah
-   * sapuan, tapi kejenuhan dan terangnya mengikuti warna akhir — kalau keduanya
-   * ikut diekstrapolasi, warnanya jadi kusam. */
-  it('menjaga warna hangat tetap sepekat warna akhir', () => {
-    const kejenuhan = (hex) => {
+  /* Sekolah memilih DUA warna, jadi palet tidak boleh memunculkan warna ketiga.
+   *
+   * `aksen-hangat` dulu melanggar ini: ronanya melanjutkan arah sapuan melewati
+   * warna akhir, sehingga gradasi hijau→jingga menghasilkan magenta di sembilan
+   * titik dekoratif — warna yang tidak dipilih siapa pun. Sekarang ronanya sama
+   * dengan warna akhir; yang berbeda hanya kedalamannya, supaya gradasi
+   * `aksen-ujung → aksen-hangat` tidak tampak rata. */
+  describe('dua warna saja', () => {
+    const rona = (hex) => {
       const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-      const mx = Math.max(r, g, b); const mn = Math.min(r, g, b); const l = (mx + mn) / 2;
-      if (mx === mn) return 0;
-      return l > 0.5 ? (mx - mn) / (2 - mx - mn) : (mx - mn) / (mx + mn);
+      const mx = Math.max(r, g, b); const mn = Math.min(r, g, b); const beda = mx - mn;
+      if (beda === 0) return null;
+      let h = mx === r ? ((g - b) / beda) % 6 : mx === g ? (b - r) / beda + 2 : (r - g) / beda + 4;
+      h *= 60;
+      return h < 0 ? h + 360 : h;
     };
-    const palet = turunkanPalet('#12a150', '#f59e0b');
-    expect(kejenuhan(palet['aksen-hangat'])).toBeGreaterThan(kejenuhan(palet['aksen-ujung']) * 0.8);
+    // Selisih rona terpendek pada roda 0–360.
+    const jarakRona = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
+
+    it.each([
+      ['#6470ff', '#e58fc4'],
+      ['#12a150', '#f59e0b'],
+      ['#ef4444', '#a855f7'],
+      ['#0ea5e9', '#14b8a6'],
+    ])('menjaga rona aksen-hangat sama dengan warna akhir (%s → %s)', (awal, akhir) => {
+      const palet = turunkanPalet(awal, akhir);
+      // Toleransi 2° untuk pembulatan ke heks delapan-bit.
+      expect(jarakRona(rona(palet['aksen-hangat']), rona(akhir))).toBeLessThanOrEqual(2);
+    });
+
+    it('menjaga warna hangat lebih dalam dari warna akhir supaya gradasinya tidak rata', () => {
+      const terang = (hex) => {
+        const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+        return (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+      };
+      const palet = turunkanPalet('#12a150', '#f59e0b');
+      expect(palet['aksen-hangat']).not.toBe(palet['aksen-ujung']);
+      expect(terang(palet['aksen-hangat'])).toBeLessThan(terang(palet['aksen-ujung']));
+    });
   });
 
   it('menjaga bentuk keluaran tetap heks enam digit dan kanal rgb', () => {

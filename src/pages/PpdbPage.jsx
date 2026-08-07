@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import PpdbBody from '@/components/sdnb/generated/PpdbBody';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
-import { submitPublicFeedback } from '@/lib/publicContentAdapters';
+import { kirimPendaftaran } from '@/lib/ppdbAdapters';
 import { DEFAULT_PPDB_CONTENT, fetchPpdbContent, isiPenanda } from '@/lib/ppdbContent';
 import { tahunAjaranAwal } from '@/lib/schoolIdentity';
 import '@/styles/sdnb.css';
@@ -16,9 +16,17 @@ import '@/styles/sdnb.css';
  * pickers, the document checklist, the review table, the agreement checkbox,
  * and the 1.5s localStorage draft autosave under the same key.
  *
- * Backend wiring: there is no PPDB endpoint yet, so submitting posts a formatted
- * registration summary to the existing public feedback endpoint — the school
- * receives it in the dashboard instead of it going nowhere.
+ * Penyambungan backend: POST /api/ppdb, tersimpan sebagai baris tersendiri di
+ * `pendaftaran_ppdb` dan dikelola tata usaha di panel Pendaftaran PPDB.
+ *
+ * Sebelumnya seluruh isian diratakan menjadi satu paragraf lalu dikirim ke
+ * endpoint pesan pengunjung. Tiga akibatnya diperbaiki di sini:
+ *
+ *   1. Pengiriman tidak ditunggu (`kirim()` tanpa await) dan galatnya ditelan
+ *      diam-diam, jadi layar "terkirim" muncul walau tidak ada data yang masuk.
+ *   2. Tidak ada satu pun pemeriksaan isian — formulir kosong pun bisa dikirim.
+ *   3. Nomor pendaftaran yang ditunjukkan dikarang di markup dan sama untuk
+ *      semua orang.
  */
 
 const DRAFT_KEY = 'snb-ppdb-draft-v1';
@@ -56,6 +64,10 @@ const PpdbPage = () => {
   const [setuju, setSetuju] = useState(false);
   const [done, setDone] = useState(false);
   const [restored, setRestored] = useState(false);
+  const [mengirim, setMengirim] = useState(false);
+  const [pesanGalat, setPesanGalat] = useState('');
+  // Diisi server setelah pendaftaran tersimpan; ditunjukkan di layar terakhir.
+  const [hasil, setHasil] = useState(null);
 
   // Uncontrolled inputs write straight into this object, exactly like the
   // mockup's `this.data` — no re-render while typing.
@@ -87,7 +99,11 @@ const PpdbPage = () => {
           setMinat(saved.state.minat ?? '');
           setFiles(saved.state.files ?? {});
           setSetuju(!!saved.state.setuju);
-          setDone(!!saved.state.done);
+          // `hasil` ikut disimpan supaya nomor pendaftaran tidak hilang bila orang
+          // tua menutup lalu membuka lagi halaman konfirmasinya. Tanpa itu, layar
+          // "terkirim" kembali muncul tanpa nomor apa pun.
+          setHasil(saved.state.hasil ?? null);
+          setDone(!!saved.state.done && !!saved.state.hasil);
         }
       }
     } catch { /* ignore unreadable drafts */ }
@@ -101,14 +117,14 @@ const PpdbPage = () => {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify({
           data: data.current,
-          state: { step, gender, jalur, minat, files, setuju, done },
+          state: { step, gender, jalur, minat, files, setuju, done, hasil },
         }));
       } catch { /* storage may be unavailable */ }
     };
     const id = setInterval(save, 1500);
     window.addEventListener('beforeunload', save);
     return () => { clearInterval(id); window.removeEventListener('beforeunload', save); };
-  }, [restored, step, gender, jalur, minat, files, setuju, done]);
+  }, [restored, step, gender, jalur, minat, files, setuju, done, hasil]);
 
   const go = useCallback((n) => { setStep(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
 
@@ -122,26 +138,65 @@ const PpdbPage = () => {
   const tahunAjaran = sekolah.academicYear;
   const tahunAwal = tahunAjaranAwal(tahunAjaran);
 
+  /**
+   * Mengirim pendaftaran, lalu berpindah ke layar terakhir HANYA bila server
+   * menerimanya.
+   *
+   * Server memeriksa ulang seluruh isian dan pesan galatnya berbahasa Indonesia,
+   * jadi ia ditampilkan apa adanya — tidak perlu menyalin aturan yang sama ke
+   * browser dan mempertaruhkan keduanya berbeda. Pemeriksaan di browser hanya
+   * mengurangi perjalanan bolak-balik untuk kesalahan yang paling sering; lihat
+   * `kurang` di bawah.
+   */
   const kirim = async () => {
-    const ringkas = [
-      `Nama: ${v('nama')}`, `NISN: ${v('nisn')}`, `NIK: ${v('nik')}`,
-      `TTL: ${v('tempat')}, ${v('lahir')}`,
-      `Jenis kelamin: ${gender === 'L' ? 'Laki-laki' : gender === 'P' ? 'Perempuan' : '—'}`,
-      `Alamat: ${v('alamat')}`, `WhatsApp: ${v('hp')}`, `Email: ${v('email')}`,
-      `Asal TK/RA: ${v('sekolah')} (NPSN ${v('npsn')})`, `Usia per 1 Juli ${tahunAwal}: ${v('nilai')}`,
-      `Jalur: ${jalurLabel}`, `Program pendukung: ${minat || '—'}`,
-      `Ayah: ${v('ayah')} · Ibu: ${v('ibu')} · Pekerjaan: ${v('kerja')} · HP wali: ${v('hpwali')}`,
-      `Berkas terunggah: ${Object.keys(files).filter((k) => files[k]).length} dari 4`,
-    ].join('\n');
+    setMengirim(true);
+    setPesanGalat('');
     try {
-      await submitPublicFeedback({
-        nama: d.nama?.trim() || 'Pendaftar PPDB',
-        email: d.email?.trim() || '',
-        no_hp: d.hp?.trim() || '',
-        pesan: `[Pendaftaran PPDB ${tahunAjaran}]\n${ringkas}`,
+      const hasilKirim = await kirimPendaftaran({
+        tahun_ajaran: tahunAjaran,
+        nama_lengkap: d.nama || '',
+        nisn: d.nisn || '',
+        nik: d.nik || '',
+        tempat_lahir: d.tempat || '',
+        tanggal_lahir: d.lahir || '',
+        jenis_kelamin: gender,
+        alamat: d.alamat || '',
+        no_hp: d.hp || '',
+        email: d.email || '',
+        sekolah_asal: d.sekolah || '',
+        npsn_asal: d.npsn || '',
+        usia_keterangan: d.nilai || '',
+        jalur,
+        jalur_label: jalurLabel === '—' ? '' : jalurLabel,
+        minat,
+        nama_ayah: d.ayah || '',
+        nama_ibu: d.ibu || '',
+        pekerjaan_orang_tua: d.kerja || '',
+        no_hp_wali: d.hpwali || '',
+        berkas_siap: Object.fromEntries(Object.entries(files).filter(([, siap]) => siap)),
       });
-    } catch { /* the confirmation panel still shows; draft stays in storage */ }
+      setHasil(hasilKirim);
+      setDone(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      setPesanGalat(error.message || 'Gagal mengirim pendaftaran. Periksa sambungan lalu coba lagi.');
+    } finally {
+      setMengirim(false);
+    }
   };
+
+  /* Kolom wajib yang bisa diperiksa tanpa memanggil server. Isinya sengaja hanya
+   * yang PASTI ditolak server — bukan salinan seluruh aturannya — supaya keduanya
+   * tidak bisa berbeda pendapat. */
+  const kurang = (() => {
+    if (!String(d.nama || '').trim()) return 'Nama lengkap belum diisi.';
+    if (!d.lahir) return 'Tanggal lahir belum diisi.';
+    if (!gender) return 'Jenis kelamin belum dipilih.';
+    if (!String(d.alamat || '').trim()) return 'Alamat tempat tinggal belum diisi.';
+    if (!String(d.hp || '').trim()) return 'Nomor WhatsApp belum diisi.';
+    if (!String(d.ayah || '').trim() && !String(d.ibu || '').trim()) return 'Nama ayah atau ibu belum diisi.';
+    return '';
+  })();
 
   const vals = {
     h: handlers.current,
@@ -193,7 +248,9 @@ const PpdbPage = () => {
       const on = !!files[k];
       return {
         label,
-        note: on ? `Terunggah · ${label.toLowerCase()}.pdf` : note,
+        // Dulu berbunyi "Terunggah · kartu-keluarga.pdf" — nama berkas karangan
+        // untuk unggahan yang tidak pernah terjadi.
+        note: on ? 'Sudah disiapkan' : note,
         toggle: () => setFiles((s) => ({ ...s, [k]: !s[k] })),
         style: `position:relative;overflow:hidden;display:flex;gap:13px;align-items:center;padding:16px;border-radius:16px;cursor:pointer;transition:all .2s ease;border:1px dashed ${on ? 'rgba(110,200,180,.7)' : 'rgba(140,148,190,.45)'};background:rgba(255,255,255,${on ? '.72' : '.45'});box-shadow:inset 0 1px 0 rgba(255,255,255,.9)`,
         icon: `flex:none;width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;background:${on ? 'linear-gradient(140deg,#8ee6c4,#6fd0e8)' : 'linear-gradient(140deg,#b9c4ff,#8b9bff)'};box-shadow:inset 0 1px 0 rgba(255,255,255,.8)`,
@@ -210,7 +267,10 @@ const PpdbPage = () => {
       { k: `Usia per 1 Juli ${tahunAwal}`, v: v('nilai') },
       { k: 'Jalur pendaftaran', v: jalurLabel },
       { k: 'Program pendukung', v: minat || '—' },
-      { k: 'Berkas terunggah', v: `${Object.keys(files).filter((k) => files[k]).length} dari 4` },
+      // "dari 4" dulu ditulis tetap, padahal daftar berkas disunting pembeli dan
+      // bisa berisi berapa pun barisnya. Dan yang dicentang adalah KESIAPAN berkas,
+      // bukan berkas terunggah — halaman publik tidak menerima unggahan.
+      { k: 'Berkas yang disiapkan', v: `${Object.keys(files).filter((k) => files[k]).length} dari ${ppdb.berkas.length}` },
     ],
 
     isStep1: step === 1 && !done,
@@ -219,20 +279,31 @@ const PpdbPage = () => {
     isStep4: step === 4 && !done,
     isDone: done,
 
+    // Hasil dari server: nomor pendaftaran sungguhan, dan penanda bila pendaftaran
+    // ini sudah pernah masuk (orang tua menekan kirim dua kali).
+    nomorPendaftaran: hasil?.nomor_pendaftaran || '',
+    sudahTerdaftar: !!hasil?.duplikat,
+    pesanGalat,
+
     progressStyle: `height:100%;width:${pct}%;border-radius:99px;background:linear-gradient(90deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 55%,#f090c0);transition:width .5s cubic-bezier(.3,.8,.3,1);box-shadow:0 0 12px rgba(120,132,255,.6)`,
-    stepCounter: done ? '' : (step === 4 && !setuju) ? 'Centang pernyataan untuk mengirim' : `Langkah ${step} dari 4`,
-    nextLabel: step === 4 ? 'Kirim pendaftaran' : 'Lanjut',
-    nextStyle: `position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;padding:14px 24px;border-radius:15px;border:0;font-family:inherit;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung));box-shadow:0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6);transition:opacity .2s ease;cursor:${step === 4 && !setuju ? 'not-allowed' : 'pointer'};opacity:${step === 4 && !setuju ? '.42' : '1'}`,
+    stepCounter: done ? '' : mengirim ? 'Mengirim pendaftaran…'
+      : (step === 4 && !setuju) ? 'Centang pernyataan untuk mengirim'
+        : (step === 4 && kurang) ? kurang
+          : `Langkah ${step} dari 4`,
+    nextLabel: step === 4 ? (mengirim ? 'Mengirim…' : 'Kirim pendaftaran') : 'Lanjut',
+    // Tombol dimatikan juga selagi mengirim, supaya satu pendaftaran tidak dikirim
+    // dua kali karena tombolnya ditekan berulang.
+    nextStyle: `position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;padding:14px 24px;border-radius:15px;border:0;font-family:inherit;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung));box-shadow:0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6);transition:opacity .2s ease;cursor:${step === 4 && (!setuju || mengirim) ? 'not-allowed' : 'pointer'};opacity:${step === 4 && (!setuju || mengirim) ? '.42' : '1'}`,
     navStyle: `position:relative;margin-top:30px;padding-top:22px;border-top:1px solid rgba(255,255,255,.75);display:${done ? 'none' : 'flex'};align-items:center;gap:14px`,
     prevStyle: `position:relative;overflow:hidden;padding:14px 22px;border-radius:15px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;color:#33375a;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 rgba(255,255,255,.95);opacity:${step === 1 ? '.4' : '1'};pointer-events:${step === 1 ? 'none' : 'auto'}`,
 
     prev: () => go(Math.max(1, step - 1)),
+    // Layar "terkirim" hanya muncul setelah server menerimanya — lihat kirim().
     next: () => {
       if (step === 4) {
-        if (!setuju) return;
+        if (!setuju || mengirim) return;
+        if (kurang) { setPesanGalat(kurang); return; }
         kirim();
-        setDone(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else go(step + 1);
     },
 
@@ -244,6 +315,7 @@ const PpdbPage = () => {
       data.current = { ...EMPTY };
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
       setStep(1); setDone(false); setGender(''); setJalur('zonasi'); setMinat(''); setFiles({}); setSetuju(false);
+      setHasil(null); setPesanGalat('');
       document.querySelectorAll('input').forEach((el) => { if (el.type !== 'button') el.value = ''; });
     },
   };

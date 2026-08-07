@@ -202,8 +202,8 @@ const PpdbContentSettings = () => {
       </Bagian>
 
       <Bagian
-        judul="Berkas yang Diunggah"
-        keterangan="Daftar unggahan pada langkah ketiga formulir."
+        judul="Berkas yang Disiapkan"
+        keterangan="Daftar centang pada langkah ketiga formulir. Pendaftar menyatakan berkas mana yang sudah siap — berkasnya tidak diunggah, tapi dibawa saat daftar ulang."
         tombol={(
           <Button type="button" size="sm" variant="outline" onClick={() => tambah('berkas', { id: '', name: '', hint: '' })}>
             <Plus className="mr-1 h-4 w-4" /> Tambah berkas
@@ -218,8 +218,8 @@ const PpdbContentSettings = () => {
                 <Input id={`ppdb-berkas-nama-${i}`} value={b.name} placeholder="Kartu keluarga" onChange={(e) => ubahBaris('berkas', i, 'name', e.target.value)} />
               </div>
               <div className="admin-edit-field">
-                <label htmlFor={`ppdb-berkas-hint-${i}`}>Petunjuk format</label>
-                <Input id={`ppdb-berkas-hint-${i}`} value={b.hint} placeholder="JPG atau PDF, maks 2 MB" onChange={(e) => ubahBaris('berkas', i, 'hint', e.target.value)} />
+                <label htmlFor={`ppdb-berkas-hint-${i}`}>Keterangan</label>
+                <Input id={`ppdb-berkas-hint-${i}`} value={b.hint} placeholder="Fotokopi, dibawa saat daftar ulang" onChange={(e) => ubahBaris('berkas', i, 'hint', e.target.value)} />
               </div>
             </div>
           </Baris>

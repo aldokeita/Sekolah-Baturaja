@@ -34,6 +34,8 @@ dibongkar tanpa instruksi baru.
 | Email admin | Pindah ke `admin@sdnbaturaja.sch.id` | Konsisten dengan tiga akun staf lain |
 | **Identitas sekolah** | **Dikustomisasi dari dashboard, jangan ditanam di kode** | Aplikasi ini **template yang akan dijual**; pembeli mengganti identitasnya sendiri |
 | **Peran `superadmin`** | **Hanya superadmin boleh mengubah identitas website**; admin (pembeli) bebas mengelola konten | Penjual memegang identitas produk, pembeli memegang isi administrasi sekolah |
+| **PPDB** | **Modul sungguhan dengan tabel dan panelnya sendiri**, bukan lagi dititipkan ke `feedbacks` | Pendaftaran punya siklus hidup dan 20 kolom; pesan pengunjung tidak punya satu pun |
+| **Warna sekolah** | **Dua warna saja** (atau satu bila solid). Palet tidak boleh memunculkan rona ketiga | Sekolah memilih dua warna; warna ketiga yang diturunkan mendarat di rona yang tidak dipilih siapa pun |
 
 ### Dua tingkat izin: superadmin vs admin
 
@@ -245,8 +247,8 @@ Jangan mengikuti kalimat lama itu.
 |---|---|
 | `npm run build` | Hijau, exit 0 |
 | `npm run lint` | Bersih, exit 0 |
-| `npm test` | **40 test hijau** (Vitest 3, 3 berkas) |
-| Guard `scripts/validate-*.ps1` | **4 dari 5 hijau** — lihat catatan di bawah |
+| `npm test` | **123 test hijau** (Vitest 3, 8 berkas) |
+| Guard `scripts/validate-*.ps1` | **5 dari 6 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
 | Login 6 akun | **Terbukti jalan** lewat API |
 | `resolveUser` tahan kegagalan | **Terbukti lewat uji suntik kerusakan** (rename kolom `nisn`) |
@@ -270,18 +272,33 @@ Jangan mengikuti kalimat lama itu.
 | **Bentrok jam jadwal** | **Tuntas, 6 kasus batas**, lewat `scripts/validate-jadwal-bentrok.ps1` yang dapat diulang |
 | **Penyaring jadwal guru & murid** | **Tuntas lewat API**: `guru_id` mengembalikan 2 jadwal guru itu, `class_id` mengembalikan 1 jadwal kelas beserta nama gurunya |
 | Tampilan `JadwalSaya` di dashboard guru/murid | **Belum dilihat** — menuntut login sebagai peran itu |
+| **PPDB — validasi server** | **Tuntas lewat API, 10 kasus**: nama <3 huruf, tanpa jenis kelamin, tanggal lahir kosong/masa depan, NISN 5 angka, NIK 10 angka, email ngawur, HP terlalu pendek, alamat kosong, NISN ganda — semuanya ditolak dengan pesan Indonesia |
+| **PPDB — penjagaan peran** | **Tuntas lewat API**: tanpa token 403 pada daftar & statistik, guru 403, tata usaha 200 menyunting tapi **403 menghapus**, admin 200 |
+| **PPDB — kirim ganda** | **Tuntas**: pengiriman kedua mengembalikan id & nomor yang sama, `duplikat: true`, tanpa baris kedua |
+| **PPDB — nomor & normalisasi** | **Tuntas**: `PPDB-2026-0001…0003` berurutan; `+62 812-3456-7890` dan `6281377778888` tersimpan `081234567890` / `081377778888` |
+| **PPDB — formulir publik di browser** | **Tuntas**: keempat langkah diisi, formulir kosong ditolak dengan spanduk galat, kirim berhasil menampilkan **nomor asli dari server**, seluruh 20 kolom terbukti masuk kolomnya masing-masing di DB |
+| **PPDB — panel di browser** | **Tuntas**: kartu ringkasan, penyaring tahun & status, rincian terbuka, simpan catatan (PUT), ubah status, cacah ikut berubah, nama berkas terbaca, CSV berisi 21 kolom |
+| **PPDB — jejak keputusan** | **Tuntas**: menyunting catatan saja TIDAK menyentuh `diproses_pada`; mengubah status mencatat pelaku & waktu |
+| **Info Sekolah (pembeli) di browser** | **Tuntas**: visi, telepon, dan misi disimpan lewat panel → masuk `school_info`, `school_identity` tidak tersentuh, terbaca publik tanpa token; nilai uji sudah dipulihkan |
+| **Pemilih dua warna di browser** | **Tuntas sebagai superadmin**: mode solid menyembunyikan warna kedua dan meratakan seluruh sapuan; hijau→jingga menghasilkan rona 146→124→111→38 tanpa satu pun keluar rentang, `aksen-hangat` rona 38° sama dengan warna akhir (dulu magenta). Tidak disimpan — identitas tersimpan tetap bawaan |
+| **Tampilan ponsel 375px** | **Tuntas, 10 halaman publik** nol geser mendatar; formulir PPDB dari terpotong-tanpa-bilah-geser menjadi satu kolom penuh; panel PPDB dashboard nol elemen keluar layar |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
-Ada **lima** skrip `validate-*.ps1`, bukan empat seperti tercatat sebelumnya.
+Ada **enam** skrip `validate-*.ps1`.
 `validate-production-migration-local.ps1` selalu gagal dengan "Safe summary tidak
 ditemukan" karena menuntut `_private_reference/migration-work/prepared-production-data/safe-summary.json`
 dan container `supabase_db_*`. Keduanya **tidak ada** di repo maupun di Docker sini —
 skrip itu validator gladi resik migrasi produksi, bukan guard harian.
 
-Menjalankan kelimanya dalam satu loop akan berhenti di skrip ini dan
+Menjalankan semuanya dalam satu loop akan berhenti di skrip ini dan
 `validate-seed-dummy-only.ps1` tak pernah ikut terjalankan. Jalankan satu per satu,
 atau lewati yang produksi.
+
+**`validate-migration-order.ps1` memasang daftar nama migrasi secara literal.**
+Menambah migrasi baru berarti menambahkan namanya ke `$expectedNames` di skrip itu,
+kalau tidak guard-nya gagal dengan "Expected N migration files, found N+1". Ini
+kejadian nyata saat `20260807000100_pendaftaran_ppdb.sql` ditambahkan.
 
 Verifikasi statis untuk NISN/Angkatan: field form (`SantriManagement.jsx:1132`) → validasi regex
 (`:677`, `:683`) → normalisasi adapter (`dataMasterAdapters.js:52`) → allowlist handler
@@ -575,6 +592,31 @@ Form Identitas dan Isi Halaman Depan **sudah diuji klik**, bukan hanya jalur dat
 menambah kartu, dan menghapus kartu semuanya tersimpan dan tampil di halaman depan; identitas berlaku
 seketika tanpa muat ulang dan bertahan setelah dimuat ulang penuh.
 
+Tuntas pada 2026-08-07: **modul PPDB penuh** (migrasi, handler, adapter, panel, formulir tersambung),
+**palet dua warna tanpa rona ketiga**, **tab Info Sekolah dan pemilih dua warna diuji klik di
+browser**, dan **tampilan ponsel sepuluh halaman publik**.
+
+### Yang masih terbuka
+
+Diurutkan dari yang paling berdampak ke penjualan.
+
+1. **Murid yang Diterima belum otomatis menjadi Data Murid.** Tata usaha harus menyalin ulang dua
+   puluh kolom per anak dengan tangan, atau lewat CSV. Penyambungannya menuntut keputusan yang tidak
+   boleh dikarang: aturan pembentukan nomor induk, dan penempatan kelas awal. Bentuk yang masuk akal:
+   tombol "Jadikan murid" pada pendaftaran berstatus **Diterima** yang membuka dialog berisi kelas
+   dan nomor induk (dengan usulan otomatis), lalu memakai endpoint pembuatan murid yang sudah ada.
+2. **Tidak ada pembatasan laju pada `POST /api/ppdb`.** Endpointnya publik. Pencegah ganda yang ada
+   hanya pencocokan nama + tanggal lahir; seseorang yang mengirim ribuan nama berbeda tetap bisa
+   membanjiri tabelnya. `loginlogs.go` sudah punya pola pencatatan per-IP yang bisa dicontoh.
+3. **Tidak ada pemberitahuan ke pendaftar.** Orang tua hanya melihat nomornya di layar. Tidak ada
+   surel maupun WhatsApp saat status berubah menjadi Diterima atau Tidak diterima, dan tidak ada
+   halaman "cek status pakai nomor pendaftaran". Ketiganya lazim diharapkan pada PPDB sungguhan.
+4. **Pendaftaran lama di `feedbacks` tidak dipindahkan.** Migrasinya sengaja tidak menyentuhnya —
+   memindahkan berarti mengurai teks bebas, yang bisa salah tanpa bisa dibatalkan. Baris berpenanda
+   `[Pendaftaran PPDB …]` tetap terbaca di Pesan Masuk.
+5. **Tampilan ponsel dashboard belum disapu menyeluruh.** Panel PPDB sudah diperiksa pada 375px,
+   tetapi panel lain yang memuat tabel lebar (Rekap SPP, Riwayat Bayar, Rekap Absensi) belum.
+
 ### `SETUP.md` sekarang dokumen pembeli, bukan dokumen developer
 
 Isinya ditulis untuk orang yang membeli template dan belum pernah melihat kodenya: pemasangan,
@@ -623,23 +665,42 @@ kerusakan nyata yang sudah terjadi:
   memakai `+12,2` terang, yang hanya memucat bila aksennya sudah terang; pada
   hijau tua hasilnya hijau menyala, padahal kedua nilai itu dipakai sebagai latar
   lembut kartu guru dan mosaik fasilitas.
-- **`lanjutan`** untuk warna hangat: ronanya melanjutkan arah sapuan, tapi
-  kejenuhan dan terangnya mengikuti warna akhir. Sudut tetap `+60°` pernah dipakai
-  dan pada gradasi hijau→jingga mendarat di hijau limau menyala; mengekstrapolasi
-  kejenuhan sekalian membuatnya kusam.
+- **`dariAkhir`** untuk `aksen-hangat`: rona SAMA dengan warna akhir, hanya lebih
+  pekat dan sedikit lebih dalam. Lihat "Dua warna berarti dua rona" di bawah.
 
-**Keterbatasan yang diketahui:** warna hangat adalah warna kedua belas dari desain
-asli dan tetap merupakan rona KETIGA, sedangkan sekolah hanya memilih dua. Pada
-pasangan yang berjarak jauh ia bisa mendarat di warna yang mengejutkan — hijau →
-jingga menghasilkan magenta. Ia hanya dipakai pada sembilan pasangan gradasi
-dekoratif. Kalau ketaatan dua-warna lebih penting daripada tampilan bawaan,
-ganti kesembilan pasangan itu menjadi kembali ke warna awal dan buang stop ini.
+### Dua warna berarti dua rona — `aksen-hangat` tidak lagi warna ketiga
+
+Keputusan pengguna: **dua warna saja.** Palet tidak boleh memunculkan rona yang
+tidak dipilih sekolah.
+
+`aksen-hangat` dulu melanggarnya. Dua cara sudah dicoba dan **keduanya salah**:
+
+| Cara | Akibatnya pada hijau `#12a150` → jingga `#f59e0b` |
+|---|---|
+| Putar rona `+60°` tetap | hijau limau menyala |
+| Lanjutkan arah sapuan ke posisi 1,69 | **magenta** `#e8008f` |
+
+Sekarang `dariAkhir: [0, 19.2, -4.7]` — rona persis sama dengan warna akhir,
+kejenuhan +19,2, terang −4,7. Hijau→jingga kini menghasilkan `#e89200`: jingga
+yang lebih dalam, rona 38° sama dengan warna akhirnya.
+
+Kenapa tidak disamakan saja dengan `aksen-ujung`: nilai ini **selalu dipasangkan
+dengan `aksen-ujung` sebagai gradasi** di sembilan tempat pada halaman publik
+(Fasilitas, Ekstrakurikuler, Program, Berita, Prestasi, Kontak, Profil). Kalau
+nilainya identik, kesembilan gradasi itu jadi rata. Yang dibedakan kedalamannya,
+bukan ronanya — hubungan yang sama seperti `aksen-pekat` terhadap `aksen`.
+
+**Konsekuensi yang diterima:** satu nilai palet bawaan bergeser dari desain
+aslinya, `aksen-hangat` `#f0a06c` (jingga) menjadi `#f06cbd` (merah muda lebih
+dalam). Itu **satu-satunya** pergeseran tampilan bawaan, dan sudah disetujui.
+Uji `describe('dua warna saja')` di `schoolIdentity.test.js` mengunci sifat ini
+untuk empat pasangan warna.
 
 Tiga hal yang mudah terlewat:
 
 - Nilai bawaan **juga** ada di `:root` pada `src/index.css`. Tanpa itu, cat
   pertama sebelum JavaScript selesai merender `var(--sekolah-…)` tanpa nilai dan
-  tombol kehilangan warnanya sekejap. Mengubah `SELISIH_PALET` berarti menyamakan
+  tombol kehilangan warnanya sekejap. Mengubah `STOP_PALET` berarti menyamakan
   daftar itu juga.
 - `applySchoolIdentity(cached)` dipanggil di akhir modul supaya pengunjung yang
   kembali tidak melihat warna bawaan berkedip ke warna sekolahnya.
@@ -703,6 +764,110 @@ dan `SchoolInfoSettings` (tab Info Sekolah, admin).
 Pemasangan lama yang masih menyimpan semuanya di `school_identity` tetap tampil
 benar: `hydrateSchoolIdentity` menumpuk `school_info` **di atas**
 `school_identity`, jadi field lama terbaca sampai ada yang menyimpan sekali.
+
+### PPDB jadi modul sungguhan — tidak lagi dititipkan ke `feedbacks`
+
+Formulir PPDB dulu **meratakan seluruh isiannya menjadi satu paragraf** lalu
+mengirimkannya ke `POST /api/content/feedback`. Akibatnya pendaftaran bercampur
+dengan pesan pengunjung, tanpa kolom, tanpa status, dan tanpa cara menandai mana
+yang sudah diperiksa.
+
+Kenapa tabel sendiri dan bukan kolom tambahan pada `feedbacks`: pendaftaran punya
+siklus hidup, nomor pendaftaran, dan dua puluh kolom data calon murid. Pesan
+pengunjung tidak punya satu pun. Menggabungkan keduanya membuat setiap kolom
+pendaftaran wajib nullable dan setiap query harus menyaring jenis barisnya.
+
+| Lapisan | Berkas |
+|---|---|
+| Migrasi | `20260807000100_pendaftaran_ppdb.sql` — dua tabel, murni aditif |
+| Handler | `backend/internal/handler/ppdb.go`, dipasang di `/api/ppdb` |
+| Adapter | `src/lib/ppdbAdapters.js` |
+| Panel | `src/components/dashboard/admin/PpdbRegistrations.jsx`, tab `ppdb` |
+| Formulir | `src/pages/PpdbPage.jsx` (rute `/pendaftaran`, **bukan** `/ppdb`) |
+
+Tujuh hal yang perlu diketahui sebelum menyentuhnya:
+
+- **Penomoran dipindah ke UPSERT atomik.** `ppdb_nomor_urut` dinaikkan lewat satu
+  pernyataan `ON CONFLICT DO UPDATE … RETURNING`. `max(urut)+1` akan membagikan
+  nomor yang sama ke dua pendaftar yang menekan kirim bersamaan. Sequence biasa
+  tidak dipakai karena tidak bisa dibuat ulang per tahun tanpa DDL saat berjalan.
+  Seluruh penyimpanan dalam satu transaksi, supaya nomor yang sudah dinaikkan
+  tidak terpakai bila penyisipan barisnya gagal.
+- **`PUT`, bukan `PATCH`.** `corsMiddleware` di `main.go` hanya mengizinkan
+  `GET, POST, PUT, DELETE, OPTIONS`. Rute PATCH lolos uji lewat PowerShell tapi
+  ditolak browser dengan **405** — ini benar-benar terjadi saat pengembangan.
+  `apiClient` juga tidak punya `patch`.
+- **Mount di bawah `OptionalAuth`, gerbangnya `CanManage` di dalam handler.**
+  POST-nya publik (orang tua tidak punya akun), sisanya back-office. `RequireAuth`
+  akan mematikan POST publiknya; tanpa middleware apa pun, peran kosong dan admin
+  pun ditolak. Pola yang sama dipakai handler content.
+- **Hapus hanya untuk admin** (`IsAdmin`), verifikasi untuk `CanManage`. Menolak
+  dan menghapus dua keputusan yang berbeda beratnya; pendaftaran yang ditolak
+  tetap harus bisa ditunjukkan bila orang tua bertanya.
+- **Data calon murid tidak bisa disunting lewat API.** Handler `Update` hanya
+  menerima `status` dan `catatan`. `diproses_oleh`/`diproses_pada` dicatat **hanya
+  saat status berubah**, bukan saat catatan disunting — supaya jejaknya menjawab
+  "siapa yang memutuskan", bukan "siapa yang terakhir mengetik".
+- **`jalur` disimpan dua kali** (`jalur` = id, `jalur_label` = nama saat mendaftar).
+  Daftar jalur disunting pembeli kapan saja; tanpa label tersimpan, pendaftaran
+  tahun lalu berubah artinya ketika jalurnya diganti nama atau dihapus.
+- **Kirim ganda mengembalikan pendaftaran yang sudah ada**, dicocokkan dari nama +
+  tanggal lahir dalam tahun ajaran yang sama, ditandai `duplikat: true`. Bukan
+  galat, dan bukan baris kedua. Indeks unik NISN bersifat **parsial** (`where nisn
+  is not null and nisn <> ''`) karena sebagian pendaftar kelas satu belum punya.
+
+**Tidak ada unggahan berkas, dan itu disengaja.** Endpoint unggah ada di balik
+`RequireAuth`; membukanya untuk pengunjung yang tidak dikenal berarti menerima
+berkas dari siapa saja. `berkas_siap` adalah **pernyataan kesiapan** (jsonb, id
+mengikuti `ppdb_content.berkas` yang boleh diubah pembeli), bukan berkas terunggah.
+Markup lama menyebut "unggah berkas", "maks 2 MB per file", dan menampilkan
+"Terunggah · kartu-keluarga.pdf" — nama berkas karangan untuk unggahan yang tidak
+pernah terjadi. Semuanya sudah diselaraskan dengan kenyataan.
+
+**Tiga kebohongan pada formulir lama yang sudah dibereskan:**
+
+1. `kirim()` dipanggil **tanpa `await`** dan galatnya ditelan `catch {}` kosong,
+   lalu `setDone(true)` langsung dijalankan — layar "Pendaftaran terkirim" muncul
+   walau tidak ada data yang masuk sama sekali.
+2. **Nol validasi.** Formulir kosong pun bisa dikirim.
+3. Nomor pendaftaran `PPDB-${tahunAwal}-04187` **dikarang di markup** dan sama
+   untuk semua orang, ditambah janji "Konfirmasi juga dikirim ke WhatsApp" yang
+   tidak pernah dikirim.
+
+Validasi sekarang ada di **server** (`ppdbInput.periksa()`), berbahasa Indonesia
+dan ditampilkan apa adanya di formulir. Pemeriksaan di browser (`kurang` di
+`PpdbPage.jsx`) hanya menutup kesalahan yang paling sering, **bukan salinan seluruh
+aturannya** — supaya keduanya tidak bisa berbeda pendapat.
+
+Belum terhubung: murid yang **Diterima** masih harus dicatat ulang di Data Murid
+dengan tangan. Lihat §7.
+
+### Formulir PPDB tidak responsif sama sekali — SUDAH DIPERBAIKI
+
+Mockup-nya hanya dirancang untuk layar lebar, dan `sdnb-ppdb.css` hasil generator
+tidak memuat satu pun aturan tata letak untuk ponsel. Di layar 375px kolom
+formulir 493px dan panel jadwal 340px dipaksa masuk, dan separuh formulir
+**terpotong di luar layar tanpa bilah geser** — NIK, tanggal lahir, dan email
+tidak bisa diisi sama sekali. Untuk halaman yang orang tuanya membuka dari ponsel,
+formulirnya tidak bisa dipakai.
+
+Kolomnya inline style dari mockup, jadi CSS-nya perlu `!important`. Kelas
+`ppdb-kolom`, `ppdb-grid`, `ppdb-rail`, `ppdb-bar`, `ppdb-pad`, `ppdb-kartu`, dan
+`ppdb-langkah` ditambahkan **tangan** ke `PpdbBody.jsx` sebagai sasarannya.
+
+**Jebakan yang memakan waktu:** mengubah `grid-template-columns` ke `1fr` saja
+**tidak cukup**. Sebagian isian memakai `grid-column: span 2`, dan span yang
+melebihi jumlah kolom eksplisit membuat grid menumbuhkan kolom **implisit** — jadi
+hasilnya tetap dua kolom, hanya dengan lebar yang lebih timpang (`99px 188px`).
+Span-nya harus dinetralkan juga:
+
+```css
+.sdnb-ppdb .ppdb-grid { grid-template-columns: 1fr !important }
+.sdnb-ppdb .ppdb-grid > * { grid-column: auto !important }
+```
+
+Kesepuluh halaman publik sudah diperiksa pada 375px: tidak ada yang menyisakan
+geser mendatar.
 
 ### Yang perlu diperiksa penjual sebelum menyerahkan salinan
 

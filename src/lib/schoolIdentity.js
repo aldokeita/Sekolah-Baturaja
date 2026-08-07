@@ -173,10 +173,20 @@ const WARNA_HEKS = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
  * Sekolah memilih DUA warna — awal dan akhir gradasi — atau satu warna saja bila
  * memilih tampilan solid. Delapan properti CSS diturunkan dari pilihan itu.
  *
- * Sifat yang wajib dijaga: pada pilihan bawaan (#6470ff → #e58fc4) hasilnya SAMA
- * PERSIS dengan palet asli desain. Dua stop di tengah punya `bentuk` — selisih
- * kecil dari interpolasi lurus, diukur dari palet aslinya — supaya kecocokan itu
- * tercapai tanpa mengorbankan keluwesan untuk pasangan warna lain.
+ * Dua sifat yang wajib dijaga:
+ *
+ * 1. Pada pilihan bawaan (#6470ff → #e58fc4) hasilnya sama dengan palet asli
+ *    desain. Dua stop di tengah punya `bentuk` — selisih kecil dari interpolasi
+ *    lurus, diukur dari palet aslinya — supaya kecocokan itu tercapai tanpa
+ *    mengorbankan keluwesan untuk pasangan warna lain.
+ * 2. HANYA dua rona yang muncul. Tidak ada stop yang memutar rona ke luar rentang
+ *    kedua warna pilihan; yang membedakan stop satu dari lainnya adalah posisi,
+ *    kejenuhan, dan terang. Dulu `aksen-hangat` melanggarnya dan menghasilkan
+ *    magenta pada gradasi hijau→jingga.
+ *
+ * Satu nilai memang berbeda dari desain aslinya karena sifat kedua itu:
+ * `aksen-hangat` yang dulu jingga (#f0a06c) kini merah muda lebih dalam
+ * (#f06cbd). Itu satu-satunya pergeseran tampilan bawaan.
  */
 
 export const AKSEN_GRADASI = 'gradasi';
@@ -184,11 +194,11 @@ export const AKSEN_SOLID = 'solid';
 
 /* Stop di sepanjang sapuan.
  *
- * `posisi`  — letak di antara warna awal (0) dan warna akhir (1). Nilai di atas 1
- *             berarti melanjutkan arah sapuan melewati warna akhir.
+ * `posisi`  — letak di antara warna awal (0) dan warna akhir (1).
  * `bentuk`  — [kejenuhan, terang] yang ditambahkan setelah interpolasi, menjaga
  *             lengkung sapuan aslinya alih-alih garis lurus.
  * `dariAwal` — [rona, kejenuhan, terang] relatif terhadap warna awal.
+ * `dariAkhir` — [rona, kejenuhan, terang] relatif terhadap warna akhir.
  * `tint`     — [rona, faktorKejenuhan, porsiKeputih]: dicampur menuju putih
  *             sebanyak `porsiKeputih` dari jarak terang ke 100%.
  */
@@ -199,15 +209,19 @@ const STOP_PALET = [
   { nama: 'aksen-tengah', posisi: 0.2085, bentuk: [-10.66, -2.07] },
   { nama: 'aksen-tengah-2', posisi: 0.3226, bentuk: [-6.36, -2.45] },
   { nama: 'aksen-ujung', posisi: 1, bentuk: [0, 0] },
-  /* Jingga: RONA-nya melanjutkan arah sapuan melewati warna akhir, sedangkan
-   * kejenuhan dan terangnya mengikuti warna akhir.
+  /* Ujung terdalam. RONANYA SAMA dengan warna akhir — hanya lebih pekat dan
+   * sedikit lebih dalam, seperti hubungan `aksen-pekat` dengan `aksen`.
    *
-   * Dua cara lain sudah dicoba dan keduanya buruk. Memutar rona dengan sudut
-   * tetap +60° membuat gradasi hijau→jingga mendarat di hijau limau menyala,
-   * warna yang tidak ada hubungannya dengan pilihan sekolah. Mengekstrapolasi
-   * kejenuhan dan terang sekalian membuatnya kusam, karena pada posisi 1,69
-   * garis lurusnya sudah jauh melewati kedua warna pilihan. */
-  { nama: 'aksen-hangat', lanjutan: { posisi: 1.69, ds: 19.2, dl: -4.7 } },
+   * Sekolah memilih DUA warna, jadi palet tidak boleh memunculkan warna ketiga.
+   * Dua cara sebelumnya melakukannya dan keduanya salah: memutar rona +60° tetap
+   * membuat gradasi hijau→jingga mendarat di hijau limau menyala, dan
+   * melanjutkan arah sapuan melewati warna akhir membuat hijau→jingga mendarat
+   * di magenta. Keduanya warna yang tidak dipilih siapa pun.
+   *
+   * Nilai ini selalu dipasangkan dengan `aksen-ujung` sebagai gradasi (sembilan
+   * tempat di halaman publik), jadi ia tetap perlu berbeda supaya gradasinya
+   * tidak rata — cukup dibedakan kedalamannya, bukan ronanya. */
+  { nama: 'aksen-hangat', dariAkhir: [0, 19.2, -4.7] },
   /* Tint dihitung sebagai campuran menuju PUTIH, bukan penambahan terang tetap.
    * Penambahan tetap (+12,2) hanya memucat bila warna aksennya sudah terang;
    * pada hijau tua ia menghasilkan hijau menyala, padahal kedua nilai ini dipakai
@@ -289,26 +303,23 @@ export const turunkanPalet = (hexAwal, hexAkhir, mode = AKSEN_GRADASI) => {
   const ronaAkhir = solid ? awal.h : bukaRona(awal.h, akhir.h);
 
   const palet = {};
-  STOP_PALET.forEach(({ nama, posisi, bentuk, dariAwal, tint, lanjutan }) => {
+  STOP_PALET.forEach(({ nama, posisi, bentuk, dariAwal, dariAkhir, tint }) => {
     let hsl;
 
     if (dariAwal) {
       const [dh, ds, dl] = dariAwal;
       hsl = { h: awal.h + dh, s: awal.s + ds, l: awal.l + dl };
+    } else if (dariAkhir) {
+      // Rona diambil dari `ronaAkhir` yang sudah dibuka lipatannya, bukan dari
+      // `akhir.h` mentah — supaya penambahan rona apa pun bergerak searah sapuan.
+      const [dh, ds, dl] = dariAkhir;
+      hsl = { h: ronaAkhir + dh, s: akhir.s + ds, l: akhir.l + dl };
     } else if (tint) {
       const [dh, faktorS, porsi] = tint;
       hsl = {
         h: awal.h + dh,
         s: awal.s * faktorS,
         l: awal.l + porsi * (100 - awal.l),
-      };
-    } else if (lanjutan) {
-      // Pada mode solid sapuan tidak dilanjutkan: sekolah memilih satu warna, dan
-      // memunculkan rona lain justru melanggar pilihannya.
-      hsl = solid ? { ...awal } : {
-        h: awal.h + lanjutan.posisi * (ronaAkhir - awal.h),
-        s: akhir.s + lanjutan.ds,
-        l: akhir.l + lanjutan.dl,
       };
     } else {
       // `bentuk` hanya berlaku pada gradasi: ia menjaga lengkung sapuan aslinya.

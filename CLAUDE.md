@@ -70,7 +70,7 @@ is stale.
 
 ### Database
 
-- 50 ordered SQL migrations in `supabase/migrations/`. The directory name is historical — these are
+- 54 ordered SQL migrations in `supabase/migrations/`. The directory name is historical — these are
   applied to local PostgreSQL by `backend/init/01_migrate.sh` during container init.
 - Always add a **new** migration; never edit one that has been applied.
 - Writing a migration is not applying it. A migration that is only written while code already
@@ -130,7 +130,7 @@ src/hooks/                        — custom hooks (attendance, search, media)
 src/lib/                          — apiClient, adapters, feature flags, utilities
 src/pages/                        — 19 route-level pages
 backend/internal/handler/         — Go API handlers, one per domain
-supabase/migrations/              — 50 ordered SQL migrations (applied to local Postgres)
+supabase/migrations/              — 54 ordered SQL migrations (applied to local Postgres)
 scripts/                          — operational + validation scripts
 tools/                            — build scripts (LLMS generator)
 ```

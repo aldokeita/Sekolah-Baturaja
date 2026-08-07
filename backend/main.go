@@ -55,6 +55,7 @@ func main() {
 	forumHandler := handler.NewForumHandler(pool)
 	loginLogsHandler := handler.NewLoginLogsHandler(pool, cfg)
 	whatsappHandler := handler.NewWhatsAppHandler(pool)
+	ppdbHandler := handler.NewPpdbHandler(pool)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -87,6 +88,11 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.OptionalAuth(cfg.JWTSecret))
 		r.Mount("/api/content", contentHandler.Routes())
+
+		// PPDB: POST-nya formulir pendaftaran publik (orang tua tidak punya akun),
+		// sisanya back-office. Alasan mount-nya sama dengan /api/content di atas —
+		// tiap handler memeriksa perannya sendiri lewat CanManage.
+		r.Mount("/api/ppdb", ppdbHandler.Routes())
 	})
 
 	// ── Public: login attempt recorder ───────────────────────────────────────

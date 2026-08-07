@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, FileText,
-  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, CalendarDays,
+  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, CalendarDays, Inbox,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
@@ -18,6 +18,7 @@ import { enableTahfizh } from '@/lib/featureFlags';
 // real gate; this list only controls what the UI exposes.
 const tataUsahaTabs = [
   { value: 'santri', label: 'Data Murid', icon: Users, group: 'data' },
+  { value: 'ppdb', label: 'Pendaftaran PPDB', icon: Inbox, group: 'data' },
   { value: 'guru', label: 'Data Guru', icon: BookUser, group: 'data' },
   { value: 'kelas', label: 'Manajemen Kelas', icon: BookOpen, group: 'akademik' },
   { value: 'jadwal-pelajaran', label: 'Jadwal Pelajaran', icon: CalendarDays, group: 'akademik' },

@@ -81,7 +81,7 @@ Sekali jalan, perintah ini akan:
 
 - membangun API dari kode Go,
 - menyalakan PostgreSQL 16,
-- menerapkan seluruh 53 berkas migrasi database secara berurutan,
+- menerapkan seluruh 54 berkas migrasi database secara berurutan,
 - mengisi data contoh (sekolah, guru, murid, kelas) supaya aplikasi tidak kosong saat pertama dibuka.
 
 Pertama kali biasanya 2–5 menit karena Docker harus mengunduh dan membangun. Periksa keadaannya:
@@ -230,6 +230,8 @@ Semuanya di menu **Konten**:
 | **Informasi Pendaftaran** | jalur pendaftaran, berkas yang diminta, jadwal, dan syarat PPDB |
 | **Pesan Masuk** | pesan yang dikirim pengunjung dari halaman Kontak |
 
+Pendaftaran murid baru **tidak** masuk ke Pesan Masuk. Ia punya menunya sendiri; lihat 7.6.
+
 Empat hal yang memudahkan:
 
 - **Daftar guru tidak perlu diisi dua kali.** Halaman Profil, Kontak, dan penulis berita contoh
@@ -257,6 +259,46 @@ Visi, misi, tujuan, nomor telepon, alamat, dan tahun ajaran **bukan** termasuk. 
 
 Semua hal lain — seluruh isi administrasi sekolah, seluruh konten situs, semua akun — juga milik
 Anda.
+
+### 7.6 · Menerima pendaftaran murid baru
+
+Menu **Pendaftaran PPDB** (di kelompok Data, sebelah Data Murid) berisi calon murid yang mengisi
+formulir di halaman pendaftaran situs Anda. Terbuka untuk **Admin** dan **Tata Usaha**.
+
+Setiap pendaftar mendapat nomor urut sendiri — `PPDB-2026-0001`, `PPDB-2026-0002`, dan seterusnya —
+yang ditunjukkan ke orang tua di layar terakhir formulir. Nomornya kembali ke 1 setiap tahun ajaran.
+
+Alur kerjanya empat status:
+
+| Status | Artinya |
+|---|---|
+| **Baru masuk** | belum disentuh siapa pun |
+| **Sudah diperiksa** | berkas dan datanya sudah dicek petugas |
+| **Diterima** | lolos seleksi |
+| **Tidak diterima** | tidak lolos |
+
+Yang perlu diketahui:
+
+- **Menekan angka di kartu ringkasan ikut menyaring daftarnya.** Cara tercepat melihat "siapa yang
+  belum diperiksa".
+- **Nomor WhatsApp bisa diklik** untuk langsung membuka percakapan dengan orang tua.
+- **Data calon murid tidak bisa disunting**, disengaja: yang mengisinya orang tua, dan catatan
+  verifikasi kehilangan artinya bila isinya bisa diubah belakangan. Salah tulis diselesaikan lewat
+  kolom **Catatan verifikasi**.
+- **Hanya Admin yang bisa menghapus.** Tata Usaha boleh menolak, tapi pendaftaran yang ditolak
+  sebaiknya dibiarkan sebagai riwayat — supaya tetap bisa ditunjukkan bila orang tua bertanya.
+- **Unduh CSV** mengikuti penyaring yang aktif. Berkasnya bisa dibuka di Excel, untuk memindahkan
+  data ke Dapodik atau mencetak daftar hadir daftar ulang.
+- **Kirim ganda tidak menggandakan data.** Bila orang tua menekan kirim dua kali, nomor yang sama
+  dikembalikan alih-alih membuat baris kedua.
+
+Satu hal yang perlu Anda sampaikan ke orang tua: **berkas tidak diunggah lewat situs.** Daftar di
+langkah ketiga formulir hanyalah pernyataan "sudah saya siapkan"; berkas aslinya dibawa saat daftar
+ulang. Ini disengaja — membuka unggahan untuk pengunjung yang tidak dikenal berarti menerima berkas
+dari siapa saja.
+
+Setelah seorang murid **Diterima**, catat dia di **Data Murid** seperti biasa. Kedua menu itu belum
+terhubung otomatis.
 
 ---
 

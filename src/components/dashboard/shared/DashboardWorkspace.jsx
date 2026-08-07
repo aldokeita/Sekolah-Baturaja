@@ -14,6 +14,7 @@ import PaymentSystem from '../admin/PaymentSystem';
 import PaymentRecap from '../admin/PaymentRecap';
 import PaymentHistory from '../admin/PaymentHistory';
 import ContentManagement from '../admin/ContentManagement';
+import PpdbRegistrations from '../admin/PpdbRegistrations';
 import LoginLogs from '../admin/LoginLogs';
 import ExpenseManagement from '../admin/ExpenseManagement';
 import ClassManagement from '../admin/ClassManagement';
@@ -44,6 +45,7 @@ import '@/styles/sdnb-dashboard.css';
 const renderModule = (value) => {
   switch (value) {
     case 'santri': return <SantriManagement />;
+    case 'ppdb': return <PpdbRegistrations />;
     case 'kelas': return <ClassManagement />;
     case 'jadwal-pelajaran': return <JadwalPelajaran />;
     case 'rapat-guru': return <MMQManagement />;

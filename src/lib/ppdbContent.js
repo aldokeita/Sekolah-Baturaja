@@ -37,11 +37,16 @@ export const DEFAULT_PPDB_CONTENT = Object.freeze({
   // menjalankannya tinggal menambah sendiri.
   minat: Object.freeze(['Bahasa Inggris', 'Sains cilik', 'Seni tari', 'Olahraga']),
 
+  /* Daftar CENTANG kesiapan berkas, bukan unggahan. Halaman publik tidak menerima
+   * unggahan berkas: endpoint unggah ada di balik login, dan membukanya untuk
+   * pengunjung yang tidak dikenal berarti menerima berkas dari siapa saja. Berkas
+   * aslinya diperiksa saat daftar ulang, jadi petunjuknya menyebut bentuk fisiknya
+   * — bukan "maks 2 MB" yang dulu tertulis di sini untuk unggahan yang tidak ada. */
   berkas: Object.freeze([
-    { id: 'kk', name: 'Kartu keluarga', hint: 'JPG atau PDF, maks 2 MB' },
-    { id: 'akta', name: 'Akta kelahiran', hint: 'JPG atau PDF, maks 2 MB' },
-    { id: 'rapor', name: 'Rapor semester 1–5', hint: 'PDF gabungan' },
-    { id: 'foto', name: 'Pas foto 3×4', hint: 'Latar biru atau merah' },
+    { id: 'kk', name: 'Kartu keluarga', hint: 'Fotokopi, dibawa saat daftar ulang' },
+    { id: 'akta', name: 'Akta kelahiran', hint: 'Fotokopi, dibawa saat daftar ulang' },
+    { id: 'rapor', name: 'Surat keterangan TK atau RA', hint: 'Bila anak pernah bersekolah' },
+    { id: 'foto', name: 'Pas foto 3×4', hint: 'Latar biru atau merah, 2 lembar' },
   ]),
 
   timeline: Object.freeze([

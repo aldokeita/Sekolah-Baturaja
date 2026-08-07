@@ -20,7 +20,9 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-ppdb.css';
 
 const PpdbBody = (vals = {}) => {
-  const { berkas, d, genders, inisialLogo, jadwal, labelGelombang, namaSekolah, pengantar, syarat, tahunAjaran, tahunAwal, h, isDone, isStep1, isStep2, isStep3, isStep4, jalur, minat, navStyle, next, nextLabel, nextStyle, prev, prevStyle, progressStyle, reset, review, setujuBox, setujuStyle, stepCounter, steps, toggleSetuju } = vals;
+  const { berkas, d, genders, inisialLogo, jadwal, labelGelombang, namaSekolah, pengantar, syarat, tahunAjaran, tahunAwal, h, isDone, isStep1, isStep2, isStep3, isStep4, jalur, minat, navStyle, next, nextLabel, nextStyle, prev, prevStyle, progressStyle, reset, review, setujuBox, setujuStyle, stepCounter, steps, toggleSetuju,
+    // Ditambahkan saat formulir disambungkan ke endpoint PPDB yang sungguhan.
+    nomorPendaftaran, pesanGalat, sudahTerdaftar } = vals;
   return (
     <>
 <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
@@ -32,8 +34,8 @@ const PpdbBody = (vals = {}) => {
 
   <div style={{ position: "relative", zIndex: "1" }}>
 
-    <div style={{ position: "sticky", top: "0", zIndex: "40", padding: "18px 28px 14px" }}>
-      <div style={{ maxWidth: "1240px", margin: "0 auto", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: "24px", padding: "12px 14px 12px 20px", borderRadius: "22px", background: "rgba(255,255,255,.55)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 20px 46px -20px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "60%", background: "linear-gradient(165deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
+    <div className="ppdb-pad" style={{ position: "sticky", top: "0", zIndex: "40", padding: "18px 28px 14px" }}>
+      <div className="ppdb-bar" style={{ maxWidth: "1240px", margin: "0 auto", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: "24px", padding: "12px 14px 12px 20px", borderRadius: "22px", background: "rgba(255,255,255,.55)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 20px 46px -20px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "60%", background: "linear-gradient(165deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
         <a href="/" style={{ position: "relative", display: "flex", alignItems: "center", gap: "12px", color: "inherit" }}>
           <div style={{ width: "40px", height: "40px", borderRadius: "13px", background: "linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "13px", boxShadow: "0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>{inisialLogo}</div>
           <div style={{ lineHeight: "1.15" }}>
@@ -55,18 +57,24 @@ const PpdbBody = (vals = {}) => {
       </div>
     </div>
 
-    <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "26px 28px 0" }}>
+    <div className="ppdb-pad" style={{ maxWidth: "1240px", margin: "0 auto", padding: "26px 28px 0" }}>
       <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>PPDB {tahunAjaran}</div>
       <h1 style={{ margin: "12px 0 0", fontSize: "44px", lineHeight: "1.06", letterSpacing: "-.035em", fontWeight: "800", color: "#171827", maxWidth: "720px" }}>Formulir pendaftaran <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>peserta didik baru</span></h1>
       <p style={{ margin: "16px 0 0", maxWidth: "620px", fontSize: "15px", lineHeight: "1.65", color: "#535878", textWrap: "pretty" }}>{pengantar}</p>
     </div>
 
-    <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "34px 28px 0", display: "grid", gridTemplateColumns: "1fr 340px", gap: "26px", alignItems: "start" }}>
+    {/* Kelas `ppdb-kolom` dan `ppdb-grid` ditambahkan tangan supaya tata letaknya
+        bisa dilipat di layar sempit — lihat sdnb-ppdb.css. Kolomnya inline style
+        dari mockup, jadi CSS-nya perlu !important untuk menimpanya. Tanpa ini
+        kolom 493px + 340px dipaksa masuk layar 375px dan separuh kolom formulir
+        terpotong di luar layar TANPA bilah geser: pengunjung ponsel tidak bisa
+        mengisi NIK, tanggal lahir, maupun email sama sekali. */}
+    <div className="ppdb-kolom" style={{ maxWidth: "1240px", margin: "0 auto", padding: "34px 28px 0", display: "grid", gridTemplateColumns: "1fr 340px", gap: "26px", alignItems: "start" }}>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
 
         <div style={{ position: "relative", overflow: "hidden", padding: "22px 24px", borderRadius: "24px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
-          <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px" }}>
+          <div className="ppdb-langkah" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px" }}>
             {(steps || []).map((st, $index) => (<React.Fragment key={$index}>
               <div onClick={st.go} style={__dcs(st.wrap)}>
                 <div style={__dcs(st.dot)}>{st.num}</div>
@@ -82,13 +90,13 @@ const PpdbBody = (vals = {}) => {
           </div>
         </div>
 
-        <div style={{ position: "relative", overflow: "hidden", padding: "30px 32px 32px", borderRadius: "26px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 30px 64px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "38%", background: "linear-gradient(168deg,rgba(255,255,255,.58),rgba(255,255,255,0))", pointerEvents: "none" }} />
+        <div className="ppdb-kartu" style={{ position: "relative", overflow: "hidden", padding: "30px 32px 32px", borderRadius: "26px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 30px 64px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "38%", background: "linear-gradient(168deg,rgba(255,255,255,.58),rgba(255,255,255,0))", pointerEvents: "none" }} />
 
           {(isStep1) && (<>
             <div style={{ position: "relative" }}>
               <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "#1b1c2c" }}>Data diri calon murid</h2>
               <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "#5e6386" }}>Tulis sesuai kartu keluarga. Nama tidak boleh disingkat.</p>
-              <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <div className="ppdb-grid" style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <div style={{ gridColumn: "span 2" }}>
                   <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Nama lengkap</label>
                   <input onInput={h.nama} defaultValue={d.nama} placeholder="Contoh: Naila Rahmadani" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
@@ -137,7 +145,7 @@ const PpdbBody = (vals = {}) => {
             <div style={{ position: "relative" }}>
               <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "#1b1c2c" }}>Asal TK &amp; jalur pendaftaran</h2>
               <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "#5e6386" }}>Anak yang belum pernah bersekolah tetap dapat mendaftar. Kosongkan bagian asal TK bila tidak ada.</p>
-              <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <div className="ppdb-grid" style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <div style={{ gridColumn: "span 2" }}>
                   <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Nama TK atau RA asal</label>
                   <input onInput={h.sekolah} defaultValue={d.sekolah} placeholder="TK Pertiwi Baturaja" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
@@ -152,7 +160,7 @@ const PpdbBody = (vals = {}) => {
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
                   <label style={{ display: "block", marginBottom: "10px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Jalur pendaftaran</label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "12px" }}>
+                  <div className="ppdb-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "12px" }}>
                     {(jalur || []).map((j, $index) => (<React.Fragment key={$index}>
                       <div className="shine" onClick={j.pick} style={__dcs(j.style)}>
                         <div style={__dcs(j.mark)}></div>
@@ -178,9 +186,14 @@ const PpdbBody = (vals = {}) => {
 
           {(isStep3) && (<>
             <div style={{ position: "relative" }}>
-              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "#1b1c2c" }}>Orang tua & unggah berkas</h2>
-              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "#5e6386" }}>Berkas dipindai jelas, format JPG atau PDF, maksimal 2 MB per file. Berkas yang belum siap dapat menyusul ke tata usaha.</p>
-              <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              {/* Dulu berjudul "unggah berkas" dan menyebut batas 2 MB per file,
+                  padahal tidak ada satu pun kolom unggahan di sini — daftarnya cuma
+                  centang. Halaman publik memang tidak menerima unggahan: endpoint
+                  unggah ada di balik login. Jadi kalimatnya diselaraskan dengan apa
+                  yang sebenarnya terjadi. */}
+              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "#1b1c2c" }}>Orang tua & kesiapan berkas</h2>
+              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "#5e6386" }}>Centang berkas yang sudah Anda siapkan. Berkas aslinya dibawa saat daftar ulang, tidak diunggah di sini. Yang belum siap dapat menyusul ke tata usaha.</p>
+              <div className="ppdb-grid" style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <div>
                   <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Nama ayah</label>
                   <input onInput={h.ayah} defaultValue={d.ayah} placeholder="Nama lengkap ayah" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
@@ -198,7 +211,7 @@ const PpdbBody = (vals = {}) => {
                   <input onInput={h.hpwali} defaultValue={d.hpwali} placeholder="0813xxxxxxx" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
               </div>
-              <div style={{ marginTop: "26px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+              <div className="ppdb-grid" style={{ marginTop: "26px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 {(berkas || []).map((b, $index) => (<React.Fragment key={$index}>
                   <div className="shine" onClick={b.toggle} style={__dcs(b.style)}>
                     <div style={__dcs(b.icon)}>
@@ -232,6 +245,18 @@ const PpdbBody = (vals = {}) => {
                 </div>
                 <span style={{ fontSize: "13px", lineHeight: "1.55", color: "#3f4468" }}>Saya menyatakan seluruh data yang diisi benar dan bersedia menerima sanksi pembatalan bila terbukti tidak sesuai.</span>
               </div>
+              {/* Penolakan dari server ditampilkan di sini. Dulu kegagalan pengiriman
+                  ditelan diam-diam dan layar "terkirim" tetap muncul, sehingga orang
+                  tua yakin sudah mendaftar padahal tidak ada data yang masuk. */}
+              {pesanGalat && (
+                <div role="alert" style={{ marginTop: "16px", display: "flex", gap: "11px", alignItems: "flex-start", padding: "14px 16px", borderRadius: "14px", background: "rgba(254,226,226,.85)", border: "1px solid rgba(248,113,113,.55)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: "1px" }}><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+                  <div>
+                    <div style={{ fontSize: "13px", fontWeight: "700", color: "#991b1b" }}>Pendaftaran belum terkirim</div>
+                    <div style={{ marginTop: "3px", fontSize: "13px", lineHeight: "1.55", color: "#b91c1c" }}>{pesanGalat}</div>
+                  </div>
+                </div>
+              )}
             </div>
           </>)}
 
@@ -240,8 +265,21 @@ const PpdbBody = (vals = {}) => {
               <div style={{ width: "66px", height: "66px", borderRadius: "22px", background: "linear-gradient(140deg,#8ee6c4,#6fd0e8)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 18px 36px -14px rgba(70,190,180,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
               </div>
-              <h2 style={{ margin: "22px 0 0", fontSize: "26px", fontWeight: "800", letterSpacing: "-.025em", color: "#1b1c2c" }}>Pendaftaran terkirim</h2>
-              <p style={{ margin: "10px 0 0", maxWidth: "520px", fontSize: "14.5px", lineHeight: "1.65", color: "#535878" }}>Nomor pendaftaran Anda <strong style={{ color: "#4a4fd0" }}>{`PPDB-${tahunAwal}-04187`}</strong>. Simpan nomor ini untuk memeriksa hasil seleksi. Konfirmasi juga dikirim ke WhatsApp yang Anda cantumkan.</p>
+              <h2 style={{ margin: "22px 0 0", fontSize: "26px", fontWeight: "800", letterSpacing: "-.025em", color: "#1b1c2c" }}>
+                {sudahTerdaftar ? "Pendaftaran sudah tercatat" : "Pendaftaran terkirim"}
+              </h2>
+              {/* Nomor pendaftaran datang DARI SERVER. Sebelumnya nomornya dikarang di
+                  markup ("PPDB-2026-04187") dan sama untuk semua orang, dan halaman ini
+                  juga menjanjikan konfirmasi WhatsApp yang tidak pernah dikirim —
+                  keduanya membuat orang tua menyimpan nomor yang tidak berarti apa pun
+                  bagi tata usaha. */}
+              <p style={{ margin: "10px 0 0", maxWidth: "520px", fontSize: "14.5px", lineHeight: "1.65", color: "#535878" }}>
+                {sudahTerdaftar
+                  ? "Nama dan tanggal lahir ini sudah terdaftar sebelumnya, jadi pendaftaran tidak digandakan. Nomornya tetap "
+                  : "Nomor pendaftaran Anda "}
+                <strong style={{ color: "var(--sekolah-aksen-pekat)" }}>{nomorPendaftaran || "—"}</strong>
+                . Catat nomor ini dan sebutkan saat menghubungi tata usaha atau saat daftar ulang.
+              </p>
               <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <a className="shine" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 24px", borderRadius: "15px", fontSize: "14px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)" }}>Kembali ke beranda</a>
                 <button className="shine" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Isi formulir lain</button>
@@ -262,7 +300,7 @@ const PpdbBody = (vals = {}) => {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "20px", position: "sticky", top: "112px" }}>
+      <div className="ppdb-rail" style={{ display: "flex", flexDirection: "column", gap: "20px", position: "sticky", top: "112px" }}>
 
         <div style={{ position: "relative", overflow: "hidden", padding: "24px", borderRadius: "24px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
           <div style={{ position: "relative", fontSize: "12px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "#8a8ea8" }}>Jadwal</div>
@@ -296,7 +334,7 @@ const PpdbBody = (vals = {}) => {
       </div>
     </div>
 
-    <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "56px 28px 44px" }}>
+    <div className="ppdb-pad" style={{ maxWidth: "1240px", margin: "0 auto", padding: "56px 28px 44px" }}>
       <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.7)", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", fontSize: "12px", color: "#70759a" }}>
         <div>&copy; {tahunAwal} {namaSekolah} &middot; Panitia PPDB {tahunAjaran}</div>
         <a className="hx-1kdf62l" href="/" style={{ color: "#70759a" }}>Beranda</a>
