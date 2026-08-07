@@ -81,7 +81,7 @@ Sekali jalan, perintah ini akan:
 
 - membangun API dari kode Go,
 - menyalakan PostgreSQL 16,
-- menerapkan seluruh 56 berkas migrasi database secara berurutan,
+- menerapkan seluruh 57 berkas migrasi database secara berurutan,
 - mengisi data contoh (sekolah, guru, murid, kelas) supaya aplikasi tidak kosong saat pertama dibuka.
 
 Pertama kali biasanya 2–5 menit karena Docker harus mengunduh dan membangun. Periksa keadaannya:
@@ -288,6 +288,22 @@ Bawaannya sudah mengikuti ketentuan untuk SD:
 ketentuan daerah Anda berbeda, ubah di **Konten → Informasi Pendaftaran** — persentase maupun nama
 jalurnya bisa Anda atur bebas, dan sistem tidak akan menegur.
 
+#### Wilayah penerimaan — wajib Anda ganti
+
+Jalur Domisili memakai **wilayah administratif** yang ditetapkan pemerintah daerah — kelurahan/desa,
+kecamatan, atau radius — bukan jarak rumah ke sekolah. Karena itu berbeda di tiap kabupaten,
+**Anda yang mengisi daftarnya** di **Konten → Informasi Pendaftaran → Wilayah Penerimaan**.
+
+Daftar bawaannya wilayah di sekitar sekolah contoh. **Gantilah sebelum membuka pendaftaran** —
+kalau tidak, orang tua akan memilih wilayah yang tidak berlaku di sekolah Anda. Tanyakan daftar
+resminya ke Dinas Pendidikan setempat.
+
+Setelah terisi, pilihan wilayah muncul di formulir pendaftaran, dan panel mendapat penyaring wilayah
+— cara tercepat melihat "siapa saja yang tinggal di wilayah kami".
+
+Kalau sekolah Anda tidak memakai pembagian wilayah, **kosongkan daftarnya**. Kolom pilihannya akan
+hilang dari formulir dan tidak ada yang diwajibkan.
+
 Agar sisa kursi tampil, dua hal harus terisi: **kapasitas tiap kelas** di Manajemen Kelas, dan
 **kuota jalur** di Konten. Panel lalu menghitung sendiri:
 
@@ -383,6 +399,17 @@ Cara kerjanya aman untuk dicoba:
 
 Pendaftaran yang datanya tidak lengkap — misalnya tanggal lahirnya tidak terbaca — akan dilewati.
 Yang seperti itu perlu Anda catat sendiri, atau minta orang tuanya mendaftar ulang lewat formulir.
+
+#### Lembar rekap untuk dinas
+
+Tombol **Lembar rekap** menyusun rekapitulasi siap cetak: jumlah pendaftar menurut jalur, jenis
+kelamin, wilayah domisili, dan sekolah asal — masing-masing dipecah menjadi mendaftar, diperiksa,
+diterima, dan tidak diterima. Kepala suratnya memakai nama dan alamat sekolah Anda.
+
+Angkanya dihitung dari **seluruh** pendaftaran, bukan dari yang sedang tampil di panel. Jadi lembar
+rekapnya tetap benar walaupun daftar di layar sedang disaring atau pendaftarnya lebih dari 500.
+
+Pilih tahun ajaran di penyaring sebelum menekan tombolnya bila Anda ingin rekap satu tahun tertentu.
 
 ---
 

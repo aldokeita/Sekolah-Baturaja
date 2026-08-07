@@ -249,7 +249,7 @@ Jangan mengikuti kalimat lama itu.
 |---|---|
 | `npm run build` | Hijau, exit 0 |
 | `npm run lint` | Bersih, exit 0 |
-| `npm test` | **155 test hijau** (Vitest 3, 9 berkas) |
+| `npm test` | **160 test hijau** (Vitest 3, 9 berkas) |
 | Guard `scripts/validate-*.ps1` | **6 dari 7 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
 | Login 6 akun | **Terbukti jalan** lewat API |
@@ -296,6 +296,11 @@ Jangan mengikuti kalimat lama itu.
 | **Impor dari Pesan Masuk** | **Tuntas lewat API + browser**: 5 pesan ditemukan, 1 diimpor, 4 dilewati dengan alasan yang benar satu per satu; seluruh 18 kolom terurai tepat; `—` menjadi kosong; dijalankan ulang tidak menggandakan; pesan aslinya tetap ada |
 | **Impor — dua jebakan penguraian** | **Ditemukan lewat uji dan diperbaiki**: `nama_ayah` hilang, dan `no_hp_wali` menyerap angka dari baris berikutnya menjadi 14 digit. Keduanya terbukti benar setelah perbaikan |
 | **Cetak bukti** | **Tuntas**: aturan `@media print` terurai (6 aturan), dan saat diterapkan sebagai uji hanya blok bukti yang terlihat — judul halaman, formulir, dan navigasi tersembunyi; kepala surat muncul; tombol Cetak tidak ikut tercetak |
+| **Wilayah domisili — penjagaan server** | **Tuntas lewat API**: kosong ditolak, wilayah karangan ditolak, wilayah sah diterima, beda besar-kecil huruf diterima. Empat ejaan berbeda (termasuk berspasi tepi) tersimpan menjadi **dua** nilai kanonik, dan penyaring menemukan ketiganya |
+| **Wilayah domisili — formulir** | **Tuntas di browser**: pemilih memuat daftar sekolah, mengirim tanpa memilih ditolak dengan spanduk galat, memilih lalu mengirim berhasil (`SPMB-2026-0005`), dan nilainya masuk kolom `wilayah` |
+| **Penyaring wilayah di panel** | **Tuntas di browser**: menyaring "Kelurahan Baturaja Timur" menyisakan tepat satu pendaftar yang benar |
+| **Lembar rekap** | **Tuntas di browser**: keempat pengelompokan terisi, total 5 pendaftar konsisten, dan pemecahan wilayah 4/1 benar |
+| **Cetak lembar rekap dari dashboard** | **Tuntas**: aturan cetak terbukti dimuat DI DASHBOARD (4 aturan `.bukti-cetak`) setelah dipindah ke `cetak-bukti.css`; saat diterapkan, bilah menu dan kartu statistik tersembunyi dan hanya lembar rekap berkepala surat yang terlihat |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
@@ -618,30 +623,30 @@ Tuntas pada 2026-08-08 (putaran kedua): **istilah SPMB beserta jalur yang sah me
 No. 3 Tahun 2025**, **kuota jalur dan daya tampung**, **impor pendaftaran lama dari Pesan Masuk**, dan
 **cetak bukti pendaftaran**.
 
+Tuntas pada 2026-08-08 (putaran ketiga): **wilayah domisili yang diisi pembeli** dan **lembar rekap
+SPMB siap cetak**. Otomatisasi pengiriman kabar **ditolak pemilik dengan sengaja** — WhatsApp manual
+ke nomor yang sudah terdaftar dianggap cukup; jangan mengajukannya lagi tanpa alasan baru.
+
 ### Yang masih terbuka
 
 Diurutkan dari yang paling berdampak ke penjualan.
 
-1. **Pengiriman pemberitahuan masih manual.** Petugas menekan tombol, WhatsApp terbuka, dia menekan
-   kirim. Untuk gelombang berisi 200 pendaftar itu 200 kali. Otomatisasi menuntut gerbang WhatsApp
-   berbayar atau kredensial SMTP yang **harus disediakan pembeli**, plus antrean dan penanganan
-   kegagalan kirim — jangan menambahkannya tanpa keputusan pemilik. Lihat bagian
-   "Pemberitahuan ke orang tua manual".
-2. **Wilayah domisili belum dimodelkan.** Kuota jalur sudah ada, tapi jalur Domisili menurut aturan
-   bergantung pada wilayah penerimaan yang ditetapkan pemerintah daerah (kelurahan, kecamatan, atau
-   radius). Sekarang tidak ada kolom untuk itu, jadi petugas menilainya dari alamat yang ditulis
-   orang tua. Menambahkannya butuh keputusan: daftar wilayah yang diisi pembeli, dan apakah
-   pendaftar memilih wilayahnya sendiri di formulir.
-3. **Tidak ada laporan rekap SPMB.** Tata usaha bisa mengekspor CSV, tapi tidak ada lembar rekap
-   siap cetak berisi jumlah pendaftar per jalur, per jenis kelamin, dan asal TK — yang biasanya
-   diminta dinas pendidikan. Data untuk itu semuanya sudah ada.
-4. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
+1. **Kuota jalur tidak menahan apa pun, dan itu keputusan pemilik.** Panel menunjukkan sisa kursi
+   tapi tidak menegur maupun memblokir. Bila kelak diminta menegur, tempatnya di `ubahStatus` pada
+   panel — bukan di server, supaya tata usaha tidak pernah terhalang bekerja.
+2. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
    tapi sekolah besar dengan beberapa gelombang akan melewatinya. Batasnya dicatat di panel, tidak
-   disembunyikan — tapi `paginate()` di `santri.go` adalah pola yang sudah ada bila perlu.
-5. **Aturan SPMB bisa berubah lagi.** Bawaan sekarang mengikuti Permendikdasmen No. 3 Tahun 2025.
-   Sebelum gelombang penerimaan berikutnya, periksa ulang apakah jalur dan persentasenya masih sama —
-   semuanya bisa disunting pembeli, jadi perubahan aturan tidak menuntut rilis kode, hanya
-   pembaruan bawaan dan `SETUP.md`.
+   disembunyikan. Lembar rekap TIDAK terkena batas ini — ia dihitung di basis data.
+3. **Aturan SPMB bisa berubah lagi.** Bawaan sekarang mengikuti Permendikdasmen No. 3 Tahun 2025.
+   Sebelum gelombang penerimaan berikutnya, periksa ulang apakah jalur, persentase, dan syarat usia
+   masih sama — semuanya bisa disunting pembeli, jadi perubahan aturan tidak menuntut rilis kode,
+   hanya pembaruan bawaan dan `SETUP.md`.
+4. **Belum ada yang menguji alur SPMB sebagai pengguna sungguhan.** Seluruh verifikasi dilakukan agen
+   lewat API dan penyuntikan JavaScript di browser; pemilik memilih tidak menguji sendiri. Yang
+   BELUM pernah dijalankan: mengetik dengan papan ketik sungguhan, menekan tombol dengan tetikus,
+   dan **melihat hasil cetak yang sebenarnya** — aturan cetaknya dibuktikan dengan menerapkannya
+   sebagai aturan layar, bukan dengan membuka pratayang cetak. Bila ada laporan janggal dari
+   pembeli, mulailah dari ketiga hal itu.
 
 ### `SETUP.md` sekarang dokumen pembeli, bukan dokumen developer
 
@@ -926,6 +931,69 @@ jalur lama memang tidak punya padanan id yang sah.
 
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.
+
+### Wilayah domisili: teks bebas dari daftar pembeli, dengan ejaan dikanonkan server
+
+Keputusan pemilik: **pembeli mengisi daftar wilayahnya sendiri.** Disimpan sebagai
+`ppdb_content.wilayah` (array teks), dan pada pendaftaran sebagai kolom `wilayah`
+berisi teks apa adanya — bukan kunci asing ke tabel wilayah.
+
+Kenapa bukan tabel referensi: daftar wilayah penerimaan ditetapkan pemerintah
+DAERAH, berbeda tiap kabupaten, dan berubah tiap tahun. Tabel dengan kunci asing
+memaksa pembeli mengelola data master untuk sesuatu yang mereka ubah sekali setahun,
+dan akan menolak pendaftaran lama ketika wilayahnya dihapus dari daftar.
+
+Empat hal yang menjaganya:
+
+- **Daftar kosong mematikan fiturnya dengan tenang.** Kolom pilihan hilang dari
+  formulir, penyaring hilang dari panel, dan server berhenti mewajibkannya. Sekolah
+  yang tidak memakainya tidak dipaksa.
+- **`normalizePpdbContent` TIDAK memakai `normalizeDaftar` untuk wilayah.** Fungsi
+  itu memulihkan bawaan ketika daftarnya kosong, sedangkan kosong di sini punya arti
+  tersendiri. Membedakan `[]` (sengaja dikosongkan) dari `undefined` (belum pernah
+  disimpan) itu inti perilakunya — ada uji untuk keduanya.
+- **Server membaca daftarnya dari basis data, bukan dari browser.** `POST /api/ppdb`
+  terbuka untuk umum; tanpa `daftarWilayah()`, siapa pun bisa menyisipkan wilayah
+  karangan dan tata usaha akan menyeleksi jalur Domisili berdasarkan data yang tidak
+  pernah ditawarkan sekolahnya.
+- **Ejaan yang disimpan diambil dari daftar sekolah**, bukan dari yang dikirim.
+  Pencocokannya `EqualFold`, jadi tanpa pengkanonan "kelurahan sukaraya" dan
+  "Kelurahan Sukaraya" tersimpan sebagai dua nilai berbeda — lembar rekap memecah
+  satu wilayah menjadi dua baris, dan penyaring wilayah kehilangan sebagian
+  pendaftarnya. **Ini benar-benar terjadi saat diuji**, terlihat dari lembar rekap.
+
+Bawaannya wilayah sekolah CONTOH dan wajib diganti pembeli; panelnya memuat
+peringatan mencolok, dan `SETUP.md` mendaftarnya sebagai hal yang harus diganti.
+
+### Lembar rekap dihitung di basis data, bukan di browser
+
+`GET /api/ppdb/rekap` mengembalikan cacah per jalur, jenis kelamin, wilayah, dan
+asal sekolah — masing-masing dipecah menurut status lewat `count(*) FILTER (WHERE …)`.
+
+Kenapa tidak dihitung di browser dari daftar yang sudah ada: **daftarnya dibatasi
+500 baris.** Menghitung di browser akan diam-diam benar untuk sekolah kecil lalu
+diam-diam salah begitu pendaftarnya lebih banyak — dan lembar rekap yang salah
+dikirim ke dinas pendidikan lebih buruk daripada tidak ada lembar rekap.
+
+Keempat pengelompokan memakai satu fungsi `kelompokkan(kolom, kosong)`. Nilai
+`kolom` berasal dari daftar tetap di dalam handler, **tidak pernah dari request**,
+jadi penyisipannya ke string SQL tidak bisa dipakai menyuntik. Jenis kelamin
+dipetakan ke kata penuh di SQL, bukan di panel: lembar ini dibaca orang luar, dan
+"L" di kertas resmi terbaca seperti kode internal.
+
+### Aturan cetak pindah ke berkas sendiri karena dashboard tidak memuat sdnb.css
+
+Aturan `@media print` semula ditaruh di `sdnb.css`. Itu salah, dan cacatnya baru
+terlihat ketika lembar rekap dibuat: **`sdnb.css` hanya diimpor halaman publik**,
+sedangkan lembar rekap dicetak dari DASHBOARD. Menekan Cetak di sana akan mencetak
+seluruh dashboard — bilah menu, kartu statistik, dan daftar pendaftaran.
+
+Sekarang di `src/styles/cetak-bukti.css`, diimpor tiga tempat yang memakainya:
+`PpdbPage`, `CekPendaftaranPage`, dan `PpdbRegistrations`. Kalau menambah tempat
+cetak baru, impor berkas itu — jangan mengandalkan stylesheet halaman.
+
+Blok itu juga menetralkan `[role="dialog"]`: Radix membatasi tinggi dialog dan
+menggulung isinya, yang di kertas memotong tabel rekap yang panjang.
 
 ### Diterima → Data Murid dikerjakan di SATU transaksi Go, bukan tiga panggilan browser
 

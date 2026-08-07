@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { cekStatusPendaftaran } from '@/lib/ppdbAdapters';
 import '@/styles/sdnb.css';
+import '@/styles/cetak-bukti.css';
 
 /**
  * Cek status pendaftaran PPDB — halaman publik, tanpa login.

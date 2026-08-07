@@ -51,6 +51,25 @@ export const DEFAULT_PPDB_CONTENT = Object.freeze({
     { id: 'mutasi', name: 'Mutasi', desc: 'Anak dari orang tua yang dipindahtugaskan', kuota: 5 },
   ]),
 
+  /* Wilayah penerimaan untuk jalur Domisili.
+   *
+   * Menurut Permendikdasmen No. 3 Tahun 2025, jalur Domisili memakai wilayah
+   * administratif yang ditetapkan pemerintah DAERAH — kelurahan/desa, kecamatan,
+   * atau radius — bukan jarak garis lurus seperti zonasi yang lama. Daftarnya
+   * berbeda di tiap kabupaten dan bisa berubah tiap tahun, jadi pembeli mengisinya
+   * sendiri di Konten → Informasi Pendaftaran.
+   *
+   * Bawaan di bawah adalah wilayah di sekitar sekolah CONTOH, dan WAJIB diganti
+   * pembeli — sama seperti nama guru dan murid contoh. Bila dikosongkan, kolom
+   * pilihan wilayah hilang dari formulir dan seluruh fitur ini mati dengan tenang:
+   * sekolah yang tidak memakainya tidak dipaksa. */
+  wilayah: Object.freeze([
+    'Kelurahan Baturaja Timur',
+    'Kelurahan Baturaja Barat',
+    'Kelurahan Sukaraya',
+    'Luar wilayah penerimaan',
+  ]),
+
   // Program pendukung yang boleh dipilih calon murid. Bawaannya sengaja tidak
   // memuat program keagamaan: template ini untuk sekolah umum, dan sekolah yang
   // menjalankannya tinggal menambah sendiri.
@@ -139,6 +158,18 @@ export const normalizePpdbContent = (stored) => {
         kuota: angkaKuota(row?.kuota),
       };
     }),
+
+    /* Wilayah TIDAK memakai normalizeDaftar, dan itu penting: fungsi itu
+     * mengembalikan bawaan ketika daftarnya kosong, sedangkan daftar wilayah yang
+     * dikosongkan punya arti tersendiri — "sekolah ini tidak memakai daftar
+     * wilayah". Memulihkannya ke bawaan akan memaksa wilayah sekolah CONTOH muncul
+     * di formulir sekolah pembeli yang sengaja mengosongkannya.
+     *
+     * Bedakan dari `undefined`, yang berarti kuncinya belum pernah disimpan sama
+     * sekali (pemasangan lama) — di situ bawaan memang yang benar. */
+    wilayah: Array.isArray(source.wilayah)
+      ? source.wilayah.map((row) => teks(row)).filter(Boolean)
+      : bawaan.wilayah,
 
     minat: normalizeDaftar(source.minat, bawaan.minat, (row) => teks(row) || null),
 

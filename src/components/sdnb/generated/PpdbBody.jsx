@@ -22,7 +22,9 @@ import '@/styles/sdnb-ppdb.css';
 const PpdbBody = (vals = {}) => {
   const { berkas, d, genders, inisialLogo, jadwal, labelGelombang, namaSekolah, pengantar, syarat, tahunAjaran, tahunAwal, h, isDone, isStep1, isStep2, isStep3, isStep4, jalur, minat, navStyle, next, nextLabel, nextStyle, prev, prevStyle, progressStyle, reset, review, setujuBox, setujuStyle, stepCounter, steps, toggleSetuju,
     // Ditambahkan saat formulir disambungkan ke endpoint PPDB yang sungguhan.
-    nomorPendaftaran, pesanGalat, sudahTerdaftar } = vals;
+    nomorPendaftaran, pesanGalat, sudahTerdaftar,
+    // Wilayah domisili — daftarnya dari panel Konten, kosong berarti tidak dipakai.
+    wilayahOpsi, wilayahNilai, wilayahPilih } = vals;
   return (
     <>
 <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
@@ -172,6 +174,21 @@ const PpdbBody = (vals = {}) => {
                     </React.Fragment>))}
                   </div>
                 </div>
+                {/* Wilayah domisili. Hanya muncul bila sekolah mengisi daftarnya di
+                    Konten → Informasi Pendaftaran; sekolah yang tidak memakainya tidak
+                    dipaksa menampilkan kolom kosong. Dasar seleksi jalur Domisili
+                    menurut Permendikdasmen No. 3 Tahun 2025 adalah wilayah
+                    administratif, bukan jarak. */}
+                {(wilayahOpsi || []).length > 0 && (
+                  <div style={{ gridColumn: "span 2" }}>
+                    <label htmlFor="ppdb-wilayah" style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Wilayah tempat tinggal</label>
+                    <select id="ppdb-wilayah" value={wilayahNilai} onChange={wilayahPilih} style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>
+                      <option value="">— Pilih wilayah —</option>
+                      {(wilayahOpsi || []).map((w, $index) => (<option key={$index} value={w}>{w}</option>))}
+                    </select>
+                    <div style={{ marginTop: "6px", fontSize: "11.5px", lineHeight: "1.5", color: "#6b7093" }}>Sesuai kartu keluarga. Dipakai untuk menilai jalur Domisili.</div>
+                  </div>
+                )}
                 <div style={{ gridColumn: "span 2" }}>
                   <label style={{ display: "block", marginBottom: "10px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Program pendukung yang diminati</label>
                   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>

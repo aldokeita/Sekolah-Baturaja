@@ -74,6 +74,40 @@ describe('kuota jalur', () => {
   });
 });
 
+/* Daftar wilayah punya aturan berbeda dari daftar lain: KOSONG itu pilihan yang
+ * sah, bukan kesalahan. Sekolah yang tidak memakai daftar wilayah mengosongkannya,
+ * dan kolom pilihannya lalu hilang dari formulir. Memulihkannya ke bawaan akan
+ * memaksa wilayah sekolah CONTOH muncul di formulir sekolah pembeli. */
+describe('daftar wilayah', () => {
+  it('menghormati daftar yang sengaja dikosongkan', () => {
+    expect(normalizePpdbContent({ wilayah: [] }).wilayah).toEqual([]);
+  });
+
+  // Bedakan dari kunci yang belum pernah disimpan — di situ bawaan yang benar.
+  it('memakai bawaan bila kuncinya belum pernah ada', () => {
+    expect(normalizePpdbContent({}).wilayah).toEqual(DEFAULT_PPDB_CONTENT.wilayah);
+    expect(normalizePpdbContent({ wilayah: undefined }).wilayah).toEqual(DEFAULT_PPDB_CONTENT.wilayah);
+  });
+
+  it('membuang baris kosong dan merapikan spasi', () => {
+    expect(normalizePpdbContent({ wilayah: ['  Kelurahan A  ', '', '   ', 'Kelurahan B'] }).wilayah)
+      .toEqual(['Kelurahan A', 'Kelurahan B']);
+  });
+
+  it('memakai bawaan bila isinya bukan daftar', () => {
+    ['teks', 42, { a: 1 }, null].forEach((nilai) => {
+      expect(normalizePpdbContent({ wilayah: nilai }).wilayah).toEqual(DEFAULT_PPDB_CONTENT.wilayah);
+    });
+  });
+
+  // Bawaannya wilayah sekolah contoh, dan pembeli WAJIB menggantinya — panel
+  // memperingatkannya. Yang diuji di sini: bawaannya tidak kosong, supaya fiturnya
+  // ketemu sendiri oleh pembeli alih-alih tersembunyi.
+  it('mengirim contoh yang tidak kosong supaya fiturnya terlihat', () => {
+    expect(DEFAULT_PPDB_CONTENT.wilayah.length).toBeGreaterThan(1);
+  });
+});
+
 describe('normalizePpdbContent', () => {
   it('mengembalikan bawaan untuk masukan kosong atau bukan objek', () => {
     [null, undefined, 'teks', 7].forEach((masukan) => {

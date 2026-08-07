@@ -53,6 +53,7 @@ func (h *PpdbHandler) Routes() chi.Router {
 	r.Get("/statistik", h.Stats)
 	// Sebelum /{id} supaya keduanya tidak dibaca sebagai id.
 	r.Get("/usulan-nomor", h.UsulanNomorInduk)
+	r.Get("/rekap", h.Rekap)
 	r.Post("/impor-pesan", h.ImporDariPesan)
 	r.Get("/{id}", h.Get)
 	r.Post("/{id}/murid", h.JadikanMurid)
@@ -87,6 +88,7 @@ type pendaftaranRow struct {
 	UsiaKeterangan    *string        `json:"usia_keterangan"`
 	Jalur             *string        `json:"jalur"`
 	JalurLabel        *string        `json:"jalur_label"`
+	Wilayah           *string        `json:"wilayah"`
 	Minat             *string        `json:"minat"`
 	NamaAyah          *string        `json:"nama_ayah"`
 	NamaIbu           *string        `json:"nama_ibu"`
@@ -108,7 +110,7 @@ type pendaftaranRow struct {
 const pendaftaranKolom = `
 	id, nomor_pendaftaran, tahun_ajaran, nama_lengkap, nisn, nik,
 	tempat_lahir, tanggal_lahir::text, jenis_kelamin, alamat, no_hp, email,
-	sekolah_asal, npsn_asal, usia_keterangan, jalur, jalur_label, minat,
+	sekolah_asal, npsn_asal, usia_keterangan, jalur, jalur_label, wilayah, minat,
 	nama_ayah, nama_ibu, pekerjaan_orang_tua, no_hp_wali, berkas_siap,
 	status, catatan, diproses_pada::text, santri_id, created_at::text, updated_at::text
 `
@@ -118,7 +120,7 @@ func scanPendaftaran(row pgx.Row) (pendaftaranRow, error) {
 	err := row.Scan(
 		&p.ID, &p.NomorPendaftaran, &p.TahunAjaran, &p.NamaLengkap, &p.Nisn, &p.Nik,
 		&p.TempatLahir, &p.TanggalLahir, &p.JenisKelamin, &p.Alamat, &p.NoHp, &p.Email,
-		&p.SekolahAsal, &p.NpsnAsal, &p.UsiaKeterangan, &p.Jalur, &p.JalurLabel, &p.Minat,
+		&p.SekolahAsal, &p.NpsnAsal, &p.UsiaKeterangan, &p.Jalur, &p.JalurLabel, &p.Wilayah, &p.Minat,
 		&p.NamaAyah, &p.NamaIbu, &p.PekerjaanOrangTua, &p.NoHpWali, &p.BerkasSiap,
 		&p.Status, &p.Catatan, &p.DiprosesPada, &p.SantriID, &p.CreatedAt, &p.UpdatedAt,
 	)
@@ -184,6 +186,7 @@ type ppdbInput struct {
 	UsiaKeterangan    string          `json:"usia_keterangan"`
 	Jalur             string          `json:"jalur"`
 	JalurLabel        string          `json:"jalur_label"`
+	Wilayah           string          `json:"wilayah"`
 	Minat             string          `json:"minat"`
 	NamaAyah          string          `json:"nama_ayah"`
 	NamaIbu           string          `json:"nama_ibu"`
@@ -298,6 +301,31 @@ func (h *PpdbHandler) batasiLaju(ctx context.Context, tujuan, ip string, maks, j
 	return boleh
 }
 
+/* Daftar wilayah penerimaan yang disimpan sekolah di `ppdb_content.wilayah`.
+ *
+ * Dibaca dari basis data, bukan diterima dari browser: endpoint Submit terbuka
+ * untuk umum, jadi apa pun bisa dikirim ke kolom `wilayah`. Tanpa pemeriksaan ini,
+ * seseorang bisa menyisipkan wilayah karangan dan tata usaha akan menyeleksi jalur
+ * Domisili berdasarkan data yang tidak pernah ditawarkan sekolahnya.
+ *
+ * Daftar kosong berarti sekolah tidak memakai fitur ini, dan kolomnya diabaikan.
+ */
+func (h *PpdbHandler) daftarWilayah(ctx context.Context) []string {
+	var mentah []byte
+	err := h.db.QueryRow(ctx,
+		`SELECT content FROM website_content WHERE key = 'ppdb_content'`).Scan(&mentah)
+	if err != nil {
+		return nil
+	}
+	var isi struct {
+		Wilayah []string `json:"wilayah"`
+	}
+	if err := json.Unmarshal(mentah, &isi); err != nil {
+		return nil
+	}
+	return isi.Wilayah
+}
+
 // ---------------------------------------------------------------------------
 // Submit — publik
 // ---------------------------------------------------------------------------
@@ -330,6 +358,39 @@ func (h *PpdbHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	tahun := strings.TrimSpace(in.TahunAjaran)
 	nama := strings.TrimSpace(in.NamaLengkap)
 	lahir := strings.TrimSpace(in.TanggalLahir)
+
+	/* Wilayah harus salah satu yang ditawarkan sekolah. Diperiksa di sini, bukan di
+	 * `periksa()`, karena butuh basis data — sedangkan periksa() sengaja murni
+	 * supaya mudah dibaca dan diuji. */
+	wilayah := strings.TrimSpace(in.Wilayah)
+	if daftar := h.daftarWilayah(r.Context()); len(daftar) > 0 {
+		if wilayah == "" {
+			jsonError(w, "wilayah domisili wajib dipilih", http.StatusBadRequest)
+			return
+		}
+		/* Ejaan yang DISIMPAN diambil dari daftar sekolah, bukan dari yang dikirim
+		 * pengunjung. Pencocokannya mengabaikan besar-kecil huruf, jadi tanpa ini
+		 * "kelurahan sukaraya" dan "Kelurahan Sukaraya" tersimpan sebagai dua nilai
+		 * berbeda — lembar rekap memecah satu wilayah menjadi dua baris, dan
+		 * penyaring wilayah di panel kehilangan sebagian pendaftarnya. Ini benar-benar
+		 * terjadi saat diuji. */
+		cocok := false
+		for _, w := range daftar {
+			if strings.EqualFold(strings.TrimSpace(w), wilayah) {
+				wilayah = strings.TrimSpace(w)
+				cocok = true
+				break
+			}
+		}
+		if !cocok {
+			jsonError(w, "wilayah domisili tidak dikenal, pilih dari daftar yang tersedia", http.StatusBadRequest)
+			return
+		}
+	} else {
+		// Sekolah tidak memakai daftar wilayah; kolomnya diabaikan sepenuhnya
+		// supaya kiriman langsung ke API tidak bisa menyelipkan isian liar.
+		wilayah = ""
+	}
 
 	/* Kirim ganda adalah kejadian biasa: orang tua menekan tombol dua kali, atau
 	 * memuat ulang halaman konfirmasi. Alih-alih membuat dua baris yang harus
@@ -402,11 +463,11 @@ func (h *PpdbHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		INSERT INTO pendaftaran_ppdb (
 			nomor_pendaftaran, tahun_ajaran, nama_lengkap, nisn, nik,
 			tempat_lahir, tanggal_lahir, jenis_kelamin, alamat, no_hp, email,
-			sekolah_asal, npsn_asal, usia_keterangan, jalur, jalur_label, minat,
+			sekolah_asal, npsn_asal, usia_keterangan, jalur, jalur_label, wilayah, minat,
 			nama_ayah, nama_ibu, pekerjaan_orang_tua, no_hp_wali, berkas_siap
 		) VALUES (
 			$1,$2,$3,$4,$5,$6,$7::date,$8,$9,$10,$11,
-			$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22
+			$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23
 		)
 		RETURNING id
 	`,
@@ -414,7 +475,7 @@ func (h *PpdbHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		opsional(in.TempatLahir), lahir, in.JenisKelamin, opsional(in.Alamat),
 		rapikanHp(in.NoHp), opsional(in.Email),
 		opsional(in.SekolahAsal), opsional(in.NpsnAsal), opsional(in.UsiaKeterangan),
-		opsional(in.Jalur), opsional(in.JalurLabel), opsional(in.Minat),
+		opsional(in.Jalur), opsional(in.JalurLabel), opsional(wilayah), opsional(in.Minat),
 		opsional(in.NamaAyah), opsional(in.NamaIbu), opsional(in.PekerjaanOrangTua),
 		opsional(rapikanHp(in.NoHpWali)), berkas,
 	).Scan(&id)
@@ -537,19 +598,21 @@ func (h *PpdbHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cari := strings.TrimSpace(q.Get("q"))
+	wilayah := strings.TrimSpace(q.Get("wilayah"))
 
 	rows, err := h.db.Query(r.Context(), `
 		SELECT `+pendaftaranKolom+`
 		FROM pendaftaran_ppdb
 		WHERE ($1 = '' OR tahun_ajaran = $1)
 		  AND ($2 = '' OR status = $2)
+		  AND ($4 = '' OR wilayah = $4)
 		  AND ($3 = '' OR nama_lengkap ILIKE '%' || $3 || '%'
 		                OR nomor_pendaftaran ILIKE '%' || $3 || '%'
 		                OR coalesce(nisn, '') ILIKE '%' || $3 || '%'
 		                OR no_hp ILIKE '%' || $3 || '%')
 		ORDER BY created_at DESC
 		LIMIT 500
-	`, tahun, status, cari)
+	`, tahun, status, cari, wilayah)
 	if err != nil {
 		jsonError(w, "gagal mengambil daftar pendaftaran", http.StatusInternalServerError)
 		return
@@ -674,6 +737,124 @@ func (h *PpdbHandler) Stats(w http.ResponseWriter, r *http.Request) {
 		"tahun_ajaran":   daftarTahun,
 		"diterima_jalur": diterimaJalur,
 		"daya_tampung":   dayaTampung,
+	}})
+}
+
+// Rekap GET /api/ppdb/rekap?tahun=2026/2027
+//
+// Angka ringkasan untuk lembar rekap yang dicetak dan dikirim ke dinas pendidikan:
+// cacah per jalur, per jenis kelamin, per wilayah, dan per asal sekolah — masing-masing
+// dipecah menurut status supaya "mendaftar" dan "diterima" bisa dibedakan.
+//
+// Dihitung di basis data, bukan di browser dari daftar yang sudah diunduh. Daftarnya
+// dibatasi 500 baris, jadi menghitung di browser akan diam-diam salah begitu
+// pendaftarnya lebih banyak dari itu — dan lembar rekap yang salah dikirim ke dinas
+// lebih buruk daripada tidak ada lembar rekap.
+func (h *PpdbHandler) Rekap(w http.ResponseWriter, r *http.Request) {
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	tahun := strings.TrimSpace(r.URL.Query().Get("tahun"))
+
+	// Satu bentuk untuk keempat pengelompokan, supaya panel merendernya dengan satu
+	// komponen tabel dan tidak ada empat jalur kode yang bisa berbeda.
+	type barisRekap struct {
+		Label        string `json:"label"`
+		Total        int    `json:"total"`
+		Baru         int    `json:"baru"`
+		Diverifikasi int    `json:"diverifikasi"`
+		Diterima     int    `json:"diterima"`
+		Ditolak      int    `json:"ditolak"`
+	}
+
+	// `kolom` adalah nama kolom yang dikelompokkan; nilainya berasal dari daftar
+	// tetap di bawah, TIDAK dari request, jadi ia tidak bisa dipakai menyuntik SQL.
+	kelompokkan := func(kolom, kosong string) ([]barisRekap, error) {
+		rows, err := h.db.Query(r.Context(), `
+			SELECT coalesce(nullif(btrim(`+kolom+`), ''), $2) AS label,
+			       count(*),
+			       count(*) FILTER (WHERE status = 'baru'),
+			       count(*) FILTER (WHERE status = 'diverifikasi'),
+			       count(*) FILTER (WHERE status = 'diterima'),
+			       count(*) FILTER (WHERE status = 'ditolak')
+			FROM pendaftaran_ppdb
+			WHERE ($1 = '' OR tahun_ajaran = $1)
+			GROUP BY label
+			ORDER BY count(*) DESC, label
+		`, tahun, kosong)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		hasil := []barisRekap{}
+		for rows.Next() {
+			var b barisRekap
+			if err := rows.Scan(&b.Label, &b.Total, &b.Baru, &b.Diverifikasi, &b.Diterima, &b.Ditolak); err != nil {
+				return nil, err
+			}
+			hasil = append(hasil, b)
+		}
+		return hasil, rows.Err()
+	}
+
+	/* Jenis kelamin dipetakan ke kata penuh di SQL, bukan di panel: lembar ini
+	 * dicetak dan dibaca orang luar, dan "L" di kertas resmi terbaca seperti kode
+	 * internal. */
+	jenisKelamin, err := kelompokkan(
+		`CASE jenis_kelamin WHEN 'L' THEN 'Laki-laki' WHEN 'P' THEN 'Perempuan' ELSE NULL END`,
+		"Tidak diisi")
+	if err != nil {
+		jsonError(w, "gagal menghitung rekap jenis kelamin", http.StatusInternalServerError)
+		return
+	}
+	jalur, err := kelompokkan("jalur_label", "Tanpa jalur")
+	if err != nil {
+		jsonError(w, "gagal menghitung rekap jalur", http.StatusInternalServerError)
+		return
+	}
+	wilayah, err := kelompokkan("wilayah", "Tidak diisi")
+	if err != nil {
+		jsonError(w, "gagal menghitung rekap wilayah", http.StatusInternalServerError)
+		return
+	}
+	asal, err := kelompokkan("sekolah_asal", "Tidak diisi")
+	if err != nil {
+		jsonError(w, "gagal menghitung rekap asal sekolah", http.StatusInternalServerError)
+		return
+	}
+
+	var total, diterima int
+	if err := h.db.QueryRow(r.Context(), `
+		SELECT count(*), count(*) FILTER (WHERE status = 'diterima')
+		FROM pendaftaran_ppdb WHERE ($1 = '' OR tahun_ajaran = $1)
+	`, tahun).Scan(&total, &diterima); err != nil {
+		jsonError(w, "gagal menghitung total pendaftar", http.StatusInternalServerError)
+		return
+	}
+
+	// Berapa yang sudah tercatat sebagai murid — angka yang paling sering ditanya
+	// setelah "berapa yang diterima".
+	var jadiMurid int
+	if err := h.db.QueryRow(r.Context(), `
+		SELECT count(*) FROM pendaftaran_ppdb
+		WHERE ($1 = '' OR tahun_ajaran = $1) AND santri_id IS NOT NULL
+	`, tahun).Scan(&jadiMurid); err != nil {
+		jsonError(w, "gagal menghitung murid tercatat", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, map[string]any{"data": map[string]any{
+		"tahun_ajaran":  tahun,
+		"total":         total,
+		"diterima":      diterima,
+		"jadi_murid":    jadiMurid,
+		"jalur":         jalur,
+		"jenis_kelamin": jenisKelamin,
+		"wilayah":       wilayah,
+		"asal_sekolah":  asal,
 	}})
 }
 

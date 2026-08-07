@@ -6,6 +6,7 @@ import { kirimPendaftaran } from '@/lib/ppdbAdapters';
 import { DEFAULT_PPDB_CONTENT, fetchPpdbContent, isiPenanda } from '@/lib/ppdbContent';
 import { tahunAjaranAwal } from '@/lib/schoolIdentity';
 import '@/styles/sdnb.css';
+import '@/styles/cetak-bukti.css';
 
 /**
  * Formulir PPDB — markup generated verbatim from `Formulir PPDB.dc.html` by
@@ -59,6 +60,7 @@ const PpdbPage = () => {
   const [step, setStep] = useState(1);
   const [gender, setGender] = useState('');
   const [jalur, setJalur] = useState('domisili');
+  const [wilayah, setWilayah] = useState('');
   const [minat, setMinat] = useState('');
   const [files, setFiles] = useState({});
   const [setuju, setSetuju] = useState(false);
@@ -96,6 +98,7 @@ const PpdbPage = () => {
           setStep(saved.state.step ?? 1);
           setGender(saved.state.gender ?? '');
           setJalur(saved.state.jalur ?? 'domisili');
+          setWilayah(saved.state.wilayah ?? '');
           setMinat(saved.state.minat ?? '');
           setFiles(saved.state.files ?? {});
           setSetuju(!!saved.state.setuju);
@@ -117,14 +120,14 @@ const PpdbPage = () => {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify({
           data: data.current,
-          state: { step, gender, jalur, minat, files, setuju, done, hasil },
+          state: { step, gender, jalur, wilayah, minat, files, setuju, done, hasil },
         }));
       } catch { /* storage may be unavailable */ }
     };
     const id = setInterval(save, 1500);
     window.addEventListener('beforeunload', save);
     return () => { clearInterval(id); window.removeEventListener('beforeunload', save); };
-  }, [restored, step, gender, jalur, minat, files, setuju, done, hasil]);
+  }, [restored, step, gender, jalur, wilayah, minat, files, setuju, done, hasil]);
 
   const go = useCallback((n) => { setStep(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
 
@@ -168,6 +171,7 @@ const PpdbPage = () => {
         usia_keterangan: d.nilai || '',
         jalur,
         jalur_label: jalurLabel === '—' ? '' : jalurLabel,
+        wilayah,
         minat,
         nama_ayah: d.ayah || '',
         nama_ibu: d.ibu || '',
@@ -195,6 +199,8 @@ const PpdbPage = () => {
     if (!String(d.alamat || '').trim()) return 'Alamat tempat tinggal belum diisi.';
     if (!String(d.hp || '').trim()) return 'Nomor WhatsApp belum diisi.';
     if (!String(d.ayah || '').trim() && !String(d.ibu || '').trim()) return 'Nama ayah atau ibu belum diisi.';
+    // Hanya wajib bila sekolah memakai daftar wilayah — sama seperti aturan server.
+    if (ppdb.wilayah.length > 0 && !wilayah) return 'Wilayah tempat tinggal belum dipilih.';
     return '';
   })();
 
@@ -244,6 +250,11 @@ const PpdbPage = () => {
 
     minat: ppdb.minat.map((label) => ({ label, style: chipStyle(minat === label), pick: () => setMinat(label) })),
 
+    // Daftar kosong menyembunyikan kolomnya di PpdbBody.
+    wilayahOpsi: ppdb.wilayah,
+    wilayahNilai: wilayah,
+    wilayahPilih: (e) => setWilayah(e.target.value),
+
     berkas: ppdb.berkas.map(({ id: k, name: label, hint: note }) => {
       const on = !!files[k];
       return {
@@ -266,6 +277,7 @@ const PpdbPage = () => {
       { k: 'Asal TK atau RA', v: v('sekolah') },
       { k: `Usia per 1 Juli ${tahunAwal}`, v: v('nilai') },
       { k: 'Jalur pendaftaran', v: jalurLabel },
+      ...(ppdb.wilayah.length > 0 ? [{ k: 'Wilayah tempat tinggal', v: wilayah || '—' }] : []),
       { k: 'Program pendukung', v: minat || '—' },
       // "dari 4" dulu ditulis tetap, padahal daftar berkas disunting pembeli dan
       // bisa berisi berapa pun barisnya. Dan yang dicentang adalah KESIAPAN berkas,
@@ -314,7 +326,7 @@ const PpdbPage = () => {
     reset: () => {
       data.current = { ...EMPTY };
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-      setStep(1); setDone(false); setGender(''); setJalur('domisili'); setMinat(''); setFiles({}); setSetuju(false);
+      setStep(1); setDone(false); setGender(''); setJalur('domisili'); setWilayah(''); setMinat(''); setFiles({}); setSetuju(false);
       setHasil(null); setPesanGalat('');
       document.querySelectorAll('input').forEach((el) => { if (el.type !== 'button') el.value = ''; });
     },

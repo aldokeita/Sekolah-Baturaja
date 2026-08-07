@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Check, ChevronDown, Download, GraduationCap, Inbox, MessageCircle, RefreshCw, Search,
-  Trash2, UserCheck, UserX,
+  Check, ChevronDown, Download, FileText, GraduationCap, Inbox, MessageCircle, Printer,
+  RefreshCw, Search, Trash2, UserCheck, UserX,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,13 +14,14 @@ import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import {
-  URUTAN_STATUS, fetchPendaftaran, fetchStatistikPpdb, getPpdbErrorMessage,
+  URUTAN_STATUS, fetchPendaftaran, fetchRekapPpdb, fetchStatistikPpdb, getPpdbErrorMessage,
   hapusPendaftaran, imporPendaftaranLama, jadikanMurid, labelStatus, ubahPendaftaran,
   unduhCsvPendaftaran, usulanNomorInduk,
 } from '@/lib/ppdbAdapters';
 import { fetchPpdbContent } from '@/lib/ppdbContent';
 import { fetchClassList } from '@/lib/dataMasterAdapters';
 import { fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
+import '@/styles/cetak-bukti.css';
 
 /**
  * Panel Pendaftaran PPDB — tempat tata usaha memverifikasi calon murid.
@@ -101,6 +102,7 @@ const PpdbRegistrations = () => {
 
   const [tahun, setTahun] = useState('');
   const [status, setStatus] = useState('');
+  const [wilayah, setWilayah] = useState('');
   const [cari, setCari] = useState('');
   const [cariTertunda, setCariTertunda] = useState('');
 
@@ -112,6 +114,7 @@ const PpdbRegistrations = () => {
    * pendaftaran supaya panel tidak menampilkan id mentah kepada tata usaha. */
   const [namaBerkasPpdb, setNamaBerkasPpdb] = useState({});
   const [jalurPpdb, setJalurPpdb] = useState([]);
+  const [wilayahPpdb, setWilayahPpdb] = useState([]);
   const [kelasList, setKelasList] = useState([]);
   const [templatePesan, setTemplatePesan] = useState({});
 
@@ -124,6 +127,7 @@ const PpdbRegistrations = () => {
         if (!aktif) return;
         setNamaBerkasPpdb(Object.fromEntries(konten.berkas.map((b) => [b.id, b.name])));
         setJalurPpdb(konten.jalur || []);
+        setWilayahPpdb(konten.wilayah || []);
       })
       .catch(() => { /* id mentah tetap terbaca, sekadar kurang ramah */ });
     fetchClassList({ is_active: true })
@@ -218,7 +222,7 @@ const PpdbRegistrations = () => {
     setLoadError(null);
     try {
       const [daftar, stat] = await Promise.all([
-        fetchPendaftaran({ tahun, status, q: cari }),
+        fetchPendaftaran({ tahun, status, q: cari, wilayah }),
         fetchStatistikPpdb(tahun),
       ]);
       setRows(daftar);
@@ -228,7 +232,7 @@ const PpdbRegistrations = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [tahun, status, cari]);
+  }, [tahun, status, cari, wilayah]);
 
   useEffect(() => { muat(); }, [muat]);
 
@@ -274,6 +278,22 @@ const PpdbRegistrations = () => {
   };
 
   const [sedangImpor, setSedangImpor] = useState(false);
+
+  /* Lembar rekap. Dimuat hanya saat diminta, bukan bersama panel: ia empat query
+   * pengelompokan yang tidak dibutuhkan tata usaha untuk pekerjaan sehari-hari. */
+  const [rekap, setRekap] = useState(null);
+  const [sedangRekap, setSedangRekap] = useState(false);
+
+  const bukaRekap = async () => {
+    setSedangRekap(true);
+    try {
+      setRekap(await fetchRekapPpdb(tahun));
+    } catch (error) {
+      toast({ title: 'Gagal memuat rekap', description: getPpdbErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setSedangRekap(false);
+    }
+  };
 
   /* Impor pendaftaran lama dari Pesan Masuk.
    *
@@ -389,6 +409,9 @@ const PpdbRegistrations = () => {
               <Inbox className="mr-2 h-4 w-4" /> {sedangImpor ? 'Memeriksa…' : 'Impor dari Pesan Masuk'}
             </Button>
           )}
+          <Button type="button" variant="outline" onClick={bukaRekap} disabled={sedangRekap}>
+            <FileText className="mr-2 h-4 w-4" /> {sedangRekap ? 'Menyusun…' : 'Lembar rekap'}
+          </Button>
           <Button
             type="button"
             onClick={() => unduhCsvPendaftaran(rows, namaBerkas)}
@@ -499,6 +522,21 @@ const PpdbRegistrations = () => {
             {(statistik.tahun_ajaran || []).map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
+        {/* Penyaring wilayah hanya muncul bila sekolah memakai daftar wilayah. */}
+        {wilayahPpdb.length > 0 && (
+          <div className="admin-edit-field sm:w-56">
+            <label htmlFor="ppdb-wilayah-saring">Wilayah</label>
+            <select
+              id="ppdb-wilayah-saring"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={wilayah}
+              onChange={(e) => setWilayah(e.target.value)}
+            >
+              <option value="">Semua wilayah</option>
+              {wilayahPpdb.map((w) => <option key={w} value={w}>{w}</option>)}
+            </select>
+          </div>
+        )}
         <div className="admin-edit-field sm:w-52">
           <label htmlFor="ppdb-status">Status</label>
           <select
@@ -622,6 +660,7 @@ const PpdbRegistrations = () => {
                       </Data>
                       <Data label="Email">{isi(row.email)}</Data>
                       <Data label="Alamat">{isi(row.alamat)}</Data>
+                      <Data label="Wilayah domisili">{isi(row.wilayah)}</Data>
                       <Data label="Sekolah asal">
                         {`${isi(row.sekolah_asal)}${row.npsn_asal ? ` (NPSN ${row.npsn_asal})` : ''}`}
                       </Data>
@@ -679,6 +718,92 @@ const PpdbRegistrations = () => {
         Menampilkan {rows.length} pendaftaran{statistik.total ? ` dari ${statistik.total} total` : ''}.
         Daftar dibatasi 500 baris terbaru; gunakan penyaring bila lebih dari itu.
       </p>
+
+      {/* Lembar rekap. `bukti-cetak` menyalakan aturan @media print di sdnb.css,
+          jadi yang keluar hanya lembarnya — bukan seluruh dashboard. */}
+      <Dialog open={!!rekap} onOpenChange={(buka) => { if (!buka) setRekap(null); }}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader className="bukti-sembunyi-cetak">
+            <DialogTitle>Lembar rekap SPMB</DialogTitle>
+            <DialogDescription>
+              Angka dihitung dari seluruh pendaftaran{rekap?.tahun_ajaran ? ` tahun ${rekap.tahun_ajaran}` : ''},
+              bukan dari daftar yang tampil di panel.
+            </DialogDescription>
+          </DialogHeader>
+
+          {rekap && (
+            <div className="bukti-cetak space-y-5 text-sm">
+              <div className="bukti-kepala" style={{ display: 'none' }}>
+                <strong style={{ fontSize: '15px' }}>{sekolah.name}</strong>
+                <div style={{ fontSize: '12px' }}>{sekolah.address}</div>
+                <div style={{ fontSize: '12px' }}>{sekolah.phone} · {sekolah.email}</div>
+              </div>
+
+              <div>
+                <h5 className="text-base font-bold text-foreground">
+                  Rekapitulasi Penerimaan Murid Baru {rekap.tahun_ajaran || '— semua tahun'}
+                </h5>
+                <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-muted-foreground">
+                  <span>Pendaftar: <strong className="text-foreground">{rekap.total}</strong></span>
+                  <span>Diterima: <strong className="text-foreground">{rekap.diterima}</strong></span>
+                  <span>Tercatat sebagai murid: <strong className="text-foreground">{rekap.jadi_murid}</strong></span>
+                </div>
+              </div>
+
+              {[
+                ['Menurut jalur', rekap.jalur],
+                ['Menurut jenis kelamin', rekap.jenis_kelamin],
+                ['Menurut wilayah domisili', rekap.wilayah],
+                ['Menurut sekolah asal', rekap.asal_sekolah],
+              ].map(([judul, baris]) => (
+                <div key={judul}>
+                  <h6 className="font-bold text-foreground">{judul}</h6>
+                  {(baris || []).length === 0 ? (
+                    <p className="mt-1 text-muted-foreground">Belum ada data.</p>
+                  ) : (
+                    <div className="mt-2 overflow-x-auto">
+                      <table className="w-full border-collapse text-sm">
+                        <thead>
+                          <tr className="border-b text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            <th className="py-1.5 pr-3">Keterangan</th>
+                            <th className="py-1.5 px-2 text-right">Mendaftar</th>
+                            <th className="py-1.5 px-2 text-right">Diperiksa</th>
+                            <th className="py-1.5 px-2 text-right">Diterima</th>
+                            <th className="py-1.5 pl-2 text-right">Tidak diterima</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {baris.map((b) => (
+                            <tr key={b.label} className="border-b last:border-0">
+                              <td className="py-1.5 pr-3 font-semibold text-foreground">{b.label}</td>
+                              <td className="py-1.5 px-2 text-right">{b.total}</td>
+                              <td className="py-1.5 px-2 text-right">{b.diverifikasi}</td>
+                              <td className="py-1.5 px-2 text-right">{b.diterima}</td>
+                              <td className="py-1.5 pl-2 text-right">{b.ditolak}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <p className="text-xs text-muted-foreground">
+                Kolom Diperiksa berisi yang berstatus Sudah diperiksa dan belum diputuskan. Baris
+                &ldquo;Tidak diisi&rdquo; muncul bila pendaftar tidak melengkapi keterangan itu.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="bukti-sembunyi-cetak">
+            <Button type="button" variant="outline" onClick={() => setRekap(null)}>Tutup</Button>
+            <Button type="button" onClick={() => window.print()}>
+              <Printer className="mr-2 h-4 w-4" /> Cetak
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!dialog} onOpenChange={(buka) => { if (!buka) setDialog(null); }}>
         <DialogContent className="max-w-md">

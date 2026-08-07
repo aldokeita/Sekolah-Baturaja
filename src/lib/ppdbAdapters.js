@@ -55,14 +55,28 @@ export const kirimPendaftaran = async (isian) => {
 };
 
 /** Daftar pendaftaran untuk panel. Penyaring yang kosong tidak dikirim. */
-export const fetchPendaftaran = async ({ tahun, status, q } = {}) => {
+export const fetchPendaftaran = async ({ tahun, status, q, wilayah } = {}) => {
   const params = new URLSearchParams();
   if (tahun) params.set('tahun', tahun);
   if (status) params.set('status', status);
   if (q) params.set('q', q);
+  if (wilayah) params.set('wilayah', wilayah);
   const query = params.toString();
   const data = await apiClient.get(query ? `${BASE}?${query}` : BASE);
   return data || [];
+};
+
+/**
+ * Angka ringkasan untuk lembar rekap yang dicetak.
+ *
+ * Dihitung di server, bukan dari daftar yang sudah diunduh: daftar itu dibatasi
+ * 500 baris, jadi menghitung di browser akan diam-diam salah begitu pendaftarnya
+ * lebih banyak — dan lembar rekap yang salah dikirim ke dinas lebih buruk daripada
+ * tidak ada lembar rekap.
+ */
+export const fetchRekapPpdb = async (tahun) => {
+  const query = tahun ? `?tahun=${encodeURIComponent(tahun)}` : '';
+  return apiClient.get(`${BASE}/rekap${query}`);
 };
 
 export const fetchStatistikPpdb = async (tahun) => {
@@ -159,6 +173,7 @@ const KOLOM_EKSPOR = [
   ['npsn_asal', 'NPSN asal'],
   ['usia_keterangan', 'Usia'],
   ['jalur_label', 'Jalur'],
+  ['wilayah', 'Wilayah domisili'],
   ['minat', 'Program pendukung'],
   ['nama_ayah', 'Nama ayah'],
   ['nama_ibu', 'Nama ibu'],

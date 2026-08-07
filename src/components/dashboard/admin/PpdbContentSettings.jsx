@@ -205,6 +205,41 @@ const PpdbContentSettings = () => {
       </Bagian>
 
       <Bagian
+        judul="Wilayah Penerimaan"
+        keterangan="Pilihan wilayah domisili pada formulir. Kosongkan bila sekolah Anda tidak memakainya — kolomnya akan hilang dari formulir."
+        tombol={(
+          <Button type="button" size="sm" variant="outline" onClick={() => tambah('wilayah', '')}>
+            <Plus className="mr-1 h-4 w-4" /> Tambah wilayah
+          </Button>
+        )}
+      >
+        <div className="admin-error-state" role="note">
+          <p className="text-sm font-medium">Daftar bawaan di bawah adalah wilayah sekolah contoh — ganti dengan wilayah Anda.</p>
+          <p className="text-xs">
+            Jalur Domisili memakai wilayah administratif yang ditetapkan pemerintah daerah
+            (kelurahan/desa, kecamatan, atau radius), bukan jarak. Tanyakan daftar resminya ke Dinas
+            Pendidikan setempat. Bila dibiarkan, orang tua akan memilih wilayah yang tidak berlaku di
+            sekolah Anda.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          {isi.wilayah.map((w, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input value={w} placeholder="Kelurahan Sukaraya" aria-label={`Wilayah ${i + 1}`} onChange={(e) => ubahTeks('wilayah', i, e.target.value)} />
+              <Button type="button" variant="destructive" size="icon" className="h-9 w-9 flex-none" onClick={() => hapus('wilayah', i)} aria-label={`Hapus wilayah ${i + 1}`}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+        {isi.wilayah.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            Daftar kosong. Kolom pilihan wilayah tidak akan tampil di formulir pendaftaran.
+          </p>
+        )}
+      </Bagian>
+
+      <Bagian
         judul="Program Pendukung"
         keterangan="Pilihan minat calon murid. Boleh dikosongkan bila sekolah tidak menawarkannya."
         tombol={(
