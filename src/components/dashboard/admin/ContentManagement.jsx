@@ -3,16 +3,15 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Edit, Trophy, Star, Sun, Moon, Video, Users, BookCopy, MessageSquare, FileText, Library, Building, Mail, Info, Image as ImageIcon, CalendarClock, HelpCircle, Home, Heart, Save } from 'lucide-react';
+import { Plus, Trash2, Edit, Trophy, Star, Video, Users, BookCopy, MessageSquare, FileText, Library, Building, Mail, Info, Image as ImageIcon, Home, Heart, Save } from 'lucide-react';
 import { fetchSantriList, fetchGuruList } from '@/lib/dataMasterAdapters';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { RotateCcw, ClipboardList, GripVertical, PlusCircle, MinusCircle, ArrowUp, ArrowDown, Building2 } from 'lucide-react';
+import { ClipboardList, GripVertical, PlusCircle, MinusCircle, ArrowUp, ArrowDown, Building2, BookMarked } from 'lucide-react';
 import SchoolIdentitySettings from '@/components/dashboard/admin/SchoolIdentitySettings';
 import HomeContentSettings from '@/components/dashboard/admin/HomeContentSettings';
+import ProfileContentSettings from '@/components/dashboard/admin/ProfileContentSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import { motion } from 'framer-motion';
@@ -171,6 +170,16 @@ const HafalanItemManager = ({
 
 const ContentManagement = () => {
   const { role } = useAuth();
+  /* Sebagian kunci di bawah TIDAK punya kendali di panel lagi: slideshow
+   * (`heroSlides`), latar CTA, kuota, jadwal pembelajaran, keunggulan, FAQ lama,
+   * video qiroati, artikel parenting, diskusi wali murid, dan pengaturan model 3D.
+   * Semuanya peninggalan desain beranda sebelumnya dan tidak dirender halaman
+   * publik mana pun, jadi kendalinya dicabut — pembeli tidak lagi menyimpan
+   * sesuatu yang tak mengubah apa pun.
+   *
+   * Kuncinya sengaja DIBIARKAN di bentuk data ini. Kalau dihapus, "Simpan Semua
+   * Perubahan" akan menimpa isi tersimpan pembeli dengan kekosongan; dibiarkan,
+   * data lama tetap utuh sampai ada keputusan memakainya lagi. */
   const [content, setContent] = useState({
     ...defaultContent, brochures: [], pustaka: [], news: [], announcements: [], qiroatiVideos: [], hafalanVideos: [], waliDiscussions: [], santriOfTheMonth: [], guruOfTheMonth: null, leaderboard: [], parentingArticles: [], model3dSettings: { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 }
   });
@@ -306,20 +315,6 @@ const ContentManagement = () => {
     toast({ title: "Upload Berhasil!", description: `${file.name} berhasil diunggah.` });
   };
 
-  const handleHeroImageUpload = async (e, slideId) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const folder = 'hero-slides';
-    let publicUrl = '';
-    try {
-      const result = await uploadWebsiteAsset({ folder, key: `slide-${slideId}`, file });
-      publicUrl = result.publicUrl;
-    } catch (error) {
-      return toast({ title: "Upload Gagal!", description: getStorageErrorMessage(error), variant: "destructive" });
-    }
-    setContent(prev => ({ ...prev, heroSlides: prev.heroSlides.map(slide => slide.id === slideId ? { ...slide, url: publicUrl } : slide) }));
-  };
-
   const openModal = (type, item = null) => {
     setModalType(type);
     if (item) { setEditingItem(item); setFormState(item); }
@@ -366,12 +361,9 @@ const ContentManagement = () => {
     }
   };
 
-  const handleHeroSlideChange = (id, field, value) => { setContent(prev => ({ ...prev, heroSlides: prev.heroSlides.map(slide => slide.id === id ? { ...slide, [field]: value } : slide) })); };
-  const addHeroSlide = () => { if (content.heroSlides?.length >= 5) return; setContent(prev => ({ ...prev, heroSlides: [...(prev.heroSlides || []), { id: Date.now(), url: '/logo-lpq-al-fath-maulana.webp', text: 'Teks slide baru', author: getSchoolIdentity().name }] })); };
   const handleSantriOfTheMonthChange = (index, personId, alasan) => { const person = santriList.find(p => p.id === personId); if (person) { const newSantriOTM = [...content.santriOfTheMonth]; newSantriOTM[index] = { ...person, alasan }; setContent(prev => ({ ...prev, santriOfTheMonth: newSantriOTM })); } };
   const handleGuruOfTheMonthChange = (personId, alasan) => { const person = guruList.find(p => p.id === personId); if (person) setContent(prev => ({ ...prev, guruOfTheMonth: { ...person, alasan } })); };
   const handleLeaderboardChange = (index, personId, achievement) => { const person = santriList.find(p => p.id === personId); if (person) { const newLeaderboard = [...content.leaderboard]; newLeaderboard[index] = { ...person, achievement }; setContent(prev => ({ ...prev, leaderboard: newLeaderboard })); } };
-  const handleOpacityChange = (key, value) => { setContent(prev => ({...prev, [key]: value[0]})); };
 
   /* ---- Enrollment Data Handlers ---- */
   const updateEnrollmentCategory = (catIndex, field, value) => {
@@ -508,6 +500,7 @@ const ContentManagement = () => {
   const tabs = [
       ...(isSuperadmin ? [{ id: 'identitas', label: 'Identitas Sekolah', icon: Building2 }] : []),
       { id: 'homepage', label: 'Halaman Depan', icon: Home },
+      { id: 'profil', label: 'Halaman Profil', icon: BookMarked },
       { id: 'apresiasi', label: 'Apresiasi', icon: Heart },
       { id: 'media', label: 'Media & Galeri', icon: ImageIcon },
       { id: 'enrollment', label: 'Informasi Pendaftaran', icon: ClipboardList },
@@ -521,14 +514,10 @@ const ContentManagement = () => {
       <>
         <div className="space-y-4">
           {modalType === 'news' && (<><Input placeholder="Judul" value={formState.title || ''} onChange={e => setFormState(p => ({...p, title: e.target.value, slug: p.slug || slugify(e.target.value)}))} /><Input placeholder="Slug" value={formState.slug || ''} onChange={e => setFormState(p => ({...p, slug: slugify(e.target.value)}))} /><Select value={formState.status || 'draft'} onValueChange={val => setFormState(p => ({...p, status: val}))}><SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="draft">Draft</SelectItem><SelectItem value="published">Published</SelectItem><SelectItem value="archived">Nonaktif</SelectItem></SelectContent></Select><Textarea placeholder="Ringkasan" value={formState.summary || ''} onChange={e => setFormState(p => ({...p, summary: e.target.value}))} /><Textarea placeholder="Konten Lengkap" rows={10} value={formState.content || ''} onChange={e => setFormState(p => ({...p, content: e.target.value}))} /><Input placeholder="URL Gambar" value={formState.image_url || ''} onChange={e => setFormState(p => ({...p, image_url: e.target.value}))} /><Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'news')} /></>)}
-          {modalType === 'parentingArticles' && (<><Input placeholder="Judul" value={formState.title || ''} onChange={e => setFormState(p => ({...p, title: e.target.value}))} /><Input placeholder="Penulis" value={formState.author || ''} onChange={e => setFormState(p => ({...p, author: e.target.value}))} /><Textarea placeholder="Ringkasan" value={formState.summary || ''} onChange={e => setFormState(p => ({...p, summary: e.target.value}))} /><Textarea placeholder="Konten Lengkap" rows={10} value={formState.content || ''} onChange={e => setFormState(p => ({...p, content: e.target.value}))} /><Input placeholder="URL Gambar" value={formState.image_url || ''} onChange={e => setFormState(p => ({...p, image_url: e.target.value}))} /></>)}
           {modalType === 'announcements' && (<><Input placeholder="Judul" value={formState.title || ''} onChange={e => setFormState(p => ({...p, title: e.target.value, slug: p.slug || slugify(e.target.value)}))} /><Input placeholder="Slug" value={formState.slug || ''} onChange={e => setFormState(p => ({...p, slug: slugify(e.target.value)}))} /><Select value={formState.status || 'draft'} onValueChange={val => setFormState(p => ({...p, status: val}))}><SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="draft">Draft</SelectItem><SelectItem value="published">Published</SelectItem><SelectItem value="archived">Nonaktif</SelectItem></SelectContent></Select><Select value={formState.priority || 'normal'} onValueChange={val => setFormState(p => ({...p, priority: val}))}><SelectTrigger><SelectValue placeholder="Prioritas" /></SelectTrigger><SelectContent><SelectItem value="low">Rendah</SelectItem><SelectItem value="normal">Normal</SelectItem><SelectItem value="high">Tinggi</SelectItem></SelectContent></Select><Input type="date" value={formState.valid_until || ''} onChange={e => setFormState(p => ({...p, valid_until: e.target.value}))} /><Textarea placeholder="Ringkasan" value={formState.summary || ''} onChange={e => setFormState(p => ({...p, summary: e.target.value}))} /><Textarea placeholder="Konten" rows={8} value={formState.content || ''} onChange={e => setFormState(p => ({...p, content: e.target.value}))} /><Input placeholder="URL Gambar" value={formState.image_url || ''} onChange={e => setFormState(p => ({...p, image_url: e.target.value}))} /><Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'announcements')} /></>)}
           {modalType === 'facilities' && (<><Input placeholder="Nama Fasilitas" value={formState.name || ''} onChange={e => setFormState(p => ({...p, name: e.target.value}))} /><Textarea placeholder="Deskripsi" value={formState.description || ''} onChange={e => setFormState(p => ({...p, description: e.target.value}))} /><Input placeholder="URL Gambar" value={formState.image_url || ''} onChange={e => setFormState(p => ({...p, image_url: e.target.value}))} /></>)}
-          {['qiroatiVideos', 'hafalanVideos'].includes(modalType) && (<><Input placeholder="Judul Video" value={formState.title || ''} onChange={e => setFormState(p => ({...p, title: e.target.value}))} /><Input placeholder="URL Embed Video Youtube" value={formState.url || ''} onChange={e => setFormState(p => ({...p, url: e.target.value}))} />{modalType === 'hafalanVideos' && (<div className="space-y-2"><Textarea placeholder='Google Drive Embed Code' value={formState.google_drive_embed || ''} onChange={e => setFormState(p => ({...p, google_drive_embed: e.target.value}))} className="font-mono text-xs" rows={3}/><p className="text-[10px] text-muted-foreground">Isi salah satu: YouTube URL atau Google Drive Embed.</p></div>)}{modalType === 'hafalanVideos' && (<Select value={formState.jilid} onValueChange={val => setFormState(p => ({...p, jilid: val}))}><SelectTrigger><SelectValue placeholder="Pilih Jilid" /></SelectTrigger><SelectContent>{['Jilid 1', 'Jilid 2', 'Jilid 3', 'Jilid 4', 'Jilid 5', 'Jilid 6', 'Lainnya'].map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select>)}</>)}
-          {modalType === 'waliDiscussions' && (<><Input placeholder="Judul Diskusi" value={formState.title || ''} onChange={e => setFormState(p => ({...p, title: e.target.value}))} /><div className="grid grid-cols-2 gap-4"><Input type="date" value={formState.date || ''} onChange={e => setFormState(p => ({...p, date: e.target.value}))} /><Input type="time" value={formState.time || ''} onChange={e => setFormState(p => ({...p, time: e.target.value}))} /></div><Select value={formState.platform} onValueChange={val => setFormState(p => ({...p, platform: val}))}><SelectTrigger><SelectValue placeholder="Platform" /></SelectTrigger><SelectContent><SelectItem value="Google Meet">Google Meet</SelectItem><SelectItem value="Zoom">Zoom</SelectItem></SelectContent></Select><Input placeholder="Link Meeting" value={formState.link || ''} onChange={e => setFormState(p => ({...p, link: e.target.value}))} /><Textarea placeholder="Deskripsi Topik" value={formState.description || ''} onChange={e => setFormState(p => ({...p, description: e.target.value}))} /></>)}
+          {modalType === 'hafalanVideos' && (<><Input placeholder="Judul Video" value={formState.title || ''} onChange={e => setFormState(p => ({...p, title: e.target.value}))} /><Input placeholder="URL Embed Video Youtube" value={formState.url || ''} onChange={e => setFormState(p => ({...p, url: e.target.value}))} />{modalType === 'hafalanVideos' && (<div className="space-y-2"><Textarea placeholder='Google Drive Embed Code' value={formState.google_drive_embed || ''} onChange={e => setFormState(p => ({...p, google_drive_embed: e.target.value}))} className="font-mono text-xs" rows={3}/><p className="text-[10px] text-muted-foreground">Isi salah satu: YouTube URL atau Google Drive Embed.</p></div>)}{modalType === 'hafalanVideos' && (<Select value={formState.jilid} onValueChange={val => setFormState(p => ({...p, jilid: val}))}><SelectTrigger><SelectValue placeholder="Pilih Jilid" /></SelectTrigger><SelectContent>{['Jilid 1', 'Jilid 2', 'Jilid 3', 'Jilid 4', 'Jilid 5', 'Jilid 6', 'Lainnya'].map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select>)}</>)}
           {modalType === 'galleryPhotos' && (<><Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'galleryPhotos')} /><Input placeholder="Caption Foto" value={formState.caption || ''} onChange={e => setFormState(p => ({...p, caption: e.target.value}))} />{formState.url && <img src={formState.url} alt="Preview" className="w-full h-40 object-cover rounded-md mt-2" />}</>)}
-          {modalType === 'schedules' && (<><Input placeholder="Judul" value={formState.title || ''} onChange={e => setFormState(p => ({...p, title: e.target.value}))} /><Input placeholder="Waktu" value={formState.time || ''} onChange={e => setFormState(p => ({...p, time: e.target.value}))} /><Input placeholder="Keterangan" value={formState.type || ''} onChange={e => setFormState(p => ({...p, type: e.target.value}))} /></>)}
-          {modalType === 'faqs' && (<><Input placeholder="Pertanyaan" value={formState.question || ''} onChange={e => setFormState(p => ({...p, question: e.target.value}))} /><Textarea placeholder="Jawaban" value={formState.answer || ''} onChange={e => setFormState(p => ({...p, answer: e.target.value}))} /></>)}
         </div>
         <div className="flex justify-end mt-4"><Button onClick={handleModalSubmit}>Simpan</Button></div>
       </>
@@ -593,98 +582,10 @@ const ContentManagement = () => {
         <TabsContent value="homepage" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
             <HomeContentSettings />
 
-            {/* Kendali di bawah ini milik desain beranda LAMA dan belum dirender
-                halaman publik SDN yang sekarang (slideshow, CTA, kuota, jadwal,
-                keunggulan). Logo sudah dipindah ke tab Identitas Sekolah.
-                Lihat docs/HANDOFF.md bagian "Panel Konten". */}
-            <div className="admin-error-state" role="note">
-                <p className="text-sm font-medium">Bagian di bawah ini belum tampil di halaman depan.</p>
-                <p className="text-xs">Kendali slideshow, CTA, kuota, jadwal, dan keunggulan berasal dari desain beranda sebelumnya. Menyimpannya tidak mengubah tampilan situs.</p>
-            </div>
+        </TabsContent>
 
-            <div className="admin-card p-4">
-                <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-xl">Slideshow</h3><Button onClick={addHeroSlide} size="sm"><Plus className="w-4 h-4 mr-2" /> Tambah Slide</Button></div>
-                <div className="mb-4"><label className="block text-sm font-medium mb-1">Timer Slideshow (ms)</label><Input type="number" value={content.slideshowTimer} onChange={e => setContent(p => ({...p, slideshowTimer: parseInt(e.target.value, 10)}))} /></div>
-                 <div className="space-y-2 mb-4"><label className="font-medium">Kegelapan Overlay Slideshow</label><div className="flex items-center gap-4"><Sun className="w-5 h-5"/><Slider value={[content.heroOverlayOpacity || 0.6]} max={1} step={0.1} onValueChange={(val) => handleOpacityChange('heroOverlayOpacity', val)} /><Moon className="w-5 h-5"/></div></div>
-                <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">{content.heroSlides.map((slide) => (<div key={slide.id} className="admin-card p-4 space-y-3 bg-background"><div className="flex flex-col md:flex-row items-start gap-4"><img alt="Slide Preview" className="w-24 h-16 object-cover rounded-md bg-secondary" src={slide.url} /><div className="flex-grow space-y-2"><Textarea placeholder="Teks Utama" value={slide.text || ''} onChange={e => handleHeroSlideChange(slide.id, 'text', e.target.value)} /><Input placeholder="Author" value={slide.author || ''} onChange={(e) => handleHeroSlideChange(slide.id, 'author', e.target.value)} /></div></div><div className="flex gap-2"><Input type="file" accept="image/*" onChange={(e) => handleHeroImageUpload(e, slide.id)} className="w-full" /><Button type="button" variant="destructive" size="sm" onClick={() => handleDeleteItem('heroSlides', slide.id)}><Trash2 className="w-4 h-4" /></Button></div></div>))}</div>
-            </div>
-             <div className="admin-card p-4">
-              <h3 className="font-bold text-xl mb-4">Background CTA</h3><Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'ctaBackgroundUrl')} />{content.ctaBackgroundUrl && <img src={content.ctaBackgroundUrl} alt="CTA Background Preview" className="w-48 h-auto mt-2 bg-gray-200 p-2 rounded-md" />}
-              <div className="mt-4 space-y-2"><label className="font-medium">Tingkat Kegelapan Overlay</label><div className="flex items-center gap-4"><Sun className="w-5 h-5"/><Slider value={[content.ctaBackgroundOverlayOpacity]} max={1} step={0.1} onValueChange={(val) => handleOpacityChange('ctaBackgroundOverlayOpacity', val)} /><Moon className="w-5 h-5"/></div></div>
-            </div>
-            <ContentSection title="Jadwal Pembelajaran" modalType="schedules" data={content.schedules} icon={<CalendarClock/>} renderItem={item => <div className="text-sm"><p className="font-bold">{item.title}</p><p>{item.time}</p></div>} />
-            <ContentSection title="FAQ (Tanya Jawab)" modalType="faqs" data={content.faqs} icon={<HelpCircle/>} renderItem={item => <div className="text-sm"><p className="font-bold">{item.question}</p></div>} />
-            <div className="admin-card p-4"><h3 className="font-bold text-xl mb-4">Kuota Murid</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4">{Object.keys(content.quotas).map(k => <div key={k}><label className="text-sm capitalize">{k.replace(/([A-Z])/g, ' $1')}</label><Input type="number" value={content.quotas[k] || 0} onChange={e => setContent(p => ({...p, quotas: {...p.quotas, [k]: parseInt(e.target.value)}}))} /></div>)}</div></div>
-            <div className="admin-card p-4 space-y-4">
-              <h3 className="font-bold text-xl flex items-center gap-2"><RotateCcw className="w-5 h-5" /> Model 3D</h3>
-              <p className="text-sm text-muted-foreground">Atur rotasi model 3D yang tampil di bagian hero halaman depan.</p>
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <p className="font-medium">Auto-Rotate</p>
-                  <p className="text-sm text-muted-foreground">Putar model secara otomatis</p>
-                </div>
-                <Switch
-                  checked={content.model3dSettings?.autoRotate || false}
-                  onCheckedChange={(checked) => setContent(prev => ({
-                    ...prev,
-                    model3dSettings: { ...prev.model3dSettings, autoRotate: checked }
-                  }))}
-                />
-              </div>
-              {content.model3dSettings?.autoRotate && (
-                <div className="space-y-2 rounded-lg border p-3">
-                  <div className="flex items-center justify-between">
-                    <label className="font-medium text-sm">Kecepatan Putar</label>
-                    <span className="text-xs text-muted-foreground">{(content.model3dSettings?.autoRotateSpeed || 0.34).toFixed(2)}</span>
-                  </div>
-                  <Slider
-                    value={[content.model3dSettings?.autoRotateSpeed || 0.34]}
-                    min={0.05}
-                    max={2.0}
-                    step={0.05}
-                    onValueChange={(val) => setContent(prev => ({
-                      ...prev,
-                      model3dSettings: { ...prev.model3dSettings, autoRotateSpeed: val[0] }
-                    }))}
-                  />
-                </div>
-              )}
-              <div className="space-y-3 rounded-lg border p-3">
-                <label className="font-medium text-sm">Rotasi Awal (derajat)</label>
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { axis: 'rotationX', label: 'Sumbu X' },
-                    { axis: 'rotationY', label: 'Sumbu Y' },
-                    { axis: 'rotationZ', label: 'Sumbu Z' },
-                  ].map(({ axis, label }) => (
-                    <div key={axis} className="space-y-1">
-                      <label className="text-xs text-muted-foreground">{label}</label>
-                      <Input
-                        type="number"
-                        min={-180}
-                        max={180}
-                        step={1}
-                        value={content.model3dSettings?.[axis] ?? 0}
-                        onChange={(e) => setContent(prev => ({
-                          ...prev,
-                          model3dSettings: { ...prev.model3dSettings, [axis]: parseFloat(e.target.value) || 0 }
-                        }))}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setContent(prev => ({
-                    ...prev,
-                    model3dSettings: { ...prev.model3dSettings, rotationX: 0, rotationY: 0, rotationZ: 0 }
-                  }))}
-                >
-                  <RotateCcw className="w-3 h-3 mr-2" /> Reset ke Default
-                </Button>
-              </div>
-            </div>
+        <TabsContent value="profil" className="animate-in fade-in slide-in-from-bottom-2">
+            <ProfileContentSettings />
         </TabsContent>
 
         <TabsContent value="apresiasi" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
@@ -700,9 +601,6 @@ const ContentManagement = () => {
             <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><Library/> Pustaka Digital</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'pustaka')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.pustaka.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('pustaka', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>
             <ContentSection title="Berita" modalType="news" data={content.news} icon={<BookCopy/>} renderItem={item => <p className="truncate">{item.title}</p>} />
             <ContentSection title="Pengumuman" modalType="announcements" data={content.announcements} icon={<MessageSquare/>} renderItem={item => <p className="truncate">{item.title}</p>} />
-            <ContentSection title="Artikel Parenting" modalType="parentingArticles" data={content.parentingArticles} icon={<Users/>} renderItem={item => <p className="truncate">{item.title}</p>} />
-            <ContentSection title="Diskusi Wali Murid" modalType="waliDiscussions" data={content.waliDiscussions} icon={<Users/>} renderItem={item => <p className="truncate">{item.title} - {item.date}</p>} />
-            <ContentSection title="Video Qiroati" modalType="qiroatiVideos" data={content.qiroatiVideos} icon={<Video/>} renderItem={item => <p className="truncate">{item.title}</p>} />
             <ContentSection title="Video Hafalan" modalType="hafalanVideos" data={content.hafalanVideos} icon={<Video/>} renderItem={item => <p className="truncate">{item.title}</p>} />
           <ContentSection title="Fasilitas" modalType="facilities" data={content.facilities} icon={<Building/>} renderItem={item => <p className="truncate">{item.name}</p>} />
         </TabsContent>

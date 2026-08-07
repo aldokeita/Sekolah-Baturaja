@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { fetchPublicTeachers } from '@/lib/publicContentAdapters';
+import { DEFAULT_PROFILE_CONTENT, fetchProfileContent } from '@/lib/profileContent';
 import { inisialNama, sebutanStaf } from '@/lib/staf';
 import '@/styles/sdnb.css';
 import '@/styles/sdnb-profil.css';
@@ -45,44 +46,87 @@ const ORANG_GRADASI = [
   ['var(--sekolah-aksen-tengah-2)', 'var(--sekolah-aksen-ujung)'],
 ];
 
-const FASILITAS = [
-  ['Ruang kelas', 'Delapan belas ruang kelas dengan jendela besar dan ventilasi silang, masing-masing berisi paling banyak dua puluh delapan murid.', 'linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)', 'span 2', 'span 2'],
-  ['Perpustakaan', 'Lebih dari empat ribu judul buku anak, dibuka setiap hari sekolah pukul 07.00 sampai 14.00.', 'linear-gradient(150deg,#ffc9dc,#f2a9c8)', 'span 1', 'span 1'],
-  ['Ruang UKS', 'Dua tempat tidur, lemari obat, dan seorang guru pendamping bersertifikat pertolongan pertama.', 'linear-gradient(150deg,#bcd6ff,#9fb6f8)', 'span 1', 'span 1'],
-  ['Musala', 'Tempat salat berkapasitas enam puluh orang dengan tempat wudu terpisah untuk murid putra dan putri.', 'linear-gradient(150deg,#b6f0e0,#8fd8ec)', 'span 1', 'span 1'],
-  ['Kebun sekolah', 'Petak sayur yang dirawat murid kelas empat sampai enam, hasil panennya dimasak bersama di kantin.', 'linear-gradient(150deg,#ffe0b3,#ffc39c)', 'span 1', 'span 1'],
-  ['Halaman bermain', 'Lapangan serbaguna, ayunan, dan area pasir yang dipakai bergantian saat jam istirahat.', 'linear-gradient(150deg,#c9e8ff,#a5c8f5)', 'span 2', 'span 1'],
-  ['Kantin sehat', 'Menu diperiksa guru setiap pekan, tanpa minuman berpemanis dan tanpa makanan kemasan berpewarna.', 'linear-gradient(150deg,#ffd8ea,#e8b6f0)', 'span 1', 'span 1'],
-  ['Ruang komputer', 'Enam belas unit komputer untuk kelas literasi digital kelas empat sampai enam.', 'linear-gradient(150deg,#d7d2ff,#b4b8f8)', 'span 1', 'span 1'],
+/* Teks halaman ini TIDAK lagi ditulis di berkas ini.
+ *
+ * Naratif (pembuka, riwayat, fasilitas, angka ringkasan, kutipan, data pokok)
+ * disunting pembeli di panel Konten → Halaman Profil; lihat
+ * src/lib/profileContent.js. Visi, misi, dan tujuan ada di panel Identitas
+ * Sekolah karena ikut dipakai di luar halaman ini. Daftar guru dari Data Guru.
+ *
+ * Yang tinggal di bawah hanyalah GAYA VISUAL, dipasangkan dengan teks berdasarkan
+ * posisi — jadi jumlah item boleh berubah dan tampilannya tetap konsisten. */
+
+// Gradasi dan ukuran kotak mosaik fasilitas.
+const FASILITAS_GAYA = [
+  ['linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)', 'span 2', 'span 2'],
+  ['linear-gradient(150deg,#ffc9dc,#f2a9c8)', 'span 1', 'span 1'],
+  ['linear-gradient(150deg,#bcd6ff,#9fb6f8)', 'span 1', 'span 1'],
+  ['linear-gradient(150deg,#b6f0e0,#8fd8ec)', 'span 1', 'span 1'],
+  ['linear-gradient(150deg,#ffe0b3,#ffc39c)', 'span 1', 'span 1'],
+  ['linear-gradient(150deg,#c9e8ff,#a5c8f5)', 'span 2', 'span 1'],
+  ['linear-gradient(150deg,#ffd8ea,#e8b6f0)', 'span 1', 'span 1'],
+  ['linear-gradient(150deg,#d7d2ff,#b4b8f8)', 'span 1', 'span 1'],
 ];
 
-const RIWAYAT = [
-  ['1966', 'Sekolah dibuka dengan tiga ruang kelas kayu dan empat guru, menampung 87 murid dari kampung sekitar.', 'var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2)'],
-  ['1994', 'Gedung permanen dua lantai diresmikan. Perpustakaan pertama dibuka di ruang bekas kantor guru.', 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)'],
-  ['2015', 'Kebun sekolah dan bank sampah dimulai, mengantar sekolah meraih predikat Adiwiyata tingkat kabupaten.', 'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)'],
-  ['2023', 'Akreditasi A diperoleh kembali dengan nilai 96,4 dan seluruh kelas menerapkan Kurikulum Merdeka.', 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)'],
+// Gradasi tiap simpul garis waktu riwayat.
+const RIWAYAT_GRADASI = [
+  'var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2)',
+  'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)',
+  'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)',
+  'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)',
 ];
 
-const TICKER = ['Terakreditasi A', 'Adiwiyata Nasional', 'Kurikulum Merdeka', '18 rombongan belajar', 'Perpustakaan buka setiap hari', 'Kebun sekolah', 'Kelas kecil', 'Guru bersertifikat pendidik'];
+// Gaya tiga kartu foto miring di pembuka: posisi, ukuran, sudut, dan gradasi.
+const FOTO_GAYA = [
+  { left: '2%', top: 44, width: '56%', height: 300, rotate: '-7deg', grad: 'linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)' },
+  { right: 0, top: 0, width: '50%', height: 260, rotate: '5deg', grad: 'linear-gradient(150deg,#ffc9dc,#f2a9c8)' },
+  { right: '6%', bottom: 16, width: '52%', height: 250, rotate: '-3deg', grad: 'linear-gradient(150deg,#ffe0b3,#ffc39c 55%,#b6f0e0)' },
+];
 
-/* Visi, misi, tujuan, dan data pokok sekolah TIDAK lagi ditulis di sini —
- * semuanya disunting lewat panel Identitas Sekolah. Daftar lama di berkas ini
- * bahkan berisi kalimat yang berbeda dari yang tersimpan di form, jadi pembeli
- * bisa menulis misinya dengan benar dan halaman ini tetap menampilkan misi lain.
- * Lihat DEFAULT_SCHOOL_IDENTITY di src/lib/schoolIdentity.js untuk bawaannya. */
-
-/** Baris "Data pokok sekolah", seluruhnya dari identitas yang bisa disunting. */
-const dataPokok = (sekolah) => [
+/**
+ * Baris "Data pokok sekolah": yang otomatis dari identitas lebih dulu, lalu yang
+ * ditentukan pembeli. Yang otomatis tidak ada di panel supaya tidak pernah basi
+ * ketika identitas berubah; yang di panel adalah hal yang aplikasi tidak mungkin
+ * tahu, seperti NPSN dan akreditasi. Baris tanpa nilai dibuang.
+ */
+const dataPokok = (sekolah, registry) => [
   ['Nama sekolah', sekolah.name],
-  ['Nama singkat', sekolah.shortName],
   ['Tahun ajaran', sekolah.academicYear],
-  ['Kota', sekolah.city],
   ['Jam layanan', sekolah.officeHours],
-  ['Telepon', sekolah.phone],
-  ['Email', sekolah.email],
-  ['Situs web', String(sekolah.website || '').replace(/^https?:\/\//, '')],
-  ['Alamat', sekolah.address],
+  ...registry.map((r) => [r.label, r.value]),
 ].filter(([, nilai]) => String(nilai || '').trim());
+
+/**
+ * Angka yang dihitung naik dari nol ketika masuk pandangan (lihat useSdnbMotion).
+ *
+ * Hanya nilai yang seluruhnya angka yang dianimasikan; sisanya ditampilkan apa
+ * adanya. Pembeli bebas mengisi kolom angka dengan "sekitar 600" atau "±18", dan
+ * teks semacam itu tidak boleh berubah menjadi NaN.
+ *
+ * `plain` menekan pemisah ribuan, dipakai untuk tahun supaya 1966 tidak tampil
+ * sebagai 1.966.
+ */
+const angkaHitung = (nilai, plain = false) => {
+  const teks = String(nilai ?? '').trim();
+  if (!/^\d+$/.test(teks)) return teks;
+  return <span data-count={teks} {...(plain ? { 'data-plain': '1' } : {})}>0</span>;
+};
+
+const AKSEN_GRADASI = { ...GRAD_TEXT, background: 'linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))' };
+
+/**
+ * Memecah teks pada tanda bintang dan mewarnai bagian di dalamnya dengan aksen.
+ *
+ * "membawa *kecepatan belajarnya sendiri*." → bagian di antara bintang tampil
+ * bergradasi. Ini memberi pembeli kendali atas kalimat besar di halaman Profil
+ * tanpa kehilangan aksen warna yang jadi ciri desainnya. Bintang yang tidak
+ * berpasangan cuma ikut tampil sebagai teks biasa, bukan merusak halaman.
+ */
+const teksBeraksen = (teks) => String(teks ?? '')
+  .split(/\*([^*]+)\*/g)
+  .map((bagian, i) => (i % 2 === 1
+    ? <span key={i} style={AKSEN_GRADASI}>{bagian}</span>
+    : bagian));
 
 const PersonSvg = ({ size, style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,.9)" style={style}><circle cx="12" cy="8.4" r="4" /><path d="M3.6 22c.6-4.6 4.2-7.2 8.4-7.2s7.8 2.6 8.4 7.2z" /></svg>
@@ -103,6 +147,8 @@ const ProfilePage = () => {
   const [light, setLight] = useState(-1);
   const [perView, setPerView] = useState(4);
   const [staf, setStaf] = useState([]);
+  // Bawaan dipakai lebih dulu supaya halaman tidak kosong selagi menunggu server.
+  const [isi, setIsi] = useState(DEFAULT_PROFILE_CONTENT);
   const vpRef = useRef(null);
   const pausedRef = useRef(false);
 
@@ -111,6 +157,9 @@ const ProfilePage = () => {
     fetchPublicTeachers()
       .then((rows) => { if (aktif && Array.isArray(rows)) setStaf(rows); })
       .catch(() => { /* bagian lain halaman ini tetap tampil tanpa daftar guru */ });
+    fetchProfileContent()
+      .then((tersimpan) => { if (aktif && tersimpan) setIsi(tersimpan); })
+      .catch(() => { /* bawaan tetap tampil */ });
     return () => { aktif = false; };
   }, []);
 
@@ -181,15 +230,15 @@ const ProfilePage = () => {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') { setPerson(-1); setLight(-1); }
-      if (light >= 0 && e.key === 'ArrowRight') setLight((p) => (p + 1 + FASILITAS.length) % FASILITAS.length);
-      if (light >= 0 && e.key === 'ArrowLeft') setLight((p) => (p - 1 + FASILITAS.length) % FASILITAS.length);
+      if (light >= 0 && e.key === 'ArrowRight') setLight((p) => (p + 1 + isi.facilities.length) % isi.facilities.length);
+      if (light >= 0 && e.key === 'ArrowLeft') setLight((p) => (p - 1 + isi.facilities.length) % isi.facilities.length);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [light]);
 
   const movePerson = (dir) => setPerson((p) => (p + dir + tim.length) % tim.length);
-  const moveLight = (dir) => setLight((p) => (p + dir + FASILITAS.length) % FASILITAS.length);
+  const moveLight = (dir) => setLight((p) => (p + dir + isi.facilities.length) % isi.facilities.length);
   const closeAll = () => { setPerson(-1); setLight(-1); };
 
   const tabKeys = ['visi', 'misi', 'tujuan'];
@@ -197,14 +246,14 @@ const ProfilePage = () => {
   const PILL_W = 118;
 
   const p = person >= 0 ? tim[person] : null;
-  const l = light >= 0 ? FASILITAS[light] : null;
+  const l = light >= 0 ? isi.facilities[light] : null;
   const dotCount = Math.max(1, tim.length - perView + 1);
 
   return (
     <div className="sdnb-profil">
       <Helmet>
-        <title>Profil Sekolah — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Profil, visi misi, riwayat, guru dan staf, serta fasilitas Sekolah Dasar Negeri Baturaja." />
+        <title>{`Profil Sekolah — ${sekolah.name}`}</title>
+        <meta name="description" content={`Profil, visi misi, riwayat, guru dan staf, serta fasilitas ${sekolah.name}.`} />
       </Helmet>
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
@@ -215,14 +264,14 @@ const ProfilePage = () => {
           <div data-reveal="0">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 44, height: 2, background: 'linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))' }} />
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>Sejak 1966</span>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>{isi.hero.kicker}</span>
             </div>
             <h1 style={{ margin: '22px 0 0', fontFamily: HEADING_FONT, lineHeight: .98, letterSpacing: '-.045em', color: '#171827' }}>
-              <span style={{ display: 'block', fontSize: 34, fontWeight: 500, color: '#6a6f95', letterSpacing: '-.02em' }}>Enam puluh tahun</span>
-              <span style={{ display: 'block', fontSize: 74, fontWeight: 800 }}>mengajar anak</span>
-              <span style={{ display: 'block', fontSize: 74, fontWeight: 800, ...GRAD_TEXT, background: 'linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))' }}>Baturaja.</span>
+              <span style={{ display: 'block', fontSize: 34, fontWeight: 500, color: '#6a6f95', letterSpacing: '-.02em' }}>{isi.hero.titleTop}</span>
+              <span style={{ display: 'block', fontSize: 74, fontWeight: 800 }}>{isi.hero.titleMain}</span>
+              <span style={{ display: 'block', fontSize: 74, fontWeight: 800, ...GRAD_TEXT, background: 'linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))' }}>{isi.hero.titleAccent}</span>
             </h1>
-            <p style={{ margin: '26px 0 0', maxWidth: 470, fontSize: 16, lineHeight: 1.68, color: '#535878', textWrap: 'pretty' }}>Tiga ruang kelas kayu, empat guru, delapan puluh tujuh murid. Begitu sekolah ini dimulai. Hari ini 624 anak belajar di halaman yang sama, di bawah pohon yang ditanam angkatan pertama.</p>
+            <p style={{ margin: '26px 0 0', maxWidth: 470, fontSize: 16, lineHeight: 1.68, color: '#535878', textWrap: 'pretty' }}>{isi.hero.story}</p>
             <div style={{ marginTop: 30, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               <a href="#visi" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '14px 24px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 22px 44px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>Visi dan misi</a>
               <a href="#guru" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '14px 22px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 18px 38px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>Kenali para guru</a>
@@ -230,19 +279,35 @@ const ProfilePage = () => {
           </div>
 
           <div style={{ position: 'relative', height: 520 }}>
-            <TiltCard label="Kelas pagi" style={{ position: 'absolute', left: '2%', top: 44, width: '56%', height: 300, borderRadius: 26, overflow: 'hidden', transform: 'rotate(-7deg)', background: 'linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)', border: '1px solid rgba(255,255,255,.75)', boxShadow: '0 34px 66px -24px rgba(55,65,120,.65),inset 0 1px 0 rgba(255,255,255,.85)' }} />
-            <TiltCard label="Kebun sekolah" style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: 260, borderRadius: 26, overflow: 'hidden', transform: 'rotate(5deg)', background: 'linear-gradient(150deg,#ffc9dc,#f2a9c8)', border: '1px solid rgba(255,255,255,.75)', boxShadow: '0 34px 66px -24px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.85)' }} />
-            <TiltCard label="Pentas seni" style={{ position: 'absolute', right: '6%', bottom: 16, width: '52%', height: 250, borderRadius: 26, overflow: 'hidden', transform: 'rotate(-3deg)', background: 'linear-gradient(150deg,#ffe0b3,#ffc39c 55%,#b6f0e0)', border: '1px solid rgba(255,255,255,.75)', boxShadow: '0 34px 66px -24px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.85)' }} />
+            {isi.photos.slice(0, FOTO_GAYA.length).map((f, i) => {
+              const g = FOTO_GAYA[i];
+              return (
+                <TiltCard
+                  key={`${f.label}-${i}`}
+                  label={f.label}
+                  style={{
+                    position: 'absolute', left: g.left, right: g.right, top: g.top, bottom: g.bottom,
+                    width: g.width, height: g.height, borderRadius: 26, overflow: 'hidden',
+                    transform: `rotate(${g.rotate})`, background: g.grad,
+                    border: '1px solid rgba(255,255,255,.75)',
+                    boxShadow: '0 34px 66px -24px rgba(55,65,120,.62),inset 0 1px 0 rgba(255,255,255,.85)',
+                  }}
+                />
+              );
+            })}
             <div style={{ position: 'absolute', left: 0, bottom: 70, padding: '14px 18px', borderRadius: 18, background: 'rgba(255,255,255,.58)', backdropFilter: 'blur(24px) saturate(185%)', WebkitBackdropFilter: 'blur(24px) saturate(185%)', border: '1px solid rgba(255,255,255,.85)', boxShadow: '0 24px 50px -20px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.95)', animation: 'floaty 9s ease-in-out infinite' }}>
-              <div style={{ fontFamily: HEADING_FONT, fontSize: 28, fontWeight: 800, letterSpacing: '-.03em', color: '#1d1f33' }}><span data-count="624">0</span></div>
-              <div style={{ fontSize: 11.5, color: '#6d7192' }}>murid hari ini</div>
+              <div style={{ fontFamily: HEADING_FONT, fontSize: 28, fontWeight: 800, letterSpacing: '-.03em', color: '#1d1f33' }}>
+                {angkaHitung(isi.hero.badgeValue)}
+              </div>
+              <div style={{ fontSize: 11.5, color: '#6d7192' }}>{isi.hero.badgeLabel}</div>
             </div>
           </div>
         </div>
 
         <div className="mq-wrap" style={{ marginTop: 26, overflow: 'hidden', padding: '6px 0', WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)', borderTop: '1px solid rgba(255,255,255,.8)', borderBottom: '1px solid rgba(255,255,255,.8)' }}>
           <div className="mq-track" style={{ padding: '10px 7px' }}>
-            {[...TICKER, ...TICKER].map((w, i) => (
+            {/* Digandakan supaya animasi berjalannya tampak tanpa jeda. */}
+            {[...isi.ticker, ...isi.ticker].map((w, i) => (
               <span key={i} style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 600, color: '#4d5273', whiteSpace: 'nowrap' }}>
                 <span aria-hidden="true" style={{ width: 5, height: 5, borderRadius: '50%', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))' }} />
                 {w}
@@ -254,16 +319,14 @@ const ProfilePage = () => {
 
       {/* ── STAT BAR ─────────────────────────────────────────────────────── */}
       <section data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '44px 28px 0' }}>
-        <div className="sdnb-profil-stats" style={{ ...glass, position: 'relative', overflow: 'hidden', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+        {/* Jumlah kolom mengikuti jumlah angka yang diisi pembeli, bukan tetap empat. */}
+        <div className="sdnb-profil-stats" style={{ ...glass, position: 'relative', overflow: 'hidden', display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, isi.stats.length)},1fr)`, borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(168deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
-          {[
-            { el: <span data-count="1966" data-plain="1">0</span>, label: 'Tahun berdiri' },
-            { el: <span data-count="18">0</span>, label: 'Rombongan belajar' },
-            { el: <span data-count="34">0</span>, label: 'Guru & tenaga kependidikan' },
-            { el: <><span data-count="24">0</span> : 1</>, label: 'Rasio murid per guru kelas' },
-          ].map((s, i) => (
-            <div key={s.label} style={{ position: 'relative', padding: '26px 28px', borderRight: i === 3 ? undefined : '1px solid rgba(255,255,255,.6)' }}>
-              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}>{s.el}</div>
+          {isi.stats.map((s, i) => (
+            <div key={`${s.label}-${i}`} style={{ position: 'relative', padding: '26px 28px', borderRight: i === isi.stats.length - 1 ? undefined : '1px solid rgba(255,255,255,.6)' }}>
+              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}>
+                {angkaHitung(s.value, s.plain)}{s.suffix}
+              </div>
               <div style={{ marginTop: 3, fontSize: 12.5, color: '#63678a' }}>{s.label}</div>
             </div>
           ))}
@@ -276,10 +339,11 @@ const ProfilePage = () => {
           <div aria-hidden="true" style={{ flex: 'none', marginTop: -26, fontFamily: HEADING_FONT, fontSize: 150, lineHeight: .7, fontWeight: 800, background: 'linear-gradient(150deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent', userSelect: 'none' }}>&ldquo;</div>
           <div>
             <p style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 'clamp(24px,2.6vw,36px)', lineHeight: 1.36, letterSpacing: '-.028em', fontWeight: 700, color: '#22243c', textWrap: 'pretty' }}>
-              Setiap anak yang masuk ke halaman sekolah ini membawa <span style={{ ...GRAD_TEXT, background: 'linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))' }}>kecepatan belajarnya sendiri</span>. Tugas kami bukan menyamakan mereka, melainkan memastikan <span style={{ textDecoration: 'underline', textDecorationThickness: 3, textUnderlineOffset: 6, textDecorationColor: 'rgba(240,119,159,.55)' }}>tidak ada yang tertinggal</span> di belakang.
+              {teksBeraksen(isi.quoteLead)}
             </p>
-            <p style={{ margin: '26px 0 0', maxWidth: 760, fontSize: 16, lineHeight: 1.72, color: '#535878', textWrap: 'pretty' }}>Kami menjaga jumlah murid per kelas tetap kecil supaya guru wali dapat mengenal karakter setiap anak. Orang tua kami libatkan lewat pertemuan bulanan dan laporan perkembangan yang tidak hanya berisi angka, tetapi juga catatan tentang keberanian, kemandirian, dan cara anak bergaul.</p>
-            <p style={{ margin: '16px 0 0', maxWidth: 760, fontSize: 16, lineHeight: 1.72, color: '#535878', textWrap: 'pretty' }}>Pintu ruang kepala sekolah selalu terbuka bagi siapa pun yang ingin berbicara.</p>
+            {isi.quote.map((paragraf, i) => (
+              <p key={i} style={{ margin: i === 0 ? '26px 0 0' : '16px 0 0', maxWidth: 760, fontSize: 16, lineHeight: 1.72, color: '#535878', textWrap: 'pretty' }}>{paragraf}</p>
+            ))}
           </div>
           <div aria-hidden="true" style={{ flex: 'none', alignSelf: 'flex-end', fontFamily: HEADING_FONT, fontSize: 150, lineHeight: .7, fontWeight: 800, background: 'linear-gradient(150deg,var(--sekolah-aksen-ujung),var(--sekolah-aksen-pekat))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent', userSelect: 'none' }}>&rdquo;</div>
         </div>
@@ -352,8 +416,10 @@ const ProfilePage = () => {
           <div className="tl-axis" aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 2, background: 'rgba(120,132,160,.18)', borderRadius: 2 }} />
           <div className="tl-axis" data-grow="1" aria-hidden="true" style={{ position: 'absolute', left: 0, top: '50%', height: 2, width: 0, background: 'linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 55%,var(--sekolah-aksen-ujung))', borderRadius: 2, transition: 'width 1.6s cubic-bezier(.25,.8,.3,1)', boxShadow: '0 0 14px rgba(120,132,255,.55)' }} />
           <div className="tl-row">
-            {RIWAYAT.map(([tahun, teks, grad], i) => (
-              <div key={tahun} className={`tl-col ${i % 2 === 0 ? 'tl-up' : 'tl-dn'}`} style={{ display: 'flex', flexDirection: i % 2 === 0 ? 'column' : 'column-reverse', alignItems: 'center', position: 'relative', padding: '0 10px' }}>
+            {isi.history.map(({ year: tahun, text: teks }, i) => {
+              const grad = RIWAYAT_GRADASI[i % RIWAYAT_GRADASI.length];
+              return (
+              <div key={`${tahun}-${i}`} className={`tl-col ${i % 2 === 0 ? 'tl-up' : 'tl-dn'}`} style={{ display: 'flex', flexDirection: i % 2 === 0 ? 'column' : 'column-reverse', alignItems: 'center', position: 'relative', padding: '0 10px' }}>
                 <div className="tl-card lift" style={{ position: 'relative', overflow: 'hidden', padding: 22, borderRadius: 22, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 24px 52px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
                   <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
                   <div style={{ position: 'relative', fontFamily: HEADING_FONT, fontSize: 30, fontWeight: 800, letterSpacing: '-.035em', background: `linear-gradient(115deg,${grad})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>{tahun}</div>
@@ -361,7 +427,8 @@ const ProfilePage = () => {
                 </div>
                 <div aria-hidden="true" style={{ flex: 'none', width: 16, height: 16, borderRadius: '50%', margin: i % 2 === 0 ? '26px 0 0' : '0 0 26px', background: `linear-gradient(135deg,${grad})`, border: '3px solid rgba(255,255,255,.95)', boxShadow: '0 0 0 5px rgba(120,132,255,.14),0 8px 18px -6px rgba(80,90,190,.7)' }} />
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -441,16 +508,19 @@ const ProfilePage = () => {
         </div>
 
         <div className="sdnb-profil-fasilitas" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gridAutoRows: 170, gap: 16 }}>
-          {FASILITAS.map((f, i) => (
-            <div key={f[0]} onClick={() => setLight(i)} className="gtile" style={{ gridColumn: f[3], gridRow: f[4], position: 'relative', overflow: 'hidden', borderRadius: 22, cursor: 'pointer', border: '1px solid rgba(255,255,255,.72)', boxShadow: '0 26px 54px -22px rgba(55,65,120,.58),inset 0 1px 0 rgba(255,255,255,.8)' }}>
-              <div className="gfill" style={{ position: 'absolute', inset: 0, background: f[2] }} />
+          {isi.facilities.map((f, i) => {
+            const [grad, kolom, baris] = FASILITAS_GAYA[i % FASILITAS_GAYA.length];
+            return (
+            <div key={`${f.name}-${i}`} onClick={() => setLight(i)} className="gtile" style={{ gridColumn: kolom, gridRow: baris, position: 'relative', overflow: 'hidden', borderRadius: 22, cursor: 'pointer', border: '1px solid rgba(255,255,255,.72)', boxShadow: '0 26px 54px -22px rgba(55,65,120,.58),inset 0 1px 0 rgba(255,255,255,.8)' }}>
+              <div className="gfill" style={{ position: 'absolute', inset: 0, background: grad }} />
               <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
-              <div style={{ position: 'absolute', left: 14, bottom: 14, padding: '7px 12px', borderRadius: 11, fontSize: 12, fontWeight: 700, color: '#2c2f4d', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.85)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{f[0]}</div>
+              <div style={{ position: 'absolute', left: 14, bottom: 14, padding: '7px 12px', borderRadius: 11, fontSize: 12, fontWeight: 700, color: '#2c2f4d', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.85)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{f.name}</div>
               <div style={{ position: 'absolute', right: 12, top: 12, width: 30, height: 30, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3c4166" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /><path d="M11 8v6" /><path d="M8 11h6" /></svg>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -461,7 +531,7 @@ const ProfilePage = () => {
           <div style={{ position: 'relative', ...kicker }}>Identitas</div>
           <h3 style={{ position: 'relative', margin: '10px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-.022em', color: '#1b1c2c' }}>Data pokok sekolah</h3>
           <div style={{ position: 'relative', marginTop: 20, display: 'flex', flexDirection: 'column' }}>
-            {dataPokok(sekolah).map(([label, nilai]) => (
+            {dataPokok(sekolah, isi.registry).map(([label, nilai]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 20, padding: '13px 2px', borderBottom: '1px solid rgba(255,255,255,.75)' }}>
                 <span style={{ flex: 'none', fontSize: 13, color: '#6b7093' }}>{label}</span>
                 <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1e2035', textAlign: 'right' }}>{nilai}</span>
@@ -525,7 +595,7 @@ const ProfilePage = () => {
       {l && (
         <div onClick={closeAll} style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, background: 'rgba(40,46,80,.46)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', animation: 'fadeup .3s ease both' }}>
           <div onClick={(e) => e.stopPropagation()} style={{ position: 'relative', width: 'min(920px,100%)' }}>
-            <div style={{ position: 'relative', height: 'min(56vh,460px)', borderRadius: 26, overflow: 'hidden', background: l[2], border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 50px 100px -30px rgba(40,50,110,.75),inset 0 1px 0 rgba(255,255,255,.85)' }}>
+            <div style={{ position: 'relative', height: 'min(56vh,460px)', borderRadius: 26, overflow: 'hidden', background: FASILITAS_GAYA[light % FASILITAS_GAYA.length][0], border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 50px 100px -30px rgba(40,50,110,.75),inset 0 1px 0 rgba(255,255,255,.85)' }}>
               <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10, color: 'rgba(60,50,90,.45)', fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase' }}>
                 <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="8.5" cy="9.5" r="1.8" /><path d="m4 17 5-5 4.5 4.5L17 13l3 3" /></svg>
@@ -534,8 +604,8 @@ const ProfilePage = () => {
             </div>
             <div style={{ marginTop: 16, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, padding: '18px 22px', borderRadius: 20, background: 'rgba(255,255,255,.68)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 30px 60px -24px rgba(40,50,110,.6)' }}>
               <div>
-                <div style={{ fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>{l[0]}</div>
-                <div style={{ marginTop: 5, fontSize: 13.5, lineHeight: 1.6, color: '#565b7d', maxWidth: 520 }}>{l[1]}</div>
+                <div style={{ fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>{l.name}</div>
+                <div style={{ marginTop: 5, fontSize: 13.5, lineHeight: 1.6, color: '#565b7d', maxWidth: 520 }}>{l.desc}</div>
               </div>
               <div style={{ display: 'flex', gap: 9, flex: 'none' }}>
                 <button type="button" onClick={() => moveLight(-1)} className="shine" aria-label="Sebelumnya" style={{ position: 'relative', overflow: 'hidden', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.7)' }}>

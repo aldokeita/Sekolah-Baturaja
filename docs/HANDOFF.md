@@ -98,34 +98,53 @@ bawaan ada di sana, dan `App.jsx` menyelaraskan `document.title` setelah identit
 
 ### Panel Konten: mana yang benar-benar tampil di halaman publik
 
-Ini pernah menjadi cacat serius dan **sebagian masih tersisa**, jadi periksa daftar ini sebelum
-menambah field ke panel Konten.
-
-Panel Konten dibangun untuk desain beranda **lama**. Halaman publik SDN yang sekarang punya isinya
-sendiri, sehingga banyak field di panel itu dulu tersimpan dengan sukses tanpa memengaruhi apa pun —
-pembeli menyunting, menekan simpan, dan situsnya tidak berubah, tanpa pesan galat apa pun.
+Ini pernah menjadi cacat serius: panel Konten dibangun untuk desain beranda **lama**, sedangkan
+halaman publik SDN yang sekarang punya isinya sendiri. Belasan field tersimpan dengan sukses tanpa
+memengaruhi apa pun — pembeli menyunting, menekan simpan, dan situsnya tidak berubah, tanpa pesan
+galat apa pun. **Sekarang sudah tuntas: kendali yang tak berpengaruh dicabut.**
 
 | Kunci | Status |
 |---|---|
-| `school_identity` | **Tampil** — nav, footer, Kontak, dashboard, kuitansi |
+| `school_identity` | **Tampil** — nav, footer, Kontak, Profil, dashboard, kuitansi |
 | `home_content` | **Tampil** — kartu program, testimoni, FAQ di beranda |
+| `profile_content` | **Tampil** — seluruh naratif halaman Profil |
 | `galleryPhotos` | **Tampil** — beranda dan halaman Galeri |
 | `facilities` | **Tampil** — halaman Fasilitas |
 | berita & pengumuman | **Tampil** — lewat endpoint tersendiri |
 | `level_config` | **Tampil** — Absensi Digital (gamifikasi) |
-| `logoUrl` | **Tampil**, tapi hanya di kuitansi pembayaran |
-| `heroSlides`, `slideshowTimer`, `heroOverlayOpacity` | **Tidak tampil** — sisa desain lama |
-| `quotas`, `schedules`, `proofPoints` | **Tidak tampil** — sisa desain lama |
-| `ctaBackgroundUrl`, `ctaBackgroundOverlayOpacity` | **Tidak tampil** — sisa desain lama |
+| `logoUrl` | **Tampil** — nav situs dan kuitansi pembayaran |
+| `hafalanVideos` | Hanya dashboard murid, dan hanya bila `VITE_ENABLE_TAHFIZH` menyala |
 
-Yang belum tampil sudah diberi peringatan di dalam panel supaya tidak menyesatkan pembeli, tetapi
-**belum dicabut** karena `institutionContent.js` masih menyediakan nilai awalnya dan pencabutan
-menyentuh `homeUtils.mergeHomepageContent`.
+Kendali yang **sudah dicabut** dari panel karena tidak dirender halaman mana pun: slideshow
+(`heroSlides`, `slideshowTimer`, `heroOverlayOpacity`), latar CTA (`ctaBackgroundUrl`,
+`ctaBackgroundOverlayOpacity`), `quotas`, `schedules`, `proofPoints`, `faqs`, `model3dSettings`,
+`qiroatiVideos`, `parentingArticles`, dan `waliDiscussions`.
+
+Dua jebakan yang ditemukan saat mencabutnya:
+
+- **`faqs` adalah penyunting FAQ kedua yang mati.** Beranda membaca `home_content.faq`, bukan kunci
+  `faqs`. Jadi ada dua kotak FAQ di panel: satu hidup di tab Halaman Depan, satu mati. Pembeli yang
+  memilih yang salah tidak akan pernah tahu mengapa tanya-jawabnya tidak muncul.
+- **`quotas` dan `schedules` sempat terlihat masih dipakai.** Keduanya muncul di `TvDisplayPage.jsx`
+  dan `MmqSection.jsx`, tapi itu variabel lokal dan kunci MMQ dengan nama yang sama — bukan kunci
+  `website_content`. Periksa asal datanya, jangan hanya mencocokkan nama.
+
+Kuncinya **tetap dibiarkan** di bentuk data `ContentManagement` walau kendalinya dicabut. Kalau
+dihapus, "Simpan Semua Perubahan" akan menimpa isi tersimpan pembeli dengan kekosongan.
+
+`src/components/public/home/homeUtils.js` kini hanya diimpor `ContentManagement` — tidak ada halaman
+publik yang memakainya. Ia bertahan sebagai penyedia bentuk data bawaan panel.
 
 Pola pemisahannya: **teks disunting pembeli, tampilan tetap di kode.** Gradasi, ikon, dan warna peran
-ada di `PROGRAM_STYLE` serta `TESTI_STYLE` di `HomePage.jsx`, dipasangkan dengan teks berdasarkan
-posisi memakai modulo — jadi jumlah item boleh berubah tanpa merusak tampilan. Jangan memindahkan
+ada di `PROGRAM_STYLE` serta `TESTI_STYLE` di `HomePage.jsx`, dan `FASILITAS_GAYA`, `RIWAYAT_GRADASI`,
+`FOTO_GAYA`, `ORANG_GRADASI` di `ProfilePage.jsx` — semuanya dipasangkan dengan teks berdasarkan
+posisi memakai modulo, jadi jumlah item boleh berubah tanpa merusak tampilan. Jangan memindahkan
 gradasi atau ikon ke basis data; pembeli sekolah tidak perlu memilih warna.
+
+Satu kekecualian yang disengaja: kalimat besar kutipan di halaman Profil (`quoteLead`) menerima
+**tanda bintang** untuk menyorot satu frasa dengan warna aksen — `membawa *kecepatan belajarnya
+sendiri*`. Itu satu-satunya cara pembeli menyentuh tampilan, dan ada supaya kalimat khas halaman itu
+bisa diganti tanpa kehilangan aksen warnanya. Lihat `teksBeraksen`.
 
 Manajemen Kelas kini **satu panel tanpa sub-tab**. Tiga sub-tab lama (Murid TPQ, Murid PTPT, Murid
 Dewasa) dicabut dan `AdultClassManagement.jsx` dihapus.
@@ -603,25 +622,22 @@ berkas-berkas itu sudah beberapa kali disunting langsung — termasuk oleh sapua
 aksen dan penyambungan identitas. Menjalankan ulang generator itu akan menimpa
 semuanya. Perlakukan sebagai kode biasa.
 
-### Data karangan yang masih tersisa di halaman publik
+### Nama orang karangan: sudah bersih dari halaman publik
 
-Halaman Profil sudah dibereskan: guru, visi, misi, tujuan, dan data pokok kini
-dari basis data. Tapi **naratifnya belum**, dan semuanya per-sekolah:
+Tidak ada lagi nama karangan di halaman publik. Yang dulu ada dan sudah dibuang:
+delapan guru di halaman Profil (lengkap dengan surel palsu `@sekolah.id`), penulis
+berita di `NewsPage`, dan pendamping prestasi di `PrestasiPage`. Ketiganya kini
+memakai Data Guru lewat `GET /api/content/teachers`.
 
-| Tempat | Isi karangan |
-|---|---|
-| `ProfilePage.jsx` `RIWAYAT` | riwayat 1966 · 1994 · 2015 · 2023 |
-| `ProfilePage.jsx` hero | "SEJAK 1966", "tiga ruang kelas kayu", "624 anak" |
-| `ProfilePage.jsx` `FASILITAS` | delapan fasilitas beserta keterangannya |
-| `ProfilePage.jsx` `TICKER` | "Terakreditasi A", "18 rombongan belajar" |
-| `PrestasiPage.jsx:41` | pendamping "Hj. Rosmiati, S.Pd." |
-| `NewsPage.jsx:26` | penulis berita "Hj. Rosmiati, S.Pd." |
-| `PpdbPage.jsx` | NPSN, jalur, dan syarat pendaftaran |
+**Kalau menambah halaman yang menampilkan orang, ambil dari endpoint itu** dan
+pakai `src/lib/staf.js` (`sebutanStaf`, `inisialNama`, `stafKe`). Jangan menulis
+nama contoh di kode: pada salinan yang terjual, itu berarti sekolah pembeli
+memperkenalkan orang yang tidak ada.
 
-Dua baris terakhir menyebut **nama orang yang tidak ada** — sama seperti yang
-sudah dibuang dari halaman Profil, jadi keduanya paling mendesak. Data pokok
-sekolah (NPSN, akreditasi, kepala sekolah, luas lahan) juga belum punya tempat di
-panel Identitas; barisnya dihapus dari halaman Profil daripada dikarang.
+Naratif halaman Profil juga sudah tidak ditanam di kode — semuanya di
+`profile_content` (lihat bagian Panel Konten). Yang **masih** ditanam dan
+per-sekolah: NPSN, jalur, dan syarat pendaftaran di `PpdbPage.jsx`. Itu sisa
+terakhir yang perlu tempat di panel.
 
 ### Yang perlu diperiksa penjual sebelum menyerahkan salinan
 
