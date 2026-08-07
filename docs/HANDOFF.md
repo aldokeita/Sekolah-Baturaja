@@ -108,6 +108,7 @@ galat apa pun. **Sekarang sudah tuntas: kendali yang tak berpengaruh dicabut.**
 | `school_identity` | **Tampil** — nav, footer, Kontak, Profil, dashboard, kuitansi |
 | `home_content` | **Tampil** — kartu program, testimoni, FAQ di beranda |
 | `profile_content` | **Tampil** — seluruh naratif halaman Profil |
+| `ppdb_content` | **Tampil** — jalur, berkas, jadwal, dan syarat halaman PPDB |
 | `galleryPhotos` | **Tampil** — beranda dan halaman Galeri |
 | `facilities` | **Tampil** — halaman Fasilitas |
 | berita & pengumuman | **Tampil** — lewat endpoint tersendiri |
@@ -118,9 +119,14 @@ galat apa pun. **Sekarang sudah tuntas: kendali yang tak berpengaruh dicabut.**
 Kendali yang **sudah dicabut** dari panel karena tidak dirender halaman mana pun: slideshow
 (`heroSlides`, `slideshowTimer`, `heroOverlayOpacity`), latar CTA (`ctaBackgroundUrl`,
 `ctaBackgroundOverlayOpacity`), `quotas`, `schedules`, `proofPoints`, `faqs`, `model3dSettings`,
-`qiroatiVideos`, `parentingArticles`, dan `waliDiscussions`.
+`qiroatiVideos`, `parentingArticles`, `waliDiscussions`, dan **`enrollmentInfo`**.
 
-Dua jebakan yang ditemukan saat mencabutnya:
+`enrollmentInfo` yang terakhir itu paling buruk dari semuanya: tab "Informasi Pendaftaran" mengelola
+kategori **"Murid TPQ (Anak)"** dan **"Murid Dewasa"** beserta rincian biaya sekolah Al-Qur'an —
+konten LPQ utuh di dalam template sekolah dasar umum — dan tidak dirender halaman mana pun. Tab itu
+kini berisi penyunting `ppdb_content` yang sungguhan; `src/lib/enrollmentContent.js` dihapus.
+
+Tiga jebakan yang ditemukan saat mencabutnya:
 
 - **`faqs` adalah penyunting FAQ kedua yang mati.** Beranda membaca `home_content.faq`, bukan kunci
   `faqs`. Jadi ada dua kotak FAQ di panel: satu hidup di tab Halaman Depan, satu mati. Pembeli yang
@@ -634,10 +640,26 @@ pakai `src/lib/staf.js` (`sebutanStaf`, `inisialNama`, `stafKe`). Jangan menulis
 nama contoh di kode: pada salinan yang terjual, itu berarti sekolah pembeli
 memperkenalkan orang yang tidak ada.
 
-Naratif halaman Profil juga sudah tidak ditanam di kode — semuanya di
-`profile_content` (lihat bagian Panel Konten). Yang **masih** ditanam dan
-per-sekolah: NPSN, jalur, dan syarat pendaftaran di `PpdbPage.jsx`. Itu sisa
-terakhir yang perlu tempat di panel.
+Naratif halaman Profil dan seluruh ketentuan halaman PPDB juga sudah tidak
+ditanam di kode — masing-masing di `profile_content` dan `ppdb_content` (lihat
+bagian Panel Konten). Tidak ada lagi data per-sekolah yang tertulis di kode.
+
+### Visi, misi, dan tujuan ada di tempat yang mungkin salah — perlu keputusan
+
+Ketiganya disimpan di `school_identity`, dan kunci itu ada di `brandKeys`, jadi
+**hanya superadmin yang boleh mengubahnya**. Pembeli tidak bisa menyunting visi
+dan misi sekolahnya sendiri.
+
+Ini bisa dibaca dua arah, dan belum ada keputusan pemilik. Aturan yang dipakai
+sejauh ini: identitas produk milik penjual, konten administrasi sekolah milik
+pembeli. Visi dan misi lebih dekat ke yang kedua — itu kalimat milik sekolah
+pembeli, bukan ciri produk.
+
+Kalau diputuskan menjadi hak pembeli, pindahkan `vision`, `missions`, dan `goals`
+dari `schoolIdentity.js` ke `profileContent.js`. Tidak bisa diselesaikan dengan
+menambah pengecualian di `brandKeys`: penjagaannya per-kunci, sedangkan ketiga
+field itu berada **di dalam** objek `school_identity`, jadi izinnya
+seluruhnya-atau-tidak.
 
 ### Yang perlu diperiksa penjual sebelum menyerahkan salinan
 

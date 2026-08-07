@@ -223,25 +223,34 @@ Semuanya di menu **Konten**:
 | Tab | Yang bisa Anda ubah |
 |---|---|
 | **Halaman Depan** | tiga kartu program, testimoni, dan tanya-jawab di beranda |
+| **Halaman Profil** | pembuka, riwayat sekolah, fasilitas, angka ringkasan, kutipan kepala sekolah, dan data pokok |
 | **Apresiasi** | murid dan guru berprestasi |
 | **Media & Galeri** | galeri foto, berita, pengumuman, dan daftar fasilitas |
-| **Informasi Pendaftaran** | keterangan penerimaan murid baru |
+| **Informasi Pendaftaran** | jalur pendaftaran, berkas yang diminta, jadwal, dan syarat PPDB |
 | **Pesan Masuk** | pesan yang dikirim pengunjung dari halaman Kontak |
 
-Dua catatan tentang tab-tab ini:
+Empat hal yang memudahkan:
 
-- Beberapa kendali di **Halaman Depan** diberi tanda **"belum tampil di halaman depan"** —
-  slideshow, latar CTA, kuota, jadwal pembelajaran, dan keunggulan. Itu peninggalan desain beranda
-  sebelumnya. Mengisinya tersimpan tapi tidak mengubah apa pun di situs. Lewati saja.
-- Di **Media & Galeri**, tiga bagian tidak tampil di mana pun dan boleh diabaikan: "Video Qiroati",
-  "Artikel Parenting", dan "Diskusi Wali Murid". Sedangkan "Video Hafalan" hanya muncul di dashboard
-  murid, dan hanya bila `VITE_ENABLE_TAHFIZH` dinyalakan. Yang benar-benar tampil di situs dari tab
-  ini adalah **Galeri**, **Berita**, **Pengumuman**, dan **Fasilitas**.
+- **Daftar guru tidak perlu diisi dua kali.** Halaman Profil, Kontak, dan penulis berita contoh
+  semuanya mengambil dari **Data Guru**. Cukup isi guru sekali, dan ketiganya ikut.
+- **Data pokok sekolah bebas Anda tentukan.** Di tab Halaman Profil, baris NPSN, akreditasi, dan
+  seterusnya bisa dihapus atau ditambah sesuai yang berlaku di sekolah Anda. Baris tanpa isi tidak
+  tampil di situs. Nama sekolah, tahun ajaran, dan jam layanan sudah otomatis — tidak perlu ditulis
+  ulang di sini.
+- **Tahun ajaran cukup diisi sekali.** Di halaman pendaftaran, tulis `{tahun}` pada daftar syarat
+  dan angkanya akan mengikuti tahun ajaran berjalan. Contoh: `berusia 6 tahun pada 1 Juli {tahun}`.
+- **Satu frasa bisa diberi warna.** Pada kalimat besar kutipan kepala sekolah, apit sebuah frasa
+  dengan tanda bintang untuk mewarnainya dengan warna khas sekolah — `membawa *cara belajarnya
+  sendiri*`.
+
+Satu catatan: bagian **Video Hafalan** di Media & Galeri hanya muncul di dashboard murid, dan hanya
+bila `VITE_ENABLE_TAHFIZH` dinyalakan. Sekolah umum boleh mengabaikannya.
 
 ### 7.5 · Yang tidak bisa Anda ubah sendiri
 
-Nama sekolah, logo, dan warna aksen situs dikunci untuk pemegang lisensi template. Kalau Anda
-membutuhkannya diganti, **hubungi penjual** — perubahannya cepat.
+Hanya empat hal, dan semuanya soal identitas: **nama sekolah, logo, warna aksen, serta visi, misi,
+dan tujuan**. Keempatnya dikunci untuk pemegang lisensi template. Kalau Anda membutuhkannya diganti,
+**hubungi penjual** — perubahannya cepat.
 
 Semua hal lain — seluruh isi administrasi sekolah, seluruh konten situs, semua akun — sepenuhnya
 milik Anda.

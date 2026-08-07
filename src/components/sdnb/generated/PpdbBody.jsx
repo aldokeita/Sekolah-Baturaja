@@ -20,7 +20,7 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-ppdb.css';
 
 const PpdbBody = (vals = {}) => {
-  const { berkas, d, genders, namaSekolah, tahunAjaran, tahunAwal, h, isDone, isStep1, isStep2, isStep3, isStep4, jalur, minat, navStyle, next, nextLabel, nextStyle, prev, prevStyle, progressStyle, reset, review, setujuBox, setujuStyle, stepCounter, steps, toggleSetuju } = vals;
+  const { berkas, d, genders, inisialLogo, jadwal, labelGelombang, namaSekolah, pengantar, syarat, tahunAjaran, tahunAwal, h, isDone, isStep1, isStep2, isStep3, isStep4, jalur, minat, navStyle, next, nextLabel, nextStyle, prev, prevStyle, progressStyle, reset, review, setujuBox, setujuStyle, stepCounter, steps, toggleSetuju } = vals;
   return (
     <>
 <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
@@ -35,9 +35,9 @@ const PpdbBody = (vals = {}) => {
     <div style={{ position: "sticky", top: "0", zIndex: "40", padding: "18px 28px 14px" }}>
       <div style={{ maxWidth: "1240px", margin: "0 auto", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: "24px", padding: "12px 14px 12px 20px", borderRadius: "22px", background: "rgba(255,255,255,.55)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 20px 46px -20px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "60%", background: "linear-gradient(165deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
         <a href="/" style={{ position: "relative", display: "flex", alignItems: "center", gap: "12px", color: "inherit" }}>
-          <div style={{ width: "40px", height: "40px", borderRadius: "13px", background: "linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "13px", boxShadow: "0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>SDN</div>
+          <div style={{ width: "40px", height: "40px", borderRadius: "13px", background: "linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "13px", boxShadow: "0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>{inisialLogo}</div>
           <div style={{ lineHeight: "1.15" }}>
-            <div style={{ fontSize: "15px", fontWeight: "800", letterSpacing: "-.01em", color: "#1b1c28" }}>Sekolah Dasar Negeri Baturaja</div>
+            <div style={{ fontSize: "15px", fontWeight: "800", letterSpacing: "-.01em", color: "#1b1c28" }}>{namaSekolah}</div>
             <div style={{ fontSize: "11px", fontWeight: "500", color: "#6c718f" }}>Formulir PPDB {tahunAjaran}</div>
           </div>
         </a>
@@ -45,7 +45,7 @@ const PpdbBody = (vals = {}) => {
         <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 14px", borderRadius: "12px", fontSize: "12.5px", fontWeight: "600", color: "#3d4166", background: "rgba(255,255,255,.6)", border: "1px solid rgba(255,255,255,.9)" }}>
             <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 4px rgba(34,197,94,.18)" }}></span>
-            Gelombang 1 · tutup 20 Agustus
+            {labelGelombang}
           </div>
           <a className="shine hx-1myuu2z" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "11px 18px", borderRadius: "14px", fontSize: "13.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", boxShadow: "0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"></path><path d="m11 18-6-6 6-6"></path></svg>
@@ -58,7 +58,7 @@ const PpdbBody = (vals = {}) => {
     <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "26px 28px 0" }}>
       <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>PPDB {tahunAjaran}</div>
       <h1 style={{ margin: "12px 0 0", fontSize: "44px", lineHeight: "1.06", letterSpacing: "-.035em", fontWeight: "800", color: "#171827", maxWidth: "720px" }}>Formulir pendaftaran <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>peserta didik baru</span></h1>
-      <p style={{ margin: "16px 0 0", maxWidth: "620px", fontSize: "15px", lineHeight: "1.65", color: "#535878", textWrap: "pretty" }}>Diisi oleh orang tua atau wali calon murid kelas satu. Data tersimpan otomatis di perangkat ini, jadi Anda bisa melanjutkan kapan saja sebelum tenggat.</p>
+      <p style={{ margin: "16px 0 0", maxWidth: "620px", fontSize: "15px", lineHeight: "1.65", color: "#535878", textWrap: "pretty" }}>{pengantar}</p>
     </div>
 
     <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "34px 28px 0", display: "grid", gridTemplateColumns: "1fr 340px", gap: "26px", alignItems: "start" }}>
@@ -266,29 +266,24 @@ const PpdbBody = (vals = {}) => {
 
         <div style={{ position: "relative", overflow: "hidden", padding: "24px", borderRadius: "24px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
           <div style={{ position: "relative", fontSize: "12px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "#8a8ea8" }}>Jadwal</div>
+          {/* Tahap pertama ditandai bulatan bergradasi, sisanya pucat — penanda
+              tahap yang sedang berjalan, mengikuti rancangan aslinya. */}
           <div style={{ position: "relative", marginTop: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <div style={{ flex: "none", width: "9px", height: "9px", marginTop: "5px", borderRadius: "50%", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))", boxShadow: "0 0 0 4px rgba(120,132,255,.16)" }}></div>
-              <div><div style={{ fontSize: "13.5px", fontWeight: "700", color: "#1e2035" }}>1 Juli &ndash; 20 Agustus</div><div style={{ fontSize: "12px", color: "#6b7093" }}>Pengisian formulir daring</div></div>
+            {(jadwal || []).map((t, $index) => (
+            <div key={$index} style={{ display: "flex", gap: "12px" }}>
+              <div style={{ flex: "none", width: "9px", height: "9px", marginTop: "5px", borderRadius: "50%", background: $index === 0 ? "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))" : "rgba(120,132,255,.35)", boxShadow: $index === 0 ? "0 0 0 4px rgba(120,132,255,.16)" : "none" }}></div>
+              <div><div style={{ fontSize: "13.5px", fontWeight: "700", color: "#1e2035" }}>{t.when}</div><div style={{ fontSize: "12px", color: "#6b7093" }}>{t.what}</div></div>
             </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <div style={{ flex: "none", width: "9px", height: "9px", marginTop: "5px", borderRadius: "50%", background: "rgba(120,132,255,.35)" }}></div>
-              <div><div style={{ fontSize: "13.5px", fontWeight: "700", color: "#1e2035" }}>23 Agustus</div><div style={{ fontSize: "12px", color: "#6b7093" }}>Pengumuman hasil seleksi</div></div>
-            </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <div style={{ flex: "none", width: "9px", height: "9px", marginTop: "5px", borderRadius: "50%", background: "rgba(120,132,255,.35)" }}></div>
-              <div><div style={{ fontSize: "13.5px", fontWeight: "700", color: "#1e2035" }}>25 &ndash; 29 Agustus</div><div style={{ fontSize: "12px", color: "#6b7093" }}>Daftar ulang di ruang tata usaha</div></div>
-            </div>
+            ))}
           </div>
         </div>
 
         <div style={{ position: "relative", overflow: "hidden", padding: "24px", borderRadius: "24px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
           <div style={{ position: "relative", fontSize: "12px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "#8a8ea8" }}>Yang perlu disiapkan</div>
           <div style={{ position: "relative", marginTop: "14px", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#3f4468" }}>
-            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>Kartu keluarga dan akta kelahiran</div>
-            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>Anak berusia minimal 6 tahun pada 1 Juli {tahunAwal}</div>
-            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>Pas foto berwarna 3&times;4</div>
-            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>Surat keterangan dari TK atau RA bila ada</div>
+            {(syarat || []).map((s, $index) => (
+            <div key={$index} style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>{s}</div>
+            ))}
           </div>
         </div>
 

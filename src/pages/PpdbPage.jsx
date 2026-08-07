@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import PpdbBody from '@/components/sdnb/generated/PpdbBody';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { submitPublicFeedback } from '@/lib/publicContentAdapters';
+import { DEFAULT_PPDB_CONTENT, fetchPpdbContent, isiPenanda } from '@/lib/ppdbContent';
 import { tahunAjaranAwal } from '@/lib/schoolIdentity';
 import '@/styles/sdnb.css';
 
@@ -31,21 +32,12 @@ const STEP_DEFS = [
   [4, 'Tinjau', 'Kirim pendaftaran'],
 ];
 
-const JALUR_DEFS = [
-  ['zonasi', 'Zonasi', 'Berdasarkan jarak tempat tinggal ke sekolah'],
-  ['afirmasi', 'Afirmasi', 'Untuk keluarga tidak mampu dan penyandang disabilitas'],
-  ['prestasi', 'Prestasi', 'Kejuaraan tingkat kecamatan ke atas yang dibuktikan sertifikat'],
-  ['pindah', 'Perpindahan tugas', 'Anak dari orang tua yang dipindahtugaskan'],
-];
-
-const MINAT = ['Tahfiz', 'Bahasa Inggris', 'Sains cilik', 'Seni tari'];
-
-const BERKAS_DEFS = [
-  ['kk', 'Kartu keluarga', 'JPG atau PDF, maks 2 MB'],
-  ['akta', 'Akta kelahiran', 'JPG atau PDF, maks 2 MB'],
-  ['rapor', 'Rapor semester 1–5', 'PDF gabungan'],
-  ['foto', 'Pas foto 3×4', 'Latar biru atau merah'],
-];
+/* Jalur pendaftaran, program pendukung, dan daftar berkas TIDAK lagi di sini.
+ *
+ * Ketiganya ketentuan yang berbeda di tiap sekolah — dan salah satu program
+ * pendukung bawaannya dulu "Tahfiz", yang tidak berlaku untuk sekolah umum. Kini
+ * disunting pembeli di Konten → Informasi Pendaftaran; lihat
+ * src/lib/ppdbContent.js. Tahun ajarannya dari panel Identitas Sekolah. */
 
 const chipStyle = (on) => 'position:relative;overflow:hidden;padding:12px 20px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;transition:all .2s ease;border:1px solid '
   + (on ? 'rgba(255,255,255,.6)' : 'rgba(255,255,255,.9)') + ';color:' + (on ? '#fff' : '#3f4468') + ';background:'
@@ -54,6 +46,8 @@ const chipStyle = (on) => 'position:relative;overflow:hidden;padding:12px 20px;b
 
 const PpdbPage = () => {
   const sekolah = useSchoolIdentity();
+  // Bawaan dipakai lebih dulu supaya formulir tidak kosong selagi menunggu server.
+  const [ppdb, setPpdb] = useState(DEFAULT_PPDB_CONTENT);
   const [step, setStep] = useState(1);
   const [gender, setGender] = useState('');
   const [jalur, setJalur] = useState('zonasi');
@@ -70,6 +64,14 @@ const PpdbPage = () => {
   if (!handlers.current) {
     handlers.current = Object.fromEntries(FIELD_KEYS.map((k) => [k, (e) => { data.current[k] = e.target.value; }]));
   }
+
+  useEffect(() => {
+    let aktif = true;
+    fetchPpdbContent()
+      .then((tersimpan) => { if (aktif && tersimpan) setPpdb(tersimpan); })
+      .catch(() => { /* bawaan tetap tampil */ });
+    return () => { aktif = false; };
+  }, []);
 
   // restore draft
   useEffect(() => {
@@ -112,7 +114,7 @@ const PpdbPage = () => {
 
   const d = data.current;
   const v = (k) => (d[k] && String(d[k]).trim() ? d[k] : '—');
-  const jalurLabel = (JALUR_DEFS.find((j) => j[0] === jalur) || [, '—'])[1];
+  const jalurLabel = ppdb.jalur.find((j) => j.id === jalur)?.name || '—';
   const pct = done ? 100 : Math.round(((step - 1) / 3) * 100);
 
   // Tahun ajaran dari panel Identitas. Sebelumnya "2026/2027" ditulis di enam
@@ -147,8 +149,17 @@ const PpdbPage = () => {
 
     // Identitas untuk markup PpdbBody, yang dulu menanam nama sekolah dan tahun.
     namaSekolah: sekolah.name,
+    inisialLogo: sekolah.logoAbbr,
     tahunAjaran,
     tahunAwal,
+
+    // Ketentuan dari panel Informasi Pendaftaran.
+    labelGelombang: ppdb.waveLabel,
+    pengantar: ppdb.intro,
+    jadwal: ppdb.timeline,
+    // `{tahun}` diganti di sini, bukan di panel: syarat usia jadi ikut berubah
+    // saat tahun ajaran diperbarui tanpa perlu disunting ulang.
+    syarat: ppdb.requirements.map((s) => isiPenanda(s, tahunAwal)),
 
     steps: STEP_DEFS.map(([n, label, hint]) => {
       const active = n === step && !done;
@@ -166,7 +177,7 @@ const PpdbPage = () => {
       label, style: chipStyle(gender === k), pick: () => setGender(k),
     })),
 
-    jalur: JALUR_DEFS.map(([k, label, desc]) => {
+    jalur: ppdb.jalur.map(({ id: k, name: label, desc }) => {
       const on = jalur === k;
       return {
         label, desc,
@@ -176,9 +187,9 @@ const PpdbPage = () => {
       };
     }),
 
-    minat: MINAT.map((label) => ({ label, style: chipStyle(minat === label), pick: () => setMinat(label) })),
+    minat: ppdb.minat.map((label) => ({ label, style: chipStyle(minat === label), pick: () => setMinat(label) })),
 
-    berkas: BERKAS_DEFS.map(([k, label, note]) => {
+    berkas: ppdb.berkas.map(({ id: k, name: label, hint: note }) => {
       const on = !!files[k];
       return {
         label,
