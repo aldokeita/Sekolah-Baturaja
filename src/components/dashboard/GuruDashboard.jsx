@@ -12,6 +12,7 @@ import { toast } from '@/components/ui/use-toast';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 import SantriDetailModal from '@/components/dashboard/shared/SantriDetailModal';
 import MmqSection from '@/components/dashboard/guru/MmqSection';
+import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import GuruAttendanceRecap from '@/components/dashboard/admin/GuruAttendanceRecap';
 import AttendanceDetailsModal from '@/components/dashboard/shared/AttendanceDetailsModal';
 import AttendanceStatusIcon from '@/components/dashboard/shared/AttendanceStatusIcon';
@@ -489,6 +490,14 @@ const GuruDashboard = () => {
             </div>
           </section>
         )}
+        {/* Jadwal mengajar. Sumbernya endpoint yang sama dengan panel admin,
+            disaring guru_id, dan hanya bisa dibaca — penyuntingan tetap di admin. */}
+        <JadwalSaya
+          guruId={guruData?.id}
+          title="Jadwal Mengajar Saya"
+          emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
+        />
+
         <div className="space-y-8">
             {myClasses.map(cls => (
                 <Card key={cls.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-border/50">

@@ -36,6 +36,7 @@ import {
 } from '@/lib/academicAdapters';
 import { fetchSantriDetail, fetchSantriList, updateSantri } from '@/lib/dataMasterAdapters';
 import { fetchAttendance } from '@/lib/attendanceAdapters';
+import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { deleteAvatar, getStorageErrorMessage, resolveAvatarUrl, uploadAvatar } from '@/lib/storageAdapters';
 import { getSessionName } from '@/utils/sessionMapping';
@@ -599,6 +600,13 @@ const SantriDashboard = ({ isAdult = false }) => {
                        titlePrefix=""
                        isTahfizh
                      />
+                     {/* Jadwal kelas tempat murid berada, hanya bisa dibaca. */}
+                     <JadwalSaya
+                       classId={santriData.current_class_id || santriData.id_kelas}
+                       title="Jadwal Pelajaran Kelas"
+                       emptyText="Belum ada jadwal pelajaran untuk kelas ini."
+                     />
+
                      <SantriDevelopmentProfile santriId={santriData.id} editable={false} collapsible />
                    </div>
                  </div>
