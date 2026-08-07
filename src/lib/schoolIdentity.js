@@ -33,6 +33,10 @@ export const DEFAULT_SCHOOL_IDENTITY = Object.freeze({
   mapUrl: '',
   officeHours: 'Senin–Jumat, 07.30–15.00',
   academicYear: '2026/2027',
+  // Aksen warna sekolah. Dipasang sebagai CSS custom property --sekolah-aksen
+  // pada elemen root oleh applySchoolIdentity, jadi CSS mana pun bisa
+  // memakainya tanpa perlu menyentuh JavaScript.
+  accentColor: '#6470ff',
   vision: 'Menjadi sekolah dasar yang menumbuhkan murid berkarakter, cakap berpikir, dan senang belajar.',
   missions: [
     'Menyelenggarakan pembelajaran yang berpusat pada murid dan menyenangkan.',
@@ -99,12 +103,22 @@ export const subscribeSchoolIdentity = (listener) => {
   return () => subscribers.delete(listener);
 };
 
+// Warna hanya diterima bila berbentuk heks yang sah, supaya isi tersimpan tidak
+// bisa menyuntikkan nilai CSS sembarangan ke elemen root.
+const WARNA_HEKS = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
 export const applySchoolIdentity = (identity) => {
   cached = normalizeSchoolIdentity(identity);
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
   } catch {
     // Mode privasi ketat memblokir penyimpanan; singgahan memori tetap jalan.
+  }
+  try {
+    const warna = WARNA_HEKS.test(cached.accentColor) ? cached.accentColor : DEFAULT_SCHOOL_IDENTITY.accentColor;
+    document.documentElement.style.setProperty('--sekolah-aksen', warna);
+  } catch {
+    // Lingkungan tanpa DOM (test) tidak perlu properti CSS.
   }
   subscribers.forEach((listener) => {
     try { listener(cached); } catch { /* satu pelanggan gagal tidak menjatuhkan yang lain */ }

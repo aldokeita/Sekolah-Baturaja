@@ -67,11 +67,20 @@ func OptionalAuth(secret string) func(http.Handler) http.Handler {
 	}
 }
 
+// RoleSuperadmin memegang aplikasi sebagai produk: pemilik/penjual template.
+// Peran ini SUPERSET dari admin — semua yang boleh admin, boleh superadmin.
+const RoleSuperadmin = "superadmin"
+
+// RequireRole memperbolehkan superadmin secara otomatis tanpa perlu disebut di
+// setiap pemanggilan. Ada 20+ RequireRole("admin", ...) di handler; menambahkan
+// "superadmin" satu per satu justru rawan terlewat dan menghasilkan lubang
+// otorisasi yang senyap.
 func RequireRole(roles ...string) func(http.Handler) http.Handler {
-	allowed := make(map[string]struct{}, len(roles))
+	allowed := make(map[string]struct{}, len(roles)+1)
 	for _, r := range roles {
 		allowed[r] = struct{}{}
 	}
+	allowed[RoleSuperadmin] = struct{}{}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			role, _ := r.Context().Value(CtxRole).(string)
@@ -84,19 +93,35 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 	}
 }
 
+// IsAdmin dipakai pengganti perbandingan langsung role == "admin", supaya
+// superadmin tidak tertolak di area admin-only.
+func IsAdmin(role string) bool {
+	return role == "admin" || role == RoleSuperadmin
+}
+
 // CanManage reports whether the role holds back-office management privileges:
-// admin and tata_usaha. It gates the operational modules the Tata Usaha
-// dashboard shares with admin (data santri, kelas, rekap absensi, MMQ,
+// admin, tata_usaha, dan superadmin. It gates the operational modules the Tata
+// Usaha dashboard shares with admin (data santri, kelas, rekap absensi, MMQ,
 // kalender, pembayaran/pengeluaran, konten, TV/media, app-config).
 //
 // It deliberately does NOT cover the admin-only areas, which keep an explicit
-// == "admin" check so tata_usaha can never reach them:
+// IsAdmin() check so tata_usaha can never reach them:
 //   - account & role provisioning (create/delete staff, assign role/status/password)
 //   - login logs
 //   - backup & restore
 //   - bisyaroh/salary
 func CanManage(role string) bool {
-	return role == "admin" || role == "tata_usaha"
+	return IsAdmin(role) || role == "tata_usaha"
+}
+
+// CanManageBrand menjaga identitas website: logo, ikon, nama sekolah, dan aksen
+// warna. HANYA superadmin.
+//
+// Aplikasi ini template yang dijual. Pembeli menerima peran admin dan bebas
+// mengubah seluruh konten administrasi sekolah, tetapi identitas produk bukan
+// wewenangnya — karena itu admin sengaja TIDAK disertakan di sini.
+func CanManageBrand(role string) bool {
+	return role == RoleSuperadmin
 }
 
 func UserIDFromCtx(ctx context.Context) string {

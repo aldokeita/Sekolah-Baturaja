@@ -30,6 +30,7 @@ const TEXT_FIELDS = [
   { key: 'mapUrl', label: 'Tautan Google Maps', placeholder: 'https://maps.app.goo.gl/…', hint: 'Boleh dikosongkan.' },
   { key: 'officeHours', label: 'Jam layanan', placeholder: 'Senin–Jumat, 07.30–15.00' },
   { key: 'academicYear', label: 'Tahun ajaran', placeholder: '2026/2027' },
+  { key: 'accentColor', label: 'Aksen warna', placeholder: '#6470ff', hint: 'Kode heks, contoh #6470ff. Dipakai sebagai warna khas sekolah.', type: 'color' },
 ];
 
 const AREA_FIELDS = [
@@ -136,12 +137,30 @@ const SchoolIdentitySettings = () => {
         {TEXT_FIELDS.map((field) => (
           <div key={field.key} className="admin-edit-field">
             <label htmlFor={`identitas-${field.key}`}>{field.label}</label>
-            <Input
-              id={`identitas-${field.key}`}
-              value={form[field.key] ?? ''}
-              placeholder={field.placeholder}
-              onChange={(e) => setField(field.key, e.target.value)}
-            />
+            {field.type === 'color' ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  type="color"
+                  aria-label={`${field.label} — pemilih warna`}
+                  value={/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(form[field.key] || '') ? form[field.key] : '#6470ff'}
+                  onChange={(e) => setField(field.key, e.target.value)}
+                  className="h-10 w-14 cursor-pointer p-1"
+                />
+                <Input
+                  id={`identitas-${field.key}`}
+                  value={form[field.key] ?? ''}
+                  placeholder={field.placeholder}
+                  onChange={(e) => setField(field.key, e.target.value)}
+                />
+              </div>
+            ) : (
+              <Input
+                id={`identitas-${field.key}`}
+                value={form[field.key] ?? ''}
+                placeholder={field.placeholder}
+                onChange={(e) => setField(field.key, e.target.value)}
+              />
+            )}
             {field.hint && <p className="mt-1 text-xs text-muted-foreground">{field.hint}</p>}
           </div>
         ))}

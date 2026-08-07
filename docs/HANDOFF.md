@@ -32,7 +32,36 @@ dibongkar tanpa instruksi baru.
 | Absensi | **Tetap harian, tidak diubah sama sekali** | Sudah harian sejak semula — lihat di bawah |
 | Jadwal pelajaran | **Fitur baru**, tetap per periode, CRUD penuh | Tiga tabel baru, murni aditif |
 | Email admin | Pindah ke `admin@sdnbaturaja.sch.id` | Konsisten dengan tiga akun staf lain |
-| **Identitas sekolah** | **Dikustomisasi dari Dashboard Admin, jangan ditanam di kode** | Aplikasi ini **template yang akan dijual**; pembeli mengganti identitasnya sendiri |
+| **Identitas sekolah** | **Dikustomisasi dari dashboard, jangan ditanam di kode** | Aplikasi ini **template yang akan dijual**; pembeli mengganti identitasnya sendiri |
+| **Peran `superadmin`** | **Hanya superadmin boleh mengubah identitas website**; admin (pembeli) bebas mengelola konten | Penjual memegang identitas produk, pembeli memegang isi administrasi sekolah |
+
+### Dua tingkat izin: superadmin vs admin
+
+`superadmin` adalah **superset** admin — pemilik/penjual template. Nilainya ditambahkan ke enum
+`app_role` lewat `20260806000700_superadmin_role.sql`.
+
+| Aksi | admin (pembeli) | superadmin (penjual) |
+|---|---|---|
+| Identitas sekolah (`school_identity`) | **403** | **200** |
+| Logo & ikon (`logoUrl`) | **403** | 200 |
+| Konten beranda, berita, galeri, fasilitas, dll. | **200** | 200 |
+
+Keempat baris di atas **sudah diuji lewat API**, bukan hanya dibaca dari kode.
+
+Penjagaannya di `brandKeys` pada `content.go` — **berbasis kunci, bukan berbasis rute**, karena
+router hanya melihat path sedangkan kuncinya baru diketahui dari parameter URL. Menyembunyikan tab
+di frontend bukan penjagaan; server tetap menolak.
+
+Tiga hal yang membuat superadmin tidak perlu ditambal di puluhan tempat:
+
+- `RequireRole` **selalu memperbolehkan superadmin** secara otomatis. Ada 20+ `RequireRole("admin",…)`
+  di handler; menambah `"superadmin"` satu per satu rawan terlewat dan menghasilkan lubang senyap.
+- `middleware.IsAdmin(role)` mengganti seluruh perbandingan `role == "admin"` (11 tempat).
+- `CanManage` kini memanggil `IsAdmin`, jadi superadmin ikut lolos.
+
+**Jebakan id akun dummy:** superadmin memakai id `…0020`, **bukan `…0014`**. Id `0014` sudah dipakai
+akun murid Naila di `03_dummy_accounts.sql`; menabraknya menimpa profil murid tersebut — sempat
+terjadi dan harus dipulihkan manual. Periksa id yang belum terpakai sebelum menambah akun seed.
 
 ### Ini template, bukan aplikasi satu sekolah
 
@@ -427,7 +456,8 @@ Pakai murid uji `1234567890`, jangan murid demo, supaya data demo tetap utuh.
 
 | Peran | Username | Password |
 |---|---|---|
-| Admin | `admin@sdnbaturaja.sch.id` | `admin123` |
+| Superadmin (pemilik template) | `superadmin@sdnbaturaja.sch.id` | `superadmin123` |
+| Admin (pembeli) | `admin@sdnbaturaja.sch.id` | `admin123` |
 | Tata Usaha | `tatausaha@sdnbaturaja.sch.id` | `tatausaha123` |
 | Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
 | Wakil Kepala Sekolah | `pentashih@sdnbaturaja.sch.id` | `pentashih123` |

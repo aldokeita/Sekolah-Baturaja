@@ -140,7 +140,7 @@ func (h *GuruHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Non-admins cannot change roles/status.
-	if role != "admin" {
+	if !middleware.IsAdmin(role) {
 		delete(body, "roles")
 		delete(body, "status")
 		delete(body, "status_guru")
@@ -175,7 +175,7 @@ func (h *GuruHandler) Update(w http.ResponseWriter, r *http.Request) {
 // used to span Supabase Auth + Postgres are now a single local transaction.
 func (h *GuruHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if middleware.RoleFromCtx(ctx) != "admin" {
+	if !middleware.IsAdmin(middleware.RoleFromCtx(ctx)) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -276,7 +276,7 @@ func (h *GuruHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /api/guru/{id} — soft delete.
 func (h *GuruHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.IsAdmin(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

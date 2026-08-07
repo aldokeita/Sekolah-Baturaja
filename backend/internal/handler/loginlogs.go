@@ -69,7 +69,7 @@ const loginLogColumns = `id, user_id, role, username_attempt, status,
 // response is a plain array under {"data": ...} — it does not read
 // X-Total-Count. page is 0-based, which is what paginate() expects.
 func (h *LoginLogsHandler) List(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.IsAdmin(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -106,7 +106,7 @@ func (h *LoginLogsHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /api/login-logs/{id} (admin only)
 func (h *LoginLogsHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.IsAdmin(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

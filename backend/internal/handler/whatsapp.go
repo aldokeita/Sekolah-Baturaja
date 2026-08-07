@@ -54,7 +54,7 @@ const whatsappGroupColumns = `id, jilid, group_name, whatsapp_link, is_active,
 // 20260724000100_whatsapp_group_links_guru_read.sql — admin or guru. Guru needs
 // read access because JilidChangeModal is rendered from GuruDashboard.
 func staffCanReadWhatsApp(role string) bool {
-	return role == "admin" || role == "guru" || role == "tata_usaha"
+	return middleware.IsAdmin(role) || role == "guru" || role == "tata_usaha"
 }
 
 // GET /api/whatsapp/groups           — all rows
@@ -98,7 +98,7 @@ func (h *WhatsAppHandler) ListGroups(w http.ResponseWriter, r *http.Request) {
 // Body: {"rows": [{jilid, group_name, whatsapp_link, is_active}, ...]}
 // — exactly what saveWhatsAppGroupLinks builds for the non-empty links.
 func (h *WhatsAppHandler) BulkUpsertGroups(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.IsAdmin(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -188,7 +188,7 @@ func (h *WhatsAppHandler) BulkUpsertGroups(w http.ResponseWriter, r *http.Reques
 // Body: {"jilid_list": ["Jilid 1A", ...]} — the jilid whose link was cleared in
 // the editor. Soft delete: is_active = false, rows are kept.
 func (h *WhatsAppHandler) BulkDeactivateGroups(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) != "admin" {
+	if !middleware.IsAdmin(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

@@ -50,7 +50,15 @@ begin
       ('a1fa7a10-0000-0000-0000-000000000012'::uuid, 'guru@sdnbaturaja.sch.id',      'guru123',
        'Siti Aminah, S.Pd.SD',   'Guru Kelas I',         array['Pengajar'],    'guru'),
       ('a1fa7a10-0000-0000-0000-000000000013'::uuid, 'pentashih@sdnbaturaja.sch.id', 'pentashih123',
-       'Ratna Dewi, S.Pd.SD',    'Pentashih',            array['Pentashih'],   'pentashih')
+       'Ratna Dewi, S.Pd.SD',    'Pentashih',            array['Pentashih'],   'pentashih'),
+      -- Superadmin: pemilik/penjual template. Hanya peran ini yang boleh mengubah
+      -- identitas website (nama sekolah, logo, aksen warna). Pembeli memakai akun
+      -- admin. Ini kredensial dummy lokal, bukan produksi.
+      --
+      -- Id memakai blok 0020, BUKAN 0014: id 0014 sudah dipakai akun murid Naila
+      -- di bawah, dan menabraknya menimpa profil murid tersebut.
+      ('a1fa7a10-0000-0000-0000-000000000020'::uuid, 'superadmin@sdnbaturaja.sch.id', 'superadmin123',
+       'Pemilik Template',       'Superadmin',           array['Admin'],       'superadmin')
     ) as t(id, email, pw, nama, jabatan, roles, app_role)
   loop
     hashed := extensions.crypt(r.pw, extensions.gen_salt('bf', 12));

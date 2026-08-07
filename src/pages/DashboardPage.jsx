@@ -55,7 +55,7 @@ const DashboardPage = () => {
 
   // Admin and Tata Usaha render through DashboardWorkspace, which already
   // brings the SDN Aurora Glass shell (background wash + orbs).
-  const usesSdnbTheme = role === 'admin' || role === 'tata_usaha';
+  const usesSdnbTheme = role === 'admin' || role === 'superadmin' || role === 'tata_usaha';
 
   const renderDashboard = () => {
     console.log('Rendering dashboard based on role:', role);
@@ -76,7 +76,9 @@ const DashboardPage = () => {
         );
     }
 
-    if (role === 'admin') {
+    // superadmin memakai dashboard admin; bedanya hanya tab Identitas Sekolah
+    // yang tampil untuknya (lihat ContentManagement).
+    if (role === 'admin' || role === 'superadmin') {
       return <AdminDashboard />;
     } else if (role === 'tata_usaha') {
       return <TataUsahaDashboard />;

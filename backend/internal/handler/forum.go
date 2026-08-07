@@ -343,7 +343,7 @@ func (h *ForumHandler) softDelete(w http.ResponseWriter, r *http.Request, table,
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
 	userID := middleware.UserIDFromCtx(ctx)
-	isAdmin := middleware.RoleFromCtx(ctx) == "admin"
+	isAdmin := middleware.IsAdmin(middleware.RoleFromCtx(ctx))
 
 	if userID == "" {
 		jsonError(w, "identitas pengguna tidak valid", http.StatusUnauthorized)

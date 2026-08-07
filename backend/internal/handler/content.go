@@ -157,8 +157,20 @@ func (h *ContentHandler) GetWebsiteContent(w http.ResponseWriter, r *http.Reques
 	jsonOK(w, map[string]any{"data": result})
 }
 
-// UpsertWebsiteContent PUT /api/content/website/:key (admin only)
-// Body: {content, is_public}
+// brandKeys memuat identitas website: nama sekolah, logo, ikon, dan aksen warna.
+// Aplikasi ini template yang dijual, jadi kunci-kunci ini HANYA boleh diubah
+// superadmin (pemilik template). Pembeli berperan admin dan tetap bebas mengubah
+// seluruh konten administrasi sekolah lewat kunci lain.
+var brandKeys = map[string]struct{}{
+	"school_identity": {},
+	"logoUrl":         {},
+}
+
+// UpsertWebsiteContent PUT /api/content/website/:key
+//
+// Dua tingkat izin: kunci identitas menuntut superadmin, sisanya cukup
+// admin/tata usaha. Pemeriksaannya di sini dan bukan di router karena router
+// hanya melihat path, sedangkan kuncinya baru diketahui dari parameter URL.
 func (h *ContentHandler) UpsertWebsiteContent(w http.ResponseWriter, r *http.Request) {
 	role := middleware.RoleFromCtx(r.Context())
 	if !middleware.CanManage(role) {
@@ -169,6 +181,11 @@ func (h *ContentHandler) UpsertWebsiteContent(w http.ResponseWriter, r *http.Req
 	key := chi.URLParam(r, "key")
 	if key == "" {
 		jsonError(w, "key wajib diisi", http.StatusBadRequest)
+		return
+	}
+
+	if _, brand := brandKeys[key]; brand && !middleware.CanManageBrand(role) {
+		jsonError(w, "identitas website hanya dapat diubah superadmin", http.StatusForbidden)
 		return
 	}
 

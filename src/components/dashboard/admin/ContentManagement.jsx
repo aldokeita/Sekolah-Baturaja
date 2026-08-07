@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { RotateCcw, ClipboardList, GripVertical, PlusCircle, MinusCircle, ArrowUp, ArrowDown, Building2 } from 'lucide-react';
 import SchoolIdentitySettings from '@/components/dashboard/admin/SchoolIdentitySettings';
 import HomeContentSettings from '@/components/dashboard/admin/HomeContentSettings';
+import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import { motion } from 'framer-motion';
 import HafalanDisplay from '@/components/dashboard/shared/HafalanDisplay';
@@ -169,6 +170,7 @@ const HafalanItemManager = ({
 };
 
 const ContentManagement = () => {
+  const { role } = useAuth();
   const [content, setContent] = useState({
     ...defaultContent, brochures: [], pustaka: [], news: [], announcements: [], qiroatiVideos: [], hafalanVideos: [], waliDiscussions: [], santriOfTheMonth: [], guruOfTheMonth: null, leaderboard: [], parentingArticles: [], model3dSettings: { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 }
   });
@@ -497,10 +499,14 @@ const ContentManagement = () => {
     }
   };
 
+  // Identitas website hanya untuk superadmin (pemilik template). Pembeli berperan
+  // admin dan tetap bebas mengelola seluruh konten di tab lain. Backend juga
+  // menolaknya di sisi server, jadi menyembunyikan tab bukan satu-satunya
+  // penjagaan — lihat brandKeys di content.go.
+  const isSuperadmin = role === 'superadmin';
+
   const tabs = [
-      // Identitas ditaruh paling depan: bagi pembeli template, ini hal pertama
-      // yang perlu diganti.
-      { id: 'identitas', label: 'Identitas Sekolah', icon: Building2 },
+      ...(isSuperadmin ? [{ id: 'identitas', label: 'Identitas Sekolah', icon: Building2 }] : []),
       { id: 'homepage', label: 'Halaman Depan', icon: Home },
       { id: 'apresiasi', label: 'Apresiasi', icon: Heart },
       { id: 'media', label: 'Media & Galeri', icon: ImageIcon },

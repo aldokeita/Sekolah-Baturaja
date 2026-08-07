@@ -837,7 +837,7 @@ func (h *AcademicHandler) ListNotes(w http.ResponseWriter, r *http.Request) {
 
 	q := `SELECT id, santri_id, guru_id, note, visibility, created_at, updated_at
 	      FROM santri_notes WHERE santri_id = $1`
-	if role != "admin" {
+	if !middleware.IsAdmin(role) {
 		q += " AND visibility <> 'admin_only'"
 	}
 	q += " ORDER BY created_at DESC"

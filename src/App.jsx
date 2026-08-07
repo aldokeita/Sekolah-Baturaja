@@ -101,8 +101,10 @@ const DeferredFeaturePage = () => (
   </div>
 );
 
-const allDashboardRoles = ['admin', 'guru', 'santri', 'pentashih', 'tata_usaha'];
-const operationalDisplayRoles = ['admin', 'guru', 'pentashih', 'tata_usaha'];
+// `superadmin` adalah superset admin — pemilik/penjual template. Ia disertakan di
+// setiap daftar yang memuat admin supaya tidak tertolak dari layar mana pun.
+const allDashboardRoles = ['superadmin', 'admin', 'guru', 'santri', 'pentashih', 'tata_usaha'];
+const operationalDisplayRoles = ['superadmin', 'admin', 'guru', 'pentashih', 'tata_usaha'];
 
 function App() {
   /* ----------------------------------------------------------------
