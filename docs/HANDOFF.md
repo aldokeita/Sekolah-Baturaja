@@ -542,8 +542,13 @@ prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, hap
 Absensi **sengaja tidak dirombak** — alasannya di bagian 2, jangan diajukan ulang tanpa alasan baru.
 
 Sudah tuntas juga: peran superadmin, direktori staf dari data guru, jadwal pelajaran di dashboard
-guru dan murid, guard bentrok jadwal, penyembunyian akun superadmin dari pembeli, dan
-**`SETUP.md` sebagai panduan pemasangan untuk pembeli**.
+guru dan murid, guard bentrok jadwal, penyembunyian akun superadmin dari pembeli,
+**`SETUP.md` sebagai panduan pemasangan untuk pembeli**, halaman Profil memakai data sungguhan, serta
+**aksen warna, tahun ajaran, dan tautan Maps yang benar-benar berfungsi**.
+
+Form Identitas dan Isi Halaman Depan **sudah diuji klik**, bukan hanya jalur datanya: mengubah teks,
+menambah kartu, dan menghapus kartu semuanya tersimpan dan tampil di halaman depan; identitas berlaku
+seketika tanpa muat ulang dan bertahan setelah dimuat ulang penuh.
 
 ### `SETUP.md` sekarang dokumen pembeli, bukan dokumen developer
 
@@ -561,6 +566,62 @@ mengetahui bahwa panduannya keliru.
 `backend/.env.example` juga **tidak memuat `POSTGRES_PASSWORD`** padahal `docker-compose.yml`
 mewajibkannya — jadi `cp .env.example .env` diikuti `docker compose up` selalu gagal. Sudah
 ditambahkan.
+
+### Aksen warna: satu heks menurunkan seluruh palet
+
+Palet halaman publik dulu ditulis langsung sebagai heks di **30 berkas, 328
+kemunculan**, jadi pemilih "Aksen warna" di panel Identitas tersimpan tanpa
+mengubah apa pun. Ternyata palet itu bukan kumpulan warna acak melainkan **satu
+sapuan yang teratur**: setiap warna adalah aksen yang digeser rona sambil menurun
+kejenuhannya, pada terang yang hampir sama.
+
+`turunkanPalet` di `src/lib/schoolIdentity.js` memakai selisih HSL tetap
+(`SELISIH_PALET`) untuk menurunkan **delapan** properti CSS dari satu heks.
+Sifat yang wajib dijaga: **pada aksen bawaan `#6470ff`, hasilnya sama persis
+dengan palet asli desain** — diuji di `schoolIdentity.test.js`. Kalau uji itu
+gagal, setiap pemasangan baru berubah tampilannya tanpa ada yang memintanya.
+
+Tiga hal yang mudah terlewat:
+
+- Nilai bawaan **juga** ada di `:root` pada `src/index.css`. Tanpa itu, cat
+  pertama sebelum JavaScript selesai merender `var(--sekolah-…)` tanpa nilai dan
+  tombol kehilangan warnanya sekejap. Mengubah `SELISIH_PALET` berarti menyamakan
+  daftar itu juga.
+- `applySchoolIdentity(cached)` dipanggil di akhir modul supaya pengunjung yang
+  kembali tidak melihat warna bawaan berkedip ke warna sekolahnya.
+- Bayangan memakai `--sekolah-aksen-rgb` (kanal dipisah spasi) karena alfa tidak
+  bisa ditempelkan pada heks di dalam `var()`.
+
+Empat berkas **sengaja** masih memuat heks palet dan jangan disapu:
+`schoolIdentity.js` (bawaan), `index.css` (cadangan CSS), `schoolIdentity.test.js`
+(nilai acuan), dan `SchoolIdentitySettings.jsx` (placeholder kotak isian).
+
+### Berkas di `sdnb/generated/` disunting tangan, bukan lagi hasil generator
+
+`tools/dc-convert.mjs` yang membuatnya **tidak** dijalankan `npm run build`, dan
+berkas-berkas itu sudah beberapa kali disunting langsung — termasuk oleh sapuan
+aksen dan penyambungan identitas. Menjalankan ulang generator itu akan menimpa
+semuanya. Perlakukan sebagai kode biasa.
+
+### Data karangan yang masih tersisa di halaman publik
+
+Halaman Profil sudah dibereskan: guru, visi, misi, tujuan, dan data pokok kini
+dari basis data. Tapi **naratifnya belum**, dan semuanya per-sekolah:
+
+| Tempat | Isi karangan |
+|---|---|
+| `ProfilePage.jsx` `RIWAYAT` | riwayat 1966 · 1994 · 2015 · 2023 |
+| `ProfilePage.jsx` hero | "SEJAK 1966", "tiga ruang kelas kayu", "624 anak" |
+| `ProfilePage.jsx` `FASILITAS` | delapan fasilitas beserta keterangannya |
+| `ProfilePage.jsx` `TICKER` | "Terakreditasi A", "18 rombongan belajar" |
+| `PrestasiPage.jsx:41` | pendamping "Hj. Rosmiati, S.Pd." |
+| `NewsPage.jsx:26` | penulis berita "Hj. Rosmiati, S.Pd." |
+| `PpdbPage.jsx` | NPSN, jalur, dan syarat pendaftaran |
+
+Dua baris terakhir menyebut **nama orang yang tidak ada** — sama seperti yang
+sudah dibuang dari halaman Profil, jadi keduanya paling mendesak. Data pokok
+sekolah (NPSN, akreditasi, kepala sekolah, luas lahan) juga belum punya tempat di
+panel Identitas; barisnya dihapus dari halaman Profil daripada dikarang.
 
 ### Yang perlu diperiksa penjual sebelum menyerahkan salinan
 
