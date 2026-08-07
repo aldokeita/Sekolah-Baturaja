@@ -222,6 +222,7 @@ Semuanya di menu **Konten**:
 
 | Tab | Yang bisa Anda ubah |
 |---|---|
+| **Info Sekolah** | kontak, alamat, jam layanan, tahun ajaran, visi, misi, dan tujuan |
 | **Halaman Depan** | tiga kartu program, testimoni, dan tanya-jawab di beranda |
 | **Halaman Profil** | pembuka, riwayat sekolah, fasilitas, angka ringkasan, kutipan kepala sekolah, dan data pokok |
 | **Apresiasi** | murid dan guru berprestasi |
@@ -248,12 +249,14 @@ bila `VITE_ENABLE_TAHFIZH` dinyalakan. Sekolah umum boleh mengabaikannya.
 
 ### 7.5 · Yang tidak bisa Anda ubah sendiri
 
-Hanya empat hal, dan semuanya soal identitas: **nama sekolah, logo, warna aksen, serta visi, misi,
-dan tujuan**. Keempatnya dikunci untuk pemegang lisensi template. Kalau Anda membutuhkannya diganti,
-**hubungi penjual** — perubahannya cepat.
+Hanya tiga hal: **nama sekolah, logo, dan warna khas sekolah**. Ketiganya dikunci untuk pemegang
+lisensi template. Kalau Anda membutuhkannya diganti, **hubungi penjual** — perubahannya cepat.
 
-Semua hal lain — seluruh isi administrasi sekolah, seluruh konten situs, semua akun — sepenuhnya
-milik Anda.
+Visi, misi, tujuan, nomor telepon, alamat, dan tahun ajaran **bukan** termasuk. Semuanya ada di tab
+**Info Sekolah** dan sepenuhnya Anda yang mengaturnya, karena itu data sekolah Anda sendiri.
+
+Semua hal lain — seluruh isi administrasi sekolah, seluruh konten situs, semua akun — juga milik
+Anda.
 
 ---
 

@@ -1,59 +1,58 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, RotateCcw, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  AKSEN_GRADASI,
+  AKSEN_SOLID,
   DEFAULT_SCHOOL_IDENTITY,
   SCHOOL_IDENTITY_KEY,
-  getSchoolIdentity,
+  SCHOOL_INFO_KEY,
   applySchoolIdentity,
-  saveSchoolIdentity,
+  getSchoolIdentity,
+  saveSchoolBrand,
+  turunkanPalet,
 } from '@/lib/schoolIdentity';
 import { fetchWebsiteContentMap, getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
 
-// Satu tempat untuk seluruh identitas yang tampil ke pengunjung dan ke staf.
-// Aplikasi ini template, jadi pembeli harus bisa mengganti semuanya dari sini
-// tanpa menyentuh kode.
+/**
+ * Panel merek — HANYA superadmin (penjual template).
+ *
+ * Isinya sengaja sempit: nama sekolah, nama singkat, inisial logo, dan warna.
+ * Kontak, alamat, jam layanan, tahun ajaran, visi, misi, dan tujuan pindah ke
+ * panel "Info Sekolah" yang boleh disunting pembeli — semuanya data sekolah,
+ * bukan ciri produk. Lihat BRAND_FIELDS di src/lib/schoolIdentity.js.
+ */
+
+const HEKS = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
 const TEXT_FIELDS = [
   { key: 'name', label: 'Nama sekolah', placeholder: 'Sekolah Dasar Negeri Baturaja', hint: 'Nama resmi lengkap. Dipakai di footer, kuitansi, dan judul halaman.' },
-  { key: 'shortName', label: 'Nama singkat', placeholder: 'SDN Baturaja', hint: 'Dipakai di tempat sempit seperti header dashboard.' },
+  { key: 'shortName', label: 'Nama singkat', placeholder: 'SDN Baturaja', hint: 'Dipakai di tempat sempit seperti bilah dashboard.' },
   { key: 'logoAbbr', label: 'Inisial logo', placeholder: 'SDN', hint: 'Dua sampai empat huruf, tampil di kotak logo bila belum ada gambar.' },
-  { key: 'tagline', label: 'Tagline', placeholder: 'Belajar dengan tenang, tumbuh dengan percaya diri.' },
-  { key: 'city', label: 'Kota', placeholder: 'Baturaja' },
-  { key: 'phone', label: 'Telepon', placeholder: '(0735) 320145' },
-  { key: 'whatsapp', label: 'WhatsApp', placeholder: '6285xxxxxxxxx', hint: 'Boleh dikosongkan bila sekolah tidak memakai WhatsApp.' },
-  { key: 'email', label: 'Email', placeholder: 'info@sekolahbta.id' },
-  { key: 'website', label: 'Situs web', placeholder: 'https://sekolahbta.id' },
-  { key: 'mapUrl', label: 'Tautan Google Maps', placeholder: 'https://maps.app.goo.gl/…', hint: 'Boleh dikosongkan.' },
-  { key: 'officeHours', label: 'Jam layanan', placeholder: 'Senin–Jumat, 07.30–15.00' },
-  { key: 'academicYear', label: 'Tahun ajaran', placeholder: '2026/2027' },
-  { key: 'accentColor', label: 'Aksen warna', placeholder: '#6470ff', hint: 'Kode heks, contoh #6470ff. Dipakai sebagai warna khas sekolah.', type: 'color' },
 ];
 
-const AREA_FIELDS = [
-  { key: 'address', label: 'Alamat', rows: 2, placeholder: 'Jalan …, Kabupaten …, Provinsi … 32111' },
-  { key: 'description', label: 'Deskripsi singkat', rows: 3, hint: 'Pengantar satu paragraf. Tampil di halaman Profil.' },
-  { key: 'vision', label: 'Visi', rows: 2, hint: 'Satu kalimat. Tampil di tab Visi pada halaman Profil.' },
-];
-
-// Field bertipe daftar. Disunting sebagai teks multi-baris lalu dipecah per baris
-// oleh normalizeSchoolIdentity; harus sejalan dengan LIST_FIELDS di schoolIdentity.js.
-const DAFTAR_FIELDS = [
-  { key: 'missions', label: 'Misi', placeholder: 'Satu misi per baris', hint: 'Satu baris satu misi. Baris kosong diabaikan. Tampil di tab Misi pada halaman Profil.' },
-  { key: 'goals', label: 'Tujuan', placeholder: 'Satu tujuan per baris', hint: 'Satu baris satu tujuan. Tampil di tab Tujuan pada halaman Profil.' },
-];
-
-// missions dan goals disimpan sebagai array tapi disunting sebagai teks.
-const keFormulir = (identity) => ({
-  ...identity,
-  ...Object.fromEntries(DAFTAR_FIELDS.map(({ key }) => [key, (identity[key] || []).join('\n')])),
-});
+const PemilihWarna = ({ id, label, nilai, bawaan, hint, onChange }) => (
+  <div className="admin-edit-field">
+    <label htmlFor={id}>{label}</label>
+    <div className="flex items-center gap-2">
+      <Input
+        type="color"
+        aria-label={`${label} — pemilih warna`}
+        value={HEKS.test(nilai || '') ? nilai : bawaan}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-10 w-14 cursor-pointer p-1"
+      />
+      <Input id={id} value={nilai ?? ''} placeholder={bawaan} onChange={(e) => onChange(e.target.value)} />
+    </div>
+    {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+  </div>
+);
 
 const SchoolIdentitySettings = () => {
-  const [form, setForm] = useState(() => keFormulir(getSchoolIdentity()));
+  const [form, setForm] = useState(getSchoolIdentity);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
@@ -62,13 +61,15 @@ const SchoolIdentitySettings = () => {
     let active = true;
     (async () => {
       try {
-        const map = await fetchWebsiteContentMap({ keys: [SCHOOL_IDENTITY_KEY] });
+        const map = await fetchWebsiteContentMap({ keys: [SCHOOL_IDENTITY_KEY, SCHOOL_INFO_KEY] });
         if (!active) return;
-        const stored = map?.[SCHOOL_IDENTITY_KEY];
-        // Terapkan ke sumber global juga, supaya header dan footer langsung ikut
-        // menampilkan nilai tersimpan begitu panel ini dibuka.
-        const applied = applySchoolIdentity(stored || getSchoolIdentity());
-        setForm(keFormulir(applied));
+        // Kedua kunci diterapkan ke sumber global supaya nav dan footer langsung
+        // ikut menampilkan nilai tersimpan begitu panel ini dibuka.
+        const applied = applySchoolIdentity({
+          ...(map?.[SCHOOL_IDENTITY_KEY] || {}),
+          ...(map?.[SCHOOL_INFO_KEY] || {}),
+        });
+        setForm(applied);
       } catch (error) {
         if (active) setLoadError(getPublicContentErrorMessage(error));
       } finally {
@@ -80,6 +81,16 @@ const SchoolIdentitySettings = () => {
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
+  const solid = form.accentMode === AKSEN_SOLID;
+
+  // Pratinjau memakai fungsi yang sama dengan yang dipakai halaman publik, jadi
+  // yang terlihat di sini persis yang akan tampil di situs.
+  const palet = turunkanPalet(
+    HEKS.test(form.accentColor || '') ? form.accentColor : DEFAULT_SCHOOL_IDENTITY.accentColor,
+    HEKS.test(form.accentColor2 || '') ? form.accentColor2 : DEFAULT_SCHOOL_IDENTITY.accentColor2,
+    form.accentMode,
+  );
+
   const handleSave = async () => {
     if (!String(form.name || '').trim()) {
       toast({ title: 'Nama sekolah wajib diisi', description: 'Nama ini tampil di banyak tempat, termasuk kuitansi.', variant: 'destructive' });
@@ -87,9 +98,9 @@ const SchoolIdentitySettings = () => {
     }
     setIsSaving(true);
     try {
-      const applied = await saveSchoolIdentity(form);
-      setForm(keFormulir(applied));
-      toast({ title: 'Tersimpan', description: 'Identitas sekolah diperbarui di seluruh aplikasi.' });
+      const applied = await saveSchoolBrand(form);
+      setForm(applied);
+      toast({ title: 'Tersimpan', description: 'Identitas produk diperbarui di seluruh aplikasi.' });
     } catch (error) {
       toast({ title: 'Gagal menyimpan', description: getPublicContentErrorMessage(error), variant: 'destructive' });
     } finally {
@@ -98,7 +109,15 @@ const SchoolIdentitySettings = () => {
   };
 
   const handleReset = () => {
-    setForm(keFormulir(DEFAULT_SCHOOL_IDENTITY));
+    setForm((prev) => ({
+      ...prev,
+      name: DEFAULT_SCHOOL_IDENTITY.name,
+      shortName: DEFAULT_SCHOOL_IDENTITY.shortName,
+      logoAbbr: DEFAULT_SCHOOL_IDENTITY.logoAbbr,
+      accentColor: DEFAULT_SCHOOL_IDENTITY.accentColor,
+      accentColor2: DEFAULT_SCHOOL_IDENTITY.accentColor2,
+      accentMode: DEFAULT_SCHOOL_IDENTITY.accentMode,
+    }));
     toast({ title: 'Kembali ke bawaan', description: 'Belum tersimpan — tekan Simpan bila memang diinginkan.' });
   };
 
@@ -107,7 +126,7 @@ const SchoolIdentitySettings = () => {
       <section className="space-y-4" aria-busy="true">
         <Skeleton className="h-10 w-64 admin-skeleton-shimmer" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl admin-skeleton-shimmer" />)}
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl admin-skeleton-shimmer" />)}
         </div>
       </section>
     );
@@ -121,8 +140,8 @@ const SchoolIdentitySettings = () => {
           <div>
             <h4 id="identitas-sekolah" className="text-xl font-black text-foreground sm:text-2xl">Identitas Sekolah</h4>
             <p className="mt-1 text-sm text-muted-foreground">
-              Nama, kontak, visi, dan misi yang dipakai di halaman publik maupun dashboard. Ubah di sini,
-              berlaku di seluruh aplikasi.
+              Nama dan warna khas sekolah. Hanya peran ini yang boleh mengubahnya. Kontak, alamat, visi,
+              dan misi ada di tab <strong>Info Sekolah</strong> dan boleh diubah admin.
             </p>
           </div>
         </div>
@@ -147,63 +166,86 @@ const SchoolIdentitySettings = () => {
         {TEXT_FIELDS.map((field) => (
           <div key={field.key} className="admin-edit-field">
             <label htmlFor={`identitas-${field.key}`}>{field.label}</label>
-            {field.type === 'color' ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="color"
-                  aria-label={`${field.label} — pemilih warna`}
-                  value={/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(form[field.key] || '') ? form[field.key] : '#6470ff'}
-                  onChange={(e) => setField(field.key, e.target.value)}
-                  className="h-10 w-14 cursor-pointer p-1"
-                />
-                <Input
-                  id={`identitas-${field.key}`}
-                  value={form[field.key] ?? ''}
-                  placeholder={field.placeholder}
-                  onChange={(e) => setField(field.key, e.target.value)}
-                />
-              </div>
-            ) : (
-              <Input
-                id={`identitas-${field.key}`}
-                value={form[field.key] ?? ''}
-                placeholder={field.placeholder}
-                onChange={(e) => setField(field.key, e.target.value)}
-              />
-            )}
+            <Input
+              id={`identitas-${field.key}`}
+              value={form[field.key] ?? ''}
+              placeholder={field.placeholder}
+              onChange={(e) => setField(field.key, e.target.value)}
+            />
             {field.hint && <p className="mt-1 text-xs text-muted-foreground">{field.hint}</p>}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {AREA_FIELDS.map((field) => (
-          <div key={field.key} className="admin-edit-field">
-            <label htmlFor={`identitas-${field.key}`}>{field.label}</label>
-            <Textarea
-              id={`identitas-${field.key}`}
-              rows={field.rows}
-              value={form[field.key] ?? ''}
-              placeholder={field.placeholder}
-              onChange={(e) => setField(field.key, e.target.value)}
-            />
-            {field.hint && <p className="mt-1 text-xs text-muted-foreground">{field.hint}</p>}
-          </div>
-        ))}
+      <div className="space-y-4 border-t pt-6">
+        <div>
+          <h5 className="font-bold text-foreground">Warna Sekolah</h5>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Seluruh tombol, judul bergradasi, dan penanda di situs mengikuti pilihan ini.
+          </p>
+        </div>
 
-        {DAFTAR_FIELDS.map((field) => (
-          <div key={field.key} className="admin-edit-field">
-            <label htmlFor={`identitas-${field.key}`}>{field.label}</label>
-            <Textarea
-              id={`identitas-${field.key}`}
-              rows={5}
-              value={form[field.key] ?? ''}
-              placeholder={field.placeholder}
-              onChange={(e) => setField(field.key, e.target.value)}
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Jenis warna sekolah">
+          {[
+            { nilai: AKSEN_GRADASI, label: 'Gradasi dua warna' },
+            { nilai: AKSEN_SOLID, label: 'Satu warna solid' },
+          ].map((opsi) => {
+            const aktif = (form.accentMode || AKSEN_GRADASI) === opsi.nilai;
+            return (
+              <button
+                key={opsi.nilai}
+                type="button"
+                role="radio"
+                aria-checked={aktif}
+                onClick={() => setField('accentMode', opsi.nilai)}
+                className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${aktif ? 'border-cyan-300 bg-white/85 shadow-sm dark:border-cyan-700 dark:bg-slate-900/80' : 'border-white/70 bg-white/45 hover:bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/35'}`}
+              >
+                {opsi.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <PemilihWarna
+            id="identitas-accentColor"
+            label={solid ? 'Warna sekolah' : 'Warna awal gradasi'}
+            nilai={form.accentColor}
+            bawaan={DEFAULT_SCHOOL_IDENTITY.accentColor}
+            hint="Kode heks, contoh #6470ff."
+            onChange={(v) => setField('accentColor', v)}
+          />
+          {/* Kotak warna kedua disembunyikan pada mode solid, bukan dinonaktifkan:
+              kotak mati yang tetap terlihat mengundang pertanyaan tanpa jawaban. */}
+          {!solid && (
+            <PemilihWarna
+              id="identitas-accentColor2"
+              label="Warna akhir gradasi"
+              nilai={form.accentColor2}
+              bawaan={DEFAULT_SCHOOL_IDENTITY.accentColor2}
+              hint="Warna tujuan gradasi. Pilih yang masih serasi dengan warna awal."
+              onChange={(v) => setField('accentColor2', v)}
             />
-            <p className="mt-1 text-xs text-muted-foreground">{field.hint}</p>
+          )}
+        </div>
+
+        <div className="admin-card space-y-3 bg-background p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pratinjau</p>
+          <div
+            className="flex h-14 items-center justify-center rounded-xl text-sm font-bold text-white"
+            style={{ background: `linear-gradient(135deg,${palet.aksen},${palet['aksen-tengah']} 55%,${palet['aksen-ujung']})` }}
+          >
+            Contoh tombol
           </div>
-        ))}
+          <div className="flex flex-wrap gap-2">
+            {['aksen', 'aksen-pekat', 'aksen-tengah', 'aksen-tengah-2', 'aksen-ujung', 'aksen-hangat', 'aksen-muda', 'aksen-samar'].map((nama) => (
+              <div key={nama} className="flex flex-col items-center gap-1">
+                <span className="h-8 w-8 rounded-lg border border-white/70" style={{ background: palet[nama] }} title={palet[nama]} />
+                <span className="text-[10px] text-muted-foreground">{palet[nama]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

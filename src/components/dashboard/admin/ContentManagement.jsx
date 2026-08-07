@@ -13,6 +13,7 @@ import SchoolIdentitySettings from '@/components/dashboard/admin/SchoolIdentityS
 import HomeContentSettings from '@/components/dashboard/admin/HomeContentSettings';
 import ProfileContentSettings from '@/components/dashboard/admin/ProfileContentSettings';
 import PpdbContentSettings from '@/components/dashboard/admin/PpdbContentSettings';
+import SchoolInfoSettings from '@/components/dashboard/admin/SchoolInfoSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import { motion } from 'framer-motion';
@@ -365,6 +366,7 @@ const ContentManagement = () => {
 
   const tabs = [
       ...(isSuperadmin ? [{ id: 'identitas', label: 'Identitas Sekolah', icon: Building2 }] : []),
+      { id: 'info', label: 'Info Sekolah', icon: Info },
       { id: 'homepage', label: 'Halaman Depan', icon: Home },
       { id: 'profil', label: 'Halaman Profil', icon: BookMarked },
       { id: 'apresiasi', label: 'Apresiasi', icon: Heart },
@@ -443,6 +445,10 @@ const ContentManagement = () => {
                 <Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} />
                 {content.logoUrl && <img src={content.logoUrl} alt="Pratinjau logo" className="w-24 h-24 mt-2 bg-gray-200 p-2 rounded-md" />}
             </div>
+        </TabsContent>
+
+<TabsContent value="info" className="animate-in fade-in slide-in-from-bottom-2">
+            <SchoolInfoSettings />
         </TabsContent>
 
         <TabsContent value="homepage" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">

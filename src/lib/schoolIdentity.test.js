@@ -1,18 +1,29 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_SCHOOL_IDENTITY, normalizeSchoolIdentity, tahunAjaranAwal, turunkanPalet } from '@/lib/schoolIdentity';
+import {
+  AKSEN_SOLID,
+  BRAND_FIELDS,
+  DEFAULT_SCHOOL_IDENTITY,
+  normalizeSchoolIdentity,
+  pisahIdentitas,
+  tahunAjaranAwal,
+  turunkanPalet,
+} from '@/lib/schoolIdentity';
+
+const BAWAAN_AWAL = DEFAULT_SCHOOL_IDENTITY.accentColor;
+const BAWAAN_AKHIR = DEFAULT_SCHOOL_IDENTITY.accentColor2;
 
 /**
- * Yang diuji di sini adalah janji produk: pembeli memilih satu warna, dan
- * seluruh palet halaman publik mengikutinya.
+ * Yang diuji di sini adalah janji produk: sekolah memilih dua warna (atau satu
+ * bila solid), dan seluruh palet halaman publik mengikutinya.
  *
- * Uji terpenting adalah yang pertama — pada aksen bawaan, palet turunan harus
+ * Uji terpenting adalah yang pertama — pada pilihan bawaan, palet turunan harus
  * kembali PERSIS ke warna asli desain. Kalau meleset satu digit pun, setiap
  * pemasangan baru berubah tampilannya tanpa ada yang memintanya.
  */
 describe('turunkanPalet', () => {
-  it('mengembalikan palet asli desain pada aksen bawaan', () => {
-    expect(turunkanPalet('#6470ff')).toEqual({
+  it('mengembalikan palet asli desain pada pilihan bawaan', () => {
+    expect(turunkanPalet(BAWAAN_AWAL, BAWAAN_AKHIR)).toEqual({
       'aksen': '#6470ff',
       'aksen-pekat': '#5b6cff',
       'aksen-tengah': '#8a6cf0',
@@ -25,22 +36,95 @@ describe('turunkanPalet', () => {
     });
   });
 
-  it('menerima bentuk singkat tiga digit', () => {
-    expect(turunkanPalet('#66f')).toEqual(turunkanPalet('#6666ff'));
+  it('memakai kedua warna pilihan sebagai ujung gradasi', () => {
+    const palet = turunkanPalet('#12a150', '#f59e0b');
+    expect(palet.aksen).toBe('#12a150');
+    expect(palet['aksen-ujung']).toBe('#f59e0b');
   });
 
-  it('menggeser seluruh palet ketika aksen diganti', () => {
-    const hijau = turunkanPalet('#12a150');
-    expect(hijau.aksen).toBe('#12a150');
-    // Tidak ada satu pun warna turunan yang tertinggal di rona lama.
+  it('menerima bentuk singkat tiga digit', () => {
+    expect(turunkanPalet('#66f', '#f9c')).toEqual(turunkanPalet('#6666ff', '#ff99cc'));
+  });
+
+  it('menggeser seluruh palet ketika warnanya diganti', () => {
+    const hijau = turunkanPalet('#12a150', '#0ea5e9');
+    const bawaan = turunkanPalet(BAWAAN_AWAL, BAWAAN_AKHIR);
     Object.entries(hijau).forEach(([nama, nilai]) => {
       if (nama === 'aksen-rgb') return;
-      expect(nilai).not.toBe(turunkanPalet('#6470ff')[nama]);
+      expect(nilai).not.toBe(bawaan[nama]);
     });
   });
 
+  /* Rona berputar 0–360. Tanpa memilih arah terpendek, gradasi dari merah ke
+   * ungu akan memutari seluruh roda warna dan melewati hijau serta biru — warna
+   * yang tidak dipilih sekolah sama sekali. */
+  it('mengambil jalur rona terpendek antara dua warna', () => {
+    // Merah (H≈0) ke ungu (H≈280): jalur terpendek lewat magenta, bukan hijau.
+    const palet = turunkanPalet('#ef4444', '#a855f7');
+    expect(palet['aksen-tengah']).toMatch(/^#[0-9a-f]{6}$/);
+    // Stop tengah tidak boleh menjadi hijau; pada RGB berarti G tidak dominan.
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(palet['aksen-tengah'].slice(i, i + 2), 16));
+    expect(g).toBeLessThan(Math.max(r, b));
+  });
+
+  describe('mode solid', () => {
+    it('memakai satu warna untuk seluruh sapuan', () => {
+      const palet = turunkanPalet('#12a150', '#f59e0b', AKSEN_SOLID);
+      expect(palet.aksen).toBe('#12a150');
+      expect(palet['aksen-tengah']).toBe('#12a150');
+      expect(palet['aksen-tengah-2']).toBe('#12a150');
+      expect(palet['aksen-ujung']).toBe('#12a150');
+      // Warna jingga di luar rentang juga tidak diputar: sekolah memilih satu warna.
+      expect(palet['aksen-hangat']).toBe('#12a150');
+    });
+
+    it('tetap membedakan tint supaya perannya tidak hilang', () => {
+      const palet = turunkanPalet('#12a150', undefined, AKSEN_SOLID);
+      expect(palet['aksen-muda']).not.toBe(palet.aksen);
+      expect(palet['aksen-samar']).not.toBe(palet['aksen-muda']);
+    });
+
+    it('mengabaikan warna kedua yang hilang tanpa melempar', () => {
+      expect(() => turunkanPalet('#12a150')).not.toThrow();
+      expect(turunkanPalet('#12a150')['aksen-ujung']).toBe('#12a150');
+    });
+  });
+
+  /* Dua nilai tint dipakai sebagai LATAR LEMBUT — kartu guru di halaman Profil
+   * dan mosaik fasilitas. Dulu keduanya dihitung dengan penambahan terang tetap
+   * (+12,2), yang hanya memucat bila warna aksennya sudah terang; pada hijau tua
+   * hasilnya hijau menyala di belakang teks gelap. */
+  describe('tint', () => {
+    const terang = (hex) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      return (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+    };
+
+    it.each(['#12a150', '#7c2d12', '#1e1b4b', '#6470ff'])('memucat untuk aksen %s', (warna) => {
+      const palet = turunkanPalet(warna, '#f59e0b');
+      expect(terang(palet['aksen-muda'])).toBeGreaterThan(terang(palet.aksen));
+      expect(terang(palet['aksen-samar'])).toBeGreaterThan(terang(palet['aksen-muda']));
+      // Cukup pucat untuk dipakai sebagai latar: di atas separuh skala terang.
+      expect(terang(palet['aksen-samar'])).toBeGreaterThan(0.55);
+    });
+  });
+
+  /* Warna "hangat" adalah pasangan gradasi terakhir. Ronanya melanjutkan arah
+   * sapuan, tapi kejenuhan dan terangnya mengikuti warna akhir — kalau keduanya
+   * ikut diekstrapolasi, warnanya jadi kusam. */
+  it('menjaga warna hangat tetap sepekat warna akhir', () => {
+    const kejenuhan = (hex) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      const mx = Math.max(r, g, b); const mn = Math.min(r, g, b); const l = (mx + mn) / 2;
+      if (mx === mn) return 0;
+      return l > 0.5 ? (mx - mn) / (2 - mx - mn) : (mx - mn) / (mx + mn);
+    };
+    const palet = turunkanPalet('#12a150', '#f59e0b');
+    expect(kejenuhan(palet['aksen-hangat'])).toBeGreaterThan(kejenuhan(palet['aksen-ujung']) * 0.8);
+  });
+
   it('menjaga bentuk keluaran tetap heks enam digit dan kanal rgb', () => {
-    const palet = turunkanPalet('#e11d48');
+    const palet = turunkanPalet('#e11d48', '#f59e0b');
     Object.entries(palet).forEach(([nama, nilai]) => {
       if (nama === 'aksen-rgb') {
         expect(nilai).toMatch(/^\d{1,3} \d{1,3} \d{1,3}$/);
@@ -50,26 +134,46 @@ describe('turunkanPalet', () => {
     });
   });
 
-  // Aksen ekstrem menguji penjepitan: menambah rona pada abu-abu tidak boleh
+  // Warna ekstrem menguji penjepitan: menambah rona pada abu-abu tidak boleh
   // menghasilkan kejenuhan negatif, dan warna nyaris putih tidak boleh melewati
   // terang 100%. Keduanya menghasilkan nilai CSS tidak sah bila lolos.
-  it('tetap sah untuk aksen kelabu', () => {
-    const palet = turunkanPalet('#808080');
+  it.each([
+    ['kelabu', '#808080', '#909090'],
+    ['nyaris putih', '#fefefe', '#ffffff'],
+    ['hitam', '#000000', '#010101'],
+  ])('tetap sah untuk warna %s', (_nama, awal, akhir) => {
+    const palet = turunkanPalet(awal, akhir);
     Object.entries(palet).forEach(([nama, nilai]) => {
       if (nama !== 'aksen-rgb') expect(nilai).toMatch(/^#[0-9a-f]{6}$/);
     });
   });
+});
 
-  it('tetap sah untuk aksen nyaris putih', () => {
-    const palet = turunkanPalet('#fefefe');
-    Object.entries(palet).forEach(([nama, nilai]) => {
-      if (nama !== 'aksen-rgb') expect(nilai).toMatch(/^#[0-9a-f]{6}$/);
+/* Pemisahan izin: nama sekolah dan warna milik penjual, sisanya milik pembeli.
+ * Kalau satu field bocor ke sisi yang salah, entah pembeli tidak bisa mengubah
+ * data sekolahnya sendiri, atau ia bisa mengganti nama produk. */
+describe('pisahIdentitas', () => {
+  it('menaruh nama dan warna di bagian merek', () => {
+    const { merek } = pisahIdentitas(DEFAULT_SCHOOL_IDENTITY);
+    expect(Object.keys(merek).sort()).toEqual([...BRAND_FIELDS].sort());
+  });
+
+  it('menaruh kontak, visi, misi, dan tujuan di bagian info', () => {
+    const { info } = pisahIdentitas(DEFAULT_SCHOOL_IDENTITY);
+    ['phone', 'email', 'address', 'academicYear', 'vision', 'missions', 'goals'].forEach((field) => {
+      expect(info).toHaveProperty(field);
     });
   });
 
-  it('tetap sah untuk aksen hitam', () => {
-    expect(turunkanPalet('#000000').aksen).toBe('#000000');
-    expect(turunkanPalet('#000000')['aksen-samar']).toMatch(/^#[0-9a-f]{6}$/);
+  it('tidak menaruh satu field di kedua bagian', () => {
+    const { merek, info } = pisahIdentitas(DEFAULT_SCHOOL_IDENTITY);
+    Object.keys(merek).forEach((field) => expect(info).not.toHaveProperty(field));
+  });
+
+  it('mencakup seluruh field identitas tanpa ada yang hilang', () => {
+    const { merek, info } = pisahIdentitas(DEFAULT_SCHOOL_IDENTITY);
+    expect([...Object.keys(merek), ...Object.keys(info)].sort())
+      .toEqual(Object.keys(DEFAULT_SCHOOL_IDENTITY).sort());
   });
 });
 

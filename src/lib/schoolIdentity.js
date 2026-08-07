@@ -4,20 +4,42 @@ import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicCont
  * Identitas sekolah — satu sumber untuk seluruh aplikasi.
  *
  * Aplikasi ini template yang akan dikustomisasi pembeli, jadi identitas TIDAK
- * boleh ditanam di kode. Nilai di bawah hanyalah bawaan contoh; yang berlaku
- * adalah isi yang disunting admin lewat panel "Identitas Sekolah".
+ * boleh ditanam di kode. Nilai di bawah hanyalah bawaan contoh.
  *
- * Disimpan di tabel `website_content` dengan kunci `school_identity`, bukan di
- * `/api/config`, karena halaman publik harus bisa membacanya TANPA token —
- * `GET /api/content/website` terbuka, sedangkan `/api/config` di balik
- * RequireAuth. Penulisannya tetap dijaga `CanManage` di sisi Go.
+ * ── Dua kunci, dua pemilik ────────────────────────────────────────────────────
+ *
+ * Isinya dipecah ke DUA kunci `website_content` karena pemiliknya berbeda:
+ *
+ *   `school_identity`  hanya superadmin (ada di `brandKeys` pada content.go).
+ *                      Nama sekolah, nama singkat, inisial logo, dan warna.
+ *   `school_info`      pembeli (peran admin). Kontak, alamat, jam layanan, tahun
+ *                      ajaran, deskripsi, visi, misi, dan tujuan.
+ *
+ * Kenapa dipecah dan bukan sekadar menambah pengecualian di `brandKeys`:
+ * penjagaan di Go bekerja per-KUNCI, sedangkan sebelumnya seluruh field berada di
+ * dalam satu objek `school_identity` — jadi izinnya seluruhnya-atau-tidak, dan
+ * pembeli tidak bisa mengubah nomor telepon maupun visi sekolahnya sendiri.
+ *
+ * `getSchoolIdentity()` mengembalikan GABUNGAN keduanya, jadi seluruh pembaca
+ * (nav, footer, Kontak, Profil, kuitansi, dashboard) tidak perlu tahu soal
+ * pemecahan ini. Yang berbeda hanya penulisannya.
+ *
+ * Disimpan di `website_content`, bukan `/api/config`, karena halaman publik harus
+ * bisa membacanya TANPA token — `GET /api/content/website` terbuka, sedangkan
+ * `/api/config` di balik RequireAuth.
  *
  * localStorage hanya singgahan supaya identitas tidak berkedip saat halaman
  * dimuat; sumber kebenaran tetap basis data.
  */
 
 export const SCHOOL_IDENTITY_KEY = 'school_identity';
+export const SCHOOL_INFO_KEY = 'school_info';
 const CACHE_KEY = 'sekolah_identitas_cache';
+
+/** Field yang hanya boleh diubah penjual. Sisanya milik pembeli. */
+export const BRAND_FIELDS = Object.freeze([
+  'name', 'shortName', 'logoAbbr', 'accentColor', 'accentColor2', 'accentMode',
+]);
 
 export const DEFAULT_SCHOOL_IDENTITY = Object.freeze({
   name: 'Sekolah Dasar Negeri Baturaja',
@@ -33,10 +55,13 @@ export const DEFAULT_SCHOOL_IDENTITY = Object.freeze({
   mapUrl: '',
   officeHours: 'Senin–Jumat, 07.30–15.00',
   academicYear: '2026/2027',
-  // Aksen warna sekolah. Seluruh palet halaman publik diturunkan dari satu nilai
-  // ini oleh turunkanPalet, lalu dipasang sebagai CSS custom property pada elemen
-  // root, jadi CSS mana pun bisa memakainya tanpa menyentuh JavaScript.
+  /* Warna sekolah: dua warna untuk gradasi, atau satu bila memilih solid.
+   * Seluruh palet halaman publik diturunkan dari sini oleh turunkanPalet, lalu
+   * dipasang sebagai CSS custom property pada elemen root — jadi CSS mana pun
+   * bisa memakainya tanpa menyentuh JavaScript. */
   accentColor: '#6470ff',
+  accentColor2: '#e58fc4',
+  accentMode: 'gradasi',
   vision: 'Menjadi sekolah dasar yang menumbuhkan murid berkarakter, cakap berpikir, dan senang belajar.',
   missions: [
     'Menyelenggarakan pembelajaran yang berpusat pada murid dan menyenangkan.',
@@ -90,6 +115,18 @@ export const normalizeSchoolIdentity = (stored) => {
   return result;
 };
 
+/** Memecah satu objek identitas menjadi dua muatan sesuai pemiliknya. */
+export const pisahIdentitas = (identity) => {
+  const penuh = normalizeSchoolIdentity(identity);
+  const merek = {};
+  const info = {};
+  Object.keys(DEFAULT_SCHOOL_IDENTITY).forEach((field) => {
+    if (BRAND_FIELDS.includes(field)) merek[field] = penuh[field];
+    else info[field] = penuh[field];
+  });
+  return { merek, info };
+};
+
 /**
  * Tahun pembuka dari sebuah tahun ajaran: '2026/2027' menjadi '2026'.
  *
@@ -128,30 +165,56 @@ const WARNA_HEKS = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 /* ─── Palet turunan ────────────────────────────────────────────────────────
  *
- * Halaman publik memakai satu sapuan warna, bukan satu warna tunggal: tombol
- * dan judulnya bergradasi dari aksen menuju ungu lalu merona. Dulu keduabelas
- * warnanya ditulis langsung di 19 berkas (151 kemunculan), jadi pemilih "Aksen
+ * Halaman publik memakai sapuan warna, bukan satu warna tunggal: tombol dan
+ * judulnya bergradasi dari warna awal menuju warna akhir. Dulu keduabelas
+ * warnanya ditulis langsung di 30 berkas (328 kemunculan), jadi pemilih "Aksen
  * warna" di panel Identitas tersimpan tanpa mengubah apa pun.
  *
- * Ternyata sapuan itu sangat teratur: seluruh warna adalah aksen yang digeser
- * rona (hue) sambil menurun kejenuhannya, pada terang yang hampir sama. Jadi
- * palet lengkapnya dapat DITURUNKAN dari satu heks pilihan pembeli memakai
- * selisih tetap di bawah — yang diukur dari palet asli desain, sehingga pada
- * aksen bawaan #6470ff hasilnya kembali ke warna aslinya.
+ * Sekolah memilih DUA warna — awal dan akhir gradasi — atau satu warna saja bila
+ * memilih tampilan solid. Delapan properti CSS diturunkan dari pilihan itu.
+ *
+ * Sifat yang wajib dijaga: pada pilihan bawaan (#6470ff → #e58fc4) hasilnya SAMA
+ * PERSIS dengan palet asli desain. Dua stop di tengah punya `bentuk` — selisih
+ * kecil dari interpolasi lurus, diukur dari palet aslinya — supaya kecocokan itu
+ * tercapai tanpa mengorbankan keluwesan untuk pasangan warna lain.
  */
 
-// Selisih dari aksen dalam HSL: [rona, kejenuhan, terang].
-// Nilai acuan pada #6470ff (H 235,4 · S 100 · L 69,6) tercantum di komentar.
-const SELISIH_PALET = {
-  'aksen': [0, 0, 0],                       // #6470ff — warna utama
-  'aksen-pekat': [-1.6, 0, -1.8],           // #5b6cff — awal gradasi, sedikit lebih dalam
-  'aksen-tengah': [18.3, -18.5, -1.4],      // #8a6cf0 — ungu
-  'aksen-tengah-2': [28.3, -18.5, -1.4],    // #a06cf0 — ungu terang
-  'aksen-ujung': [87.7, -37.7, 3.3],        // #e58fc4 — merona, ujung gradasi
-  'aksen-hangat': [148.2, -18.5, -1.4],     // #f0a06c — jingga, dipakai pasangan gradasi terakhir
-  'aksen-muda': [-5.7, -6.5, 12.2],         // #a5b4fc — tint
-  'aksen-samar': [-7.4, -3.5, 19.2],        // #c7d2fe — tint paling pucat
-};
+export const AKSEN_GRADASI = 'gradasi';
+export const AKSEN_SOLID = 'solid';
+
+/* Stop di sepanjang sapuan.
+ *
+ * `posisi`  — letak di antara warna awal (0) dan warna akhir (1). Nilai di atas 1
+ *             berarti melanjutkan arah sapuan melewati warna akhir.
+ * `bentuk`  — [kejenuhan, terang] yang ditambahkan setelah interpolasi, menjaga
+ *             lengkung sapuan aslinya alih-alih garis lurus.
+ * `dariAwal` — [rona, kejenuhan, terang] relatif terhadap warna awal.
+ * `tint`     — [rona, faktorKejenuhan, porsiKeputih]: dicampur menuju putih
+ *             sebanyak `porsiKeputih` dari jarak terang ke 100%.
+ */
+const STOP_PALET = [
+  { nama: 'aksen', posisi: 0, bentuk: [0, 0] },
+  // Awal gradasi, sedikit lebih dalam dari warna utama.
+  { nama: 'aksen-pekat', dariAwal: [-1.6, 0, -1.8] },
+  { nama: 'aksen-tengah', posisi: 0.2085, bentuk: [-10.66, -2.07] },
+  { nama: 'aksen-tengah-2', posisi: 0.3226, bentuk: [-6.36, -2.45] },
+  { nama: 'aksen-ujung', posisi: 1, bentuk: [0, 0] },
+  /* Jingga: RONA-nya melanjutkan arah sapuan melewati warna akhir, sedangkan
+   * kejenuhan dan terangnya mengikuti warna akhir.
+   *
+   * Dua cara lain sudah dicoba dan keduanya buruk. Memutar rona dengan sudut
+   * tetap +60° membuat gradasi hijau→jingga mendarat di hijau limau menyala,
+   * warna yang tidak ada hubungannya dengan pilihan sekolah. Mengekstrapolasi
+   * kejenuhan dan terang sekalian membuatnya kusam, karena pada posisi 1,69
+   * garis lurusnya sudah jauh melewati kedua warna pilihan. */
+  { nama: 'aksen-hangat', lanjutan: { posisi: 1.69, ds: 19.2, dl: -4.7 } },
+  /* Tint dihitung sebagai campuran menuju PUTIH, bukan penambahan terang tetap.
+   * Penambahan tetap (+12,2) hanya memucat bila warna aksennya sudah terang;
+   * pada hijau tua ia menghasilkan hijau menyala, padahal kedua nilai ini dipakai
+   * sebagai latar lembut kartu guru dan mosaik fasilitas. */
+  { nama: 'aksen-muda', tint: [-5.7, 0.935, 0.400] },
+  { nama: 'aksen-samar', tint: [-7.4, 0.965, 0.632] },
+];
 
 const jepit = (n, min, max) => Math.min(max, Math.max(min, n));
 
@@ -195,29 +258,83 @@ const keRgb = ({ h, s, l }) => {
 const keHeks = (hsl) => `#${keRgb(hsl).map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 
 /**
- * Menurunkan seluruh palet halaman publik dari satu warna aksen.
+ * Rona (hue) warna akhir yang "dibuka lipatannya" relatif terhadap warna awal.
  *
- * @param {string} hexAksen heks yang sudah lolos WARNA_HEKS
+ * Rona berputar 0–360, jadi selisih mentah bisa melompat: biru 235 ke merah 350
+ * terbaca +115, sedangkan merah 350 ke biru 235 terbaca −115 padahal keduanya
+ * jalur yang sama. Arah terpendek dipilih supaya gradasi tidak memutari seluruh
+ * roda warna dan melewati warna yang tidak dipilih sekolah.
+ */
+const bukaRona = (awal, akhir) => {
+  let beda = akhir - awal;
+  while (beda > 180) beda -= 360;
+  while (beda < -180) beda += 360;
+  return awal + beda;
+};
+
+/**
+ * Menurunkan seluruh palet halaman publik dari warna pilihan sekolah.
+ *
+ * @param {string} hexAwal warna awal gradasi; heks yang sudah lolos WARNA_HEKS
+ * @param {string} [hexAkhir] warna akhir gradasi. Diabaikan pada mode solid.
+ * @param {'gradasi'|'solid'} [mode] solid memakai satu warna untuk seluruh sapuan
  * @returns {Record<string, string>} nama properti CSS (tanpa `--sekolah-`) ke nilainya
  */
-export const turunkanPalet = (hexAksen) => {
-  const dasar = keHsl(hexAksen);
-  const palet = {};
+export const turunkanPalet = (hexAwal, hexAkhir, mode = AKSEN_GRADASI) => {
+  const awal = keHsl(hexAwal);
+  const solid = mode === AKSEN_SOLID || !hexAkhir;
+  // Pada mode solid seluruh sapuan memakai satu warna, jadi warna akhir sama
+  // dengan warna awal dan interpolasi apa pun menghasilkan warna itu juga.
+  const akhir = solid ? awal : keHsl(hexAkhir);
+  const ronaAkhir = solid ? awal.h : bukaRona(awal.h, akhir.h);
 
-  Object.entries(SELISIH_PALET).forEach(([nama, [dh, ds, dl]]) => {
+  const palet = {};
+  STOP_PALET.forEach(({ nama, posisi, bentuk, dariAwal, tint, lanjutan }) => {
+    let hsl;
+
+    if (dariAwal) {
+      const [dh, ds, dl] = dariAwal;
+      hsl = { h: awal.h + dh, s: awal.s + ds, l: awal.l + dl };
+    } else if (tint) {
+      const [dh, faktorS, porsi] = tint;
+      hsl = {
+        h: awal.h + dh,
+        s: awal.s * faktorS,
+        l: awal.l + porsi * (100 - awal.l),
+      };
+    } else if (lanjutan) {
+      // Pada mode solid sapuan tidak dilanjutkan: sekolah memilih satu warna, dan
+      // memunculkan rona lain justru melanggar pilihannya.
+      hsl = solid ? { ...awal } : {
+        h: awal.h + lanjutan.posisi * (ronaAkhir - awal.h),
+        s: akhir.s + lanjutan.ds,
+        l: akhir.l + lanjutan.dl,
+      };
+    } else {
+      // `bentuk` hanya berlaku pada gradasi: ia menjaga lengkung sapuan aslinya.
+      // Pada mode solid ia justru menggeser warna sedikit dari yang dipilih
+      // sekolah, jadi seluruh stop harus benar-benar sama.
+      const [ds, dl] = solid ? [0, 0] : bentuk;
+      hsl = {
+        h: awal.h + posisi * (ronaAkhir - awal.h),
+        s: awal.s + posisi * (akhir.s - awal.s) + ds,
+        l: awal.l + posisi * (akhir.l - awal.l) + dl,
+      };
+    }
+
     palet[nama] = keHeks({
-      h: dasar.h + dh,
-      // Dijepit supaya aksen yang nyaris kelabu atau nyaris putih tidak
+      h: hsl.h,
+      // Dijepit supaya warna yang nyaris kelabu atau nyaris putih tidak
       // menghasilkan nilai di luar rentang HSL yang sah.
-      s: jepit(dasar.s + ds, 0, 100),
-      l: jepit(dasar.l + dl, 0, 100),
+      s: jepit(hsl.s, 0, 100),
+      l: jepit(hsl.l, 0, 100),
     });
   });
 
   // Kanal terpisah untuk bayangan: `rgb(var(--sekolah-aksen-rgb) / .95)`.
   // Bayangan di halaman publik memakai rgba dengan alfa, dan alfa tidak bisa
   // ditempelkan pada nilai heks di dalam var().
-  palet['aksen-rgb'] = keRgb(dasar).join(' ');
+  palet['aksen-rgb'] = keRgb(awal).join(' ');
 
   return palet;
 };
@@ -230,9 +347,11 @@ export const applySchoolIdentity = (identity) => {
     // Mode privasi ketat memblokir penyimpanan; singgahan memori tetap jalan.
   }
   try {
-    const warna = WARNA_HEKS.test(cached.accentColor) ? cached.accentColor : DEFAULT_SCHOOL_IDENTITY.accentColor;
+    const sah = (warna, bawaan) => (WARNA_HEKS.test(warna) ? warna : bawaan);
+    const awal = sah(cached.accentColor, DEFAULT_SCHOOL_IDENTITY.accentColor);
+    const akhir = sah(cached.accentColor2, DEFAULT_SCHOOL_IDENTITY.accentColor2);
     const akar = document.documentElement.style;
-    Object.entries(turunkanPalet(warna)).forEach(([nama, nilai]) => {
+    Object.entries(turunkanPalet(awal, akhir, cached.accentMode)).forEach(([nama, nilai]) => {
       akar.setProperty(`--sekolah-${nama}`, nilai);
     });
   } catch {
@@ -244,18 +363,39 @@ export const applySchoolIdentity = (identity) => {
   return cached;
 };
 
-/** Dipanggil sekali saat aplikasi dimuat. Aman dipakai tanpa login. */
+/**
+ * Dipanggil sekali saat aplikasi dimuat. Aman dipakai tanpa login.
+ *
+ * Kedua kunci dibaca sekaligus lalu digabung. `school_info` ditumpuk DI ATAS
+ * `school_identity` supaya pemasangan lama — yang masih menyimpan semua field di
+ * dalam `school_identity` — tetap tampil benar sampai penjual atau pembeli
+ * menyimpan sekali lewat panelnya.
+ */
 export const hydrateSchoolIdentity = async () => {
-  const map = await fetchWebsiteContentMap({ keys: [SCHOOL_IDENTITY_KEY] });
-  const stored = map?.[SCHOOL_IDENTITY_KEY];
-  if (stored) applySchoolIdentity(stored);
+  const map = await fetchWebsiteContentMap({ keys: [SCHOOL_IDENTITY_KEY, SCHOOL_INFO_KEY] });
+  const merek = map?.[SCHOOL_IDENTITY_KEY];
+  const info = map?.[SCHOOL_INFO_KEY];
+  if (merek || info) applySchoolIdentity({ ...(merek || {}), ...(info || {}) });
   return cached;
 };
 
-export const saveSchoolIdentity = async (identity) => {
-  const normalized = normalizeSchoolIdentity(identity);
-  await saveWebsiteContentItem({ key: SCHOOL_IDENTITY_KEY, content: normalized, isPublic: true });
-  return applySchoolIdentity(normalized);
+/**
+ * Menyimpan bagian merek — hanya superadmin yang diizinkan server.
+ *
+ * Menerima objek identitas utuh dan mengirim bagian mereknya saja, supaya panel
+ * tidak perlu memilah field sendiri.
+ */
+export const saveSchoolBrand = async (identity) => {
+  const { merek } = pisahIdentitas(identity);
+  await saveWebsiteContentItem({ key: SCHOOL_IDENTITY_KEY, content: merek, isPublic: true });
+  return applySchoolIdentity({ ...cached, ...merek });
+};
+
+/** Menyimpan bagian info sekolah — boleh dilakukan pembeli. */
+export const saveSchoolInfo = async (identity) => {
+  const { info } = pisahIdentitas(identity);
+  await saveWebsiteContentItem({ key: SCHOOL_INFO_KEY, content: info, isPublic: true });
+  return applySchoolIdentity({ ...cached, ...info });
 };
 
 // Palet dipasang dari singgahan begitu modul dimuat, sebelum hydrateSchoolIdentity

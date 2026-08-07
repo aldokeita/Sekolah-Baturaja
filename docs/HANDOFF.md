@@ -600,11 +600,40 @@ mengubah apa pun. Ternyata palet itu bukan kumpulan warna acak melainkan **satu
 sapuan yang teratur**: setiap warna adalah aksen yang digeser rona sambil menurun
 kejenuhannya, pada terang yang hampir sama.
 
-`turunkanPalet` di `src/lib/schoolIdentity.js` memakai selisih HSL tetap
-(`SELISIH_PALET`) untuk menurunkan **delapan** properti CSS dari satu heks.
-Sifat yang wajib dijaga: **pada aksen bawaan `#6470ff`, hasilnya sama persis
-dengan palet asli desain** — diuji di `schoolIdentity.test.js`. Kalau uji itu
-gagal, setiap pemasangan baru berubah tampilannya tanpa ada yang memintanya.
+Sekolah memilih **dua warna** — awal dan akhir gradasi — atau **satu warna** bila
+memilih tampilan solid (`accentMode`). `turunkanPalet(awal, akhir, mode)` di
+`src/lib/schoolIdentity.js` menurunkan delapan properti CSS dari pilihan itu lewat
+`STOP_PALET`.
+
+Sifat yang wajib dijaga: **pada pilihan bawaan `#6470ff` → `#e58fc4`, hasilnya
+sama persis dengan palet asli desain** — diuji di `schoolIdentity.test.js`. Kalau
+uji itu gagal, setiap pemasangan baru berubah tampilannya tanpa ada yang
+memintanya.
+
+Empat hal pada `STOP_PALET` yang tampak berlebihan tapi semuanya menjawab
+kerusakan nyata yang sudah terjadi:
+
+- **`bentuk`** pada dua stop tengah: selisih kecil dari interpolasi lurus, diukur
+  dari palet aslinya. Tanpa ini kejenuhan stop tengah meleset ~10% dan palet
+  bawaan tidak lagi cocok. Pada mode solid `bentuk` TIDAK dipakai — ia justru
+  menggeser warna sedikit dari yang dipilih sekolah.
+- **Rona jalur terpendek** (`bukaRona`): tanpa ini gradasi merah→ungu memutari
+  seluruh roda warna dan melewati hijau serta biru.
+- **`tint` dicampur menuju putih**, bukan penambahan terang tetap. Versi pertama
+  memakai `+12,2` terang, yang hanya memucat bila aksennya sudah terang; pada
+  hijau tua hasilnya hijau menyala, padahal kedua nilai itu dipakai sebagai latar
+  lembut kartu guru dan mosaik fasilitas.
+- **`lanjutan`** untuk warna hangat: ronanya melanjutkan arah sapuan, tapi
+  kejenuhan dan terangnya mengikuti warna akhir. Sudut tetap `+60°` pernah dipakai
+  dan pada gradasi hijau→jingga mendarat di hijau limau menyala; mengekstrapolasi
+  kejenuhan sekalian membuatnya kusam.
+
+**Keterbatasan yang diketahui:** warna hangat adalah warna kedua belas dari desain
+asli dan tetap merupakan rona KETIGA, sedangkan sekolah hanya memilih dua. Pada
+pasangan yang berjarak jauh ia bisa mendarat di warna yang mengejutkan — hijau →
+jingga menghasilkan magenta. Ia hanya dipakai pada sembilan pasangan gradasi
+dekoratif. Kalau ketaatan dua-warna lebih penting daripada tampilan bawaan,
+ganti kesembilan pasangan itu menjadi kembali ke warna awal dan buang stop ini.
 
 Tiga hal yang mudah terlewat:
 
@@ -644,22 +673,36 @@ Naratif halaman Profil dan seluruh ketentuan halaman PPDB juga sudah tidak
 ditanam di kode — masing-masing di `profile_content` dan `ppdb_content` (lihat
 bagian Panel Konten). Tidak ada lagi data per-sekolah yang tertulis di kode.
 
-### Visi, misi, dan tujuan ada di tempat yang mungkin salah — perlu keputusan
+### Identitas dipecah dua kunci karena pemiliknya berbeda — SUDAH DIPUTUSKAN
 
-Ketiganya disimpan di `school_identity`, dan kunci itu ada di `brandKeys`, jadi
-**hanya superadmin yang boleh mengubahnya**. Pembeli tidak bisa menyunting visi
-dan misi sekolahnya sendiri.
+Keputusan pemilik: **hanya nama sekolah (beserta logo dan warna) yang milik
+penjual.** Sisanya — termasuk visi, misi, dan tujuan — milik pembeli.
 
-Ini bisa dibaca dua arah, dan belum ada keputusan pemilik. Aturan yang dipakai
-sejauh ini: identitas produk milik penjual, konten administrasi sekolah milik
-pembeli. Visi dan misi lebih dekat ke yang kedua — itu kalimat milik sekolah
-pembeli, bukan ciri produk.
+Sebelumnya seluruh field berada di dalam satu objek `school_identity`, dan kunci
+itu ada di `brandKeys`. Karena penjagaan di Go bekerja **per-kunci**, izinnya
+seluruhnya-atau-tidak: pembeli tidak bisa mengubah nomor teleponnya sendiri,
+apalagi visi sekolahnya. Menambah pengecualian di `brandKeys` tidak bisa
+menyelesaikannya.
 
-Kalau diputuskan menjadi hak pembeli, pindahkan `vision`, `missions`, dan `goals`
-dari `schoolIdentity.js` ke `profileContent.js`. Tidak bisa diselesaikan dengan
-menambah pengecualian di `brandKeys`: penjagaannya per-kunci, sedangkan ketiga
-field itu berada **di dalam** objek `school_identity`, jadi izinnya
-seluruhnya-atau-tidak.
+| Kunci | Pemilik | Isi |
+|---|---|---|
+| `school_identity` | superadmin (ada di `brandKeys`) | `name`, `shortName`, `logoAbbr`, `accentColor`, `accentColor2`, `accentMode` |
+| `school_info` | pembeli (peran admin) | kontak, alamat, jam layanan, tahun ajaran, deskripsi, visi, misi, tujuan |
+
+Daftarnya tunggal: `BRAND_FIELDS` di `schoolIdentity.js`. Empat uji menjaga agar
+tidak ada field yang bocor ke sisi yang salah, hilang, atau muncul di keduanya.
+
+**`getSchoolIdentity()` tetap mengembalikan gabungan keduanya**, jadi seluruh
+pembaca (nav, footer, Kontak, Profil, PPDB, kuitansi, dashboard) tidak perlu tahu
+soal pemecahan ini. Yang berbeda hanya penulisannya: `saveSchoolBrand` versus
+`saveSchoolInfo`.
+
+Panelnya juga dua: `SchoolIdentitySettings` (tab Identitas Sekolah, superadmin)
+dan `SchoolInfoSettings` (tab Info Sekolah, admin).
+
+Pemasangan lama yang masih menyimpan semuanya di `school_identity` tetap tampil
+benar: `hydrateSchoolIdentity` menumpuk `school_info` **di atas**
+`school_identity`, jadi field lama terbaca sampai ada yang menyimpan sekali.
 
 ### Yang perlu diperiksa penjual sebelum menyerahkan salinan
 
