@@ -59,6 +59,14 @@ Tiga hal yang membuat superadmin tidak perlu ditambal di puluhan tempat:
 - `middleware.IsAdmin(role)` mengganti seluruh perbandingan `role == "admin"` (11 tempat).
 - `CanManage` kini memanggil `IsAdmin`, jadi superadmin ikut lolos.
 
+Sisi UI punya padanannya di `src/lib/roles.js` (`isAdminRole`, `isSuperadminRole`, `canManageRole`).
+Sebelum itu ada 6 komponen yang menulis `role === 'admin'` langsung, dan superadmin **kehilangan
+tombol tanpa galat apa pun** di sana — Backup/Restore malah menampilkan "Akses Ditolak". Kalau
+menambah pemeriksaan peran baru di UI, pakai helper itu, jangan bandingkan string.
+
+**Akun superadmin tersembunyi dari pembeli.** Lihat §5 untuk cara kerjanya dan untuk alasan sandinya
+tidak boleh ditulis di repo.
+
 **Jebakan id akun dummy:** superadmin memakai id `…0020`, **bukan `…0014`**. Id `0014` sudah dipakai
 akun murid Naila di `03_dummy_accounts.sql`; menabraknya menimpa profil murid tersebut — sempat
 terjadi dan harus dipulihkan manual. Periksa id yang belum terpakai sebelum menambah akun seed.
@@ -461,7 +469,6 @@ Pakai murid uji `1234567890`, jangan murid demo, supaya data demo tetap utuh.
 
 | Peran | Username | Password |
 |---|---|---|
-| Superadmin (pemilik template) | `superadmin@sdnbaturaja.sch.id` | `superadmin123` |
 | Admin (pembeli) | `admin@sdnbaturaja.sch.id` | `admin123` |
 | Tata Usaha | `tatausaha@sdnbaturaja.sch.id` | `tatausaha123` |
 | Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
@@ -469,6 +476,39 @@ Pakai murid uji `1234567890`, jangan murid demo, supaya data demo tetap utuh.
 | Murid | `2026041` atau `Naila` | `santri123` |
 
 Sumber: `backend/init/03_dummy_accounts.sql`. Bukan kredensial produksi.
+
+### Superadmin sengaja TIDAK ada di tabel itu
+
+Akun penjual `superadmin@sekolahbta.id` ikut terkirim ke pembeli — harus, karena hanya peran itu yang
+boleh mengubah identitas produk pada salinan yang terjual. Tapi **sandinya tidak tertulis di repo
+mana pun**: `03_dummy_accounts.sql` hanya memuat hash bcrypt-nya. Sandi aslinya hidup di pengelola
+sandi penjual saja.
+
+Jangan pernah menuliskannya kembali ke dalam repo, termasuk ke berkas ini. Untuk menjalankan skrip
+yang membutuhkannya, setel lewat variabel lingkungan sekali pakai:
+
+```powershell
+$env:SEED_SUPERADMIN_PASS = '<sandi penjual>'
+pwsh -NoProfile -File scripts\validate-data-dummy-pembeli.ps1
+```
+
+Mengganti sandinya (jalankan dari mesin penjual):
+
+```powershell
+"update public.guru set password = extensions.crypt('<sandi baru>', extensions.gen_salt('bf', 12)) where id = 'a1fa7a10-0000-0000-0000-000000000020';" |
+  docker compose -f backend\docker-compose.yml exec -T db psql -U postgres -d lpq_db
+```
+
+**Sandi lama `superadmin123` sudah mati** dan salah satu pemeriksaan di
+`scripts/validate-data-dummy-pembeli.ps1` menjaga agar ia tidak pernah hidup lagi.
+
+Yang menyembunyikan akun ini dari pembeli ada di `backend/internal/handler/guru.go` lewat
+`hideSuperadmin`: baris superadmin disaring dari `GET /api/guru`, dan `Detail`/`Update`/`Delete`
+menjawab **404, bukan 403**, supaya keberadaan akun itu sendiri tidak terungkap. `POST /api/guru`
+juga menolak `role: "superadmin"` dengan 400, dan tidak ada endpoint mana pun yang bisa mengubah
+`user_profiles.role` — jadi pembeli tidak punya jalan naik pangkat lewat aplikasi. Yang tidak bisa
+dicegah: pembeli memegang servernya sendiri, jadi ia selalu bisa masuk lewat `psql`. Itu batas yang
+memang tidak ada solusi teknisnya.
 
 **Batas yang perlu diperhitungkan saat merencanakan verifikasi:** agen tidak boleh mengisi kata sandi
 ke form login, termasuk sandi dummy di atas. Verifikasi yang menuntut masuk sebagai peran tertentu

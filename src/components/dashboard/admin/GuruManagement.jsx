@@ -24,6 +24,7 @@ import {
 import { getStorageErrorMessage, resolveAvatarRecords, uploadAvatar } from '@/lib/storageAdapters';
 import { getBirthdaysThisMonth } from '@/lib/birthdayUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminRole } from '@/lib/roles';
 
 const AVAILABLE_ROLES = ['Pengajar', 'Pentashih', 'Staff Operasional', 'Tata Usaha', 'Admin'];
 
@@ -37,7 +38,7 @@ const GuruManagement = () => {
   // reset passwords) is admin-only. Tata Usaha may view and edit teacher
   // profile fields but never touch credentials or roles — the backend enforces
   // this too (see middleware.CanManage / guru.go), this just hides dead controls.
-  const isAdmin = role === 'admin';
+  const isAdmin = isAdminRole(role);
   const [guruList, setGuruList] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGuru, setEditingGuru] = useState(null);

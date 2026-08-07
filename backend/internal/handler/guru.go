@@ -64,6 +64,31 @@ func asString(v any) string {
 	return s
 }
 
+// hideSuperadmin reports whether guru rows belonging to a superadmin must be
+// filtered out for this requester.
+//
+// Kenapa perlu: aplikasi ini template yang dijual. Akun superadmin adalah milik
+// penjual dan ikut terkirim di setiap salinan, tapi pembeli tidak boleh
+// mengetahuinya — kalau tampil di panel Guru, pembeli akan melihat "Pemilik
+// Template" sebagai staf sekolahnya, bisa menonaktifkannya, dan tahu alamat
+// email mana yang harus ditebak sandinya.
+func hideSuperadmin(role string) bool {
+	return role != middleware.RoleSuperadmin
+}
+
+// isSuperadminRow reports whether the guru id belongs to a superadmin profile.
+func (h *GuruHandler) isSuperadminRow(ctx context.Context, id string) bool {
+	var target string
+	err := h.db.QueryRow(ctx,
+		`SELECT COALESCE(role::text, '') FROM user_profiles WHERE id = $1`, id).Scan(&target)
+	if err != nil {
+		// Tidak ada profil berarti bukan superadmin; galat lain jangan sampai
+		// membuka akses, jadi anggap tersembunyi.
+		return !errors.Is(err, pgx.ErrNoRows)
+	}
+	return target == middleware.RoleSuperadmin
+}
+
 // GET /api/guru
 func (h *GuruHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -75,11 +100,13 @@ func (h *GuruHandler) List(w http.ResponseWriter, r *http.Request) {
 	limit, offset := paginate(r)
 
 	rows, err := h.db.Query(ctx, `
-		SELECT * FROM guru
-		WHERE status = 'active'
-		ORDER BY nama
+		SELECT g.* FROM guru g
+		LEFT JOIN user_profiles up ON up.id = g.id
+		WHERE g.status = 'active'
+		  AND (NOT $3::boolean OR up.role IS NULL OR up.role <> 'superadmin')
+		ORDER BY g.nama
 		LIMIT $1 OFFSET $2
-	`, limit, offset)
+	`, limit, offset, hideSuperadmin(role))
 	if err != nil {
 		jsonError(w, "gagal mengambil data guru", http.StatusInternalServerError)
 		return
@@ -101,6 +128,12 @@ func (h *GuruHandler) Detail(w http.ResponseWriter, r *http.Request) {
 
 	if !middleware.CanManage(role) && userID != id {
 		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	// Baris superadmin tidak boleh terbaca pemakai lain, dan jawabannya 404 —
+	// bukan 403 — supaya keberadaan akun itu sendiri tidak terungkap.
+	if hideSuperadmin(role) && h.isSuperadminRow(ctx, id) {
+		jsonError(w, "guru tidak ditemukan", http.StatusNotFound)
 		return
 	}
 
@@ -130,6 +163,10 @@ func (h *GuruHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	if !middleware.CanManage(role) && userID != id {
 		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	if hideSuperadmin(role) && h.isSuperadminRow(ctx, id) {
+		jsonError(w, "guru tidak ditemukan", http.StatusNotFound)
 		return
 	}
 
@@ -276,12 +313,19 @@ func (h *GuruHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /api/guru/{id} — soft delete.
 func (h *GuruHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	if !middleware.IsAdmin(middleware.RoleFromCtx(r.Context())) {
+	ctx := r.Context()
+	role := middleware.RoleFromCtx(ctx)
+	if !middleware.IsAdmin(role) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
 	id := chi.URLParam(r, "id")
-	ct, err := h.db.Exec(r.Context(), `UPDATE guru SET status = 'inactive' WHERE id = $1`, id)
+	// Pembeli tidak boleh menonaktifkan akun penjual, bahkan bila menebak id-nya.
+	if hideSuperadmin(role) && h.isSuperadminRow(ctx, id) {
+		jsonError(w, "guru tidak ditemukan", http.StatusNotFound)
+		return
+	}
+	ct, err := h.db.Exec(ctx, `UPDATE guru SET status = 'inactive' WHERE id = $1`, id)
 	if err != nil {
 		jsonError(w, "gagal menonaktifkan guru", http.StatusInternalServerError)
 		return
@@ -294,10 +338,19 @@ func (h *GuruHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 // GET /api/guru/count — public.
+//
+// Mengecualikan akun sistem (admin, superadmin) dengan syarat yang sama seperti
+// direktori guru publik di content.go. Kalau tidak, angka "jumlah guru" di
+// halaman depan tidak akan cocok dengan jumlah kartu guru yang tampil.
 func (h *GuruHandler) Count(w http.ResponseWriter, r *http.Request) {
 	var total int
-	err := h.db.QueryRow(r.Context(),
-		`SELECT COUNT(*) FROM guru WHERE status = 'active'`).Scan(&total)
+	err := h.db.QueryRow(r.Context(), `
+		SELECT COUNT(*) FROM guru g
+		LEFT JOIN user_profiles up ON up.id = g.id
+		WHERE g.status = 'active'
+		  AND g.deleted_at IS NULL
+		  AND (up.role IS NULL OR up.role NOT IN ('admin', 'superadmin'))
+	`).Scan(&total)
 	if err != nil {
 		jsonError(w, "gagal menghitung guru", http.StatusInternalServerError)
 		return
@@ -307,13 +360,18 @@ func (h *GuruHandler) Count(w http.ResponseWriter, r *http.Request) {
 
 // GET /api/guru/by-rfid/{rfid}
 func (h *GuruHandler) ByRFID(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) == "" {
+	role := middleware.RoleFromCtx(r.Context())
+	if role == "" {
 		jsonError(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 	rfid := chi.URLParam(r, "rfid")
-	rows, err := h.db.Query(r.Context(),
-		`SELECT * FROM guru WHERE rfid_tag = $1 AND status = 'active'`, rfid)
+	rows, err := h.db.Query(r.Context(), `
+		SELECT g.* FROM guru g
+		LEFT JOIN user_profiles up ON up.id = g.id
+		WHERE g.rfid_tag = $1 AND g.status = 'active'
+		  AND (NOT $2::boolean OR up.role IS NULL OR up.role <> 'superadmin')
+	`, rfid, hideSuperadmin(role))
 	if err != nil {
 		jsonError(w, "gagal mencari guru", http.StatusInternalServerError)
 		return

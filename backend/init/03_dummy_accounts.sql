@@ -50,15 +50,7 @@ begin
       ('a1fa7a10-0000-0000-0000-000000000012'::uuid, 'guru@sdnbaturaja.sch.id',      'guru123',
        'Siti Aminah, S.Pd.SD',   'Guru Kelas I',         array['Pengajar'],    'guru'),
       ('a1fa7a10-0000-0000-0000-000000000013'::uuid, 'pentashih@sdnbaturaja.sch.id', 'pentashih123',
-       'Ratna Dewi, S.Pd.SD',    'Pentashih',            array['Pentashih'],   'pentashih'),
-      -- Superadmin: pemilik/penjual template. Hanya peran ini yang boleh mengubah
-      -- identitas website (nama sekolah, logo, aksen warna). Pembeli memakai akun
-      -- admin. Ini kredensial dummy lokal, bukan produksi.
-      --
-      -- Id memakai blok 0020, BUKAN 0014: id 0014 sudah dipakai akun murid Naila
-      -- di bawah, dan menabraknya menimpa profil murid tersebut.
-      ('a1fa7a10-0000-0000-0000-000000000020'::uuid, 'superadmin@sdnbaturaja.sch.id', 'superadmin123',
-       'Pemilik Template',       'Superadmin',           array['Admin'],       'superadmin')
+       'Ratna Dewi, S.Pd.SD',    'Pentashih',            array['Pentashih'],   'pentashih')
     ) as t(id, email, pw, nama, jabatan, roles, app_role)
   loop
     hashed := extensions.crypt(r.pw, extensions.gen_salt('bf', 12));
@@ -85,6 +77,54 @@ begin
       email        = excluded.email,
       status       = 'active';
   end loop;
+end $$;
+
+-- ── Superadmin (pemilik/penjual template) ────────────────────────────────────
+-- Akun ini SENGAJA ikut terkirim ke pembeli: hanya peran `superadmin` yang boleh
+-- mengubah identitas produk (nama sekolah, logo, aksen warna), jadi penjual harus
+-- tetap punya jalan masuk pada setiap salinan yang terjual.
+--
+-- Bedanya dengan akun dummy di atas: yang tersimpan di sini HANYA hash bcrypt,
+-- bukan sandi mentahnya. Tidak ada tempat di repo ini yang memuat sandi aslinya,
+-- jadi pembeli yang membaca seluruh kode pun tidak bisa memakai akun ini.
+-- Backend juga menyembunyikan baris superadmin dari pemakai non-superadmin
+-- (lihat internal/handler/guru.go), sehingga akun ini tidak muncul di panel admin
+-- maupun di direktori guru pada situs publik.
+--
+-- Mengganti sandinya (jalankan dari mesin penjual, jangan simpan hasilnya di git):
+--   update public.guru set password = extensions.crypt('<sandi baru>', extensions.gen_salt('bf', 12))
+--   where id = 'a1fa7a10-0000-0000-0000-000000000020';
+--
+-- Id memakai blok 0020, BUKAN 0014: id 0014 sudah dipakai akun murid Naila di
+-- bawah, dan menabraknya menimpa profil murid tersebut.
+do $$
+declare
+  sid    uuid := 'a1fa7a10-0000-0000-0000-000000000020';
+  hashed text := '$2a$12$lO/l9bv7.aYjsBV/TXPALuv4WzCYxm.m.ElmrXA37K9PD4nsPuaba';
+begin
+  insert into auth.users (id, email)
+  values (sid, 'superadmin@sekolahbta.id')
+  on conflict (id) do update set email = excluded.email;
+
+  insert into public.guru (id, nama, email, jabatan, status, roles, password)
+  values (sid, 'Pemilik Template', 'superadmin@sekolahbta.id', 'Superadmin',
+          'active', array['Admin'], hashed)
+  on conflict (id) do update set
+    nama     = excluded.nama,
+    email    = excluded.email,
+    jabatan  = excluded.jabatan,
+    status   = 'active',
+    roles    = excluded.roles,
+    password = excluded.password;
+
+  insert into public.user_profiles (id, role, display_name, email, status)
+  values (sid, 'superadmin'::public.app_role, 'Pemilik Template',
+          'superadmin@sekolahbta.id', 'active')
+  on conflict (id) do update set
+    role         = excluded.role,
+    display_name = excluded.display_name,
+    email        = excluded.email,
+    status       = 'active';
 end $$;
 
 -- ── Student account (santri + user_profiles) ─────────────────────────────────

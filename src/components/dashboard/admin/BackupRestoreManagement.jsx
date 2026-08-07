@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminRole } from '@/lib/roles';
 import apiClient from '@/lib/apiClient';
 import { Database, Download, Upload, FileJson, FileSpreadsheet, FileText, AlertTriangle, CheckCircle, Loader2, Save, Lock, Eye, EyeOff } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -96,7 +97,7 @@ const BackupRestoreManagement = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
 
-    if (role !== 'admin') {
+    if (!isAdminRole(role)) {
         return (
             <div className="flex flex-col items-center justify-center h-64 text-center p-4">
                 <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />

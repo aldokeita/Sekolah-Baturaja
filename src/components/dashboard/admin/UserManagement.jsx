@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Edit, Trash2, Search, Key } from 'lucide-react';
 import { fetchGuruList, fetchSantriList, updateGuru, updateSantri } from '@/lib/dataMasterAdapters';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminRole } from '@/lib/roles';
 
 const UserManagement = () => {
   const { user: authUser } = useAuth();
@@ -21,7 +22,7 @@ const UserManagement = () => {
   }, [authUser]);
 
   const loadUsers = async () => {
-    if (authUser?.role === 'admin') {
+    if (isAdminRole(authUser?.role)) {
       setAdminUser({ id: authUser.id, name: 'Admin', username: 'admin', role: 'admin', email: authUser.email });
     }
 

@@ -12,6 +12,7 @@ import {
     Edit, Loader2, MapPin, Plus, RefreshCw, Trash2, User,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { canManageRole } from '@/lib/roles';
 import { fetchClassList, fetchGuruList } from '@/lib/dataMasterAdapters';
 import {
     HARI_OPTIONS,
@@ -111,7 +112,7 @@ const JadwalPelajaran = () => {
     const { role } = useAuth();
     // Otorisasi sesungguhnya ditegakkan middleware Go; penyembunyian kontrol di
     // sini murni supaya peran lain tidak disuguhi aksi yang pasti ditolak 403.
-    const canManage = role === 'admin' || role === 'tata_usaha';
+    const canManage = canManageRole(role);
 
     const [periodeList, setPeriodeList] = useState([]);
     const [mapelList, setMapelList] = useState([]);

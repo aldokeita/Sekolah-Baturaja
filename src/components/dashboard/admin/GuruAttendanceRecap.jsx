@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminRole } from '@/lib/roles';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GuruPerformanceSummary from './GuruPerformanceSummary';
@@ -62,7 +63,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
     const [editTime, setEditTime] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const canEdit = !isReadOnly && role === 'admin';
+    const canEdit = !isReadOnly && isAdminRole(role);
 
     const fetchData = async () => {
         setIsLoading(true);

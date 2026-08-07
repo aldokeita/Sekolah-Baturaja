@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { buildJakartaTimestamp, formatTimestamp, determineAttendanceStatus, calculateTimeDifference } from '@/utils/AttendanceStatusLogic';
 import AttendanceStatusIcon from './AttendanceStatusIcon';
 import { useAuth } from '@/contexts/AuthContext';
+import { isAdminRole } from '@/lib/roles';
 import { updateAttendance, createAttendance, markAttendanceAbsent } from '@/lib/attendanceAdapters';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ const AttendanceDetailsModal = ({ isOpen, onClose, details, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Admin and Guru can edit Waktu Hadir. Santri is strictly read-only.
-  const isAuthorized = role === 'guru' || role === 'admin';
+  const isAuthorized = role === 'guru' || isAdminRole(role);
 
   useEffect(() => {
     if (details) {
