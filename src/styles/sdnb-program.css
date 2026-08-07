@@ -48,4 +48,4 @@ html[data-theme="dark"] .sdnb-program .th-orb {opacity:.78;filter:blur(30px) sat
 html[data-theme="dark"] .sdnb-program .th-content {filter:invert(.92) hue-rotate(180deg) saturate(1.75) brightness(1.12) contrast(.94)}
 
 /* --- hover states lifted out of style-hover="..." attributes --- */
-.hx-1kdf62l:hover { color:#5b6cff; }
+.hx-1kdf62l:hover { color:var(--sekolah-aksen-pekat); }

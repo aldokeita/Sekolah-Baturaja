@@ -31,7 +31,7 @@ const PublicLayout = ({ children }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 16px', borderRadius: 999, fontSize: 12.5, fontWeight: 500, color: '#3d4166', background: 'rgba(255,255,255,.45)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)', border: '1px solid rgba(255,255,255,.72)', boxShadow: '0 10px 28px -14px rgba(60,70,120,.5),inset 0 1px 0 rgba(255,255,255,.95)' }}>
               <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 0 4px rgba(34,197,94,.18)' }} />
               Pendaftaran Peserta Didik Baru 2026/2027 telah dibuka — kuota terbatas
-              <Link to="/pendaftaran" style={{ color: '#5b6cff', fontWeight: 700 }}>Daftar</Link>
+              <Link to="/pendaftaran" style={{ color: 'var(--sekolah-aksen-pekat)', fontWeight: 700 }}>Daftar</Link>
             </div>
           </div>
         )}

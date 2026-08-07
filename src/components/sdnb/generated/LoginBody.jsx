@@ -59,7 +59,7 @@ const LoginBody = (vals = {}) => {
           <div style={{ fontSize: "10.5px", fontWeight: "800", letterSpacing: ".16em", textTransform: "uppercase", color: "#9aa1e4" }}>Rapor semester</div>
           <div style={{ marginTop: "12px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "22px", fontWeight: "800", letterSpacing: "-.028em", color: "#fff" }}>Kelas V B</div>
           <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div style={{ height: "7px", borderRadius: "99px", background: "rgba(255,255,255,.16)", overflow: "hidden" }}><div style={{ height: "100%", width: "82%", borderRadius: "99px", background: "linear-gradient(90deg,#7d8bff,#e58fc4)" }}></div></div>
+            <div style={{ height: "7px", borderRadius: "99px", background: "rgba(255,255,255,.16)", overflow: "hidden" }}><div style={{ height: "100%", width: "82%", borderRadius: "99px", background: "linear-gradient(90deg,#7d8bff,var(--sekolah-aksen-ujung))" }}></div></div>
             <div style={{ height: "7px", borderRadius: "99px", background: "rgba(255,255,255,.16)", overflow: "hidden" }}><div style={{ height: "100%", width: "64%", borderRadius: "99px", background: "linear-gradient(90deg,#60ded0,#7d8bff)" }}></div></div>
           </div>
         </div>
@@ -80,7 +80,7 @@ const LoginBody = (vals = {}) => {
       </div>
 
       <div style={{ position: "relative", padding: "38px 38px 34px", borderRadius: "32px", background: "rgba(255,255,255,.06)", backdropFilter: "blur(30px) saturate(190%)", WebkitBackdropFilter: "blur(30px) saturate(190%)", border: "1px solid rgba(255,255,255,.2)", boxShadow: "0 50px 110px -34px rgba(4,8,34,.98),inset 0 1px 0 rgba(255,255,255,.28)", animation: "fadeup .6s cubic-bezier(.22,.9,.28,1) both" }}>
-        <div aria-hidden="true" style={{ position: "absolute", left: "0", right: "0", top: "0", height: "2px", borderRadius: "32px 32px 0 0", background: "linear-gradient(90deg,rgba(125,139,255,0),#7d8bff 22%,#e58fc4 62%,rgba(229,143,196,0))" }}></div>
+        <div aria-hidden="true" style={{ position: "absolute", left: "0", right: "0", top: "0", height: "2px", borderRadius: "32px 32px 0 0", background: "linear-gradient(90deg,rgba(125,139,255,0),#7d8bff 22%,var(--sekolah-aksen-ujung) 62%,rgba(229,143,196,0))" }}></div>
 
         <div style={{ fontSize: "11.5px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "#9aa1e4" }}>Masuk portal</div>
         <h1 className="ltitle" style={{ margin: "14px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "42px", lineHeight: "1.02", letterSpacing: "-.042em", fontWeight: "800", color: "#fff" }}>Selamat datang<br />kembali.</h1>
@@ -168,7 +168,7 @@ const LoginBody = (vals = {}) => {
             <div style={__dcs(sesi.avatar)}>{sesi.inisial}</div>
             <div style={{ lineHeight: "1.2" }}>
               <div style={{ fontSize: "12.5px", fontWeight: "800", color: "#1b1c2c" }}>{sesi.nama}</div>
-              <div style={{ fontSize: "10.5px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "#5b6cff" }}>{sesi.peran}</div>
+              <div style={{ fontSize: "10.5px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>{sesi.peran}</div>
             </div>
           </div>
           <button className="th-toggle th-toggle-l" data-theme-toggle="1" aria-label="Ganti tema terang atau gelap">
@@ -241,7 +241,7 @@ const LoginBody = (vals = {}) => {
         </div>
         </>)}
 
-        <div className="panel" style={{ marginTop: "20px", padding: "22px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "18px", flexWrap: "wrap", borderTop: "3px solid #6470ff" }}>
+        <div className="panel" style={{ marginTop: "20px", padding: "22px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "18px", flexWrap: "wrap", borderTop: "3px solid var(--sekolah-aksen)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             <div style={{ width: "46px", height: "46px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: "linear-gradient(140deg,#7d8bff,#c8a4f0)" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="9.5" cy="7" r="3.4"></circle><path d="M21 20v-2a4 4 0 0 0-3-3.8"></path></svg>
@@ -260,7 +260,7 @@ const LoginBody = (vals = {}) => {
               </span>
             </>)}
             {(modulMurid) && (<>
-            <button className="shine" onClick={tambah} style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 18px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "800", color: "#fff", background: "linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4)", boxShadow: "0 16px 32px -14px rgba(95,105,235,.95)" }}>
+            <button className="shine" onClick={tambah} style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 18px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "800", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 16px 32px -14px rgba(95,105,235,.95)" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg> Tambah Murid
             </button>
             </>)}
@@ -309,7 +309,7 @@ const LoginBody = (vals = {}) => {
             <span style={{ fontSize: "12.5px", color: "#6d7192" }}>{jumlahTU}</span>
             <div style={{ display: "flex", gap: "9px" }}>
               <button style={{ padding: "10px 16px", borderRadius: "13px", cursor: "pointer", fontFamily: "inherit", fontSize: "12.5px", fontWeight: "700", color: "#3d4166", border: "1px solid rgba(255,255,255,.95)", background: "rgba(255,255,255,.66)" }}>Sebelumnya</button>
-              <button style={{ padding: "10px 16px", borderRadius: "13px", cursor: "pointer", fontFamily: "inherit", fontSize: "12.5px", fontWeight: "700", color: "#fff", border: "0", background: "linear-gradient(135deg,#6470ff,#a06cf0 60%,#e58fc4)" }}>Berikutnya</button>
+              <button style={{ padding: "10px 16px", borderRadius: "13px", cursor: "pointer", fontFamily: "inherit", fontSize: "12.5px", fontWeight: "700", color: "#fff", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung))" }}>Berikutnya</button>
             </div>
           </div>
         </div>
@@ -322,7 +322,7 @@ const LoginBody = (vals = {}) => {
             </div>
             <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "22px", fontWeight: "800", letterSpacing: "-.028em", color: "#171827" }}>Modul {tabAktif}</div>
             <div style={{ maxWidth: "520px", fontSize: "13.5px", lineHeight: "1.7", color: "#565b7d" }}>Pratinjau ini baru memuat data murid secara lengkap. Modul {tabAktif} akan mengikuti pola tabel yang sama setelah datanya tersambung.</div>
-            <button className="shine" onClick={kembaliMurid} style={{ position: "relative", overflow: "hidden", marginTop: "4px", padding: "12px 20px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "800", color: "#fff", background: "linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4)", boxShadow: "0 16px 32px -14px rgba(95,105,235,.95)" }}>Kembali ke Data Murid</button>
+            <button className="shine" onClick={kembaliMurid} style={{ position: "relative", overflow: "hidden", marginTop: "4px", padding: "12px 20px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "800", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 16px 32px -14px rgba(95,105,235,.95)" }}>Kembali ke Data Murid</button>
           </div>
         </>)}
       </div>
@@ -331,10 +331,10 @@ const LoginBody = (vals = {}) => {
     {(isGuru) && (<>
       <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "22px 28px 0" }}>
         <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: "28px", flexWrap: "wrap", padding: "30px 34px", borderRadius: "30px", background: "linear-gradient(120deg,rgba(214,228,255,.92),rgba(236,232,255,.86) 55%,rgba(255,231,243,.86))", border: "1px solid rgba(255,255,255,.95)", boxShadow: "0 32px 68px -28px rgba(55,65,120,.5)" }}>
-          <div aria-hidden="true" style={{ position: "absolute", left: "0", top: "0", bottom: "0", width: "6px", background: "linear-gradient(180deg,#6470ff,#e58fc4)" }}></div>
+          <div aria-hidden="true" style={{ position: "absolute", left: "0", top: "0", bottom: "0", width: "6px", background: "linear-gradient(180deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))" }}></div>
           <div style={{ width: "120px", height: "120px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "36px", fontWeight: "800", color: "#fff", background: "linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)", border: "5px solid rgba(255,255,255,.9)", boxShadow: "0 22px 44px -18px rgba(90,100,200,.8)" }}>{sesi.inisial}</div>
           <div style={{ flex: "1", minWidth: "240px" }}>
-            <div style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "#5b6cff" }}>Profil pengajar</div>
+            <div style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Profil pengajar</div>
             <div style={{ marginTop: "10px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.04", letterSpacing: "-.042em", fontWeight: "800", color: "#171827" }}>{sesi.nama}</div>
             <div style={{ marginTop: "8px", fontSize: "14px", color: "#565b7d" }}>Wali kelas &middot; {guru.kelas}</div>
             <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -373,7 +373,7 @@ const LoginBody = (vals = {}) => {
                 <span style={{ padding: "6px 11px", borderRadius: "999px", fontSize: "11.5px", fontWeight: "700", whiteSpace: "nowrap", color: "#3b40a8", background: "rgba(150,170,255,.24)" }}>Tulis</span>
                 <span style={{ padding: "6px 11px", borderRadius: "999px", fontSize: "11.5px", fontWeight: "700", whiteSpace: "nowrap", color: "#3b40a8", background: "rgba(150,170,255,.24)" }}>Hitung</span>
               </span>
-              <span style={{ fontSize: "12.5px", fontWeight: "800", color: "#5b6cff" }}>Detail</span>
+              <span style={{ fontSize: "12.5px", fontWeight: "800", color: "var(--sekolah-aksen-pekat)" }}>Detail</span>
             </div>
           </React.Fragment>))}
         </div>
@@ -383,10 +383,10 @@ const LoginBody = (vals = {}) => {
     {(isWali) && (<>
       <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "22px 28px 0" }}>
         <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: "28px", flexWrap: "wrap", padding: "30px 34px", borderRadius: "30px", background: "rgba(255,255,255,.66)", backdropFilter: "blur(26px) saturate(190%)", WebkitBackdropFilter: "blur(26px) saturate(190%)", border: "1px solid rgba(255,255,255,.95)", boxShadow: "0 32px 68px -28px rgba(55,65,120,.5)" }}>
-          <div aria-hidden="true" style={{ position: "absolute", left: "0", right: "0", top: "0", height: "4px", background: "linear-gradient(90deg,#6470ff,#a06cf0 55%,#e58fc4)" }}></div>
+          <div aria-hidden="true" style={{ position: "absolute", left: "0", right: "0", top: "0", height: "4px", background: "linear-gradient(90deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 55%,var(--sekolah-aksen-ujung))" }}></div>
           <div style={{ width: "112px", height: "112px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "32px", fontWeight: "800", color: "#fff", background: "linear-gradient(140deg,#8fd8ec,#a9eede 55%,#c6b6f6)", border: "5px solid rgba(255,255,255,.92)", boxShadow: "0 22px 44px -18px rgba(90,100,200,.7)" }}>AZ</div>
           <div style={{ flex: "1", minWidth: "260px" }}>
-            <div style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "#5b6cff" }}>Profil belajar murid</div>
+            <div style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Profil belajar murid</div>
             <div style={{ marginTop: "10px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", lineHeight: "1.06", letterSpacing: "-.04em", fontWeight: "800", color: "#171827" }}>{wali.anak}</div>
             <div style={{ marginTop: "16px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
               {(wali.mini || []).map((m, $index) => (<React.Fragment key={$index}>
@@ -413,7 +413,7 @@ const LoginBody = (vals = {}) => {
 
         {(wali.ringkasan) && (<>
           <div style={{ marginTop: "18px" }}>
-            <div style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".16em", textTransform: "uppercase", color: "#5b6cff" }}>Perkembangan belajar</div>
+            <div style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Perkembangan belajar</div>
             <h2 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "28px", lineHeight: "1.1", letterSpacing: "-.032em", fontWeight: "800", color: "#171827" }}>Progres per mata pelajaran</h2>
             <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
               {(wali.progres || []).map((p, $index) => (<React.Fragment key={$index}>

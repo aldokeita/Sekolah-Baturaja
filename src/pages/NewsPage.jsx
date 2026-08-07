@@ -108,7 +108,7 @@ const AGENDA = [
   ['27', 'Jun', 'Batas akhir daftar ulang', '15.00 di ruang tata usaha'],
   ['13', 'Jul', 'Hari pertama tahun ajaran baru', '07.15 upacara di halaman'],
 ];
-const AGENDA_GRAD = ['#6470ff,#8a6cf0', '#7a6cf5,#c07ad8', '#a86ce8,#e58fc4', '#e0839a,#f0a06c', '#5b6cff,#9fb6f8'];
+const AGENDA_GRAD = ['var(--sekolah-aksen),var(--sekolah-aksen-tengah)', 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)', 'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)', 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)', 'var(--sekolah-aksen-pekat),#9fb6f8'];
 
 const NewsPage = () => {
   const [kat, setKat] = useState('Semua');
@@ -188,7 +188,7 @@ const NewsPage = () => {
         label: k,
         pick: () => setKat(k),
         style: 'padding:11px 16px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;transition:background .3s ease,color .3s ease,box-shadow .3s ease,transform .3s cubic-bezier(.4,1.3,.4,1);' + (on
-          ? 'border:0;color:#fff;background:linear-gradient(135deg,#6470ff,#a06cf0 60%,#e58fc4);box-shadow:0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(-1px)'
+          ? 'border:0;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung));box-shadow:0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(-1px)'
           : 'border:1px solid rgba(255,255,255,.85);color:#3d4166;background:rgba(255,255,255,.5)'),
       };
     }),

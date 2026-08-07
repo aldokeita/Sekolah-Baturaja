@@ -12,11 +12,11 @@ import '@/styles/sdnb.css';
  */
 
 const P = [
-  ['Membaca pagi', 'Kebiasaan', 'Kelas I–VI', '15 menit', '#6470ff,#8a6cf0',
+  ['Membaca pagi', 'Kebiasaan', 'Kelas I–VI', '15 menit', 'var(--sekolah-aksen),var(--sekolah-aksen-tengah)',
     'Lima belas menit membaca buku pilihan sendiri sebelum pelajaran pertama.',
     'Program dimulai di dua kelas pada 2024 dan kini berjalan di seluruh kelas. Perpustakaan menyediakan kotak buku bergilir yang diganti setiap dua pekan. Guru tidak meminta ringkasan; satu-satunya catatan adalah daftar judul yang dipinjam, dipakai untuk menambah koleksi yang paling sering dicari.',
     [['Waktu', '07.15–07.30'], ['Hari', 'Senin–Jumat'], ['Penanggung jawab', 'Wali kelas'], ['Mulai', 'Tahun 2024']]],
-  ['Projek Penguatan Profil Pelajar Pancasila', 'Kurikuler', 'Kelas IV–VI', '2 JP/pekan', '#7a6cf5,#c07ad8',
+  ['Projek Penguatan Profil Pelajar Pancasila', 'Kurikuler', 'Kelas IV–VI', '2 JP/pekan', 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)',
     'Satu tema besar per semester, dikerjakan berkelompok lintas mata pelajaran.',
     'Tema semester ganjil adalah Gaya Hidup Berkelanjutan, dijalankan lewat kebun sekolah dan bank sampah. Semester genap mengangkat Kearifan Lokal, berupa pengumpulan cerita rakyat dan permainan tradisional dari orang tua murid. Hasilnya dipamerkan pada pekan projek.',
     [['Tema per tahun', '2 tema'], ['Bentuk', 'Kerja kelompok'], ['Pameran', 'Akhir semester'], ['Koordinator', 'Ahmad Zulkarnain, S.Pd.']]],
@@ -28,11 +28,11 @@ const P = [
     'Setiap kelas merawat satu petak sayur dan memilah sampahnya sendiri.',
     'Sembilan petak dibagi per kelas sejak awal tahun ajaran, masing-masing dirawat empat murid yang bergilir tiap pekan. Catatan pemakaian air dan hasil panen ditulis tangan lalu direkap tiap akhir bulan. Program ini menjadi dasar penilaian Adiwiyata nasional 2026.',
     [['Petak', '9 petak'], ['Panen', 'Dua kali setahun'], ['Catatan', 'Direkap bulanan'], ['Pendamping', 'Dedi Kurniawan, S.Pd.']]],
-  ['Tahfiz juz 30', 'Keagamaan', 'Kelas III–VI', '1 JP/pekan', '#5b6cff,#9fb6f8',
+  ['Tahfiz juz 30', 'Keagamaan', 'Kelas III–VI', '1 JP/pekan', 'var(--sekolah-aksen-pekat),#9fb6f8',
     'Setoran hafalan bertahap dan salat Zuhur berjamaah bergilir antar kelas.',
     'Setoran dilakukan sepekan sekali kepada guru pendidikan agama, dengan target satu surah pendek per bulan. Murid yang menonjol diarahkan ke ekstrakurikuler tilawah, yang pada 2026 menghasilkan dua juara MTQ tingkat kabupaten.',
     [['Target', '1 surah per bulan'], ['Setoran', 'Sepekan sekali'], ['Salat', 'Zuhur bergilir'], ['Pengampu', 'Ratna Dewi, S.Pd.SD']]],
-  ['Pendampingan belajar', 'Kebiasaan', 'Kelas I–III', '2 sore/pekan', '#e0839a,#f0a06c',
+  ['Pendampingan belajar', 'Kebiasaan', 'Kelas I–III', '2 sore/pekan', 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)',
     'Kelas tambahan gratis untuk murid yang belum lancar membaca dan berhitung.',
     'Wali kelas mendata murid yang perlu pendampingan pada akhir bulan pertama tiap semester. Kelompok berisi paling banyak enam murid, bertemu dua sore setiap pekan sampai capaian dasarnya terpenuhi. Orang tua menerima catatan kemajuan setiap bulan.',
     [['Ukuran kelompok', 'Maks. 6 murid'], ['Jadwal', 'Selasa & Kamis'], ['Biaya', 'Tidak ada'], ['Laporan', 'Bulanan ke orang tua']]],
@@ -53,7 +53,7 @@ const URUTAN = [
   ['12.00', 'Istirahat kedua dan makan bekal', 'Murid makan bekal di kelas atau kantin, lalu merapikan meja sebelum jam terakhir.'],
   ['12.30', 'Jam terakhir dan piket', 'Pelajaran terakhir ditutup dengan piket kelas dan penyiraman petak kebun, pulang pukul 13.00.'],
 ];
-const URUTAN_GRAD = ['#6470ff,#8a6cf0', '#7a6cf5,#c07ad8', '#a86ce8,#e58fc4', '#e0839a,#f0a06c', '#5b6cff,#9fb6f8', '#6ab8f0,#8fd8ec', '#7bbf6a,#b6e8a0'];
+const URUTAN_GRAD = ['var(--sekolah-aksen),var(--sekolah-aksen-tengah)', 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)', 'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)', 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)', 'var(--sekolah-aksen-pekat),#9fb6f8', '#6ab8f0,#8fd8ec', '#7bbf6a,#b6e8a0'];
 
 const ProgramPage = () => {
   const [idx, setIdx] = useState(-1);
@@ -108,7 +108,7 @@ const ProgramPage = () => {
     jam: JAM.map(([mapel, jp]) => ({
       mapel,
       jp: `${jp} JP`,
-      bar: `height:100%;width:${Math.round((jp / MAX_JP) * 100)}%;border-radius:99px;background:linear-gradient(90deg,#6470ff,#e58fc4)`,
+      bar: `height:100%;width:${Math.round((jp / MAX_JP) * 100)}%;border-radius:99px;background:linear-gradient(90deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))`,
     })),
 
     detilAda: idx >= 0,

@@ -22,16 +22,16 @@ const BeritaBody = (vals = {}) => {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "28px", flexWrap: "wrap" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ width: "44px", height: "2px", background: "linear-gradient(90deg,#5b6cff,#f0779f)" }}></div>
-            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "#5b6cff" }}>Ruang berita</span>
+            <div style={{ width: "44px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></div>
+            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Ruang berita</span>
           </div>
-          <h1 className="heroh1" style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "70px", lineHeight: ".94", letterSpacing: "-.048em", fontWeight: "800", color: "#171827" }}>Kabar dari<br /><span style={{ background: "linear-gradient(115deg,#5b6cff,#9a6cf0 45%,#f0779f)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>halaman sekolah.</span></h1>
+          <h1 className="heroh1" style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "70px", lineHeight: ".94", letterSpacing: "-.048em", fontWeight: "800", color: "#171827" }}>Kabar dari<br /><span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>halaman sekolah.</span></h1>
         </div>
         <p style={{ maxWidth: "360px", margin: "0", fontSize: "15.5px", lineHeight: "1.68", color: "#4c5175", textWrap: "pretty" }}>Catatan kegiatan, pengumuman resmi, dan hasil rapat sekolah. Ditulis oleh guru dan tata usaha, diperbarui setiap pekan.</p>
       </div>
 
       <div className="mq-wrap" style={{ marginTop: "30px", position: "relative", overflow: "hidden", borderRadius: "18px", background: "rgba(255,255,255,.5)", border: "1px solid rgba(255,255,255,.8)", boxShadow: "0 16px 36px -20px rgba(55,65,120,.45),inset 0 1px 0 rgba(255,255,255,.95)" }}>
-        <div style={{ position: "absolute", left: "0", top: "0", bottom: "0", zIndex: "2", display: "flex", alignItems: "center", gap: "9px", padding: "0 18px", background: "linear-gradient(135deg,#6470ff,#8a6cf0 60%,#e58fc4)", color: "#fff", fontSize: "11.5px", fontWeight: "800", letterSpacing: ".1em", textTransform: "uppercase" }}>
+        <div style={{ position: "absolute", left: "0", top: "0", bottom: "0", zIndex: "2", display: "flex", alignItems: "center", gap: "9px", padding: "0 18px", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 60%,var(--sekolah-aksen-ujung))", color: "#fff", fontSize: "11.5px", fontWeight: "800", letterSpacing: ".1em", textTransform: "uppercase" }}>
           <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ffd9d9", animation: "pulsedot 1.8s ease-in-out infinite" }}></span>Terbaru
         </div>
         <div style={{ padding: "13px 0 13px 132px", WebkitMaskImage: "linear-gradient(90deg,#000 84%,transparent)", maskImage: "linear-gradient(90deg,#000 84%,transparent)" }}>
@@ -110,7 +110,7 @@ const BeritaBody = (vals = {}) => {
                   <h3 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "18.5px", lineHeight: "1.22", letterSpacing: "-.022em", fontWeight: "800", color: "#1b1c2c", textWrap: "pretty" }}>{b.judul}</h3>
                   <p style={{ margin: "10px 0 0", fontSize: "13.5px", lineHeight: "1.62", color: "#565b7d" }}>{b.ringkas}</p>
                   <div style={{ marginTop: "18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,.85)" }}>
-                    <span style={{ fontSize: "12.5px", fontWeight: "700", color: "#5b6cff" }}>{b.penulis}</span>
+                    <span style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--sekolah-aksen-pekat)" }}>{b.penulis}</span>
                     <span className="aarrow" style={{ width: "34px", height: "34px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3c4166" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7"></path><path d="M9 7h8v8"></path></svg>
                     </span>
@@ -130,7 +130,7 @@ const BeritaBody = (vals = {}) => {
 
         <div id="pengumuman" style={{ display: "flex", flexDirection: "column", gap: "18px", position: "sticky", top: "176px" }}>
           <div style={{ position: "relative", overflow: "hidden", padding: "26px 26px 22px", borderRadius: "26px", background: "rgba(255,255,255,.56)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.82)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
-            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "#5b6cff" }}>Pengumuman</div>
+            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Pengumuman</div>
             <h3 style={{ margin: "9px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "21px", letterSpacing: "-.024em", fontWeight: "800", color: "#1b1c2c" }}>Agenda terdekat</h3>
             <div style={{ marginTop: "18px", display: "flex", flexDirection: "column", gap: "8px" }}>
               {(agenda || []).map((a, $index) => (<React.Fragment key={$index}>
@@ -205,7 +205,7 @@ const BeritaBody = (vals = {}) => {
             <div style={{ fontSize: "12.5px", color: "#6d7192" }}>Artikel {artikel.pos}</div>
             <div style={{ display: "flex", gap: "10px" }}>
               <button className="shine" onClick={prev} style={{ position: "relative", overflow: "hidden", padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#33375a", border: "1px solid rgba(120,132,200,.3)", background: "rgba(255,255,255,.7)" }}>Sebelumnya</button>
-              <button className="shine" onClick={next} style={{ position: "relative", overflow: "hidden", padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#fff", border: "0", background: "linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4)", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Berita berikutnya</button>
+              <button className="shine" onClick={next} style={{ position: "relative", overflow: "hidden", padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#fff", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Berita berikutnya</button>
             </div>
           </div>
         </div>

@@ -31,7 +31,7 @@ const FasilitasBody = (vals = {}) => {
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "20px", flexWrap: "wrap" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ width: "34px", height: "2px", background: "linear-gradient(90deg,#7d8bff,#f0779f)" }}></span>
+              <span style={{ width: "34px", height: "2px", background: "linear-gradient(90deg,#7d8bff,var(--sekolah-aksen-ujung))" }}></span>
               <span style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".24em", textTransform: "uppercase", color: "#b9bef2" }}>Tur fasilitas sekolah</span>
             </div>
             <h1 className="ftitle" style={{ margin: "18px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "62px", lineHeight: ".94", letterSpacing: "-.05em", fontWeight: "800", color: "#fff", textShadow: "0 6px 34px rgba(6,10,42,.6)" }}>Berkeliling<br />sekolah.</h1>

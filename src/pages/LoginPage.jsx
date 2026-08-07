@@ -85,7 +85,7 @@ const LoginPage = () => {
         label,
         pick: () => { setPeran(label); setAkun(''); setSandi(''); },
         style: on
-          ? 'border:0;color:#fff;background:linear-gradient(135deg,#6470ff,#a06cf0 60%,#e58fc4);box-shadow:0 14px 30px -14px rgba(110,120,255,.95)'
+          ? 'border:0;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung));box-shadow:0 14px 30px -14px rgba(110,120,255,.95)'
           : 'border:0;color:#a9b2ff;background:transparent',
       };
     }),
@@ -104,7 +104,7 @@ const LoginPage = () => {
       : 'background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28)'),
     centangIngat: `opacity:${ingat ? '1' : '0'};transition:opacity .2s ease`,
     statusIsi: busy ? 'Memeriksa…' : siap ? 'Siap masuk' : 'Isi akun dan sandi',
-    tombolMasuk: 'position:relative;overflow:hidden;margin-top:18px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 22px;border-radius:16px;border:0;font-family:inherit;font-size:15px;font-weight:800;letter-spacing:-.01em;color:#fff;background:linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4);box-shadow:0 22px 46px -18px rgba(110,120,255,.95);transition:opacity .3s ease;' + (siap && !busy ? 'cursor:pointer;opacity:1' : 'cursor:not-allowed;opacity:.45'),
+    tombolMasuk: 'position:relative;overflow:hidden;margin-top:18px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 22px;border-radius:16px;border:0;font-family:inherit;font-size:15px;font-weight:800;letter-spacing:-.01em;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung));box-shadow:0 22px 46px -18px rgba(110,120,255,.95);transition:opacity .3s ease;' + (siap && !busy ? 'cursor:pointer;opacity:1' : 'cursor:not-allowed;opacity:.45'),
     masuk,
 
     // The mockup listed three demo accounts that auto-fill the form. Those

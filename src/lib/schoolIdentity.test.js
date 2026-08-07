@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_SCHOOL_IDENTITY, normalizeSchoolIdentity, turunkanPalet } from '@/lib/schoolIdentity';
+import { DEFAULT_SCHOOL_IDENTITY, normalizeSchoolIdentity, tahunAjaranAwal, turunkanPalet } from '@/lib/schoolIdentity';
 
 /**
  * Yang diuji di sini adalah janji produk: pembeli memilih satu warna, dan
@@ -18,6 +18,7 @@ describe('turunkanPalet', () => {
       'aksen-tengah': '#8a6cf0',
       'aksen-tengah-2': '#a06cf0',
       'aksen-ujung': '#e58fc4',
+      'aksen-hangat': '#f0a06c',
       'aksen-muda': '#a5b4fc',
       'aksen-samar': '#c7d2fe',
       'aksen-rgb': '100 112 255',
@@ -69,6 +70,25 @@ describe('turunkanPalet', () => {
   it('tetap sah untuk aksen hitam', () => {
     expect(turunkanPalet('#000000').aksen).toBe('#000000');
     expect(turunkanPalet('#000000')['aksen-samar']).toMatch(/^#[0-9a-f]{6}$/);
+  });
+});
+
+describe('tahunAjaranAwal', () => {
+  it('mengambil tahun pembuka dari berbagai bentuk penulisan', () => {
+    expect(tahunAjaranAwal('2026/2027')).toBe('2026');
+    expect(tahunAjaranAwal('2026-2027')).toBe('2026');
+    expect(tahunAjaranAwal('2026 / 2027')).toBe('2026');
+    expect(tahunAjaranAwal('TA 2030/2031')).toBe('2030');
+    expect(tahunAjaranAwal('2026')).toBe('2026');
+  });
+
+  // Label seperti "PPDB 2026" dibentuk dari nilai ini. Mengembalikan string kosong
+  // membuat labelnya jatuh ke "PPDB" saja, bukan "PPDB undefined".
+  it('mengembalikan string kosong bila tidak ada tahun', () => {
+    expect(tahunAjaranAwal('')).toBe('');
+    expect(tahunAjaranAwal(null)).toBe('');
+    expect(tahunAjaranAwal(undefined)).toBe('');
+    expect(tahunAjaranAwal('tahun ini')).toBe('');
   });
 });
 

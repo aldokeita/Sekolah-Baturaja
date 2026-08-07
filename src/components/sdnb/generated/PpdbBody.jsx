@@ -15,7 +15,7 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-ppdb.css';
 
 const PpdbBody = (vals = {}) => {
-  const { berkas, d, genders, h, isDone, isStep1, isStep2, isStep3, isStep4, jalur, minat, navStyle, next, nextLabel, nextStyle, prev, prevStyle, progressStyle, reset, review, setujuBox, setujuStyle, stepCounter, steps, toggleSetuju } = vals;
+  const { berkas, d, genders, namaSekolah, tahunAjaran, tahunAwal, h, isDone, isStep1, isStep2, isStep3, isStep4, jalur, minat, navStyle, next, nextLabel, nextStyle, prev, prevStyle, progressStyle, reset, review, setujuBox, setujuStyle, stepCounter, steps, toggleSetuju } = vals;
   return (
     <>
 <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
@@ -33,7 +33,7 @@ const PpdbBody = (vals = {}) => {
           <div style={{ width: "40px", height: "40px", borderRadius: "13px", background: "linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "13px", boxShadow: "0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>SDN</div>
           <div style={{ lineHeight: "1.15" }}>
             <div style={{ fontSize: "15px", fontWeight: "800", letterSpacing: "-.01em", color: "#1b1c28" }}>Sekolah Dasar Negeri Baturaja</div>
-            <div style={{ fontSize: "11px", fontWeight: "500", color: "#6c718f" }}>Formulir PPDB 2026/2027</div>
+            <div style={{ fontSize: "11px", fontWeight: "500", color: "#6c718f" }}>Formulir PPDB {tahunAjaran}</div>
           </div>
         </a>
         <div style={{ flex: "1" }}></div>
@@ -51,8 +51,8 @@ const PpdbBody = (vals = {}) => {
     </div>
 
     <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "26px 28px 0" }}>
-      <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "#5b6cff" }}>PPDB 2026/2027</div>
-      <h1 style={{ margin: "12px 0 0", fontSize: "44px", lineHeight: "1.06", letterSpacing: "-.035em", fontWeight: "800", color: "#171827", maxWidth: "720px" }}>Formulir pendaftaran <span style={{ background: "linear-gradient(115deg,#5b6cff,#9a6cf0 48%,#f0779f)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>peserta didik baru</span></h1>
+      <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>PPDB {tahunAjaran}</div>
+      <h1 style={{ margin: "12px 0 0", fontSize: "44px", lineHeight: "1.06", letterSpacing: "-.035em", fontWeight: "800", color: "#171827", maxWidth: "720px" }}>Formulir pendaftaran <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>peserta didik baru</span></h1>
       <p style={{ margin: "16px 0 0", maxWidth: "620px", fontSize: "15px", lineHeight: "1.65", color: "#535878", textWrap: "pretty" }}>Diisi oleh orang tua atau wali calon murid kelas satu. Data tersimpan otomatis di perangkat ini, jadi Anda bisa melanjutkan kapan saja sebelum tenggat.</p>
     </div>
 
@@ -142,7 +142,7 @@ const PpdbBody = (vals = {}) => {
                   <input onInput={h.npsn} defaultValue={d.npsn} placeholder="8 digit" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Usia per 1 Juli 2026</label>
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Usia per 1 Juli {tahunAwal}</label>
                   <input onInput={h.nilai} defaultValue={d.nilai} placeholder="Contoh: 6 tahun 4 bulan" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
@@ -236,9 +236,9 @@ const PpdbBody = (vals = {}) => {
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
               </div>
               <h2 style={{ margin: "22px 0 0", fontSize: "26px", fontWeight: "800", letterSpacing: "-.025em", color: "#1b1c2c" }}>Pendaftaran terkirim</h2>
-              <p style={{ margin: "10px 0 0", maxWidth: "520px", fontSize: "14.5px", lineHeight: "1.65", color: "#535878" }}>Nomor pendaftaran Anda <strong style={{ color: "#4a4fd0" }}>PPDB-2026-04187</strong>. Simpan nomor ini untuk memeriksa hasil seleksi. Konfirmasi juga dikirim ke WhatsApp yang Anda cantumkan.</p>
+              <p style={{ margin: "10px 0 0", maxWidth: "520px", fontSize: "14.5px", lineHeight: "1.65", color: "#535878" }}>Nomor pendaftaran Anda <strong style={{ color: "#4a4fd0" }}>{`PPDB-${tahunAwal}-04187`}</strong>. Simpan nomor ini untuk memeriksa hasil seleksi. Konfirmasi juga dikirim ke WhatsApp yang Anda cantumkan.</p>
               <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <a className="shine" href="./Beranda SMAN Baturaja.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 24px", borderRadius: "15px", fontSize: "14px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,#5b6cff,#8a6cf0 55%,#e58fc4)", boxShadow: "0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)" }}>Kembali ke beranda</a>
+                <a className="shine" href="./Beranda SMAN Baturaja.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 24px", borderRadius: "15px", fontSize: "14px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)" }}>Kembali ke beranda</a>
                 <button className="shine" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Isi formulir lain</button>
               </div>
             </div>
@@ -263,7 +263,7 @@ const PpdbBody = (vals = {}) => {
           <div style={{ position: "relative", fontSize: "12px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "#8a8ea8" }}>Jadwal</div>
           <div style={{ position: "relative", marginTop: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
             <div style={{ display: "flex", gap: "12px" }}>
-              <div style={{ flex: "none", width: "9px", height: "9px", marginTop: "5px", borderRadius: "50%", background: "linear-gradient(135deg,#6470ff,#e58fc4)", boxShadow: "0 0 0 4px rgba(120,132,255,.16)" }}></div>
+              <div style={{ flex: "none", width: "9px", height: "9px", marginTop: "5px", borderRadius: "50%", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))", boxShadow: "0 0 0 4px rgba(120,132,255,.16)" }}></div>
               <div><div style={{ fontSize: "13.5px", fontWeight: "700", color: "#1e2035" }}>1 Juli &ndash; 20 Agustus</div><div style={{ fontSize: "12px", color: "#6b7093" }}>Pengisian formulir daring</div></div>
             </div>
             <div style={{ display: "flex", gap: "12px" }}>
@@ -280,10 +280,10 @@ const PpdbBody = (vals = {}) => {
         <div style={{ position: "relative", overflow: "hidden", padding: "24px", borderRadius: "24px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
           <div style={{ position: "relative", fontSize: "12px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "#8a8ea8" }}>Yang perlu disiapkan</div>
           <div style={{ position: "relative", marginTop: "14px", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#3f4468" }}>
-            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "#5b6cff", fontWeight: "800" }}>&bull;</span>Kartu keluarga dan akta kelahiran</div>
-            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "#5b6cff", fontWeight: "800" }}>&bull;</span>Anak berusia minimal 6 tahun pada 1 Juli 2026</div>
-            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "#5b6cff", fontWeight: "800" }}>&bull;</span>Pas foto berwarna 3&times;4</div>
-            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "#5b6cff", fontWeight: "800" }}>&bull;</span>Surat keterangan dari TK atau RA bila ada</div>
+            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>Kartu keluarga dan akta kelahiran</div>
+            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>Anak berusia minimal 6 tahun pada 1 Juli {tahunAwal}</div>
+            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>Pas foto berwarna 3&times;4</div>
+            <div style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>Surat keterangan dari TK atau RA bila ada</div>
           </div>
         </div>
 
@@ -298,7 +298,7 @@ const PpdbBody = (vals = {}) => {
 
     <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "56px 28px 44px" }}>
       <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.7)", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", fontSize: "12px", color: "#70759a" }}>
-        <div>&copy; 2026 Sekolah Dasar Negeri Baturaja &middot; Panitia PPDB 2026/2027</div>
+        <div>&copy; {tahunAwal} {namaSekolah} &middot; Panitia PPDB {tahunAjaran}</div>
         <a className="hx-1kdf62l" href="./Beranda SMAN Baturaja.dc.html" style={{ color: "#70759a" }}>Beranda</a>
       </div>
     </div>

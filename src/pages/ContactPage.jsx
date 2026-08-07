@@ -23,7 +23,7 @@ const TOPIK = ['Pendaftaran murid baru', 'Administrasi dan surat', 'Kegiatan dan
 
 // Hanya gradasi. Nama dan jabatan datang dari data guru asli lewat
 // GET /api/content/teachers, dipasangkan berdasarkan posisi.
-const ORANG_GRADASI = ['#6470ff,#8a6cf0', '#7a6cf5,#c07ad8', '#a86ce8,#e58fc4', '#e0839a,#f0a06c'];
+const ORANG_GRADASI = ['var(--sekolah-aksen),var(--sekolah-aksen-tengah)', 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)', 'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)', 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)'];
 
 // Peran internal diterjemahkan ke sebutan yang dipahami orang tua murid.
 const SEBUTAN_PERAN = { Pentashih: 'Wakil Kepala Sekolah', Pengajar: 'Guru', 'Tata Usaha': 'Tata Usaha' };
@@ -112,12 +112,12 @@ const ContactPage = () => {
 
     chips: [
       // Nilai identitas datang dari panel Identitas Sekolah, bukan ditanam di sini.
-      ['Telepon kantor', sekolah.phone, 'Ketuk untuk menyalin', '#6470ff,#8a6cf0', () => copy(sekolah.phone, 'Nomor telepon')],
-      ['Surel resmi', sekolah.email, 'Ketuk untuk menyalin', '#7a6cf5,#c07ad8', () => copy(sekolah.email, 'Alamat surel')],
+      ['Telepon kantor', sekolah.phone, 'Ketuk untuk menyalin', 'var(--sekolah-aksen),var(--sekolah-aksen-tengah)', () => copy(sekolah.phone, 'Nomor telepon')],
+      ['Surel resmi', sekolah.email, 'Ketuk untuk menyalin', 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)', () => copy(sekolah.email, 'Alamat surel')],
       ...(sekolah.whatsapp
-        ? [['WhatsApp tata usaha', sekolah.whatsapp, 'Ketuk untuk menyalin', '#a86ce8,#e58fc4', () => copy(sekolah.whatsapp, 'Nomor WhatsApp')]]
+        ? [['WhatsApp tata usaha', sekolah.whatsapp, 'Ketuk untuk menyalin', 'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)', () => copy(sekolah.whatsapp, 'Nomor WhatsApp')]]
         : []),
-      ['Jam layanan', sekolah.officeHours, 'Sesuai jadwal sekolah', '#e0839a,#f0a06c', () => toast(sekolah.officeHours)],
+      ['Jam layanan', sekolah.officeHours, 'Sesuai jadwal sekolah', 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)', () => toast(sekolah.officeHours)],
     ].map(([label, nilai, aksi, grad, act]) => ({
       label, nilai, aksi, act,
       icon: `position:relative;width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(140deg,${grad});box-shadow:0 16px 32px -14px rgba(90,100,200,.85),inset 0 1px 0 rgba(255,255,255,.55)`,
@@ -130,7 +130,7 @@ const ContactPage = () => {
         label: p,
         pick: () => setPeran(p),
         style: 'padding:11px 16px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;transition:all .3s ease;' + (on
-          ? 'border:0;color:#fff;background:linear-gradient(135deg,#6470ff,#a06cf0 60%,#e58fc4);box-shadow:0 14px 30px -14px rgba(95,105,235,.9)'
+          ? 'border:0;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung));box-shadow:0 14px 30px -14px rgba(95,105,235,.9)'
           : 'border:1px solid rgba(255,255,255,.9);color:#3d4166;background:rgba(255,255,255,.5)'),
       };
     }),
@@ -143,7 +143,7 @@ const ContactPage = () => {
     hitungPesan: `${sisa} karakter tersisa`,
     hitungStyle: `font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;color:${sisa < 80 ? '#c25a7a' : '#8a8ea8'}`,
     bantuan: isiLengkap ? 'Semua kolom sudah terisi.' : 'Isi nama, kontak, dan pesan minimal sepuluh karakter.',
-    tombolStyle: 'position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;padding:15px 24px;border-radius:16px;border:0;font-family:inherit;font-size:14.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4);transition:opacity .3s ease,transform .3s ease;box-shadow:0 20px 42px -16px rgba(95,105,235,.9);' + (isiLengkap ? 'cursor:pointer;opacity:1' : 'cursor:not-allowed;opacity:.45'),
+    tombolStyle: 'position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;padding:15px 24px;border-radius:16px;border:0;font-family:inherit;font-size:14.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung));transition:opacity .3s ease,transform .3s ease;box-shadow:0 20px 42px -16px rgba(95,105,235,.9);' + (isiLengkap ? 'cursor:pointer;opacity:1' : 'cursor:not-allowed;opacity:.45'),
     kirim: handleKirim,
 
     belumKirim: !kirimDone,
@@ -155,6 +155,16 @@ const ContactPage = () => {
 
     salinAlamat: () => copy(sekolah.address, 'Alamat sekolah'),
     labelAlamat: 'Salin alamat',
+
+    // Kartu peta: nama penanda dan dua baris alamat dulu ditulis di KontakBody,
+    // jadi sekolah pembeli tetap menampilkan alamat Baturaja. Alamat dipecah di
+    // koma pertama supaya baris atasnya tetap pendek seperti rancangan aslinya.
+    petaNama: sekolah.shortName || sekolah.name,
+    petaBaris1: String(sekolah.address || '').split(',')[0].trim(),
+    petaBaris2: String(sekolah.address || '').split(',').slice(1).join(',').trim(),
+    // Tautan Google Maps dari panel Identitas. Boleh kosong — tombolnya hilang,
+    // bukan menganga sebagai tautan mati.
+    petaTautan: sekolah.mapUrl || '',
 
     jam: JAM.map(([h, w, dd], i) => {
       const kini = dd === day || (dd === 6 && (day === 0 || day === 6));

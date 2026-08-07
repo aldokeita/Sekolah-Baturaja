@@ -177,7 +177,7 @@ const GalleryPage = () => {
         n,
         pick: () => { setKat(k); setIdx(-1); },
         style: 'display:inline-flex;align-items:center;gap:8px;padding:11px 15px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;transition:background .3s ease,color .3s ease,box-shadow .3s ease,transform .3s cubic-bezier(.4,1.3,.4,1);' + (on
-          ? 'border:0;color:#fff;background:linear-gradient(135deg,#6470ff,#a06cf0 60%,#e58fc4);box-shadow:0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(-1px)'
+          ? 'border:0;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung));box-shadow:0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(-1px)'
           : 'border:1px solid rgba(255,255,255,.85);color:#3d4166;background:rgba(255,255,255,.5)'),
         badge: 'font-size:11px;font-weight:800;padding:2px 7px;border-radius:8px;font-variant-numeric:tabular-nums;' + (on ? 'background:rgba(255,255,255,.26);color:#fff' : 'background:rgba(120,130,190,.14);color:#6a6f95'),
       };
@@ -189,7 +189,7 @@ const GalleryPage = () => {
         label,
         pick: () => setView(k),
         style: 'padding:9px 16px;border-radius:12px;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:700;transition:all .3s ease;' + (on
-          ? 'border:0;color:#fff;background:linear-gradient(135deg,#5b6cff,#9a6cf0);box-shadow:0 10px 22px -10px rgba(95,105,235,.9)'
+          ? 'border:0;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2));box-shadow:0 10px 22px -10px rgba(95,105,235,.9)'
           : 'border:0;background:transparent;color:#5c6188'),
       };
     }),

@@ -23,7 +23,7 @@ const PrestasiBody = (vals = {}) => {
         <div aria-hidden="true" style={{ position: "absolute", inset: "0", backgroundImage: "linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px)", backgroundSize: "64px 64px" }}></div>
         <div aria-hidden="true" style={{ position: "absolute", right: "-140px", top: "-160px", width: "520px", height: "520px", borderRadius: "50%", background: "radial-gradient(circle,rgba(150,120,255,.5),rgba(150,120,255,0) 68%)", filter: "blur(12px)", animation: "floaty 17s ease-in-out infinite" }}></div>
         <div aria-hidden="true" style={{ position: "absolute", left: "32%", bottom: "-220px", width: "460px", height: "460px", borderRadius: "50%", background: "radial-gradient(circle,rgba(229,143,196,.32),rgba(229,143,196,0) 68%)", filter: "blur(14px)", animation: "floaty 21s ease-in-out infinite reverse" }}></div>
-        <div aria-hidden="true" style={{ position: "absolute", left: "0", right: "0", top: "0", height: "3px", background: "linear-gradient(90deg,#5b6cff,#9a6cf0 42%,#f0779f 78%,transparent)" }}></div>
+        <div aria-hidden="true" style={{ position: "absolute", left: "0", right: "0", top: "0", height: "3px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 42%,var(--sekolah-aksen-ujung) 78%,transparent)" }}></div>
 
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px", flexWrap: "wrap", padding: "22px 0", borderBottom: "1px solid rgba(255,255,255,.12)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "14px", fontSize: "11px", fontWeight: "700", letterSpacing: ".22em", textTransform: "uppercase", color: "#8d93d6" }}>
@@ -40,7 +40,7 @@ const PrestasiBody = (vals = {}) => {
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "34px", flexWrap: "wrap", padding: "54px 0 0" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ width: "36px", height: "2px", background: "#e58fc4" }}></span>
+              <span style={{ width: "36px", height: "2px", background: "var(--sekolah-aksen-ujung)" }}></span>
               <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".24em", textTransform: "uppercase", color: "#b3b8ee" }}>Catatan capaian 2019&ndash;2026</span>
             </div>
             <h1 className="htitle" style={{ margin: "22px 0 0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "118px", lineHeight: ".84", letterSpacing: "-.058em", fontWeight: "900", textTransform: "uppercase", background: "linear-gradient(180deg,#ffffff 34%,#b9bdf2 100%)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>Prestasi</h1>
@@ -89,7 +89,7 @@ const PrestasiBody = (vals = {}) => {
                 <div className="lcol3" style={__dcs(d.medali)}>{d.peringkat}</div>
                 <div className="lcol4" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
                   <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#7b80a4" }}>{d.tingkat}</span>
-                  <span className="lgo" style={{ display: "inline-flex", alignItems: "center", color: "#5b6cff" }}>
+                  <span className="lgo" style={{ display: "inline-flex", alignItems: "center", color: "var(--sekolah-aksen-pekat)" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
                   </span>
                 </div>

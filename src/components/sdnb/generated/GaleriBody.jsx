@@ -34,10 +34,10 @@ const GaleriBody = (vals = {}) => {
       <div style={{ position: "relative", zIndex: "1", maxWidth: "1240px", margin: "0 auto", padding: "0 28px", width: "100%" }}>
         <div className="herotext" style={{ maxWidth: "760px", padding: "38px 40px 40px", borderRadius: "34px", background: "rgba(255,255,255,.42)", backdropFilter: "blur(34px) saturate(190%)", WebkitBackdropFilter: "blur(34px) saturate(190%)", border: "1px solid rgba(255,255,255,.7)", boxShadow: "0 40px 96px -34px rgba(50,60,125,.6),inset 0 1px 0 rgba(255,255,255,1)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ width: "44px", height: "2px", background: "linear-gradient(90deg,#5b6cff,#f0779f)" }}></div>
-            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "#5b6cff" }}>Dokumentasi sekolah</span>
+            <div style={{ width: "44px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></div>
+            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Dokumentasi sekolah</span>
           </div>
-          <h1 style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "96px", lineHeight: ".9", letterSpacing: "-.05em", fontWeight: "800", color: "#171827" }}>Galeri<span style={{ background: "linear-gradient(115deg,#5b6cff,#9a6cf0 45%,#f0779f)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>.</span></h1>
+          <h1 style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "96px", lineHeight: ".9", letterSpacing: "-.05em", fontWeight: "800", color: "#171827" }}>Galeri<span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>.</span></h1>
           <p style={{ margin: "22px 0 0", maxWidth: "520px", fontSize: "16.5px", lineHeight: "1.68", color: "#4c5175", textWrap: "pretty" }}>Satu tahun ajaran dalam gambar: kelas pagi, latihan pramuka, panen kebun, dan pentas seni. Semua foto diambil oleh guru dan murid sendiri.</p>
           <div style={{ marginTop: "28px", display: "flex", flexWrap: "wrap", gap: "22px 34px", alignItems: "flex-end" }}>
             {(heroStats || []).map((s, $index) => (<React.Fragment key={$index}>
@@ -111,7 +111,7 @@ const GaleriBody = (vals = {}) => {
             <button className="shine" onClick={cinePrev} style={{ position: "relative", overflow: "hidden", width: "46px", height: "46px", borderRadius: "15px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "1px solid rgba(255,255,255,.9)", background: "rgba(255,255,255,.66)", boxShadow: "0 14px 30px -14px rgba(60,70,120,.7)" }} aria-label="Sebelumnya">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
             </button>
-            <button className="shine" onClick={cineNext} style={{ position: "relative", overflow: "hidden", width: "46px", height: "46px", borderRadius: "15px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "0", background: "linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4)", boxShadow: "0 16px 34px -14px rgba(95,105,235,.95)" }} aria-label="Berikutnya">
+            <button className="shine" onClick={cineNext} style={{ position: "relative", overflow: "hidden", width: "46px", height: "46px", borderRadius: "15px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 16px 34px -14px rgba(95,105,235,.95)" }} aria-label="Berikutnya">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
             </button>
             <div style={{ fontSize: "12.5px", color: "#6d7192" }}>Geser ke samping untuk menonton satu per satu</div>
@@ -146,8 +146,8 @@ const GaleriBody = (vals = {}) => {
 <section id="album" style={{ maxWidth: "1240px", margin: "0 auto", padding: "92px 28px 0" }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "24px", flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "#5b6cff" }}>Album</div>
-          <h2 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.1", letterSpacing: "-.032em", fontWeight: "800", color: "#171827" }}>Arsip per <span style={{ background: "linear-gradient(115deg,#5b6cff,#9a6cf0 48%,#f0779f)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>kegiatan</span></h2>
+          <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Album</div>
+          <h2 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.1", letterSpacing: "-.032em", fontWeight: "800", color: "#171827" }}>Arsip per <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>kegiatan</span></h2>
         </div>
         <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.6", color: "#5b6082" }}>Arahkan kursor ke tumpukan foto untuk membukanya, klik untuk melihat isi album.</p>
       </div>
@@ -196,7 +196,7 @@ const GaleriBody = (vals = {}) => {
             <div style={{ marginTop: "8px", maxWidth: "640px", fontSize: "13.5px", lineHeight: "1.6", color: "rgba(255,255,255,.88)" }}>{cur.tanggal} &middot; {cur.ket}</div>
           </div>
         </div>
-        <button onClick={next} style={{ flex: "none", width: "52px", height: "52px", borderRadius: "17px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "0", background: "linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4)" }} aria-label="Berikutnya">
+        <button onClick={next} style={{ flex: "none", width: "52px", height: "52px", borderRadius: "17px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))" }} aria-label="Berikutnya">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
         </button>
       </div>

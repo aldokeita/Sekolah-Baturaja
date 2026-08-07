@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { submitPublicFeedback, getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import { tahunAjaranAwal } from '@/lib/schoolIdentity';
 import '@/styles/sdnb.css';
 
 /**
@@ -26,10 +27,17 @@ const COL_SEKOLAH = [
   { label: 'Prestasi', to: '/prestasi' },
 ];
 
-const COL_INFORMASI = [
+// Label PPDB mengikuti tahun ajaran di panel Identitas; tahunnya dulu ditanam
+// di sini, jadi setiap sekolah pembeli selamanya menautkan "PPDB 2026".
+const labelPpdb = (sekolah) => {
+  const tahun = tahunAjaranAwal(sekolah.academicYear);
+  return tahun ? `PPDB ${tahun}` : 'PPDB';
+};
+
+const kolomInformasi = (sekolah) => [
   { label: 'Berita', to: '/berita' },
   { label: 'Galeri', to: '/profil/galeri' },
-  { label: 'PPDB 2026', to: '/pendaftaran' },
+  { label: labelPpdb(sekolah), to: '/pendaftaran' },
   { label: 'FAQ', to: '/#faq' },
 ];
 
@@ -40,11 +48,11 @@ const colLink = { color: '#3f4468' };
 // The mockups ship two footers: Beranda uses a four-column one with the
 // newsletter box, every other content page uses this three-column
 // "Halaman / Kontak" variant (ported from `Profil Sekolah.dc.html` 383–413).
-const COL_HALAMAN = [
+const kolomHalaman = (sekolah) => [
   { label: 'Beranda', to: '/' },
   { label: 'Galeri', to: '/profil/galeri' },
   { label: 'Berita', to: '/berita' },
-  { label: 'PPDB 2026', to: '/pendaftaran' },
+  { label: labelPpdb(sekolah), to: '/pendaftaran' },
 ];
 
 export const SiteFooterRingkas = () => {
@@ -68,7 +76,7 @@ export const SiteFooterRingkas = () => {
         <div>
           <div style={colLabel}>Halaman</div>
           <div style={colList}>
-            {COL_HALAMAN.map((l) => (
+            {kolomHalaman(sekolah).map((l) => (
               <Link key={l.label} to={l.to} className="h-flink" style={colLink}>{l.label}</Link>
             ))}
           </div>
@@ -145,7 +153,7 @@ const SiteFooter = () => {
           <div>
             <div style={colLabel}>Informasi</div>
             <div style={colList}>
-              {COL_INFORMASI.map((l) => (
+              {kolomInformasi(sekolah).map((l) => (
                 <Link key={l.label} to={l.to} className="h-flink" style={colLink}>{l.label}</Link>
               ))}
             </div>
@@ -163,7 +171,7 @@ const SiteFooter = () => {
                 aria-label="Alamat email buletin"
                 style={{ flex: 1, minWidth: 0, padding: '11px 14px', borderRadius: 13, fontFamily: 'inherit', fontSize: 13, color: '#2b2e48', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', outline: 'none', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}
               />
-              <button type="submit" disabled={sending} className="shine h-bright" style={{ position: 'relative', overflow: 'hidden', padding: '11px 17px', borderRadius: 13, border: 0, cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.45 : 1, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4)', boxShadow: '0 12px 26px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.55)' }}>
+              <button type="submit" disabled={sending} className="shine h-bright" style={{ position: 'relative', overflow: 'hidden', padding: '11px 17px', borderRadius: 13, border: 0, cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.45 : 1, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 12px 26px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.55)' }}>
                 Kirim
               </button>
             </form>

@@ -21,12 +21,12 @@ const EkskulBody = (vals = {}) => {
 <section className="hero2" style={{ maxWidth: "1240px", margin: "0 auto", padding: "30px 28px 0", display: "grid", gridTemplateColumns: "1.02fr .98fr", gap: "34px", alignItems: "center" }}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "9px 15px", borderRadius: "999px", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "#5b6cff" }}>Sepulang sekolah</div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "9px 15px", borderRadius: "999px", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Sepulang sekolah</div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", fontSize: "11px", fontWeight: "700", letterSpacing: ".18em", textTransform: "uppercase", color: "#7b80a4" }}>
-            <span style={{ width: "26px", height: "2px", background: "linear-gradient(90deg,#5b6cff,#f0779f)" }}></span>Tahun ajaran 2025/2026
+            <span style={{ width: "26px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></span>Tahun ajaran 2025/2026
           </div>
         </div>
-        <h1 className="bigtitle" style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "92px", lineHeight: ".88", letterSpacing: "-.052em", fontWeight: "800", color: "#171827" }}>Sepuluh<br /><span style={{ position: "relative", display: "inline-block", color: "transparent", WebkitTextStroke: "2px #5b6cff" }}>kegiatan<span aria-hidden="true" style={{ position: "absolute", left: "2%", right: "2%", bottom: "9%", height: "14px", borderRadius: "99px", background: "linear-gradient(90deg,rgba(91,108,255,.28),rgba(240,119,159,.32))", zIndex: "-1" }}></span></span><br />satu halaman.</h1>
+        <h1 className="bigtitle" style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "92px", lineHeight: ".88", letterSpacing: "-.052em", fontWeight: "800", color: "#171827" }}>Sepuluh<br /><span style={{ position: "relative", display: "inline-block", color: "transparent", WebkitTextStroke: "2px var(--sekolah-aksen-pekat)" }}>kegiatan<span aria-hidden="true" style={{ position: "absolute", left: "2%", right: "2%", bottom: "9%", height: "14px", borderRadius: "99px", background: "linear-gradient(90deg,rgba(91,108,255,.28),rgba(240,119,159,.32))", zIndex: "-1" }}></span></span><br />satu halaman.</h1>
         <p style={{ margin: "26px 0 0", maxWidth: "470px", fontSize: "16px", lineHeight: "1.7", color: "#4c5175", textWrap: "pretty" }}>Setiap murid mengikuti sedikitnya satu kegiatan setiap tahun ajaran. Latihan berlangsung sore hari di lingkungan sekolah, gratis, dan dibimbing guru pembina.</p>
         <div style={{ marginTop: "30px", display: "flex", flexWrap: "wrap", gap: "26px" }}>
           {(angka || []).map((a, $index) => (<React.Fragment key={$index}>
@@ -59,7 +59,7 @@ const EkskulBody = (vals = {}) => {
                 <span style={__dcs(i.nama)}>{i.judul}</span>
                 <span style={{ display: "block", marginTop: "4px", fontSize: "12px", color: "#7b80a4" }}>{i.hari}</span>
               </span>
-              <span className="ipeek" style={{ display: "inline-flex", color: "#5b6cff" }}>
+              <span className="ipeek" style={{ display: "inline-flex", color: "var(--sekolah-aksen-pekat)" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
               </span>
             </button>
@@ -98,7 +98,7 @@ const EkskulBody = (vals = {}) => {
             </div>
             <div style={{ marginTop: "16px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#8a8ea8" }}>Untuk kelas</div>
             <div style={{ marginTop: "8px", fontSize: "13.5px", color: "#4f5478" }}>{poster.kelas}</div>
-            <a className="shine" href="./Kontak.dc.html" style={{ position: "relative", overflow: "hidden", marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 18px", borderRadius: "14px", fontSize: "13px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4)", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Daftar kegiatan ini</a>
+            <a className="shine" href="./Kontak.dc.html" style={{ position: "relative", overflow: "hidden", marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 18px", borderRadius: "14px", fontSize: "13px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Daftar kegiatan ini</a>
           </div>
         </div>
       </div>

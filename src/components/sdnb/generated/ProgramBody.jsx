@@ -27,8 +27,8 @@ const ProgramBody = (vals = {}) => {
       <div style={{ position: "relative", marginTop: "24px", overflow: "hidden", borderRadius: "36px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(28px) saturate(190%)", WebkitBackdropFilter: "blur(28px) saturate(190%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 36px 78px -30px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}>
         <div aria-hidden="true" style={{ position: "absolute", right: "-6%", top: "-30%", width: "520px", height: "520px", borderRadius: "50%", background: "conic-gradient(from 210deg,rgba(100,112,255,.36),rgba(229,143,196,.34),rgba(160,240,225,.32),rgba(100,112,255,.36))", filter: "blur(34px)", animation: "floaty 19s ease-in-out infinite" }}></div>
         <div style={{ position: "relative", padding: "52px 48px 46px" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "11px", padding: "9px 16px", borderRadius: "999px", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)", fontSize: "11.5px", fontWeight: "800", letterSpacing: ".16em", textTransform: "uppercase", color: "#5b6cff" }}>Kurikulum Merdeka &middot; 2025/2026</div>
-          <h1 className="phero" style={{ margin: "26px 0 0", maxWidth: "900px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "76px", lineHeight: ".98", letterSpacing: "-.048em", fontWeight: "800", color: "#141628", textWrap: "pretty" }}>Program belajar yang<br />dijalankan setiap hari,<br /><span style={{ background: "linear-gradient(115deg,#5b6cff,#9a6cf0 46%,#f0779f)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>bukan hanya tertulis.</span></h1>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "11px", padding: "9px 16px", borderRadius: "999px", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)", fontSize: "11.5px", fontWeight: "800", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Kurikulum Merdeka &middot; 2025/2026</div>
+          <h1 className="phero" style={{ margin: "26px 0 0", maxWidth: "900px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "76px", lineHeight: ".98", letterSpacing: "-.048em", fontWeight: "800", color: "#141628", textWrap: "pretty" }}>Program belajar yang<br />dijalankan setiap hari,<br /><span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 46%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>bukan hanya tertulis.</span></h1>
           <p style={{ margin: "26px 0 0", maxWidth: "620px", fontSize: "16px", lineHeight: "1.72", color: "#4c5175", textWrap: "pretty" }}>Enam program berjalan sepanjang tahun ajaran. Tiga di antaranya menempel pada jam pelajaran, tiga lainnya berupa kebiasaan harian yang dijaga seluruh kelas.</p>
           <div style={{ marginTop: "34px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
             {(pintas || []).map((p, $index) => (<React.Fragment key={$index}>
@@ -94,7 +94,7 @@ const ProgramBody = (vals = {}) => {
       <div style={{ position: "sticky", top: "110px", display: "flex", flexDirection: "column", gap: "20px" }}>
         {(bebanTampil) && (<>
         <div style={{ padding: "28px 28px 26px", borderRadius: "28px", background: "rgba(255,255,255,.58)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.88)", boxShadow: "0 28px 60px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
-          <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#5b6cff" }}>Beban jam pelajaran</div>
+          <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Beban jam pelajaran</div>
           <h3 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "21px", letterSpacing: "-.024em", fontWeight: "800", color: "#1b1c2c" }}>Per pekan, kelas V</h3>
           <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "14px" }}>
             {(jam || []).map((j, $index) => (<React.Fragment key={$index}>
@@ -150,7 +150,7 @@ const ProgramBody = (vals = {}) => {
           </div>
           <div style={{ marginTop: "24px", display: "flex", gap: "10px" }}>
             <button onClick={sebelum} style={{ padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#33375a", border: "1px solid rgba(120,132,200,.3)", background: "rgba(255,255,255,.75)" }}>Sebelumnya</button>
-            <button onClick={sesudah} style={{ padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#fff", border: "0", background: "linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4)", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Program berikutnya</button>
+            <button onClick={sesudah} style={{ padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#fff", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Program berikutnya</button>
           </div>
         </div>
       </div>

@@ -90,6 +90,19 @@ export const normalizeSchoolIdentity = (stored) => {
   return result;
 };
 
+/**
+ * Tahun pembuka dari sebuah tahun ajaran: '2026/2027' menjadi '2026'.
+ *
+ * Dipakai di tempat yang hanya menyebut satu tahun, seperti tautan "PPDB 2026".
+ * Menerima pemisah garis miring maupun tanda hubung, dan mengembalikan string
+ * kosong bila isinya tidak memuat tahun — supaya labelnya jadi "PPDB" saja alih-alih
+ * "PPDB undefined".
+ */
+export const tahunAjaranAwal = (tahunAjaran) => {
+  const cocok = String(tahunAjaran || '').match(/\d{4}/);
+  return cocok ? cocok[0] : '';
+};
+
 const readCache = () => {
   try {
     return normalizeSchoolIdentity(JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'));
@@ -135,6 +148,7 @@ const SELISIH_PALET = {
   'aksen-tengah': [18.3, -18.5, -1.4],      // #8a6cf0 — ungu
   'aksen-tengah-2': [28.3, -18.5, -1.4],    // #a06cf0 — ungu terang
   'aksen-ujung': [87.7, -37.7, 3.3],        // #e58fc4 — merona, ujung gradasi
+  'aksen-hangat': [148.2, -18.5, -1.4],     // #f0a06c — jingga, dipakai pasangan gradasi terakhir
   'aksen-muda': [-5.7, -6.5, 12.2],         // #a5b4fc — tint
   'aksen-samar': [-7.4, -3.5, 19.2],        // #c7d2fe — tint paling pucat
 };

@@ -124,7 +124,7 @@ const SiteNav = () => {
             </Link>
           )}
 
-          <Link to="/pendaftaran" className="shine nav-cta h-bright" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', flex: 'none', borderRadius: 14, fontSize: 13.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,#6470ff,#8a6cf0 55%,#e58fc4)', boxShadow: '0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>
+          <Link to="/pendaftaran" className="shine nav-cta h-bright" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', flex: 'none', borderRadius: 14, fontSize: 13.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>
             <span aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(170deg,rgba(255,255,255,.45),rgba(255,255,255,0))', pointerEvents: 'none' }} />
             Daftar PPDB
           </Link>

@@ -21,7 +21,7 @@
 .sdnb-berita .art .aarrow {transition:transform .45s cubic-bezier(.3,1.3,.4,1),background .3s ease}
 .sdnb-berita .art:hover {transform:translateY(-7px);box-shadow:0 46px 88px -30px rgba(48,58,120,.62)}
 .sdnb-berita .art:hover .afill {transform:scale(1.1)}
-.sdnb-berita .art:hover .aarrow {transform:translate(4px,-4px);background:linear-gradient(135deg,#6470ff,#e58fc4)}
+.sdnb-berita .art:hover .aarrow {transform:translate(4px,-4px);background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))}
 .sdnb-berita .art:hover .aarrow svg {stroke:#fff}
 .sdnb-berita .lead {cursor:pointer;transition:box-shadow .5s ease}
 .sdnb-berita .lead .lfill {transition:transform 1.2s cubic-bezier(.2,.8,.25,1)}

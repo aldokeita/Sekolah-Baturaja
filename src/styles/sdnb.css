@@ -127,8 +127,8 @@ html[data-theme="dark"] .th-content { filter: invert(.92) hue-rotate(180deg) sat
 /* translucent on gradient — style-hover="background:rgba(255,255,255,.3)" */
 .h-white30:hover { background: rgba(255, 255, 255, .3); }
 
-/* footer link — style-hover="color:#5b6cff" */
-.h-flink:hover { color: #5b6cff; }
+/* footer link — style-hover="color:var(--sekolah-aksen-pekat)" */
+.h-flink:hover { color: var(--sekolah-aksen-pekat); }
 
 /* lift card — style-hover="transform:translateY(-5px)" */
 .h-lift:hover { transform: translateY(-5px); }

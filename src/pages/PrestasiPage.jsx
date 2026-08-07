@@ -55,15 +55,15 @@ const P = [
 
 const TINGKAT = ['Semua', 'Nasional', 'Provinsi', 'Kabupaten', 'Kecamatan'];
 
-const warna = (t) => (t === 'Nasional' ? '#6470ff,#8a6cf0' : t === 'Provinsi' ? '#7a6cf5,#c07ad8' : t === 'Kabupaten' ? '#a86ce8,#e58fc4' : '#e0839a,#f0a06c');
+const warna = (t) => (t === 'Nasional' ? 'var(--sekolah-aksen),var(--sekolah-aksen-tengah)' : t === 'Provinsi' ? 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)' : t === 'Kabupaten' ? 'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)' : 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)');
 
 const foto = (p) => {
   const B = {
     Lingkungan: ['#7bbf6a', '#b6e8a0', '#5fb8a0'],
-    Keagamaan: ['#5b6cff', '#9fb6f8', '#c6b6f6'],
-    Olahraga: ['#e0839a', '#f0a06c', '#ffd08c'],
-    Seni: ['#a86ce8', '#e58fc4', '#f6c6e8'],
-    Akademik: ['#6470ff', '#8fd8ec', '#b4b8f8'],
+    Keagamaan: ['var(--sekolah-aksen-pekat)', '#9fb6f8', '#c6b6f6'],
+    Olahraga: ['var(--sekolah-aksen-ujung)', 'var(--sekolah-aksen-ujung)', '#ffd08c'],
+    Seni: ['var(--sekolah-aksen-tengah-2)', 'var(--sekolah-aksen-ujung)', '#f6c6e8'],
+    Akademik: ['var(--sekolah-aksen)', '#8fd8ec', '#b4b8f8'],
     Kepramukaan: ['#6ab8f0', '#8fe0c0', '#a9eede'],
   };
   const c = B[p[5]] || B.Akademik;
@@ -128,7 +128,7 @@ const PrestasiPage = () => {
         label: t,
         pick: () => { setTingkat(t); setIdx(-1); },
         style: `position:relative;padding:10px 0 12px;border:0;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;transition:color .3s ease;color:${on ? '#21243f' : '#8a8ea8'}`,
-        rule: `position:absolute;left:0;right:0;bottom:0;height:3px;transition:transform .35s cubic-bezier(.22,.9,.28,1),opacity .3s ease;transform-origin:left;transform:scaleX(${on ? '1' : '0'});opacity:${on ? '1' : '0'};background:linear-gradient(90deg,#5b6cff,#f0779f)`,
+        rule: `position:absolute;left:0;right:0;bottom:0;height:3px;transition:transform .35s cubic-bezier(.22,.9,.28,1),opacity .3s ease;transform-origin:left;transform:scaleX(${on ? '1' : '0'});opacity:${on ? '1' : '0'};background:linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))`,
       };
     }),
 
@@ -141,13 +141,13 @@ const PrestasiPage = () => {
 
     grafik: perTahun.map((x) => ({
       th: x.th, n: x.n,
-      bar: `width:100%;height:${Math.max(10, Math.round((x.n / maxTahun) * 118))}px;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,#6470ff,#a06cf0)`,
+      bar: `width:100%;height:${Math.max(10, Math.round((x.n / maxTahun) * 118))}px;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2))`,
     })),
 
     bidang: perBidang.map((x) => ({
       nama: x.nama, n: x.n,
       track: 'width:92px;height:6px;border-radius:99px;background:rgba(120,132,200,.2);overflow:hidden;display:inline-block',
-      fill: `display:block;height:100%;width:${Math.round((x.n / maxBidang) * 100)}%;border-radius:99px;background:linear-gradient(90deg,#6470ff,#e58fc4)`,
+      fill: `display:block;height:100%;width:${Math.round((x.n / maxBidang) * 100)}%;border-radius:99px;background:linear-gradient(90deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))`,
     })),
 
     podium: [0, 1, 3].map((src, k) => {

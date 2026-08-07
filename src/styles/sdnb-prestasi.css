@@ -25,7 +25,7 @@
 .sdnb-prestasi .ledger .lgo {opacity:0;transform:translateX(-6px);transition:opacity .3s ease,transform .3s ease}
 .sdnb-prestasi .ledger:hover .lgo {opacity:1;transform:none}
 .sdnb-prestasi .bar {transition:height 1.1s cubic-bezier(.22,.9,.28,1),background .3s ease}
-.sdnb-prestasi .bargrp:hover .bar {background:linear-gradient(180deg,#8a6cf0,#e58fc4)}
+.sdnb-prestasi .bargrp:hover .bar {background:linear-gradient(180deg,var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung))}
 @media (max-width:960px){
 .sdnb-prestasi .ledger {grid-template-columns:74px 1fr;gap:12px}
 .sdnb-prestasi .ledger .lcol3, .sdnb-prestasi .ledger .lcol4 {display:none}

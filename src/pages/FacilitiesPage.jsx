@@ -17,11 +17,11 @@ import '@/styles/sdnb.css';
  */
 
 const F = [
-  ['Ruang kelas', 'Belajar', '12 ruang, @56 m²', '#6470ff,#8a6cf0',
+  ['Ruang kelas', 'Belajar', '12 ruang, @56 m²', 'var(--sekolah-aksen),var(--sekolah-aksen-tengah)',
     'Dua belas ruang untuk delapan belas rombongan belajar, dipakai bergiliran pagi dan siang. Setiap ruang memuat 28 murid dengan meja tunggal, papan tulis putih, dan rak buku kelas.',
     'Dipakai bergilir pagi dan siang',
     [['Kapasitas', '28 murid'], ['Cahaya', 'Jendela dua sisi'], ['Papan', 'Putih magnetik'], ['Diperiksa', 'Awal bulan']], 2, 2],
-  ['Perpustakaan', 'Penunjang', '96 m²', '#7a6cf5,#c07ad8',
+  ['Perpustakaan', 'Penunjang', '96 m²', 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)',
     'Empat ribu judul buku anak, dua puluh empat kursi baca, dan kotak buku bergilir untuk tiap kelas yang diganti setiap dua pekan. Buka sampai pukul 14.00 setiap hari sekolah.',
     'Empat ribu judul buku anak',
     [['Koleksi', '4.000 judul'], ['Kursi baca', '24 kursi'], ['Jam buka', '07.30–14.00'], ['Petugas', 'Lestari Ningsih']], 2, 1],
@@ -33,7 +33,7 @@ const F = [
     'Tempat salat Zuhur berjamaah bergantian antar kelas sebelum pulang, dilengkapi tempat wudu terpisah putra dan putri serta rak mukena.',
     'Salat Zuhur berjamaah bergilir',
     [['Kapasitas', '60 jamaah'], ['Tempat wudu', '12 keran'], ['Jadwal', 'Zuhur bergilir'], ['Pengampu', 'Ratna Dewi']], 1, 1],
-  ['Lapangan serbaguna', 'Olahraga', '640 m²', '#e0839a,#f0a06c',
+  ['Lapangan serbaguna', 'Olahraga', '640 m²', 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)',
     'Dipakai upacara bendera, senam pagi Jumat, latihan atletik, dan jam istirahat kedua. Permukaan beton dengan garis lapangan bola voli dan kasti.',
     'Upacara, senam, dan atletik',
     [['Luas', '640 m²'], ['Permukaan', 'Beton bergaris'], ['Peneduh', '4 trembesi'], ['Pemakaian', 'Setiap hari']], 2, 1],
@@ -49,11 +49,11 @@ const F = [
     'Empat penjual dengan menu yang diperiksa guru piket setiap pekan. Sejak November 2025 tidak lagi menjual minuman berpemanis.',
     'Tanpa minuman berpemanis',
     [['Penjual', '4 penjual'], ['Menu', 'Diperiksa mingguan'], ['Kursi', '40 kursi'], ['Aturan', 'Tanpa gula tambahan']], 1, 1],
-  ['Ruang guru', 'Kantor', '80 m²', '#8a6cf0,#c8a4f0',
+  ['Ruang guru', 'Kantor', '80 m²', 'var(--sekolah-aksen-tengah),#c8a4f0',
     'Meja untuk dua puluh empat guru, ruang rapat kecil, dan lemari arsip kelas. Pertemuan wali murid bulanan diadakan di ruang kelas masing-masing, bukan di sini.',
     'Dua puluh empat meja guru',
     [['Meja', '24 meja'], ['Rapat', '1 ruang kecil'], ['Arsip', 'Per rombel'], ['Jam', '07.00–15.30']], 1, 1],
-  ['Ruang tata usaha', 'Kantor', '40 m²', '#6470ff,#b4b8f8',
+  ['Ruang tata usaha', 'Kantor', '40 m²', 'var(--sekolah-aksen),#b4b8f8',
     'Layanan surat, pendaftaran murid baru, dan legalisir dokumen. Antrean maksimal enam orang dengan kursi tunggu di teras depan.',
     'Layanan surat dan PPDB',
     [['Layanan', 'Surat & PPDB'], ['Jam', '07.30–15.00'], ['Petugas', '3 orang'], ['Kursi tunggu', '6 kursi']], 2, 1],
@@ -123,7 +123,7 @@ const FacilitiesPage = () => {
       meta: a[6].map(([k, v]) => ({ k, v })),
     },
 
-    progres: `height:100%;width:${Math.round(((i + 1) / F.length) * 100)}%;background:linear-gradient(90deg,#7d8bff,#e58fc4);transition:width .6s cubic-bezier(.22,.9,.28,1)`,
+    progres: `height:100%;width:${Math.round(((i + 1) / F.length) * 100)}%;background:linear-gradient(90deg,#7d8bff,var(--sekolah-aksen-ujung));transition:width .6s cubic-bezier(.22,.9,.28,1)`,
 
     jalanDot: jalan ? '#8ee0b8' : '#f0b48c',
     jalanTeks: jalan ? 'Tur berjalan otomatis' : 'Tur dijeda',

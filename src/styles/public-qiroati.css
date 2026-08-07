@@ -175,7 +175,7 @@
 }
 
 .dark .qm-hero__title-accent {
-  background: linear-gradient(135deg, var(--qm-indigo-bright) 0%, #a5b4fc 100%);
+  background: linear-gradient(135deg, var(--qm-indigo-bright) 0%, var(--sekolah-aksen-muda) 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }

@@ -28,7 +28,7 @@ import '@/styles/sdnb.css';
  */
 
 const GRAD_TEXT = {
-  background: 'linear-gradient(115deg,#5b6cff,#9a6cf0 48%,#f0779f)',
+  background: 'linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))',
   WebkitBackgroundClip: 'text',
   backgroundClip: 'text',
   color: 'transparent',
@@ -50,7 +50,7 @@ const Before = ({ height, deg = '166deg', alpha = '.62' }) => (
   <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height, background: `linear-gradient(${deg},rgba(255,255,255,${alpha}),rgba(255,255,255,0))`, pointerEvents: 'none' }} />
 );
 
-const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#5b6cff' };
+const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' };
 const h2Style = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.03em', fontWeight: 800, color: '#171827' };
 const pill = { padding: '6px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, color: '#3f4570', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.85)' };
 
@@ -82,7 +82,7 @@ const NEWS_FALLBACK = [
 
 // Sama seperti PROGRAM_STYLE: hanya gaya, teks dari panel Konten.
 const TESTI_STYLE = [
-  { avatar: 'linear-gradient(140deg,#a5b4fc,#c7d2fe)', roleColor: '#5b6cff' },
+  { avatar: 'linear-gradient(140deg,var(--sekolah-aksen-muda),var(--sekolah-aksen-samar))', roleColor: 'var(--sekolah-aksen-pekat)' },
   { avatar: 'linear-gradient(140deg,#fbcfe8,#f9a8d4)', roleColor: '#d9698f' },
   { avatar: 'linear-gradient(140deg,#a7f3d0,#99f6e4)', roleColor: '#2b9b96' },
   { avatar: 'linear-gradient(140deg,#bfdbfe,#93c5fd)', roleColor: '#4a7fd6' },
@@ -194,7 +194,7 @@ const HomePage = () => {
       <section id="beranda" data-reveal="0" className="sdnb-hero" style={{ maxWidth: 1240, margin: '0 auto', padding: '44px 28px 0', display: 'grid', gridTemplateColumns: '1.02fr 1fr', gap: 44, alignItems: 'center' }}>
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '7px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, color: '#4b4f78', background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.8)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 10px 24px -14px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
-            <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg,#6470ff,#e58fc4)' }} />
+            <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))' }} />
             Terakreditasi A · Sekolah Adiwiyata Nasional
           </div>
           <h1 style={{ margin: '20px 0 0', fontFamily: HEADING_FONT, fontSize: 60, lineHeight: 1.04, letterSpacing: '-.038em', fontWeight: 800, color: '#171827', textWrap: 'balance' }}>
@@ -204,7 +204,7 @@ const HomePage = () => {
             Sekolah Dasar Negeri Baturaja mendampingi anak sejak kelas satu lewat <strong style={{ color: '#3b3f6b', fontWeight: 700 }}>kelas kecil</strong>, guru wali yang mengenal setiap murid, dan halaman bermain yang aman. Enam ratus lebih anak belajar di sini setiap hari.
           </p>
           <div style={{ marginTop: 30, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            <Link to="/pendaftaran" className="shine h-bright" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,#5b6cff,#8a6cf0 55%,#e58fc4)', boxShadow: '0 22px 44px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>
+            <Link to="/pendaftaran" className="shine h-bright" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 22px 44px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>
               <span aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(170deg,rgba(255,255,255,.45),rgba(255,255,255,0))', pointerEvents: 'none' }} />
               Mulai Pendaftaran
               {ARROW_R()}
@@ -216,7 +216,7 @@ const HomePage = () => {
           </div>
           <div style={{ marginTop: 34, display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ display: 'flex' }} aria-hidden="true">
-              {['linear-gradient(140deg,#a5b4fc,#c7d2fe)', 'linear-gradient(140deg,#fbcfe8,#f9a8d4)', 'linear-gradient(140deg,#a7f3d0,#99f6e4)', 'linear-gradient(140deg,#fde68a,#fed7aa)'].map((g, i) => (
+              {['linear-gradient(140deg,var(--sekolah-aksen-muda),var(--sekolah-aksen-samar))', 'linear-gradient(140deg,#fbcfe8,#f9a8d4)', 'linear-gradient(140deg,#a7f3d0,#99f6e4)', 'linear-gradient(140deg,#fde68a,#fed7aa)'].map((g, i) => (
                 <div key={i} style={{ width: 34, height: 34, borderRadius: '50%', background: g, border: '2px solid rgba(255,255,255,.9)', marginLeft: i === 0 ? 0 : -11 }} />
               ))}
             </div>
@@ -239,7 +239,7 @@ const HomePage = () => {
           <div style={{ ...glassCard, position: 'absolute', left: -26, bottom: 52, width: 214, padding: '16px 18px', borderRadius: 20, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(24px) saturate(185%)', WebkitBackdropFilter: 'blur(24px) saturate(185%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 24px 50px -20px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
             <Before height="55%" deg="165deg" alpha=".65" />
             <div style={{ position: 'relative', fontSize: 11, fontWeight: 600, letterSpacing: '.05em', textTransform: 'uppercase', color: '#6d7192' }}>Akreditasi</div>
-            <div style={{ position: 'relative', marginTop: 4, fontSize: 30, fontWeight: 800, letterSpacing: '-.03em', color: '#1d1f33' }}>A <span style={{ fontSize: 13, fontWeight: 600, color: '#5b6cff' }}>· 96,4</span></div>
+            <div style={{ position: 'relative', marginTop: 4, fontSize: 30, fontWeight: 800, letterSpacing: '-.03em', color: '#1d1f33' }}>A <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--sekolah-aksen-pekat)' }}>· 96,4</span></div>
             <div style={{ position: 'relative', marginTop: 2, fontSize: 11.5, color: '#6d7192' }}>BAN-S/M, berlaku s.d. 2029</div>
           </div>
 
@@ -341,7 +341,7 @@ const HomePage = () => {
             <h2 style={h2Style}>Kabar <span style={GRAD_TEXT}>terbaru</span></h2>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,#6470ff,#8a6cf0)', boxShadow: '0 12px 26px -12px rgba(95,105,235,.9),inset 0 1px 0 rgba(255,255,255,.5)' }}>Semua</span>
+            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah))', boxShadow: '0 12px 26px -12px rgba(95,105,235,.9),inset 0 1px 0 rgba(255,255,255,.5)' }}>Semua</span>
             <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: '#4a4f74', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Prestasi</span>
             <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: '#4a4f74', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Kegiatan</span>
           </div>
