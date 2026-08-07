@@ -51,8 +51,9 @@ func (h *PpdbHandler) Routes() chi.Router {
 	// Back-office: tata usaha, admin, superadmin. Dijaga CanManage di tiap handler.
 	r.Get("/", h.List)
 	r.Get("/statistik", h.Stats)
-	// Sebelum /{id} supaya "usulan-nomor" tidak dibaca sebagai id.
+	// Sebelum /{id} supaya keduanya tidak dibaca sebagai id.
 	r.Get("/usulan-nomor", h.UsulanNomorInduk)
+	r.Post("/impor-pesan", h.ImporDariPesan)
 	r.Get("/{id}", h.Get)
 	r.Post("/{id}/murid", h.JadikanMurid)
 	// PUT, bukan PATCH: corsMiddleware hanya mengizinkan GET/POST/PUT/DELETE, jadi
@@ -378,13 +379,18 @@ func (h *PpdbHandler) Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Tahun pembuka dipakai pada nomor: "PPDB-2026-0001" dari tahun ajaran
-	// "2026/2027". Bila isinya tidak memuat tahun, seluruh nilai dipakai apa adanya.
+	/* Tahun pembuka dipakai pada nomor: "SPMB-2026-0001" dari tahun ajaran
+	 * "2026/2027". Bila isinya tidak memuat tahun, seluruh nilai dipakai apa adanya.
+	 *
+	 * Awalannya "SPMB", bukan "PPDB": Permendikdasmen No. 3 Tahun 2025 mencabut
+	 * aturan PPDB dan menamainya SPMB. Nomor lama berawalan PPDB TIDAK diubah —
+	 * orang tua sudah mencatatnya, dan pencarian di CekStatus membandingkan
+	 * nomornya apa adanya, jadi keduanya tetap bisa diperiksa. */
 	tahunNomor := tahun
 	if len(tahun) >= 4 && angkaSaja.MatchString(tahun[:4]) {
 		tahunNomor = tahun[:4]
 	}
-	nomor := fmt.Sprintf("PPDB-%s-%04d", tahunNomor, urut)
+	nomor := fmt.Sprintf("SPMB-%s-%04d", tahunNomor, urut)
 
 	berkas := in.BerkasSiap
 	if berkas == nil {
@@ -620,10 +626,54 @@ func (h *PpdbHandler) Stats(w http.ResponseWriter, r *http.Request) {
 		daftarTahun = append(daftarTahun, t)
 	}
 
+	/* Berapa yang sudah DITERIMA per jalur. Panel membandingkannya dengan kuota
+	 * persentase di `ppdb_content` supaya tata usaha melihat sisa kursi tiap jalur.
+	 *
+	 * Dikelompokkan berdasarkan `jalur` (id), bukan `jalur_label`: labelnya boleh
+	 * berubah kapan saja saat pembeli menyunting daftar jalur, dan pengelompokan
+	 * berdasarkan teks yang bisa berubah akan memecah satu jalur menjadi dua. */
+	jalurRows, err := h.db.Query(r.Context(), `
+		SELECT coalesce(jalur, ''), count(*)
+		FROM pendaftaran_ppdb
+		WHERE ($1 = '' OR tahun_ajaran = $1) AND status = 'diterima'
+		GROUP BY coalesce(jalur, '')
+	`, tahun)
+	if err != nil {
+		jsonError(w, "gagal menghitung penerimaan per jalur", http.StatusInternalServerError)
+		return
+	}
+	defer jalurRows.Close()
+
+	diterimaJalur := map[string]int{}
+	for jalurRows.Next() {
+		var j string
+		var n int
+		if err := jalurRows.Scan(&j, &n); err != nil {
+			jsonError(w, "gagal membaca penerimaan per jalur", http.StatusInternalServerError)
+			return
+		}
+		diterimaJalur[j] = n
+	}
+
+	/* Daya tampung = jumlah kapasitas seluruh kelas AKTIF. Kelas tanpa kapasitas
+	 * dihitung nol, dan `dayaTampung` nol berarti pembeli belum mengisinya —
+	 * panel menampilkan ajakan mengisinya alih-alih membagi dengan nol. */
+	var dayaTampung int
+	if err := h.db.QueryRow(r.Context(), `
+		SELECT coalesce(sum(coalesce(kapasitas, 0)), 0)
+		FROM classes
+		WHERE is_active = true AND deleted_at IS NULL
+	`).Scan(&dayaTampung); err != nil {
+		jsonError(w, "gagal menghitung daya tampung", http.StatusInternalServerError)
+		return
+	}
+
 	jsonOK(w, map[string]any{"data": map[string]any{
-		"cacah":        cacah,
-		"total":        total,
-		"tahun_ajaran": daftarTahun,
+		"cacah":          cacah,
+		"total":          total,
+		"tahun_ajaran":   daftarTahun,
+		"diterima_jalur": diterimaJalur,
+		"daya_tampung":   dayaTampung,
 	}})
 }
 
@@ -764,6 +814,301 @@ func (h *PpdbHandler) UsulanNomorInduk(w http.ResponseWriter, r *http.Request) {
 
 	jsonOK(w, map[string]any{"data": map[string]any{
 		"nomor_induk": fmt.Sprintf("%s%03d", prefiks, berikut),
+	}})
+}
+
+// ---------------------------------------------------------------------------
+// Impor pendaftaran lama dari Pesan Masuk
+// ---------------------------------------------------------------------------
+
+/* Sebelum modul ini ada, formulir pendaftaran meratakan seluruh isiannya menjadi
+ * satu paragraf lalu mengirimkannya ke endpoint pesan pengunjung, dengan penanda
+ * "[Pendaftaran PPDB 2026/2027]" di baris pertama dan sisanya berbentuk
+ * "Label: nilai" per baris.
+ *
+ * Impor ini MENGURAI TEKS BEBAS, dan itu tidak bisa dijamin benar seratus persen —
+ * itu sebabnya migrasinya sengaja tidak melakukannya. Tiga hal yang membuatnya
+ * aman untuk dijalankan:
+ *
+ *   1. Barisnya TIDAK dihapus dari `feedbacks`. Asli tetap ada sebagai pembanding,
+ *      jadi salah urai bisa selalu diperiksa ulang.
+ *   2. Yang gagal diurai dilewati beserta ALASANNYA, bukan disimpan setengah jadi.
+ *   3. Bisa dijalankan berulang: pendaftaran yang sudah ada dikenali dari nama +
+ *      tanggal lahir dan tidak digandakan.
+ *
+ * Nomor pendaftarannya berawalan "LAMA-" supaya jelas bahwa nomor itu dibuat saat
+ * impor dan bukan nomor yang pernah dibacakan ke orang tua — nomor aslinya
+ * memang tidak pernah ada, karena penomoran belum diterapkan waktu itu. */
+
+var penandaPesan = regexp.MustCompile(`^\s*\[Pendaftaran (?:PPDB|SPMB)\s*([^\]]*)\]`)
+
+// Mengambil nilai dari baris "Label: nilai". Label dicocokkan tanpa peduli huruf
+// besar-kecil, dan "—" (nilai kosong pada format lama) dianggap tidak ada.
+func nilaiBaris(pesan, label string) string {
+	for _, baris := range strings.Split(pesan, "\n") {
+		potong := strings.SplitN(baris, ":", 2)
+		if len(potong) != 2 {
+			continue
+		}
+		if !strings.EqualFold(strings.TrimSpace(potong[0]), label) {
+			continue
+		}
+		nilai := strings.TrimSpace(potong[1])
+		if nilai == "—" || nilai == "-" {
+			return ""
+		}
+		return nilai
+	}
+	return ""
+}
+
+// ImporDariPesan POST /api/ppdb/impor-pesan — hanya admin.
+func (h *PpdbHandler) ImporDariPesan(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	// Hanya admin: ini menulis banyak baris sekaligus berdasarkan penguraian teks,
+	// dan kalau hasilnya keliru yang membereskannya juga admin.
+	if !middleware.IsAdmin(middleware.RoleFromCtx(ctx)) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	var body struct {
+		// Bila true, hanya melaporkan apa yang AKAN terjadi tanpa menyimpan.
+		Simulasi bool `json:"simulasi"`
+	}
+	// Muatan boleh kosong; bawaannya menyimpan sungguhan.
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	rows, err := h.db.Query(ctx, `
+		SELECT id, coalesce(nama, ''), coalesce(email, ''), coalesce(phone, ''), message, created_at::text
+		FROM feedbacks
+		WHERE message LIKE '[Pendaftaran PPDB%' OR message LIKE '[Pendaftaran SPMB%'
+		ORDER BY created_at
+	`)
+	if err != nil {
+		jsonError(w, "gagal membaca pesan masuk", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type pesanLama struct {
+		id, nama, email, phone, message, createdAt string
+	}
+	var kandidat []pesanLama
+	for rows.Next() {
+		var p pesanLama
+		if err := rows.Scan(&p.id, &p.nama, &p.email, &p.phone, &p.message, &p.createdAt); err != nil {
+			jsonError(w, "gagal membaca pesan masuk", http.StatusInternalServerError)
+			return
+		}
+		kandidat = append(kandidat, p)
+	}
+	rows.Close()
+
+	diimpor := []map[string]any{}
+	dilewati := []map[string]any{}
+
+	for _, p := range kandidat {
+		lewati := func(alasan string) {
+			dilewati = append(dilewati, map[string]any{
+				"feedback_id": p.id,
+				"nama":        p.nama,
+				"alasan":      alasan,
+			})
+		}
+
+		cocok := penandaPesan.FindStringSubmatch(p.message)
+		tahun := ""
+		if cocok != nil {
+			tahun = strings.TrimSpace(cocok[1])
+		}
+		if tahun == "" {
+			lewati("tahun ajaran tidak terbaca pada penanda pesan")
+			continue
+		}
+
+		nama := nilaiBaris(p.message, "Nama")
+		if nama == "" {
+			nama = strings.TrimSpace(p.nama)
+		}
+		if len([]rune(nama)) < 3 || strings.EqualFold(nama, "Pendaftar PPDB") {
+			lewati("nama calon murid tidak terbaca")
+			continue
+		}
+
+		/* Tanggal lahir ada di dalam baris "TTL: <tempat>, <tanggal>". Tanpa
+		 * tanggal lahir, pendaftaran tidak bisa dicek statusnya oleh orang tua dan
+		 * tidak bisa dibedakan dari anak bernama sama — jadi barisnya dilewati
+		 * alih-alih disimpan tanpa tanggal. */
+		ttl := nilaiBaris(p.message, "TTL")
+		tempat, lahir := "", ""
+		if idx := strings.LastIndex(ttl, ","); idx >= 0 {
+			tempat = strings.TrimSpace(ttl[:idx])
+			lahir = strings.TrimSpace(ttl[idx+1:])
+		}
+		if _, err := time.Parse("2006-01-02", lahir); err != nil {
+			lewati("tanggal lahir tidak terbaca dari baris TTL")
+			continue
+		}
+
+		hp := rapikanHp(nilaiBaris(p.message, "WhatsApp"))
+		if hp == "" {
+			hp = rapikanHp(p.phone)
+		}
+		if hp == "" {
+			lewati("nomor WhatsApp tidak terbaca")
+			continue
+		}
+
+		// Sudah pernah diimpor atau sudah didaftarkan ulang lewat formulir baru.
+		var ada string
+		err := h.db.QueryRow(ctx, `
+			SELECT nomor_pendaftaran FROM pendaftaran_ppdb
+			WHERE tahun_ajaran = $1 AND lower(nama_lengkap) = lower($2) AND tanggal_lahir = $3::date
+			LIMIT 1
+		`, tahun, nama, lahir).Scan(&ada)
+		if err == nil {
+			lewati("sudah ada sebagai " + ada)
+			continue
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			lewati("gagal memeriksa duplikat")
+			continue
+		}
+
+		jenisKelamin := ""
+		switch strings.ToLower(nilaiBaris(p.message, "Jenis kelamin")) {
+		case "laki-laki":
+			jenisKelamin = "L"
+		case "perempuan":
+			jenisKelamin = "P"
+		}
+
+		// "Asal TK/RA: TK Melati (NPSN 12345678)" — NPSN-nya dipisah dari namanya.
+		asal := nilaiBaris(p.message, "Asal TK/RA")
+		npsn := ""
+		if idx := strings.Index(asal, "(NPSN"); idx >= 0 {
+			npsn = strings.Trim(strings.TrimSpace(strings.TrimPrefix(asal[idx:], "(NPSN")), ")")
+			npsn = strings.TrimSpace(npsn)
+			asal = strings.TrimSpace(asal[:idx])
+		}
+		if !angkaSaja.MatchString(npsn) || len(npsn) != 8 {
+			npsn = ""
+		}
+
+		nisn := nilaiBaris(p.message, "NISN")
+		if !angkaSaja.MatchString(nisn) || len(nisn) != 10 {
+			nisn = ""
+		}
+		nik := nilaiBaris(p.message, "NIK")
+		if !angkaSaja.MatchString(nik) || len(nik) != 16 {
+			nik = ""
+		}
+
+		/* Empat data orang tua ditulis dalam SATU baris, dipisah titik tengah:
+		 * "Ayah: A · Ibu: B · Pekerjaan: C · HP wali: D"
+		 *
+		 * Barisnya harus dipisah dulu, baru dipecah per titik tengah. Memecah
+		 * SELURUH pesan per titik tengah tidak bisa: bagian pertamanya lalu memuat
+		 * semua baris sebelumnya, sehingga "Ayah" hilang karena titik dua pertama
+		 * ada di baris lain — dan bagian terakhirnya menelan baris SESUDAHNYA,
+		 * sehingga "HP wali" menyerap angka dari "Berkas terunggah: 3 dari 4" dan
+		 * menghasilkan nomor 14 digit. Keduanya benar-benar terjadi saat diuji. */
+		var ayah, ibu, kerja, hpWali string
+		for _, baris := range strings.Split(p.message, "\n") {
+			if !strings.Contains(baris, "·") {
+				continue
+			}
+			for _, bagian := range strings.Split(baris, "·") {
+				isi := strings.SplitN(bagian, ":", 2)
+				if len(isi) != 2 {
+					continue
+				}
+				nilai := strings.TrimSpace(isi[1])
+				if nilai == "—" || nilai == "-" {
+					nilai = ""
+				}
+				switch strings.ToLower(strings.TrimSpace(isi[0])) {
+				case "ayah":
+					ayah = nilai
+				case "ibu":
+					ibu = nilai
+				case "pekerjaan":
+					kerja = nilai
+				case "hp wali":
+					hpWali = nilai
+				}
+			}
+			break
+		}
+		if ayah == "" && ibu == "" {
+			lewati("nama ayah dan ibu keduanya tidak terbaca")
+			continue
+		}
+
+		if body.Simulasi {
+			diimpor = append(diimpor, map[string]any{
+				"feedback_id": p.id, "nama": nama, "tahun_ajaran": tahun, "tanggal_lahir": lahir,
+			})
+			continue
+		}
+
+		// Nomor impor memakai stempel waktu pesan aslinya supaya urutannya masih
+		// mengikuti kapan orang tua benar-benar mendaftar.
+		var urut int
+		if err := h.db.QueryRow(ctx, `
+			INSERT INTO ppdb_nomor_urut (tahun_ajaran, urut) VALUES ($1, 1)
+			ON CONFLICT (tahun_ajaran) DO UPDATE SET urut = ppdb_nomor_urut.urut + 1
+			RETURNING urut
+		`, tahun).Scan(&urut); err != nil {
+			lewati("gagal membuat nomor pendaftaran")
+			continue
+		}
+		tahunNomor := tahun
+		if len(tahun) >= 4 && angkaSaja.MatchString(tahun[:4]) {
+			tahunNomor = tahun[:4]
+		}
+		nomor := fmt.Sprintf("LAMA-%s-%04d", tahunNomor, urut)
+
+		var baruID string
+		err = h.db.QueryRow(ctx, `
+			INSERT INTO pendaftaran_ppdb (
+				nomor_pendaftaran, tahun_ajaran, nama_lengkap, nisn, nik,
+				tempat_lahir, tanggal_lahir, jenis_kelamin, alamat, no_hp, email,
+				sekolah_asal, npsn_asal, usia_keterangan, jalur_label, minat,
+				nama_ayah, nama_ibu, pekerjaan_orang_tua, no_hp_wali, catatan, created_at
+			) VALUES (
+				$1,$2,$3,$4,$5,$6,$7::date,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22::timestamptz
+			) RETURNING id
+		`,
+			nomor, tahun, nama, opsional(nisn), opsional(nik),
+			opsional(tempat), lahir, opsional(jenisKelamin), opsional(nilaiBaris(p.message, "Alamat")),
+			hp, opsional(p.email),
+			opsional(asal), opsional(npsn), opsional(nilaiBaris(p.message, "Usia per 1 Juli "+tahunNomor)),
+			opsional(nilaiBaris(p.message, "Jalur")), opsional(nilaiBaris(p.message, "Program pendukung")),
+			opsional(ayah), opsional(ibu), opsional(kerja), opsional(rapikanHp(hpWali)),
+			opsional("Diimpor dari Pesan Masuk. Pesan aslinya masih tersimpan di sana."),
+			p.createdAt,
+		).Scan(&baruID)
+		if err != nil {
+			if strings.Contains(err.Error(), "pendaftaran_ppdb_nisn_unik") {
+				lewati("NISN sudah dipakai pendaftaran lain")
+				continue
+			}
+			lewati("gagal menyimpan: " + err.Error())
+			continue
+		}
+
+		diimpor = append(diimpor, map[string]any{
+			"id": baruID, "nomor_pendaftaran": nomor, "nama": nama, "feedback_id": p.id,
+		})
+	}
+
+	jsonOK(w, map[string]any{"data": map[string]any{
+		"simulasi":  body.Simulasi,
+		"ditemukan": len(kandidat),
+		"diimpor":   diimpor,
+		"dilewati":  dilewati,
 	}})
 }
 

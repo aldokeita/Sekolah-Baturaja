@@ -2,6 +2,78 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_PPDB_CONTENT, isiPenanda, normalizePpdbContent } from '@/lib/ppdbContent';
 
+/* Bawaan jalur harus mengikuti Permendikdasmen No. 3 Tahun 2025 (SPMB), yang
+ * mencabut aturan PPDB 2021. Kalau bawaannya melenceng, pembeli yang tidak tahu
+ * akan memasang jalur yang tidak sah — dan yang paling berbahaya adalah jalur
+ * prestasi, yang tegas TIDAK diberlakukan untuk murid kelas satu SD. */
+describe('bawaan jalur mengikuti aturan SPMB untuk SD', () => {
+  const jalur = DEFAULT_PPDB_CONTENT.jalur;
+
+  it('memuat tepat tiga jalur: domisili, afirmasi, mutasi', () => {
+    expect(jalur.map((j) => j.id)).toEqual(['domisili', 'afirmasi', 'mutasi']);
+  });
+
+  it('tidak memuat jalur prestasi maupun zonasi', () => {
+    const semua = JSON.stringify(jalur).toLowerCase();
+    expect(semua).not.toContain('prestasi');
+    expect(semua).not.toContain('zonasi');
+  });
+
+  it('memakai kuota yang ditetapkan untuk SD', () => {
+    expect(jalur.find((j) => j.id === 'domisili').kuota).toBe(70);
+    expect(jalur.find((j) => j.id === 'afirmasi').kuota).toBe(15);
+    expect(jalur.find((j) => j.id === 'mutasi').kuota).toBe(5);
+  });
+
+  // Ketiganya berjumlah 90%, menyisakan ruang gerak; totalnya tidak boleh melebihi
+  // 100% karena kursi yang dibagikan akan lebih banyak daripada yang ada.
+  it('total kuota bawaan tidak melebihi seratus persen', () => {
+    expect(jalur.reduce((t, j) => t + j.kuota, 0)).toBeLessThanOrEqual(100);
+  });
+
+  it('menyebut usia 7 tahun sebagai prioritas, bukan hanya batas 6 tahun', () => {
+    const syarat = DEFAULT_PPDB_CONTENT.requirements.join(' ');
+    expect(syarat).toMatch(/7 tahun/);
+    expect(syarat).toMatch(/6 tahun/);
+  });
+});
+
+describe('kuota jalur', () => {
+  const kuotaDari = (nilai) => normalizePpdbContent({
+    jalur: [{ id: 'x', name: 'Uji', kuota: nilai }],
+  }).jalur[0].kuota;
+
+  it('menerima angka maupun teks berisi angka', () => {
+    expect(kuotaDari(40)).toBe(40);
+    expect(kuotaDari('40')).toBe(40);
+  });
+
+  /* Kotak isian menerima teks apa saja, dan angka di luar rentang membuat hitungan
+   * kursi di panel jadi tidak masuk akal — kursi minus, atau lebih banyak daripada
+   * daya tampung. */
+  it('menjepit ke rentang nol sampai seratus', () => {
+    expect(kuotaDari(-20)).toBe(0);
+    expect(kuotaDari(250)).toBe(100);
+  });
+
+  it('membulatkan angka pecahan', () => {
+    expect(kuotaDari(33.6)).toBe(34);
+  });
+
+  // Kosong berarti "jalur ini tidak diberi kuota" — sah, karena sekolah boleh
+  // menutup satu jalur tanpa menghapusnya dari daftar.
+  it('menganggap kosong dan tidak sah sebagai nol', () => {
+    [undefined, null, '', '   ', 'abc', NaN].forEach((nilai) => {
+      expect(kuotaDari(nilai)).toBe(0);
+    });
+  });
+
+  it('mengisi nol bila field kuotanya tidak ada sama sekali', () => {
+    const hasil = normalizePpdbContent({ jalur: [{ id: 'x', name: 'Uji' }] });
+    expect(hasil.jalur[0].kuota).toBe(0);
+  });
+});
+
 describe('normalizePpdbContent', () => {
   it('mengembalikan bawaan untuk masukan kosong atau bukan objek', () => {
     [null, undefined, 'teks', 7].forEach((masukan) => {

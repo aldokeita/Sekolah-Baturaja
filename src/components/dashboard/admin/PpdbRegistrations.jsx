@@ -15,8 +15,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import {
   URUTAN_STATUS, fetchPendaftaran, fetchStatistikPpdb, getPpdbErrorMessage,
-  hapusPendaftaran, jadikanMurid, labelStatus, ubahPendaftaran, unduhCsvPendaftaran,
-  usulanNomorInduk,
+  hapusPendaftaran, imporPendaftaranLama, jadikanMurid, labelStatus, ubahPendaftaran,
+  unduhCsvPendaftaran, usulanNomorInduk,
 } from '@/lib/ppdbAdapters';
 import { fetchPpdbContent } from '@/lib/ppdbContent';
 import { fetchClassList } from '@/lib/dataMasterAdapters';
@@ -111,6 +111,7 @@ const PpdbRegistrations = () => {
    * disunting pembeli dan bisa berubah. Nama bacanya diambil dari isi halaman
    * pendaftaran supaya panel tidak menampilkan id mentah kepada tata usaha. */
   const [namaBerkasPpdb, setNamaBerkasPpdb] = useState({});
+  const [jalurPpdb, setJalurPpdb] = useState([]);
   const [kelasList, setKelasList] = useState([]);
   const [templatePesan, setTemplatePesan] = useState({});
 
@@ -122,6 +123,7 @@ const PpdbRegistrations = () => {
       .then((konten) => {
         if (!aktif) return;
         setNamaBerkasPpdb(Object.fromEntries(konten.berkas.map((b) => [b.id, b.name])));
+        setJalurPpdb(konten.jalur || []);
       })
       .catch(() => { /* id mentah tetap terbaca, sekadar kurang ramah */ });
     fetchClassList({ is_active: true })
@@ -271,6 +273,71 @@ const PpdbRegistrations = () => {
     }
   };
 
+  const [sedangImpor, setSedangImpor] = useState(false);
+
+  /* Impor pendaftaran lama dari Pesan Masuk.
+   *
+   * Disimulasikan lebih dulu supaya petugas melihat berapa yang akan masuk dan
+   * berapa yang tidak bisa diurai SEBELUM menyetujuinya. Penguraian teks bebas
+   * tidak bisa dijamin benar, jadi persetujuan itu bukan formalitas. */
+  const imporLama = async () => {
+    setSedangImpor(true);
+    try {
+      const coba = await imporPendaftaranLama({ simulasi: true });
+      if (coba.ditemukan === 0) {
+        toast({ title: 'Tidak ada yang perlu diimpor', description: 'Tidak ditemukan pendaftaran lama di Pesan Masuk.' });
+        return;
+      }
+      const akanMasuk = coba.diimpor?.length || 0;
+      const takTerbaca = coba.dilewati?.length || 0;
+      if (akanMasuk === 0) {
+        toast({
+          title: 'Tidak ada yang bisa diimpor',
+          description: `${takTerbaca} pesan ditemukan tapi tidak bisa diurai. Alasan pertama: ${coba.dilewati?.[0]?.alasan || '—'}`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      const rincian = (coba.dilewati || []).slice(0, 5)
+        .map((d) => `• ${d.nama || 'tanpa nama'} — ${d.alasan}`).join('\n');
+      const setuju = window.confirm(
+        `Ditemukan ${coba.ditemukan} pendaftaran lama di Pesan Masuk.\n\n`
+        + `${akanMasuk} bisa diimpor.\n`
+        + `${takTerbaca} dilewati.\n\n`
+        + (rincian ? `Yang dilewati:\n${rincian}\n\n` : '')
+        + 'Pesan aslinya tidak dihapus, dan menjalankan ini lagi tidak akan menggandakan data.\n\nLanjutkan impor?',
+      );
+      if (!setuju) return;
+
+      const hasil = await imporPendaftaranLama({ simulasi: false });
+      toast({
+        title: `${hasil.diimpor?.length || 0} pendaftaran diimpor`,
+        description: 'Nomornya berawalan LAMA- karena dibuat saat impor. Periksa isinya, lalu perbarui statusnya.',
+      });
+      await muat({ diam: true });
+    } catch (error) {
+      toast({ title: 'Gagal mengimpor', description: getPpdbErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setSedangImpor(false);
+    }
+  };
+
+  /* Kursi per jalur = persentase kuota × daya tampung, dibandingkan dengan yang
+   * sudah diterima. Hanya ditampilkan bila daya tampungnya sudah diisi; tanpa itu
+   * seluruh angkanya nol dan hanya membingungkan. */
+  const ringkasanKursi = useMemo(() => {
+    const dayaTampung = statistik.daya_tampung || 0;
+    if (!dayaTampung || jalurPpdb.length === 0) return null;
+    return {
+      dayaTampung,
+      baris: jalurPpdb.map((j) => {
+        const kursi = Math.floor((dayaTampung * (Number(j.kuota) || 0)) / 100);
+        const diterima = statistik.diterima_jalur?.[j.id] || 0;
+        return { id: j.id, nama: j.name, kuota: Number(j.kuota) || 0, kursi, diterima };
+      }),
+    };
+  }, [statistik, jalurPpdb]);
+
   const namaBerkas = useMemo(() => {
     const bagian = ['pendaftaran-ppdb'];
     if (tahun) bagian.push(tahun.replace(/\//g, '-'));
@@ -298,7 +365,7 @@ const PpdbRegistrations = () => {
         <div className="flex items-start gap-3">
           <div className="admin-panel-header-icon"><Inbox /></div>
           <div>
-            <h4 id="ppdb-pendaftaran" className="text-xl font-black text-foreground sm:text-2xl">Pendaftaran PPDB</h4>
+            <h4 id="ppdb-pendaftaran" className="text-xl font-black text-foreground sm:text-2xl">Pendaftaran SPMB</h4>
             <p className="mt-1 text-sm text-muted-foreground">
               Calon murid yang mengisi formulir di halaman pendaftaran. Data calon murid tidak bisa
               disunting di sini — yang mengisinya orang tua.
@@ -309,6 +376,19 @@ const PpdbRegistrations = () => {
           <Button type="button" variant="outline" onClick={() => muat()} disabled={isLoading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Muat ulang
           </Button>
+          {/* Hanya admin: impor menulis banyak baris sekaligus dari penguraian teks,
+              dan yang membereskannya bila keliru juga admin. */}
+          {bolehHapus && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={imporLama}
+              disabled={sedangImpor}
+              title="Memindahkan pendaftaran lama yang dulu masuk ke Pesan Masuk"
+            >
+              <Inbox className="mr-2 h-4 w-4" /> {sedangImpor ? 'Memeriksa…' : 'Impor dari Pesan Masuk'}
+            </Button>
+          )}
           <Button
             type="button"
             onClick={() => unduhCsvPendaftaran(rows, namaBerkas)}
@@ -344,6 +424,54 @@ const PpdbRegistrations = () => {
           );
         })}
       </div>
+
+      {/* Daya tampung dan kursi per jalur. Angka saja, tanpa teguran — sekolah yang
+          memutuskan, dan ada kondisi lapangan yang tidak bisa ditebak sistem. */}
+      {ringkasanKursi ? (
+        <div className="admin-card overflow-hidden">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b p-4">
+            <h5 className="font-bold text-foreground">Daya tampung</h5>
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">{ringkasanKursi.dayaTampung}</strong> kursi dari kapasitas seluruh kelas aktif
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <th className="px-4 py-2">Jalur</th>
+                  <th className="px-4 py-2 text-right">Kuota</th>
+                  <th className="px-4 py-2 text-right">Kursi</th>
+                  <th className="px-4 py-2 text-right">Diterima</th>
+                  <th className="px-4 py-2 text-right">Sisa</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ringkasanKursi.baris.map((b) => (
+                  <tr key={b.id} className="border-b last:border-0">
+                    <td className="px-4 py-2 font-semibold text-foreground">{b.nama}</td>
+                    <td className="px-4 py-2 text-right text-muted-foreground">{b.kuota}%</td>
+                    <td className="px-4 py-2 text-right">{b.kursi}</td>
+                    <td className="px-4 py-2 text-right">{b.diterima}</td>
+                    <td className="px-4 py-2 text-right font-semibold text-foreground">{b.kursi - b.diterima}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="border-t p-3 text-xs text-muted-foreground">
+            Kuota diatur di <strong>Konten → Informasi Pendaftaran</strong>, kapasitas kelas di
+            <strong> Manajemen Kelas</strong>. Angka sisa boleh minus — sistem tidak memblokir
+            penerimaan, keputusannya tetap milik sekolah.
+          </p>
+        </div>
+      ) : (
+        <div className="admin-card bg-muted/30 p-4 text-sm text-muted-foreground">
+          Daya tampung belum bisa dihitung. Isi <strong>kapasitas</strong> tiap kelas di Manajemen
+          Kelas, dan <strong>kuota jalur</strong> di Konten → Informasi Pendaftaran, supaya sisa kursi
+          per jalur tampil di sini.
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="admin-edit-field flex-1">

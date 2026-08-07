@@ -650,19 +650,19 @@ const TEMPLATE_FIELDS = [
     },
     {
         key: 'ppdbDiverifikasi',
-        title: 'PPDB — Berkas Sudah Diperiksa',
+        title: 'SPMB — Berkas Sudah Diperiksa',
         description: 'Pesan ke orang tua setelah pendaftaran diperiksa, sebelum hasil seleksi keluar.',
         variables: ['nama_santri', 'nama_ortu', 'nomor_pendaftaran', 'tahun_ajaran', 'jalur', 'telepon', 'nama_lembaga'],
     },
     {
         key: 'ppdbDiterima',
-        title: 'PPDB — Diterima',
+        title: 'SPMB — Diterima',
         description: 'Pesan pengumuman bahwa calon murid diterima, beserta ajakan daftar ulang.',
         variables: ['nama_santri', 'nama_ortu', 'nomor_pendaftaran', 'tahun_ajaran', 'jalur', 'telepon', 'nama_lembaga'],
     },
     {
         key: 'ppdbDitolak',
-        title: 'PPDB — Tidak Diterima',
+        title: 'SPMB — Tidak Diterima',
         description: 'Pesan pengumuman bahwa calon murid belum dapat diterima.',
         variables: ['nama_santri', 'nama_ortu', 'nomor_pendaftaran', 'tahun_ajaran', 'jalur', 'telepon', 'nama_lembaga'],
     },

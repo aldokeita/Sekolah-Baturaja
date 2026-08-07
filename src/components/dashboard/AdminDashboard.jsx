@@ -12,7 +12,7 @@ import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 // same DashboardWorkspace shell with a narrower subset (see TataUsahaDashboard).
 const adminTabs = [
   { value: 'santri', label: 'Data Murid', icon: Users, group: 'data' },
-  { value: 'ppdb', label: 'Pendaftaran PPDB', icon: Inbox, group: 'data' },
+  { value: 'ppdb', label: 'Pendaftaran SPMB', icon: Inbox, group: 'data' },
   { value: 'guru', label: 'Data Guru', icon: BookUser, group: 'data' },
   { value: 'kelas', label: 'Manajemen Kelas', icon: BookOpen, group: 'akademik' },
   { value: 'jadwal-pelajaran', label: 'Jadwal Pelajaran', icon: CalendarDays, group: 'akademik' },

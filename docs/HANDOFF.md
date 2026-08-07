@@ -35,6 +35,8 @@ dibongkar tanpa instruksi baru.
 | **Identitas sekolah** | **Dikustomisasi dari dashboard, jangan ditanam di kode** | Aplikasi ini **template yang akan dijual**; pembeli mengganti identitasnya sendiri |
 | **Peran `superadmin`** | **Hanya superadmin boleh mengubah identitas website**; admin (pembeli) bebas mengelola konten | Penjual memegang identitas produk, pembeli memegang isi administrasi sekolah |
 | **PPDB** | **Modul sungguhan dengan tabel dan panelnya sendiri**, bukan lagi dititipkan ke `feedbacks` | Pendaftaran punya siklus hidup dan 20 kolom; pesan pengunjung tidak punya satu pun |
+| **Istilah SPMB** | **Seluruh tulisan yang dilihat orang memakai SPMB, bukan PPDB.** Nama berkas, tabel, dan rute TIDAK diubah | Permendikdasmen No. 3 Tahun 2025 mencabut aturan PPDB; lihat "Aturan SPMB 2025" di bawah |
+| **Kuota jalur** | **Angka pemerintah jadi bawaan, sistem TIDAK menegur** bila dilanggar | Ada kondisi lapangan yang tidak bisa ditebak sistem; memblokir berisiko melumpuhkan tata usaha |
 | **Warna sekolah** | **Dua warna saja** (atau satu bila solid). Palet tidak boleh memunculkan rona ketiga | Sekolah memilih dua warna; warna ketiga yang diturunkan mendarat di rona yang tidak dipilih siapa pun |
 
 ### Dua tingkat izin: superadmin vs admin
@@ -247,7 +249,7 @@ Jangan mengikuti kalimat lama itu.
 |---|---|
 | `npm run build` | Hijau, exit 0 |
 | `npm run lint` | Bersih, exit 0 |
-| `npm test` | **145 test hijau** (Vitest 3, 9 berkas) |
+| `npm test` | **155 test hijau** (Vitest 3, 9 berkas) |
 | Guard `scripts/validate-*.ps1` | **6 dari 7 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
 | Login 6 akun | **Terbukti jalan** lewat API |
@@ -289,6 +291,11 @@ Jangan mengikuti kalimat lama itu.
 | **PPDB — cek status publik** | **Tuntas di browser tanpa login**: nomor + tanggal lahir benar menampilkan status; tanggal lahir salah menampilkan pesan yang sama dengan nomor tidak ada (tidak membocorkan bahwa nomornya benar) |
 | **PPDB — pesan WhatsApp** | **Tuntas di browser**: `window.open` disadap, tautan `wa.me/6281299887766` dengan pesan lengkap berisi nama ibu, nama anak, nomor pendaftaran, telepon & nama sekolah |
 | **Tampilan ponsel dashboard** | **Tuntas, 19 panel disapu** pada 375px. Dua ditemukan rusak dan diperbaiki (bilah sub-tab Konten 1144px, Pengaturan TV 444px); sapuan ulang nol panel bergeser |
+| **Istilah SPMB** | **Tuntas di browser**: halaman pendaftaran nol kemunculan kata "PPDB", judul "Formulir pendaftaran murid baru", ketiga jalur sah (Domisili/Afirmasi/Mutasi) beserta keterangannya, syarat usia menyebut prioritas 7 tahun, nomor baru `SPMB-2026-0002` |
+| **Kuota & daya tampung** | **Tuntas di browser**: 3 kelas × 28 = 84 kursi → Domisili 70% = 58, Afirmasi 15% = 12, Mutasi 5% = 4; menerima satu pendaftar domisili mengubah kolom Diterima menjadi 1 dan Sisa menjadi 57 secara langsung |
+| **Impor dari Pesan Masuk** | **Tuntas lewat API + browser**: 5 pesan ditemukan, 1 diimpor, 4 dilewati dengan alasan yang benar satu per satu; seluruh 18 kolom terurai tepat; `—` menjadi kosong; dijalankan ulang tidak menggandakan; pesan aslinya tetap ada |
+| **Impor — dua jebakan penguraian** | **Ditemukan lewat uji dan diperbaiki**: `nama_ayah` hilang, dan `no_hp_wali` menyerap angka dari baris berikutnya menjadi 14 digit. Keduanya terbukti benar setelah perbaikan |
+| **Cetak bukti** | **Tuntas**: aturan `@media print` terurai (6 aturan), dan saat diterapkan sebagai uji hanya blok bukti yang terlihat — judul halaman, formulir, dan navigasi tersembunyi; kepala surat muncul; tombol Cetak tidak ikut tercetak |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
@@ -607,6 +614,10 @@ Tuntas pada 2026-08-08: **Diterima → Data Murid dalam satu transaksi**, **pemb
 endpoint publik**, **halaman cek status publik beserta pesan WhatsApp per status**, dan **sapuan
 ponsel 19 panel dashboard**.
 
+Tuntas pada 2026-08-08 (putaran kedua): **istilah SPMB beserta jalur yang sah menurut Permendikdasmen
+No. 3 Tahun 2025**, **kuota jalur dan daya tampung**, **impor pendaftaran lama dari Pesan Masuk**, dan
+**cetak bukti pendaftaran**.
+
 ### Yang masih terbuka
 
 Diurutkan dari yang paling berdampak ke penjualan.
@@ -616,19 +627,21 @@ Diurutkan dari yang paling berdampak ke penjualan.
    berbayar atau kredensial SMTP yang **harus disediakan pembeli**, plus antrean dan penanganan
    kegagalan kirim — jangan menambahkannya tanpa keputusan pemilik. Lihat bagian
    "Pemberitahuan ke orang tua manual".
-2. **Tidak ada kuota daya tampung per kelas atau per jalur.** Tabel `classes` sudah punya kolom
-   `kapasitas` tapi PPDB tidak membacanya, jadi tidak ada yang mencegah penerimaan melebihi kursi
-   yang tersedia, dan tidak ada peringkat otomatis untuk jalur zonasi (jarak) atau prestasi (nilai).
-   Sekolah yang pendaftarnya melebihi daya tampung akan merasakan ini lebih dulu.
-3. **Pendaftaran lama di `feedbacks` tidak dipindahkan.** Migrasinya sengaja tidak menyentuhnya —
-   memindahkan berarti mengurai teks bebas, yang bisa salah tanpa bisa dibatalkan. Baris berpenanda
-   `[Pendaftaran PPDB …]` tetap terbaca di Pesan Masuk.
-4. **Tidak ada cetak bukti pendaftaran.** Orang tua hanya punya nomor di layar dan pesan WhatsApp.
-   `PaymentStatusPage` sudah memakai `html2canvas` untuk kuitansi; pola yang sama bisa dipakai untuk
-   lembar bukti pendaftaran yang bisa dicetak.
-5. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
+2. **Wilayah domisili belum dimodelkan.** Kuota jalur sudah ada, tapi jalur Domisili menurut aturan
+   bergantung pada wilayah penerimaan yang ditetapkan pemerintah daerah (kelurahan, kecamatan, atau
+   radius). Sekarang tidak ada kolom untuk itu, jadi petugas menilainya dari alamat yang ditulis
+   orang tua. Menambahkannya butuh keputusan: daftar wilayah yang diisi pembeli, dan apakah
+   pendaftar memilih wilayahnya sendiri di formulir.
+3. **Tidak ada laporan rekap SPMB.** Tata usaha bisa mengekspor CSV, tapi tidak ada lembar rekap
+   siap cetak berisi jumlah pendaftar per jalur, per jenis kelamin, dan asal TK — yang biasanya
+   diminta dinas pendidikan. Data untuk itu semuanya sudah ada.
+4. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
    tapi sekolah besar dengan beberapa gelombang akan melewatinya. Batasnya dicatat di panel, tidak
    disembunyikan — tapi `paginate()` di `santri.go` adalah pola yang sudah ada bila perlu.
+5. **Aturan SPMB bisa berubah lagi.** Bawaan sekarang mengikuti Permendikdasmen No. 3 Tahun 2025.
+   Sebelum gelombang penerimaan berikutnya, periksa ulang apakah jalur dan persentasenya masih sama —
+   semuanya bisa disunting pembeli, jadi perubahan aturan tidak menuntut rilis kode, hanya
+   pembaruan bawaan dan `SETUP.md`.
 
 ### `SETUP.md` sekarang dokumen pembeli, bukan dokumen developer
 
@@ -852,6 +865,68 @@ dan ditampilkan apa adanya di formulir. Pemeriksaan di browser (`kurang` di
 `PpdbPage.jsx`) hanya menutup kesalahan yang paling sering, **bukan salinan seluruh
 aturannya** — supaya keduanya tidak bisa berbeda pendapat.
 
+### Aturan SPMB 2025 — bawaan lama memakai aturan yang sudah dicabut
+
+**Permendikdasmen No. 3 Tahun 2025** mencabut Permendikbud No. 1 Tahun 2021, dan
+bawaan aplikasi ini semula mengikuti aturan lama itu. Riset ini dilakukan atas
+permintaan pemilik sebelum kuota dikerjakan, dan hasilnya mengubah rencananya.
+
+| Bawaan lama | Yang berlaku | Kenapa penting |
+|---|---|---|
+| PPDB | **SPMB** (Sistem Penerimaan Murid Baru) | istilah resminya berganti |
+| Jalur **Zonasi** | Jalur **Domisili** | bukan hanya nama: zonasi menghitung jarak garis lurus, domisili memakai wilayah administratif yang ditetapkan pemda |
+| Jalur **Prestasi** | **DIBUANG** | "jalur prestasi tidak diberlakukan dalam penerimaan murid kelas I Sekolah Dasar" |
+| Jalur **Perpindahan tugas** | Jalur **Mutasi** | penamaan |
+| usia "minimal 6 tahun" | **diprioritaskan 7, paling rendah 6** | orang tua anak 7 tahun sebelumnya tidak tahu dirinya diutamakan |
+
+Kuota SD: **Domisili ≥70%, Afirmasi ≥15%, Mutasi ≤5%.** Perhatikan Mutasi adalah
+batas **ATAS**, bukan bawah — dua sumber sempat berbeda soal ini dan keduanya
+diperiksa sebelum dipakai.
+
+**Satu akibat yang tidak disangka:** keputusan pemilik "tanpa peringkat otomatis"
+ternyata justru yang BENAR. Menghitung peringkat dari jarak akan salah, karena
+domisili ditentukan wilayah administratif oleh pemerintah daerah, bukan jarak.
+Jangan menambahkan peringkat berbasis jarak nanti tanpa memeriksa ulang aturannya.
+
+**Yang diganti dan yang TIDAK.** Diganti: seluruh tulisan yang dilihat orang, label
+menu, judul halaman, template WhatsApp, dan awalan nomor pendaftaran
+(`SPMB-2026-0001`). TIDAK diganti, dengan sengaja:
+
+- nama berkas (`ppdb.go`, `ppdbAdapters.js`, `PpdbRegistrations.jsx`),
+- nama tabel (`pendaftaran_ppdb`, `ppdb_nomor_urut`) dan kunci konten (`ppdb_content`),
+- rute (`/api/ppdb`, `/pendaftaran`).
+
+Alasannya: mengganti nama tabel menuntut migrasi yang berisiko tanpa manfaat bagi
+siapa pun, dan mengganti rute publik mematikan tautan yang sudah disebar sekolah.
+Perbedaan nama-kode dengan nama-tampilan itu **disengaja**; jangan "dirapikan".
+
+Nomor lama berawalan `PPDB-` tidak diubah — orang tua sudah mencatatnya, dan
+`CekStatus` membandingkan nomornya apa adanya, jadi keduanya tetap bisa diperiksa.
+
+### Kuota dan daya tampung: angka saja, tanpa teguran
+
+Keputusan pemilik: bawaan mengikuti aturan, **tanpa peringatan dan tanpa blokir.**
+Memblokir berisiko melumpuhkan tata usaha bila angkanya salah isi atau kebijakan
+daerahnya berbeda; menegur terus-menerus akan diabaikan.
+
+- **Kuota per jalur** disimpan sebagai `kuota` (persen) pada tiap baris
+  `ppdb_content.jalur`, dijepit 0–100 dan dibulatkan oleh `angkaKuota`.
+- **Daya tampung** = `sum(classes.kapasitas)` untuk kelas aktif. Kolomnya sudah ada
+  sejak `20260806000200_classes_kapasitas.sql` tapi belum pernah dibaca siapa pun.
+- **Kursi per jalur** = `floor(daya tampung × kuota / 100)`, dibandingkan dengan
+  cacah `status = 'diterima'` yang dikelompokkan per `jalur`.
+
+Dikelompokkan berdasarkan `jalur` (id), **bukan** `jalur_label`: labelnya berubah
+kapan saja saat pembeli menyunting daftar jalur, dan mengelompokkan berdasarkan
+teks yang bisa berubah akan memecah satu jalur menjadi dua.
+
+Akibat wajar yang bukan kerusakan: pendaftaran hasil impor punya `jalur_label`
+("Zonasi") tapi `jalur` kosong, jadi tidak terhitung ke kuota jalur mana pun. Nama
+jalur lama memang tidak punya padanan id yang sah.
+
+Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
+berisi nol — dan tidak ada pembagian dengan nol.
+
 ### Diterima → Data Murid dikerjakan di SATU transaksi Go, bukan tiga panggilan browser
 
 `POST /api/ppdb/{id}/murid` membuat baris murid, menempatkannya di kelas, dan
@@ -949,6 +1024,64 @@ penanda `{{…}}` yang lolos belum terisi ke pesan yang terkirim.
 
 Mengirim otomatis menuntut gerbang WhatsApp berbayar atau kredensial SMTP yang
 harus disediakan pembeli. Jangan menambahkannya tanpa keputusan pemilik.
+
+### Impor pendaftaran lama dari Pesan Masuk mengurai teks bebas
+
+`POST /api/ppdb/impor-pesan` (admin saja) menyisir `feedbacks` untuk baris
+berpenanda `[Pendaftaran PPDB …]` atau `[Pendaftaran SPMB …]`, mengurai format
+"Label: nilai" per baris, lalu menyimpannya sebagai pendaftaran sungguhan.
+
+Ini **tidak bisa dijamin benar seratus persen** — itu sebabnya migrasinya sengaja
+tidak melakukannya. Empat hal yang membuatnya aman dijalankan:
+
+1. **Barisnya tidak dihapus** dari `feedbacks`. Aslinya tetap ada sebagai pembanding.
+2. **Yang gagal diurai dilewati beserta alasannya**, bukan disimpan setengah jadi.
+3. **Bisa dijalankan berulang** — dikenali dari nama + tanggal lahir.
+4. **`simulasi: true`** melaporkan tanpa menyimpan. Panel selalu menjalankannya
+   lebih dulu dan menampilkan ringkasannya untuk disetujui; persetujuan itu bukan
+   formalitas.
+
+Nomornya berawalan **`LAMA-`** supaya jelas bahwa nomor itu dibuat saat impor dan
+bukan nomor yang pernah dibacakan ke orang tua — nomor aslinya memang tidak pernah
+ada. Pencacahnya dibagi dengan nomor SPMB, jadi urutannya berselang-seling
+(`SPMB-2026-0002`, `LAMA-2026-0003`); itu benar, karena keunikannya pada nomor utuh
+beserta awalannya.
+
+**Dua jebakan penguraian yang benar-benar terjadi dan sudah diperbaiki.** Keempat
+data orang tua ditulis dalam SATU baris dipisah titik tengah
+(`Ayah: A · Ibu: B · Pekerjaan: C · HP wali: D`). Memecah **seluruh pesan** per
+titik tengah menghasilkan dua kesalahan sekaligus:
+
+- bagian pertamanya memuat semua baris sebelumnya, sehingga titik dua pertama ada
+  di baris lain dan **`Ayah` hilang**;
+- bagian terakhirnya menelan baris SESUDAHNYA, sehingga **`HP wali` menyerap angka
+  dari `Berkas terunggah: 2 dari 4`** dan menghasilkan nomor 14 digit.
+
+Barisnya harus dipisah lebih dulu, baru dipecah per titik tengah. Kalau menyentuh
+kode ini, uji dengan pesan yang punya baris sebelum DAN sesudah baris orang tua.
+
+`—` dan `-` diperlakukan sebagai kosong: format lama memakainya untuk kolom yang
+tidak diisi, dan menyimpannya apa adanya akan mengisi kolom dengan tanda hubung.
+
+### Cetak bukti pendaftaran memakai @media print, bukan pustaka
+
+Tombol Cetak ada di dua tempat: layar konfirmasi formulir dan halaman cek status.
+Keduanya memanggil `window.print()`; aturan `@media print` di `sdnb.css` yang
+mengerjakan sisanya.
+
+Caranya: `body * { visibility: hidden }` lalu `.bukti-cetak, .bukti-cetak *`
+dikembalikan terlihat. **`visibility`, bukan `display`** — dengan `display:none`
+tata letaknya runtuh saat blok buktinya dipindah ke pojok kiri atas kertas.
+
+Dua kelas pendamping: `.bukti-kepala` (kepala surat berisi nama dan alamat sekolah,
+`display:none` di layar karena namanya sudah ada di navigasi, tapi di kertas tidak
+ada apa pun yang menyebutnya) dan `.bukti-sembunyi-cetak` (tombol Cetak dan
+Kembali, yang tidak boleh ikut tercetak).
+
+Tanpa aturan ini, Ctrl+P mencetak seluruh situs: navigasi, bulatan latar
+bergradasi, footer, dan formulir pencarian. `html2canvas` sudah ada di proyek untuk
+kuitansi pembayaran, tapi tidak dipakai di sini — untuk selembar teks, CSS cukup
+dan hasilnya teks sungguhan yang bisa dipilih, bukan gambar.
 
 ### Formulir PPDB tidak responsif sama sekali — SUDAH DIPERBAIKI
 

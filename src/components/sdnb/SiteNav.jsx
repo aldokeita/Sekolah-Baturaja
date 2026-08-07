@@ -22,7 +22,7 @@ import '@/styles/sdnb.css';
  * Menu ponsel DITAMBAHKAN, tidak ada di mockup. Di bawah 940px mockup
  * menyembunyikan seluruh baris tautan dan tidak menyediakan penggantinya, jadi
  * pengunjung ponsel tidak punya navigasi sama sekali — hanya logo dan tombol
- * Daftar PPDB. Untuk situs sekolah yang sebagian besar dibuka orang tua dari
+ * Daftar SPMB. Untuk situs sekolah yang sebagian besar dibuka orang tua dari
  * ponsel, itu berarti halaman Profil, Berita, dan Kontak tidak dapat dijangkau.
  */
 
@@ -55,7 +55,7 @@ const MENU_PONSEL = [
   { label: 'Berita', to: '/berita' },
   { label: 'Kontak', to: '/kontak' },
   // Hanya di menu ponsel dan footer, bukan di baris menu utama: yang membutuhkannya
-  // sudah mendaftar, jadi tidak perlu bersaing tempat dengan tombol Daftar PPDB.
+  // sudah mendaftar, jadi tidak perlu bersaing tempat dengan tombol Daftar SPMB.
   { label: 'Cek pendaftaran', to: '/cek-pendaftaran' },
 ];
 
@@ -172,7 +172,7 @@ const SiteNav = () => {
 
           <Link to="/pendaftaran" className="shine nav-cta h-bright" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', flex: 'none', borderRadius: 14, fontSize: 13.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>
             <span aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(170deg,rgba(255,255,255,.45),rgba(255,255,255,0))', pointerEvents: 'none' }} />
-            Daftar PPDB
+            Daftar SPMB
           </Link>
         </div>
 

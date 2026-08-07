@@ -40,7 +40,7 @@ const PpdbBody = (vals = {}) => {
           <div style={{ width: "40px", height: "40px", borderRadius: "13px", background: "linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "13px", boxShadow: "0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>{inisialLogo}</div>
           <div style={{ lineHeight: "1.15" }}>
             <div style={{ fontSize: "15px", fontWeight: "800", letterSpacing: "-.01em", color: "#1b1c28" }}>{namaSekolah}</div>
-            <div style={{ fontSize: "11px", fontWeight: "500", color: "#6c718f" }}>Formulir PPDB {tahunAjaran}</div>
+            <div style={{ fontSize: "11px", fontWeight: "500", color: "#6c718f" }}>Formulir SPMB {tahunAjaran}</div>
           </div>
         </a>
         <div style={{ flex: "1" }}></div>
@@ -58,8 +58,8 @@ const PpdbBody = (vals = {}) => {
     </div>
 
     <div className="ppdb-pad" style={{ maxWidth: "1240px", margin: "0 auto", padding: "26px 28px 0" }}>
-      <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>PPDB {tahunAjaran}</div>
-      <h1 style={{ margin: "12px 0 0", fontSize: "44px", lineHeight: "1.06", letterSpacing: "-.035em", fontWeight: "800", color: "#171827", maxWidth: "720px" }}>Formulir pendaftaran <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>peserta didik baru</span></h1>
+      <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>SPMB {tahunAjaran}</div>
+      <h1 style={{ margin: "12px 0 0", fontSize: "44px", lineHeight: "1.06", letterSpacing: "-.035em", fontWeight: "800", color: "#171827", maxWidth: "720px" }}>Formulir pendaftaran <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>murid baru</span></h1>
       <p style={{ margin: "16px 0 0", maxWidth: "620px", fontSize: "15px", lineHeight: "1.65", color: "#535878", textWrap: "pretty" }}>{pengantar}</p>
     </div>
 
@@ -261,7 +261,14 @@ const PpdbBody = (vals = {}) => {
           </>)}
 
           {(isDone) && (<>
-            <div style={{ position: "relative", textAlign: "left", padding: "14px 0 8px" }}>
+            {/* `bukti-cetak` menyalakan aturan @media print di sdnb.css: tombol
+                Cetak di bawah mengeluarkan selembar bukti, bukan tangkapan
+                seluruh halaman. */}
+            <div className="bukti-cetak" style={{ position: "relative", textAlign: "left", padding: "14px 0 8px" }}>
+              <div className="bukti-kepala" style={{ display: "none" }}>
+                <strong style={{ fontSize: "15px" }}>{namaSekolah}</strong>
+                <div style={{ marginTop: "10px", fontSize: "14px", fontWeight: "700" }}>Bukti Pendaftaran SPMB {tahunAjaran}</div>
+              </div>
               <div style={{ width: "66px", height: "66px", borderRadius: "22px", background: "linear-gradient(140deg,#8ee6c4,#6fd0e8)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 18px 36px -14px rgba(70,190,180,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
               </div>
@@ -283,8 +290,9 @@ const PpdbBody = (vals = {}) => {
                 {" "}kapan saja.
               </p>
               <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <a className="shine" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 24px", borderRadius: "15px", fontSize: "14px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)" }}>Kembali ke beranda</a>
-                <button className="shine" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Isi formulir lain</button>
+                <a className="shine bukti-sembunyi-cetak" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 24px", borderRadius: "15px", fontSize: "14px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)" }}>Kembali ke beranda</a>
+                <button className="shine bukti-sembunyi-cetak" onClick={() => window.print()} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Cetak bukti</button>
+                <button className="shine bukti-sembunyi-cetak" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Isi formulir lain</button>
               </div>
             </div>
           </>)}
@@ -329,7 +337,7 @@ const PpdbBody = (vals = {}) => {
 
         <div style={{ position: "relative", overflow: "hidden", padding: "24px", borderRadius: "24px", background: "linear-gradient(135deg,rgba(120,132,255,.9),rgba(160,120,240,.85) 48%,rgba(240,150,196,.85))", border: "1px solid rgba(255,255,255,.55)", boxShadow: "0 30px 60px -24px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(168deg,rgba(255,255,255,.4),rgba(255,255,255,0))", pointerEvents: "none" }} />
           <div style={{ position: "relative", fontSize: "16px", fontWeight: "800", letterSpacing: "-.02em", color: "#fff" }}>Butuh bantuan?</div>
-          <p style={{ position: "relative", margin: "8px 0 0", fontSize: "13px", lineHeight: "1.6", color: "rgba(255,255,255,.9)" }}>Panitia PPDB melayani pertanyaan setiap hari kerja pukul 07.30&ndash;15.00 di (0735) 320145.</p>
+          <p style={{ position: "relative", margin: "8px 0 0", fontSize: "13px", lineHeight: "1.6", color: "rgba(255,255,255,.9)" }}>Panitia SPMB melayani pertanyaan setiap hari kerja pukul 07.30&ndash;15.00 di (0735) 320145.</p>
           <a className="shine" href="#bantuan" style={{ position: "relative", overflow: "hidden", marginTop: "16px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "11px 18px", borderRadius: "13px", fontSize: "13px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.9)", boxShadow: "0 14px 30px -14px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)" }}>Hubungi panitia</a>
         </div>
 
@@ -338,7 +346,7 @@ const PpdbBody = (vals = {}) => {
 
     <div className="ppdb-pad" style={{ maxWidth: "1240px", margin: "0 auto", padding: "56px 28px 44px" }}>
       <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.7)", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", fontSize: "12px", color: "#70759a" }}>
-        <div>&copy; {tahunAwal} {namaSekolah} &middot; Panitia PPDB {tahunAjaran}</div>
+        <div>&copy; {tahunAwal} {namaSekolah} &middot; Panitia SPMB {tahunAjaran}</div>
         <a className="hx-1kdf62l" href="/" style={{ color: "#70759a" }}>Beranda</a>
       </div>
     </div>

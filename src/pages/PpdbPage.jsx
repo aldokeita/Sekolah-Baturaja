@@ -58,7 +58,7 @@ const PpdbPage = () => {
   const [ppdb, setPpdb] = useState(DEFAULT_PPDB_CONTENT);
   const [step, setStep] = useState(1);
   const [gender, setGender] = useState('');
-  const [jalur, setJalur] = useState('zonasi');
+  const [jalur, setJalur] = useState('domisili');
   const [minat, setMinat] = useState('');
   const [files, setFiles] = useState({});
   const [setuju, setSetuju] = useState(false);
@@ -95,7 +95,7 @@ const PpdbPage = () => {
         if (saved?.state) {
           setStep(saved.state.step ?? 1);
           setGender(saved.state.gender ?? '');
-          setJalur(saved.state.jalur ?? 'zonasi');
+          setJalur(saved.state.jalur ?? 'domisili');
           setMinat(saved.state.minat ?? '');
           setFiles(saved.state.files ?? {});
           setSetuju(!!saved.state.setuju);
@@ -314,7 +314,7 @@ const PpdbPage = () => {
     reset: () => {
       data.current = { ...EMPTY };
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-      setStep(1); setDone(false); setGender(''); setJalur('zonasi'); setMinat(''); setFiles({}); setSetuju(false);
+      setStep(1); setDone(false); setGender(''); setJalur('domisili'); setMinat(''); setFiles({}); setSetuju(false);
       setHasil(null); setPesanGalat('');
       document.querySelectorAll('input').forEach((el) => { if (el.type !== 'button') el.value = ''; });
     },
@@ -323,8 +323,8 @@ const PpdbPage = () => {
   return (
     <div className="sdnb sdnb-ppdb">
       <Helmet>
-        <title>{`Formulir PPDB — ${sekolah.name}`}</title>
-        <meta name="description" content={`Formulir pendaftaran peserta didik baru ${tahunAjaran} ${sekolah.name}.`} />
+        <title>{`Formulir SPMB — ${sekolah.name}`}</title>
+        <meta name="description" content={`Formulir pendaftaran murid baru ${tahunAjaran} ${sekolah.name}.`} />
       </Helmet>
       {PpdbBody(vals)}
     </div>

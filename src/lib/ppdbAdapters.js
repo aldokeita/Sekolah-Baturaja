@@ -89,6 +89,18 @@ export const hapusPendaftaran = async (id) => {
 };
 
 /**
+ * Mengimpor pendaftaran lama yang dulu menumpuk di Pesan Masuk.
+ *
+ * `simulasi: true` hanya melaporkan apa yang akan terjadi tanpa menyimpan. Pesan
+ * aslinya tidak pernah dihapus, dan menjalankannya berulang tidak menggandakan
+ * data — pendaftaran yang sudah ada dikenali dari nama dan tanggal lahir.
+ */
+export const imporPendaftaranLama = async ({ simulasi = false } = {}) => apiClient.post(
+  `${BASE}/impor-pesan`,
+  { simulasi },
+);
+
+/**
  * Memeriksa status pendaftaran dari halaman publik, tanpa login.
  *
  * Tanggal lahir wajib bersama nomornya: nomor pendaftaran berurutan dan mudah

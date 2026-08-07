@@ -159,18 +159,37 @@ const PpdbContentSettings = () => {
 
       <Bagian
         judul="Jalur Pendaftaran"
-        keterangan="Pilihan jalur pada langkah kedua formulir."
+        keterangan="Pilihan jalur pada langkah kedua formulir, beserta kuotanya."
         tombol={(
-          <Button type="button" size="sm" variant="outline" onClick={() => tambah('jalur', { id: '', name: '', desc: '' })}>
+          <Button type="button" size="sm" variant="outline" onClick={() => tambah('jalur', { id: '', name: '', desc: '', kuota: 0 })}>
             <Plus className="mr-1 h-4 w-4" /> Tambah jalur
           </Button>
         )}
       >
+        <div className="admin-card bg-muted/40 p-3 text-xs text-muted-foreground">
+          Bawaannya mengikuti <strong>Permendikdasmen No. 3 Tahun 2025</strong> untuk SD: Domisili
+          paling sedikit 70%, Afirmasi paling sedikit 15%, Mutasi paling banyak 5%. Jalur prestasi
+          tidak diberlakukan untuk murid kelas satu SD. Ubah bila ketentuan daerah Anda berbeda —
+          sistem tidak menegur.
+        </div>
         {isi.jalur.map((j, i) => (
           <Baris key={i} nomor={i + 1} onHapus={() => hapus('jalur', i)}>
-            <div className="admin-edit-field">
-              <label htmlFor={`ppdb-jalur-nama-${i}`}>Nama jalur</label>
-              <Input id={`ppdb-jalur-nama-${i}`} value={j.name} placeholder="Zonasi" onChange={(e) => ubahBaris('jalur', i, 'name', e.target.value)} />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_9rem]">
+              <div className="admin-edit-field">
+                <label htmlFor={`ppdb-jalur-nama-${i}`}>Nama jalur</label>
+                <Input id={`ppdb-jalur-nama-${i}`} value={j.name} placeholder="Domisili" onChange={(e) => ubahBaris('jalur', i, 'name', e.target.value)} />
+              </div>
+              <div className="admin-edit-field">
+                <label htmlFor={`ppdb-jalur-kuota-${i}`}>Kuota (%)</label>
+                <Input
+                  id={`ppdb-jalur-kuota-${i}`}
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={j.kuota ?? 0}
+                  onChange={(e) => ubahBaris('jalur', i, 'kuota', e.target.value)}
+                />
+              </div>
             </div>
             <div className="admin-edit-field">
               <label htmlFor={`ppdb-jalur-desc-${i}`}>Keterangan</label>
@@ -178,6 +197,11 @@ const PpdbContentSettings = () => {
             </div>
           </Baris>
         ))}
+        <p className="text-xs text-muted-foreground">
+          Total kuota saat ini <strong>{isi.jalur.reduce((t, j) => t + (Number(j.kuota) || 0), 0)}%</strong>.
+          Persentase dihitung dari daya tampung, yaitu jumlah kapasitas seluruh kelas aktif di
+          Manajemen Kelas.
+        </p>
       </Bagian>
 
       <Bagian

@@ -31,7 +31,7 @@ const COL_SEKOLAH = [
 // di sini, jadi setiap sekolah pembeli selamanya menautkan "PPDB 2026".
 const labelPpdb = (sekolah) => {
   const tahun = tahunAjaranAwal(sekolah.academicYear);
-  return tahun ? `PPDB ${tahun}` : 'PPDB';
+  return tahun ? `SPMB ${tahun}` : 'SPMB';
 };
 
 const kolomInformasi = (sekolah) => [

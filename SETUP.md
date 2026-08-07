@@ -227,7 +227,7 @@ Semuanya di menu **Konten**:
 | **Halaman Profil** | pembuka, riwayat sekolah, fasilitas, angka ringkasan, kutipan kepala sekolah, dan data pokok |
 | **Apresiasi** | murid dan guru berprestasi |
 | **Media & Galeri** | galeri foto, berita, pengumuman, dan daftar fasilitas |
-| **Informasi Pendaftaran** | jalur pendaftaran, berkas yang diminta, jadwal, dan syarat PPDB |
+| **Informasi Pendaftaran** | jalur pendaftaran beserta kuotanya, berkas yang diminta, jadwal, dan syarat SPMB |
 | **Pesan Masuk** | pesan yang dikirim pengunjung dari halaman Kontak |
 
 Pendaftaran murid baru **tidak** masuk ke Pesan Masuk. Ia punya menunya sendiri; lihat 7.6.
@@ -260,13 +260,41 @@ Visi, misi, tujuan, nomor telepon, alamat, dan tahun ajaran **bukan** termasuk. 
 Semua hal lain — seluruh isi administrasi sekolah, seluruh konten situs, semua akun — juga milik
 Anda.
 
-### 7.6 · Menerima pendaftaran murid baru
+### 7.6 · Menerima pendaftaran murid baru (SPMB)
 
-Menu **Pendaftaran PPDB** (di kelompok Data, sebelah Data Murid) berisi calon murid yang mengisi
+Menu **Pendaftaran SPMB** (di kelompok Data, sebelah Data Murid) berisi calon murid yang mengisi
 formulir di halaman pendaftaran situs Anda. Terbuka untuk **Admin** dan **Tata Usaha**.
 
-Setiap pendaftar mendapat nomor urut sendiri — `PPDB-2026-0001`, `PPDB-2026-0002`, dan seterusnya —
+> **Kenapa SPMB dan bukan PPDB?** Sejak **Permendikdasmen No. 3 Tahun 2025**, istilah resminya
+> berganti dari PPDB menjadi **SPMB** (Sistem Penerimaan Murid Baru), dan jalur **Zonasi** menjadi
+> **Domisili**. Aplikasi ini sudah memakai istilah yang baru. Banyak orang masih menyebut "PPDB"
+> sehari-hari, jadi Anda boleh mengubah kalimat di halaman pendaftaran lewat
+> **Konten → Informasi Pendaftaran** bila daerah Anda masih memakai istilah lama.
+
+Setiap pendaftar mendapat nomor urut sendiri — `SPMB-2026-0001`, `SPMB-2026-0002`, dan seterusnya —
 yang ditunjukkan ke orang tua di layar terakhir formulir. Nomornya kembali ke 1 setiap tahun ajaran.
+
+#### Jalur dan kuota
+
+Bawaannya sudah mengikuti ketentuan untuk SD:
+
+| Jalur | Kuota | Keterangan |
+|---|---|---|
+| **Domisili** | paling sedikit 70% | berdasarkan wilayah tempat tinggal yang ditetapkan pemerintah daerah |
+| **Afirmasi** | paling sedikit 15% | keluarga tidak mampu dan penyandang disabilitas |
+| **Mutasi** | paling **banyak** 5% | anak dari orang tua yang dipindahtugaskan |
+
+**Jalur prestasi tidak diberlakukan untuk murid kelas satu SD**, jadi tidak kami sertakan. Kalau
+ketentuan daerah Anda berbeda, ubah di **Konten → Informasi Pendaftaran** — persentase maupun nama
+jalurnya bisa Anda atur bebas, dan sistem tidak akan menegur.
+
+Agar sisa kursi tampil, dua hal harus terisi: **kapasitas tiap kelas** di Manajemen Kelas, dan
+**kuota jalur** di Konten. Panel lalu menghitung sendiri:
+
+> 3 kelas × 28 kursi = 84 kursi → Domisili 58, Afirmasi 12, Mutasi 4
+
+Angka sisa boleh menjadi minus. Sistem **tidak memblokir** penerimaan yang melewati kuota —
+keputusannya tetap milik sekolah, karena ada keadaan yang tidak bisa ditebak aplikasi.
 
 Alur kerjanya empat status:
 
@@ -323,8 +351,8 @@ penanda "Sudah jadi murid", jadi satu anak tidak akan tercatat dua kali.
 
 Tombol **Kabari** membuka WhatsApp dengan pesan yang sudah terisi lengkap: nama anak, nomor
 pendaftaran, dan nama sekolah Anda. Isi pesannya berbeda menurut status, dan **semuanya bisa Anda
-ubah** di **Konfigurasi → Pesan WhatsApp** (tiga template: PPDB Berkas Sudah Diperiksa, PPDB
-Diterima, PPDB Tidak Diterima).
+ubah** di **Konfigurasi → Pesan WhatsApp** (tiga template: SPMB Berkas Sudah Diperiksa, SPMB
+Diterima, SPMB Tidak Diterima).
 
 **Pengirimannya tidak otomatis.** Aplikasi ini tidak mengirim WhatsApp maupun surel sendiri —
 tombolnya menyiapkan pesan, Anda yang menekan kirim. Ini disengaja: pengiriman otomatis menuntut
@@ -333,6 +361,28 @@ layanan gerbang WhatsApp berbayar yang harus Anda daftarkan sendiri.
 Orang tua juga bisa memeriksa sendiri lewat halaman **Cek pendaftaran** (tertaut di footer situs),
 memakai nomor pendaftaran beserta tanggal lahir anaknya. Halaman itu hanya menampilkan status —
 bukan NIK, alamat, maupun catatan verifikasi Anda.
+
+Di halaman itu, dan juga di layar terakhir formulir, ada tombol **Cetak bukti pendaftaran**. Yang
+tercetak selembar bukti berkepala nama dan alamat sekolah Anda — bukan tangkapan seluruh halaman
+situs. Orang tua bisa membawanya saat daftar ulang.
+
+#### Memindahkan pendaftaran lama
+
+Kalau sekolah Anda sudah memakai aplikasi ini **sebelum** menu SPMB ada, pendaftaran waktu itu masuk
+ke **Konten → Pesan Masuk** sebagai pesan biasa. Tombol **Impor dari Pesan Masuk** (hanya Admin)
+memindahkannya ke menu ini.
+
+Cara kerjanya aman untuk dicoba:
+
+- Sebelum menyimpan apa pun, muncul ringkasan berapa yang bisa dipindahkan dan berapa yang tidak,
+  **beserta alasannya satu per satu**. Anda yang memutuskan lanjut atau tidak.
+- **Pesan aslinya tidak dihapus.** Kalau ada yang salah baca, aslinya masih bisa Anda periksa.
+- **Boleh dijalankan berulang** tanpa menggandakan data.
+- Nomornya berawalan `LAMA-` supaya jelas nomor itu dibuat saat pemindahan, bukan nomor yang pernah
+  Anda sampaikan ke orang tua.
+
+Pendaftaran yang datanya tidak lengkap — misalnya tanggal lahirnya tidak terbaca — akan dilewati.
+Yang seperti itu perlu Anda catat sendiri, atau minta orang tuanya mendaftar ulang lewat formulir.
 
 ---
 

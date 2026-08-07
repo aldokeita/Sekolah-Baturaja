@@ -118,7 +118,7 @@ const KontakBody = (vals = {}) => {
             <p style={{ margin: "12px 0 0", maxWidth: "460px", fontSize: "14.5px", lineHeight: "1.68", color: "#4f5478" }}>Terima kasih, {ringkasNama}. Tata usaha akan membalas ke {ringkasKontak} paling lambat dua hari kerja. Nomor catatan pesan Anda {noTiket}.</p>
             <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <button className="shine" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13.5px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 16px 34px -14px rgba(95,105,235,.9)" }}>Tulis pesan lain</button>
-              <a className="shine" href="/pendaftaran" style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>Buka formulir PPDB</a>
+              <a className="shine" href="/pendaftaran" style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>Buka formulir SPMB</a>
             </div>
           </div>
         </>)}

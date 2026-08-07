@@ -72,12 +72,12 @@ const CekPendaftaranPage = () => {
     <>
       <Helmet>
         <title>{`Cek Status Pendaftaran — ${sekolah.name}`}</title>
-        <meta name="description" content={`Periksa status pendaftaran peserta didik baru ${sekolah.name} dengan nomor pendaftaran.`} />
+        <meta name="description" content={`Periksa status pendaftaran murid baru ${sekolah.name} dengan nomor pendaftaran.`} />
       </Helmet>
 
       <main className="sdnb" style={{ maxWidth: '760px', margin: '0 auto', padding: '48px 20px 72px' }}>
         <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>
-          PPDB {sekolah.academicYear}
+          SPMB {sekolah.academicYear}
         </div>
         <h1 style={{ margin: '12px 0 0', fontSize: '34px', lineHeight: 1.12, letterSpacing: '-.03em', fontWeight: 800, color: '#171827' }}>
           Cek status pendaftaran
@@ -102,7 +102,7 @@ const CekPendaftaranPage = () => {
                 id="cek-nomor"
                 value={nomor}
                 onChange={(e) => setNomor(e.target.value)}
-                placeholder="PPDB-2026-0001"
+                placeholder="SPMB-2026-0001"
                 autoComplete="off"
                 style={kotak}
               />
@@ -149,12 +149,25 @@ const CekPendaftaranPage = () => {
 
         {hasil && (
           <div
+            className="bukti-cetak"
             style={{
               marginTop: '22px', padding: '26px', borderRadius: '22px',
               background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.85)',
               boxShadow: '0 24px 52px -24px rgba(55,65,120,.45),inset 0 1px 0 rgba(255,255,255,.95)',
             }}
           >
+            {/* Kepala surat hanya muncul di hasil cetak. Di layar, nama sekolah sudah
+                ada di bilah navigasi; di kertas tidak ada apa pun yang menyebutnya,
+                dan lembar bukti tanpa nama sekolah tidak berguna. */}
+            <div className="bukti-kepala" style={{ display: 'none' }}>
+              <strong style={{ fontSize: '15px' }}>{sekolah.name}</strong>
+              <div style={{ fontSize: '12px' }}>{sekolah.address}</div>
+              <div style={{ fontSize: '12px' }}>{sekolah.phone} · {sekolah.email}</div>
+              <div style={{ marginTop: '10px', fontSize: '14px', fontWeight: 700 }}>
+                Bukti Pendaftaran SPMB {hasil.tahun_ajaran}
+              </div>
+            </div>
+
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '99px', fontSize: '12.5px', fontWeight: 700, color: '#fff', background: nada.warna }}>
               {nada.judul}
             </div>
@@ -162,7 +175,7 @@ const CekPendaftaranPage = () => {
               {hasil.nama_lengkap}
             </h2>
             <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#6b7093' }}>
-              {hasil.nomor_pendaftaran} · PPDB {hasil.tahun_ajaran}
+              {hasil.nomor_pendaftaran} · SPMB {hasil.tahun_ajaran}
               {hasil.jalur_label ? ` · jalur ${hasil.jalur_label}` : ''}
             </p>
             <p style={{ margin: '16px 0 0', fontSize: '14.5px', lineHeight: 1.65, color: '#4a4f6e' }}>
@@ -178,6 +191,24 @@ const CekPendaftaranPage = () => {
               Ada yang ingin ditanyakan? Hubungi kami di <strong>{sekolah.phone}</strong> pada{' '}
               {sekolah.officeHours}.
             </p>
+
+            {/* Cetak memakai window.print(), bukan pustaka tambahan. Aturan @media
+                print di sdnb.css menyembunyikan seluruh halaman kecuali blok bukti
+                ini, jadi yang keluar selembar bukti — bukan tangkapan layar situs. */}
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="bukti-sembunyi-cetak"
+              style={{
+                marginTop: '22px', padding: '12px 22px', borderRadius: '14px',
+                border: '1px solid rgba(255,255,255,.95)', cursor: 'pointer',
+                fontFamily: 'inherit', fontSize: '13.5px', fontWeight: 700, color: '#33375a',
+                background: 'rgba(255,255,255,.72)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)',
+              }}
+            >
+              Cetak bukti pendaftaran
+            </button>
           </div>
         )}
 

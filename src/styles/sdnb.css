@@ -177,3 +177,42 @@ html[data-theme="dark"] .th-content { filter: invert(.92) hue-rotate(180deg) sat
   .sdnb-bento { grid-template-rows: none !important; }
   .sdnb-bento > a { grid-column: span 1 !important; grid-row: span 1 !important; min-height: 190px; }
 }
+
+/* ── Cetak bukti pendaftaran ─────────────────────────────────────────────────
+ *
+ * Orang tua butuh selembar bukti yang bisa dibawa saat daftar ulang. Tanpa aturan
+ * ini, menekan Ctrl+P menghasilkan tangkapan seluruh situs — bilah navigasi,
+ * bulatan latar bergradasi, footer, dan formulir pencarian ikut tercetak.
+ *
+ * Caranya: sembunyikan SEMUANYA, lalu tampilkan kembali hanya blok buktinya dan
+ * seluruh induknya. `visibility` dipakai alih-alih `display` supaya tata letaknya
+ * tidak berubah saat blok buktinya dipindah ke pojok kiri atas kertas. */
+@media print {
+  body * { visibility: hidden !important; }
+
+  .bukti-cetak,
+  .bukti-cetak * { visibility: visible !important; }
+
+  .bukti-cetak {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    color: #000 !important;
+  }
+
+  /* Kepala surat hanya berguna di kertas. */
+  .bukti-kepala { display: block !important; }
+
+  /* Tombol cetak itu sendiri jangan ikut tercetak. */
+  .bukti-sembunyi-cetak { display: none !important; }
+
+  /* Latar bergradasi menghabiskan tinta dan membuat teksnya sulit dibaca. */
+  .sdnb-bg, .sdnb-orb { display: none !important; }
+}
