@@ -70,12 +70,20 @@ type publicTeacherRow struct {
 // Returns only the fields the public profile page renders. Contact details
 // (email, no_hp, alamat) and rfid_tag are deliberately not selected — this
 // endpoint is unauthenticated.
+//
+// Akun sistem dikecualikan: profil dengan peran admin atau superadmin bukan
+// pengajar dan tidak boleh tampil di situs publik. Untuk template yang dijual ini
+// penting — tanpa penyaringan, akun superadmin milik PENJUAL ikut terpampang di
+// halaman kontak situs pembeli.
 func (h *ContentHandler) ListPublicTeachers(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.db.Query(r.Context(), `
-		SELECT id, nama, jabatan, foto_url, roles, jenis_kelamin
-		FROM guru
-		WHERE status = 'active' AND deleted_at IS NULL
-		ORDER BY nama
+		SELECT g.id, g.nama, g.jabatan, g.foto_url, g.roles, g.jenis_kelamin
+		FROM guru g
+		LEFT JOIN user_profiles up ON up.id = g.id
+		WHERE g.status = 'active'
+		  AND g.deleted_at IS NULL
+		  AND (up.role IS NULL OR up.role NOT IN ('admin', 'superadmin'))
+		ORDER BY g.nama
 	`)
 	if err != nil {
 		jsonError(w, "gagal mengambil data pengajar", http.StatusInternalServerError)

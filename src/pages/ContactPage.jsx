@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import KontakBody from '@/components/sdnb/generated/KontakBody';
-import { submitPublicFeedback } from '@/lib/publicContentAdapters';
+import { submitPublicFeedback, fetchPublicTeachers } from '@/lib/publicContentAdapters';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import '@/styles/sdnb.css';
@@ -21,12 +21,19 @@ import '@/styles/sdnb.css';
 const PERAN = ['Orang tua murid', 'Calon orang tua', 'Alumni', 'Instansi lain'];
 const TOPIK = ['Pendaftaran murid baru', 'Administrasi dan surat', 'Kegiatan dan ekstrakurikuler', 'Kunjungan sekolah', 'Saran atau keluhan', 'Lainnya'];
 
-const ORANG = [
-  ['Kepala sekolah', 'Hj. Rosmiati, S.Pd.', 'Kepala Sekolah', 'rosmiati@sekolah.id', 'Senin–Kamis, 08.00–12.00', '#6470ff,#8a6cf0'],
-  ['Administrasi & surat', 'Lestari Ningsih, A.Md.', 'Tata Usaha', 'lestari@sekolah.id', 'Setiap hari kerja, 07.30–15.00', '#7a6cf5,#c07ad8'],
-  ['PPDB 2026/2027', 'Ahmad Zulkarnain, S.Pd.', 'Wakil Kepala Sekolah', 'ppdb@sekolah.id', 'Senin–Jumat, 08.00–14.00', '#a86ce8,#e58fc4'],
-  ['Kegiatan & ekstrakurikuler', 'Hendra Wijaya, S.Pd.', 'Guru Penjas', 'hendra@sekolah.id', 'Selasa & Jumat, 13.00–16.00', '#e0839a,#f0a06c'],
-];
+// Hanya gradasi. Nama dan jabatan datang dari data guru asli lewat
+// GET /api/content/teachers, dipasangkan berdasarkan posisi.
+const ORANG_GRADASI = ['#6470ff,#8a6cf0', '#7a6cf5,#c07ad8', '#a86ce8,#e58fc4', '#e0839a,#f0a06c'];
+
+// Peran internal diterjemahkan ke sebutan yang dipahami orang tua murid.
+const SEBUTAN_PERAN = { Pentashih: 'Wakil Kepala Sekolah', Pengajar: 'Guru', 'Tata Usaha': 'Tata Usaha' };
+
+const sebutanStaf = (guru) => {
+  const jabatan = String(guru?.jabatan || '').trim();
+  if (jabatan) return jabatan;
+  const peran = (Array.isArray(guru?.roles) ? guru.roles : []).find(Boolean);
+  return SEBUTAN_PERAN[peran] || peran || 'Staf sekolah';
+};
 
 const JAM = [
   ['Senin', '07.30–15.00', 1], ['Selasa', '07.30–15.00', 2], ['Rabu', '07.30–15.00', 3],
@@ -35,6 +42,9 @@ const JAM = [
 
 const ContactPage = () => {
   const sekolah = useSchoolIdentity();
+  // Direktori staf diambil dari data guru asli. Endpoint ini publik dan sudah
+  // mengecualikan akun admin serta superadmin di sisi server.
+  const [staf, setStaf] = useState([]);
   const [peran, setPeran] = useState('Orang tua murid');
   const [nama, setNama] = useState('');
   const [kontak, setKontak] = useState('');
@@ -54,6 +64,14 @@ const ContactPage = () => {
   }, []);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  useEffect(() => {
+    let aktif = true;
+    fetchPublicTeachers()
+      .then((rows) => { if (aktif && Array.isArray(rows)) setStaf(rows.slice(0, 8)); })
+      .catch(() => { /* daftar staf kosong; blok lain di halaman ini tetap tampil */ });
+    return () => { aktif = false; };
+  }, []);
 
   const copy = useCallback((text, label) => {
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
@@ -150,12 +168,20 @@ const ContactPage = () => {
       };
     }),
 
-    orang: ORANG.map((o) => ({
-      urusan: o[0], nama: o[1], peran: o[2], surel: o[3], jam: o[4],
-      inisial: o[1].split(' ').filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join(''),
-      bar: `height:6px;background:linear-gradient(90deg,${o[5]})`,
-      avatar: `width:44px;height:44px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;color:#fff;background:linear-gradient(140deg,${o[5]});box-shadow:0 14px 30px -14px rgba(90,100,200,.85),inset 0 1px 0 rgba(255,255,255,.6)`,
-    })),
+    // Surel yang ditampilkan adalah surel resmi sekolah, bukan surel pribadi
+    // masing-masing staf: halaman ini publik, dan endpoint guru pun sengaja tidak
+    // mengirimkan surel pribadi.
+    orang: staf.map((g, i) => {
+      const grad = ORANG_GRADASI[i % ORANG_GRADASI.length];
+      const peran = sebutanStaf(g);
+      const nama = String(g.nama || '').trim();
+      return {
+        urusan: peran, nama, peran, surel: sekolah.email, jam: sekolah.officeHours,
+        inisial: nama.split(' ').filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join('') || '—',
+        bar: `height:6px;background:linear-gradient(90deg,${grad})`,
+        avatar: `width:44px;height:44px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;color:#fff;background:linear-gradient(140deg,${grad});box-shadow:0 14px 30px -14px rgba(90,100,200,.85),inset 0 1px 0 rgba(255,255,255,.6)`,
+      };
+    }),
 
     petaTampil: true,
     toastAda: !!toastMsg,
