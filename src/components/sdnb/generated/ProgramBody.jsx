@@ -5,7 +5,12 @@
  * Verbatim markup of the Claude Design mockup, minus the shared shell (bg orbs,
  * nav, footer) which PublicLayout renders. Every value comes from the mockup.
  *
- * Do not hand-edit — re-run the converter. Page state/handlers live in the page
+ * TIDAK lagi hasil generator murni. Berkas ini sudah disunting tangan (aksen
+ * warna lewat var(--sekolah-…), identitas sekolah, dan perbaikan tautan mati),
+ * dan tools/dc-convert.mjs TIDAK dijalankan oleh `npm run build`. Menjalankan
+ * ulang konverter akan menimpa semua itu — perlakukan sebagai kode biasa.
+ *
+ * Page state/handlers live in the page
  * component that renders this one and are passed in as props.
  */
 import React from 'react';
@@ -20,7 +25,7 @@ const ProgramBody = (vals = {}) => {
     <>
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "24px 28px 0" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "14px", fontSize: "11px", fontWeight: "700", letterSpacing: ".2em", textTransform: "uppercase", color: "#8a8ea8" }}>
-        <a className="hx-1kdf62l" href="./Beranda SMAN Baturaja.dc.html" style={{ color: "#8a8ea8" }}>Beranda</a>
+        <a className="hx-1kdf62l" href="/" style={{ color: "#8a8ea8" }}>Beranda</a>
         <span style={{ opacity: ".6" }}>/</span><span style={{ color: "#2c2f45" }}>Program</span>
       </div>
 
@@ -119,7 +124,7 @@ const ProgramBody = (vals = {}) => {
         <div style={{ padding: "26px 28px", borderRadius: "28px", background: "linear-gradient(135deg,rgba(95,108,242,.95),rgba(152,110,235,.9) 48%,rgba(238,142,190,.9))", border: "1px solid rgba(255,255,255,.5)", boxShadow: "0 30px 62px -24px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)" }}>
           <h3 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "21px", lineHeight: "1.18", letterSpacing: "-.026em", fontWeight: "800", color: "#fff" }}>Penilaian tanpa peringkat kelas</h3>
           <p style={{ margin: "12px 0 0", fontSize: "13.5px", lineHeight: "1.66", color: "rgba(255,255,255,.9)" }}>Rapor memuat capaian per tujuan pembelajaran dan catatan wali kelas. Sekolah tidak menerbitkan daftar peringkat murid.</p>
-          <a className="shine" href="./Kontak.dc.html" style={{ position: "relative", overflow: "hidden", marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "9px", padding: "13px 20px", borderRadius: "14px", fontSize: "13.5px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.94)", boxShadow: "0 14px 30px -14px rgba(30,36,90,.7)" }}>Tanya wali kelas
+          <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "9px", padding: "13px 20px", borderRadius: "14px", fontSize: "13.5px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.94)", boxShadow: "0 14px 30px -14px rgba(30,36,90,.7)" }}>Tanya wali kelas
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg></a>
         </div>
       </div>

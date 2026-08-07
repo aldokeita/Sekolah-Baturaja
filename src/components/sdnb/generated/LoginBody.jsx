@@ -5,7 +5,12 @@
  * Verbatim markup of the Claude Design mockup, minus the shared shell (bg orbs,
  * nav, footer) which PublicLayout renders. Every value comes from the mockup.
  *
- * Do not hand-edit — re-run the converter. Page state/handlers live in the page
+ * TIDAK lagi hasil generator murni. Berkas ini sudah disunting tangan (aksen
+ * warna lewat var(--sekolah-…), identitas sekolah, dan perbaikan tautan mati),
+ * dan tools/dc-convert.mjs TIDAK dijalankan oleh `npm run build`. Menjalankan
+ * ulang konverter akan menimpa semua itu — perlakukan sebagai kode biasa.
+ *
+ * Page state/handlers live in the page
  * component that renders this one and are passed in as props.
  */
 import React from 'react';
@@ -24,7 +29,7 @@ const LoginBody = (vals = {}) => {
   {(belumMasuk) && (<>
   <div className="lhead" style={{ position: "absolute", top: "0", left: "0", right: "0", zIndex: "5", padding: "26px 34px" }}>
     <div style={{ maxWidth: "1240px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
-        <a href="./Beranda SMAN Baturaja.dc.html" style={{ display: "flex", alignItems: "center", gap: "12px", color: "inherit" }}>
+        <a href="/" style={{ display: "flex", alignItems: "center", gap: "12px", color: "inherit" }}>
           <div className="lh-mark" style={{ width: "40px", height: "40px", borderRadius: "13px", background: "linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "13px", boxShadow: "0 10px 22px -8px rgba(110,120,220,.9),inset 0 1px 0 rgba(255,255,255,.85)" }}>SDN</div>
           <div style={{ lineHeight: "1.15" }}>
             <div className="lh-t" style={{ fontSize: "15px", fontWeight: "800", letterSpacing: "-.01em", color: "#fff" }}>Sekolah Dasar Negeri Baturaja</div>
@@ -36,7 +41,7 @@ const LoginBody = (vals = {}) => {
             <svg className="th-i-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2v2.4"></path><path d="M12 19.6V22"></path><path d="M2 12h2.4"></path><path d="M19.6 12H22"></path><path d="m4.9 4.9 1.7 1.7"></path><path d="m17.4 17.4 1.7 1.7"></path><path d="m19.1 4.9-1.7 1.7"></path><path d="m6.6 17.4-1.7 1.7"></path></svg>
             <svg className="th-i-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2Z"></path></svg>
           </button>
-          <a className="shine lh-back" href="./Beranda SMAN Baturaja.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "11px 18px", borderRadius: "14px", fontSize: "13px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.2)" }}>
+          <a className="shine lh-back" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "11px 18px", borderRadius: "14px", fontSize: "13px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.2)" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"></path><path d="m11 18-6-6 6-6"></path></svg>
             Kembali ke situs
           </a>
@@ -84,7 +89,7 @@ const LoginBody = (vals = {}) => {
 
         <div style={{ fontSize: "11.5px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "#9aa1e4" }}>Masuk portal</div>
         <h1 className="ltitle" style={{ margin: "14px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "42px", lineHeight: "1.02", letterSpacing: "-.042em", fontWeight: "800", color: "#fff" }}>Selamat datang<br />kembali.</h1>
-        <p style={{ margin: "12px 0 0", fontSize: "14px", lineHeight: "1.65", color: "#9aa1e4" }}>Gunakan akun yang diberikan tata usaha. Belum punya akun? <a className="link" href="./Kontak.dc.html">Hubungi sekolah</a>.</p>
+        <p style={{ margin: "12px 0 0", fontSize: "14px", lineHeight: "1.65", color: "#9aa1e4" }}>Gunakan akun yang diberikan tata usaha. Belum punya akun? <a className="link" href="/kontak">Hubungi sekolah</a>.</p>
 
         <div style={{ marginTop: "22px", display: "flex", gap: "8px", padding: "6px", borderRadius: "18px", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)" }}>
           {(peran || []).map((p, $index) => (<React.Fragment key={$index}>
@@ -100,7 +105,7 @@ const LoginBody = (vals = {}) => {
         <div className="fld" style={{ marginTop: "13px" }}>
           <div style={{ marginBottom: "8px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
             <span style={{ fontSize: "12.5px", fontWeight: "700", color: "#c4c9f5" }}>Kata sandi</span>
-            <a className="link" href="./Kontak.dc.html" style={{ fontSize: "12px" }}>Lupa sandi?</a>
+            <a className="link" href="/kontak" style={{ fontSize: "12px" }}>Lupa sandi?</a>
           </div>
           <div style={{ position: "relative" }}>
             <input onInput={setSandi} value={nilaiSandi} type={tipeSandi} placeholder="Masukkan kata sandi" />
@@ -155,7 +160,7 @@ const LoginBody = (vals = {}) => {
 
     <div style={{ position: "sticky", top: "0", zIndex: "30", padding: "18px 28px 12px" }}>
       <div style={{ maxWidth: "1240px", margin: "0 auto", display: "flex", alignItems: "center", gap: "24px", padding: "12px 14px 12px 20px", borderRadius: "22px", background: "rgba(255,255,255,.62)", backdropFilter: "blur(26px) saturate(190%)", WebkitBackdropFilter: "blur(26px) saturate(190%)", border: "1px solid rgba(255,255,255,.9)", boxShadow: "0 20px 46px -20px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
-        <a href="./Beranda SMAN Baturaja.dc.html" style={{ display: "flex", alignItems: "center", gap: "12px", color: "inherit" }}>
+        <a href="/" style={{ display: "flex", alignItems: "center", gap: "12px", color: "inherit" }}>
           <div style={{ width: "40px", height: "40px", borderRadius: "13px", background: "linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "13px", boxShadow: "0 12px 24px -10px rgba(110,120,220,.85)" }}>SDN</div>
           <div style={{ lineHeight: "1.15" }}>
             <div style={{ fontSize: "14.5px", fontWeight: "800", letterSpacing: "-.012em", color: "#1b1c2c" }}>SDN Baturaja</div>

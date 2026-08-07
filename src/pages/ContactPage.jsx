@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import KontakBody from '@/components/sdnb/generated/KontakBody';
 import { submitPublicFeedback, fetchPublicTeachers } from '@/lib/publicContentAdapters';
+import { inisialNama, sebutanStaf } from '@/lib/staf';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import '@/styles/sdnb.css';
@@ -24,16 +25,6 @@ const TOPIK = ['Pendaftaran murid baru', 'Administrasi dan surat', 'Kegiatan dan
 // Hanya gradasi. Nama dan jabatan datang dari data guru asli lewat
 // GET /api/content/teachers, dipasangkan berdasarkan posisi.
 const ORANG_GRADASI = ['var(--sekolah-aksen),var(--sekolah-aksen-tengah)', 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)', 'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)', 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)'];
-
-// Peran internal diterjemahkan ke sebutan yang dipahami orang tua murid.
-const SEBUTAN_PERAN = { Pentashih: 'Wakil Kepala Sekolah', Pengajar: 'Guru', 'Tata Usaha': 'Tata Usaha' };
-
-const sebutanStaf = (guru) => {
-  const jabatan = String(guru?.jabatan || '').trim();
-  if (jabatan) return jabatan;
-  const peran = (Array.isArray(guru?.roles) ? guru.roles : []).find(Boolean);
-  return SEBUTAN_PERAN[peran] || peran || 'Staf sekolah';
-};
 
 const JAM = [
   ['Senin', '07.30–15.00', 1], ['Selasa', '07.30–15.00', 2], ['Rabu', '07.30–15.00', 3],
@@ -187,7 +178,7 @@ const ContactPage = () => {
       const nama = String(g.nama || '').trim();
       return {
         urusan: peran, nama, peran, surel: sekolah.email, jam: sekolah.officeHours,
-        inisial: nama.split(' ').filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join('') || '—',
+        inisial: inisialNama(nama),
         bar: `height:6px;background:linear-gradient(90deg,${grad})`,
         avatar: `width:44px;height:44px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;color:#fff;background:linear-gradient(140deg,${grad});box-shadow:0 14px 30px -14px rgba(90,100,200,.85),inset 0 1px 0 rgba(255,255,255,.6)`,
       };

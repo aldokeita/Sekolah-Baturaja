@@ -5,7 +5,12 @@
  * Verbatim markup of the Claude Design mockup, minus the shared shell (bg orbs,
  * nav, footer) which PublicLayout renders. Every value comes from the mockup.
  *
- * Do not hand-edit — re-run the converter. Page state/handlers live in the page
+ * TIDAK lagi hasil generator murni. Berkas ini sudah disunting tangan (aksen
+ * warna lewat var(--sekolah-…), identitas sekolah, dan perbaikan tautan mati),
+ * dan tools/dc-convert.mjs TIDAK dijalankan oleh `npm run build`. Menjalankan
+ * ulang konverter akan menimpa semua itu — perlakukan sebagai kode biasa.
+ *
+ * Page state/handlers live in the page
  * component that renders this one and are passed in as props.
  */
 import React from 'react';

@@ -5,7 +5,12 @@
  * Verbatim markup of the Claude Design mockup, minus the shared shell (bg orbs,
  * nav, footer) which PublicLayout renders. Every value comes from the mockup.
  *
- * Do not hand-edit — re-run the converter. Page state/handlers live in the page
+ * TIDAK lagi hasil generator murni. Berkas ini sudah disunting tangan (aksen
+ * warna lewat var(--sekolah-…), identitas sekolah, dan perbaikan tautan mati),
+ * dan tools/dc-convert.mjs TIDAK dijalankan oleh `npm run build`. Menjalankan
+ * ulang konverter akan menimpa semua itu — perlakukan sebagai kode biasa.
+ *
+ * Page state/handlers live in the page
  * component that renders this one and are passed in as props.
  */
 import React from 'react';
@@ -113,7 +118,7 @@ const KontakBody = (vals = {}) => {
             <p style={{ margin: "12px 0 0", maxWidth: "460px", fontSize: "14.5px", lineHeight: "1.68", color: "#4f5478" }}>Terima kasih, {ringkasNama}. Tata usaha akan membalas ke {ringkasKontak} paling lambat dua hari kerja. Nomor catatan pesan Anda {noTiket}.</p>
             <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <button className="shine" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13.5px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 16px 34px -14px rgba(95,105,235,.9)" }}>Tulis pesan lain</button>
-              <a className="shine" href="./Formulir PPDB.dc.html" style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>Buka formulir PPDB</a>
+              <a className="shine" href="/pendaftaran" style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>Buka formulir PPDB</a>
             </div>
           </div>
         </>)}
@@ -201,7 +206,7 @@ const KontakBody = (vals = {}) => {
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <a className="shine" href="#pesan" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>Jadwalkan kunjungan</a>
-            <a className="shine" href="./Galeri.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>Lihat galeri dulu</a>
+            <a className="shine" href="/profil/galeri" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>Lihat galeri dulu</a>
           </div>
         </div>
       </div>

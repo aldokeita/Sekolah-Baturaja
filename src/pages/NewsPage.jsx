@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import BeritaBody from '@/components/sdnb/generated/BeritaBody';
-import { fetchPublishedNews } from '@/lib/publicContentAdapters';
+import { fetchPublicTeachers, fetchPublishedNews } from '@/lib/publicContentAdapters';
+import { inisialNama, sebutanStaf, stafKe } from '@/lib/staf';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
 
@@ -115,6 +116,7 @@ const NewsPage = () => {
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(-1);
   const [cmsNews, setCmsNews] = useState([]);
+  const [staf, setStaf] = useState([]);
 
   useSdnbMotion([]);
 
@@ -123,14 +125,29 @@ const NewsPage = () => {
     fetchPublishedNews()
       .then((rows) => { if (mounted && Array.isArray(rows) && rows.length) setCmsNews(rows); })
       .catch(() => {});
+    fetchPublicTeachers()
+      .then((rows) => { if (mounted && Array.isArray(rows)) setStaf(rows); })
+      .catch(() => { /* penulis jatuh ke sebutan umum, halaman tetap tampil */ });
     return () => { mounted = false; };
   }, []);
 
   // Published CMS articles come first, then the mockup's own set.
-  const N = useMemo(
-    () => [...cmsNews.map(cmsToTuple), ...N_MOCKUP],
-    [cmsNews],
-  );
+  //
+  // Penulis artikel contoh diambil dari Data Guru. Sebelumnya nama dan jabatannya
+  // ditulis di N_MOCKUP — delapan nama karangan seperti "Hj. Rosmiati, S.Pd." —
+  // sehingga situs sekolah pembeli memuat berita bertanda tangan orang yang tidak
+  // ada. Artikel dari panel Konten memakai penulisnya sendiri dan tidak disentuh.
+  const N = useMemo(() => {
+    const contoh = N_MOCKUP.map((baris, i) => {
+      const guru = stafKe(staf, i);
+      if (!guru) return baris;
+      const salinan = [...baris];
+      salinan[7] = String(guru.nama || '').trim() || 'Tata Usaha';
+      salinan[8] = sebutanStaf(guru);
+      return salinan;
+    });
+    return [...cmsNews.map(cmsToTuple), ...contoh];
+  }, [cmsNews, staf]);
 
   const list = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -213,9 +230,9 @@ const NewsPage = () => {
     artikel: a ? {
       judul: a[0], kat: a[1], tanggal: a[2], baca: a[3], ringkas: a[4], isi: a[5],
       penulis: a[7], peran: a[8], pos,
-      inisial: a[7].split(' ').filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join(''),
+      inisial: inisialNama(a[7]),
       hero: `position:relative;height:296px;overflow:hidden;background:${a[6]}`,
-      avatar: 'flex:none;width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)',
+      avatar: 'flex:none;width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung));box-shadow:inset 0 1px 0 rgba(255,255,255,.8)',
     } : { judul: '', kat: '', tanggal: '', baca: '', ringkas: '', isi: [], penulis: '', peran: '', pos: '', inisial: '', hero: '', avatar: '' },
     prev: () => move(-1),
     next: () => move(1),

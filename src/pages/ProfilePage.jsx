@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { fetchPublicTeachers } from '@/lib/publicContentAdapters';
+import { inisialNama, sebutanStaf } from '@/lib/staf';
 import '@/styles/sdnb.css';
 import '@/styles/sdnb-profil.css';
 
@@ -43,23 +44,6 @@ const ORANG_GRADASI = [
   ['var(--sekolah-aksen-tengah)', 'var(--sekolah-aksen-tengah-2)'],
   ['var(--sekolah-aksen-tengah-2)', 'var(--sekolah-aksen-ujung)'],
 ];
-
-// Peran internal diterjemahkan ke sebutan yang dipahami orang tua murid.
-const SEBUTAN_PERAN = { Pentashih: 'Wakil Kepala Sekolah', Pengajar: 'Guru', 'Tata Usaha': 'Tata Usaha' };
-
-const sebutanStaf = (guru) => {
-  const jabatan = String(guru?.jabatan || '').trim();
-  if (jabatan) return jabatan;
-  const peran = (Array.isArray(guru?.roles) ? guru.roles : []).find(Boolean);
-  return SEBUTAN_PERAN[peran] || peran || 'Staf sekolah';
-};
-
-const inisialNama = (nama) => String(nama || '')
-  .split(' ')
-  .filter((w) => /^[A-Z]/.test(w))
-  .slice(0, 2)
-  .map((w) => w[0])
-  .join('') || '—';
 
 const FASILITAS = [
   ['Ruang kelas', 'Delapan belas ruang kelas dengan jendela besar dan ventilasi silang, masing-masing berisi paling banyak dua puluh delapan murid.', 'linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)', 'span 2', 'span 2'],

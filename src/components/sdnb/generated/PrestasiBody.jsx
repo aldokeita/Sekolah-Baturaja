@@ -5,7 +5,12 @@
  * Verbatim markup of the Claude Design mockup, minus the shared shell (bg orbs,
  * nav, footer) which PublicLayout renders. Every value comes from the mockup.
  *
- * Do not hand-edit — re-run the converter. Page state/handlers live in the page
+ * TIDAK lagi hasil generator murni. Berkas ini sudah disunting tangan (aksen
+ * warna lewat var(--sekolah-…), identitas sekolah, dan perbaikan tautan mati),
+ * dan tools/dc-convert.mjs TIDAK dijalankan oleh `npm run build`. Menjalankan
+ * ulang konverter akan menimpa semua itu — perlakukan sebagai kode biasa.
+ *
+ * Page state/handlers live in the page
  * component that renders this one and are passed in as props.
  */
 import React from 'react';
@@ -27,7 +32,7 @@ const PrestasiBody = (vals = {}) => {
 
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px", flexWrap: "wrap", padding: "22px 0", borderBottom: "1px solid rgba(255,255,255,.12)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "14px", fontSize: "11px", fontWeight: "700", letterSpacing: ".22em", textTransform: "uppercase", color: "#8d93d6" }}>
-            <a className="hx-r7wckz" href="./Beranda SMAN Baturaja.dc.html" style={{ color: "#8d93d6" }}>Beranda</a>
+            <a className="hx-r7wckz" href="/" style={{ color: "#8d93d6" }}>Beranda</a>
             <span style={{ opacity: ".5" }}>/</span>
             <span style={{ color: "#fff" }}>Prestasi</span>
           </div>
@@ -161,8 +166,8 @@ const PrestasiBody = (vals = {}) => {
             <p style={{ margin: "16px 0 0", fontSize: "15px", lineHeight: "1.7", color: "rgba(214,218,255,.8)" }}>Arsip disimpan tata usaha dan diperbarui setiap selesai lomba. Salinan sertifikat dapat diminta orang tua untuk keperluan pendaftaran sekolah lanjutan.</p>
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <a className="shine" href="./Kontak.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#1e2140", background: "#fff" }}>Minta salinan sertifikat</a>
-            <a className="shine" href="./Ekstrakurikuler.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.35)" }}>Lihat ekstrakurikuler</a>
+            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#1e2140", background: "#fff" }}>Minta salinan sertifikat</a>
+            <a className="shine" href="/ekstrakurikuler" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.35)" }}>Lihat ekstrakurikuler</a>
           </div>
         </div>
       </div>

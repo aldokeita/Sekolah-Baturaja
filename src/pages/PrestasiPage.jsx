@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import PrestasiBody from '@/components/sdnb/generated/PrestasiBody';
+import { fetchPublicTeachers } from '@/lib/publicContentAdapters';
+import { stafKe } from '@/lib/staf';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
 
@@ -78,12 +80,38 @@ const BIDANG_NAMA = ['Akademik', 'Seni', 'Olahraga', 'Keagamaan', 'Lingkungan', 
 const PrestasiPage = () => {
   const [tingkat, setTingkat] = useState('Semua');
   const [idx, setIdx] = useState(-1);
+  const [staf, setStaf] = useState([]);
 
   useSdnbMotion([]);
 
+  useEffect(() => {
+    let aktif = true;
+    fetchPublicTeachers()
+      .then((rows) => { if (aktif && Array.isArray(rows)) setStaf(rows); })
+      .catch(() => { /* baris Pendamping hilang, sisa halaman tetap tampil */ });
+    return () => { aktif = false; };
+  }, []);
+
+  /* Nama pendamping diambil dari Data Guru.
+   *
+   * Sebelumnya sembilan nama karangan ditulis di P, termasuk "Hj. Rosmiati,
+   * S.Pd." yang sudah dibuang dari halaman Profil — jadi orang yang tidak ada itu
+   * tetap tercantum sebagai pendamping prestasi sekolah pembeli. Baris Pendamping
+   * dihilangkan seluruhnya bila Data Guru belum terisi, daripada menampilkan
+   * label tanpa nama. */
+  const prestasi = useMemo(() => P.map((baris, i) => {
+    const rincian = baris[7].filter(([label]) => label !== 'Pendamping');
+    const guru = stafKe(staf, i);
+    const salinan = [...baris];
+    salinan[7] = guru
+      ? [...rincian, ['Pendamping', String(guru.nama || '').trim()]]
+      : rincian;
+    return salinan;
+  }), [staf]);
+
   const items = useMemo(
-    () => P.map((p, i) => ({ p, i })).filter((o) => tingkat === 'Semua' || o.p[2] === tingkat),
-    [tingkat],
+    () => prestasi.map((p, i) => ({ p, i })).filter((o) => tingkat === 'Semua' || o.p[2] === tingkat),
+    [prestasi, tingkat],
   );
 
   const geser = useCallback((dir) => {
@@ -109,7 +137,8 @@ const PrestasiPage = () => {
   const maxTahun = Math.max(...perTahun.map((x) => x.n));
   const perBidang = BIDANG_NAMA.map((b) => ({ nama: b, n: P.filter((p) => p[5] === b).length }));
   const maxBidang = Math.max(...perBidang.map((x) => x.n));
-  const d = idx >= 0 ? P[idx] : null;
+  // Dari `prestasi`, bukan `P`, supaya jendela rincian memuat pendamping sungguhan.
+  const d = idx >= 0 ? prestasi[idx] : null;
 
   const vals = {
     stat: [

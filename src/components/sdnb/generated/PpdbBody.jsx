@@ -5,7 +5,12 @@
  * Verbatim markup of the Claude Design mockup, minus the shared shell (bg orbs,
  * nav, footer) which PublicLayout renders. Every value comes from the mockup.
  *
- * Do not hand-edit — re-run the converter. Page state/handlers live in the page
+ * TIDAK lagi hasil generator murni. Berkas ini sudah disunting tangan (aksen
+ * warna lewat var(--sekolah-…), identitas sekolah, dan perbaikan tautan mati),
+ * dan tools/dc-convert.mjs TIDAK dijalankan oleh `npm run build`. Menjalankan
+ * ulang konverter akan menimpa semua itu — perlakukan sebagai kode biasa.
+ *
+ * Page state/handlers live in the page
  * component that renders this one and are passed in as props.
  */
 import React from 'react';
@@ -29,7 +34,7 @@ const PpdbBody = (vals = {}) => {
 
     <div style={{ position: "sticky", top: "0", zIndex: "40", padding: "18px 28px 14px" }}>
       <div style={{ maxWidth: "1240px", margin: "0 auto", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: "24px", padding: "12px 14px 12px 20px", borderRadius: "22px", background: "rgba(255,255,255,.55)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 20px 46px -20px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "60%", background: "linear-gradient(165deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
-        <a href="./Beranda SMAN Baturaja.dc.html" style={{ position: "relative", display: "flex", alignItems: "center", gap: "12px", color: "inherit" }}>
+        <a href="/" style={{ position: "relative", display: "flex", alignItems: "center", gap: "12px", color: "inherit" }}>
           <div style={{ width: "40px", height: "40px", borderRadius: "13px", background: "linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "13px", boxShadow: "0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>SDN</div>
           <div style={{ lineHeight: "1.15" }}>
             <div style={{ fontSize: "15px", fontWeight: "800", letterSpacing: "-.01em", color: "#1b1c28" }}>Sekolah Dasar Negeri Baturaja</div>
@@ -42,7 +47,7 @@ const PpdbBody = (vals = {}) => {
             <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 4px rgba(34,197,94,.18)" }}></span>
             Gelombang 1 · tutup 20 Agustus
           </div>
-          <a className="shine hx-1myuu2z" href="./Beranda SMAN Baturaja.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "11px 18px", borderRadius: "14px", fontSize: "13.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", boxShadow: "0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)" }}>
+          <a className="shine hx-1myuu2z" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "11px 18px", borderRadius: "14px", fontSize: "13.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", boxShadow: "0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"></path><path d="m11 18-6-6 6-6"></path></svg>
             Kembali ke beranda
           </a>
@@ -238,7 +243,7 @@ const PpdbBody = (vals = {}) => {
               <h2 style={{ margin: "22px 0 0", fontSize: "26px", fontWeight: "800", letterSpacing: "-.025em", color: "#1b1c2c" }}>Pendaftaran terkirim</h2>
               <p style={{ margin: "10px 0 0", maxWidth: "520px", fontSize: "14.5px", lineHeight: "1.65", color: "#535878" }}>Nomor pendaftaran Anda <strong style={{ color: "#4a4fd0" }}>{`PPDB-${tahunAwal}-04187`}</strong>. Simpan nomor ini untuk memeriksa hasil seleksi. Konfirmasi juga dikirim ke WhatsApp yang Anda cantumkan.</p>
               <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <a className="shine" href="./Beranda SMAN Baturaja.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 24px", borderRadius: "15px", fontSize: "14px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)" }}>Kembali ke beranda</a>
+                <a className="shine" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 24px", borderRadius: "15px", fontSize: "14px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)" }}>Kembali ke beranda</a>
                 <button className="shine" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Isi formulir lain</button>
               </div>
             </div>
@@ -299,7 +304,7 @@ const PpdbBody = (vals = {}) => {
     <div style={{ maxWidth: "1240px", margin: "0 auto", padding: "56px 28px 44px" }}>
       <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.7)", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", fontSize: "12px", color: "#70759a" }}>
         <div>&copy; {tahunAwal} {namaSekolah} &middot; Panitia PPDB {tahunAjaran}</div>
-        <a className="hx-1kdf62l" href="./Beranda SMAN Baturaja.dc.html" style={{ color: "#70759a" }}>Beranda</a>
+        <a className="hx-1kdf62l" href="/" style={{ color: "#70759a" }}>Beranda</a>
       </div>
     </div>
 

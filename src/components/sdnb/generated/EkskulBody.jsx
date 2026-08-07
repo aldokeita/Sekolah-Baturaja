@@ -5,7 +5,12 @@
  * Verbatim markup of the Claude Design mockup, minus the shared shell (bg orbs,
  * nav, footer) which PublicLayout renders. Every value comes from the mockup.
  *
- * Do not hand-edit — re-run the converter. Page state/handlers live in the page
+ * TIDAK lagi hasil generator murni. Berkas ini sudah disunting tangan (aksen
+ * warna lewat var(--sekolah-…), identitas sekolah, dan perbaikan tautan mati),
+ * dan tools/dc-convert.mjs TIDAK dijalankan oleh `npm run build`. Menjalankan
+ * ulang konverter akan menimpa semua itu — perlakukan sebagai kode biasa.
+ *
+ * Page state/handlers live in the page
  * component that renders this one and are passed in as props.
  */
 import React from 'react';
@@ -98,7 +103,7 @@ const EkskulBody = (vals = {}) => {
             </div>
             <div style={{ marginTop: "16px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#8a8ea8" }}>Untuk kelas</div>
             <div style={{ marginTop: "8px", fontSize: "13.5px", color: "#4f5478" }}>{poster.kelas}</div>
-            <a className="shine" href="./Kontak.dc.html" style={{ position: "relative", overflow: "hidden", marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 18px", borderRadius: "14px", fontSize: "13px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Daftar kegiatan ini</a>
+            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 18px", borderRadius: "14px", fontSize: "13px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Daftar kegiatan ini</a>
           </div>
         </div>
       </div>
@@ -140,10 +145,10 @@ const EkskulBody = (vals = {}) => {
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <a className="shine" href="./Kontak.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>Tanya pembina
+            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>Tanya pembina
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
             </a>
-            <a className="shine" href="./Prestasi.dc.html" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>Lihat prestasi
+            <a className="shine" href="/prestasi" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>Lihat prestasi
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
             </a>
           </div>
