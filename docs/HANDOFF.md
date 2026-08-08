@@ -683,6 +683,38 @@ Tuntas pada 2026-08-08 (tiga halaman publik jadi bisa disunting pembeli):
 - **Verifikasi editor admin menuntut login** (agen tak boleh isi sandi) — jalur simpan belum diklik di
   browser; hanya lolos lint + build + render publik. Uji klik saat login untuk memastikan.
 
+### BERIKUTNYA (belum dikerjakan): Galeri & Fasilitas dinamis
+
+Dipilih pemilik sebagai pekerjaan berikutnya, **belum dimulai** (baru investigasi). Checkpoint ini
+merekam rencananya supaya bisa dilanjutkan.
+
+**Masalahnya (sama di kedua halaman):** CMS sudah ada tapi hanya *menimpa slot per-indeks*, bukan
+daftar dinamis penuh.
+- `GalleryPage.jsx`: 18 foto hardcoded di `FOTO` (nama, kategori, keterangan, tanggal, gradien,
+  colSpan, rowSpan). Kunci `galleryPhotos` (dikelola di ContentManagement tab Media, modal
+  `galleryPhotos`: hanya **url + caption**) menimpa url/caption per slot `i`. Foto ke-19 diabaikan;
+  kategori/keterangan/tanggal tetap dari kode. Hero stats (428/12/9), band stats (624/38/18), dan 4
+  ALBUM juga hardcoded — itu dekorasi, boleh dibiarkan.
+- `FacilitiesPage.jsx`: 10 ruang hardcoded di `F` (nama, kategori, luas, gradien, cerita, ringkas,
+  meta[], colSpan, rowSpan). Kunci `facilities` (modal `facilities`: name + description + image_url)
+  menimpa name/foto per slot `k`. Ruang ke-11 diabaikan; kategori/luas/meta tetap dari kode. Ringkas
+  stats (4200 m²/12/10/24) hardcoded — dekorasi.
+
+**Rencana (pola sama seperti trio di atas):**
+1. Perluas editor yang ADA di ContentManagement (jangan bikin key baru — `galleryPhotos`/`facilities`
+   sudah dipakai HomePage & halaman ini). Tambah field per item: galeri → kategori (dari `KAT`),
+   keterangan, tanggal; fasilitas → kategori, luas, ringkas, meta[]. Pertahankan alur unggah foto
+   (`handleFileUpload`) yang sudah jalan.
+2. Render publik dari daftar CMS **penuh** (berapa pun jumlahnya), bukan dipatok jumlah slot. colSpan/
+   rowSpan diberikan otomatis dari pola indeks (pembeli tak menulis span), gradien fallback dari palet
+   indeks. Fallback ke `FOTO`/`F` bawaan saat CMS kosong.
+3. Filter kategori & hitungannya dari daftar aktif. Lightbox/tur jalan atas daftar aktif.
+4. Statistik dekoratif (hero/band/ringkas) boleh diturunkan (mis. jumlah foto/ruang) atau dibiarkan —
+   keputusan kecil, bukan penghalang.
+
+Risiko: `galleryPhotos` juga dibaca HomePage (beranda) — pastikan penambahan field tidak merusak
+konsumsi di sana (HomePage hanya pakai url/caption, jadi field tambahan aman diabaikan).
+
 ### Audit modul: cakupan yang SUDAH dan BELUM diperiksa
 
 Audit dijalankan untuk mencari satu kelas cacat: **panel yang tampak jadi tapi
