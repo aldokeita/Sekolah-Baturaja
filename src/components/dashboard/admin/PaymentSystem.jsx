@@ -39,17 +39,14 @@ import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 const paymentItems = [
   { name: 'SPP Bulanan', amount: 0, monthly: true, icon: Wallet, custom: 'spp_dropdown' },
-  { name: 'Sarpras', amount: 115000, monthly: false, icon: Building },
-  { name: 'Seragam', amount: 175000, monthly: false, icon: Shirt },
-  { name: 'Tas Murid', amount: 75000, monthly: false, icon: Briefcase },
-  { name: 'ID Card Murid', amount: 25000, monthly: false, icon: IdCard },
-  { name: 'Buku Prestasi', amount: 10000, monthly: false, icon: BookOpen },
-  { name: 'Buku Jilid Pra TK', amount: 27500, monthly: false, icon: Book },
-  { name: 'Buku Jilid 1-6', amount: 25000, monthly: false, hasSubtypes: true, icon: Book },
-  { name: 'Buku Gharib & Tajwid', amount: 25000, monthly: false, icon: Book },
+  { name: 'Sarpras', amount: 0, monthly: false, icon: Building },
+  { name: 'Seragam', amount: 0, monthly: false, icon: Shirt },
+  { name: 'Tas Murid', amount: 0, monthly: false, icon: Briefcase },
+  { name: 'ID Card Murid', amount: 0, monthly: false, icon: IdCard },
+  { name: 'Buku Paket', amount: 0, monthly: false, icon: Book },
+  { name: 'LKS', amount: 0, monthly: false, icon: BookOpen },
   { name: 'Custom', amount: 0, monthly: false, icon: Edit, custom: 'item' },
 ];
-const bookVolumes = ['Jilid 1', 'Jilid 2', 'Jilid 3', 'Jilid 4', 'Jilid 5', 'Jilid 6'];
 const monthsList = MONTH_NAMES;
 const sppOptions = [50000, 70000, 100000, 120000, 150000];
 
@@ -557,7 +554,6 @@ const PaymentSystem = () => {
                                 <Separator className="my-3"/>
                                 <div className="flex items-center justify-between">{item.monthly ? (<div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400"><Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">{item.months.length} Bulan</Badge><span>x Rp{item.amount.toLocaleString('id-ID')}</span><Button variant="ghost" size="icon" className="h-6 w-6 ml-1 hover:text-primary" onClick={() => editCartItem(item)}><Edit className="w-3 h-3 text-slate-400"/></Button></div>) : (<div className="flex items-center gap-3"><div className="flex items-center border rounded-lg overflow-hidden h-8"><button className="px-2 hover:bg-slate-100 h-full flex items-center" onClick={() => updateCartItem(item.cartId, { quantity: Math.max(1, (item.quantity || 1) - 1) })}><Minus className="w-3 h-3"/></button><span className="w-8 text-center text-sm font-medium border-x h-full flex items-center justify-center bg-slate-50">{item.quantity}</span><button className="px-2 hover:bg-slate-100 h-full flex items-center" onClick={() => updateCartItem(item.cartId, { quantity: (item.quantity || 1) + 1 })}><Plus className="w-3 h-3"/></button></div><span className="text-xs text-muted-foreground">x Rp{item.amount.toLocaleString('id-ID')}</span></div>)}<div className="text-right"><p className="font-bold text-lg text-primary">Rp {(item.monthly ? item.amount * item.months.length : item.amount * item.quantity).toLocaleString('id-ID')}</p></div></div>
                                 {!item.monthly && item.custom === 'item' && (<div className="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-dashed"><Input placeholder="Nama Item" value={item.name} onChange={e => updateCartItem(item.cartId, { name: e.target.value })} className="h-8 text-xs"/><Input type="number" placeholder="Harga" value={item.amount || ''} onChange={e => updateCartItem(item.cartId, { amount: parseInt(e.target.value) || 0 })} className="h-8 text-xs"/></div>)}
-                                {!item.monthly && item.hasSubtypes && (<div className="mt-2"><Select value={item.subtype} onValueChange={val => updateCartItem(item.cartId, { subtype: val })}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih Jilid" /></SelectTrigger><SelectContent>{bookVolumes.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select></div>)}
                             </div>
                         ))}
                         {cart.length === 0 && (<div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed border-slate-200 rounded-xl"><ShoppingCart className="w-12 h-12 mb-2 opacity-20"/><p>Keranjang kosong</p><p className="text-xs">Pilih item pembayaran di sebelah kiri</p></div>)}

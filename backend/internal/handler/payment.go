@@ -151,6 +151,15 @@ func scanPaymentRows(rows pgx.Rows) ([]paymentRow, error) {
 // ListPayments GET /api/payments
 // Query params: santri_id, bulan, tahun, status, search, page, limit
 func (h *PaymentHandler) ListPayments(w http.ResponseWriter, r *http.Request) {
+	role := middleware.RoleFromCtx(r.Context())
+	if !middleware.CanManage(role) {
+		// Santri boleh melihat riwayat bayaran mereka sendiri saja.
+		if role != "santri" {
+			jsonError(w, "forbidden", http.StatusForbidden)
+			return
+		}
+	}
+
 	q := r.URL.Query()
 	santriID := q.Get("santri_id")
 	bulan := q.Get("bulan")
@@ -176,7 +185,14 @@ func (h *PaymentHandler) ListPayments(w http.ResponseWriter, r *http.Request) {
 	args := []any{}
 	idx := 1
 
-	if santriID != "" {
+	if role == "santri" {
+		// Santri hanya boleh melihat bayarannya sendiri, baik dengan maupun
+		// tanpa filter santri_id eksplisit.
+		userID := middleware.UserIDFromCtx(r.Context())
+		base += fmt.Sprintf(" AND p.santri_id = $%d", idx)
+		args = append(args, userID)
+		idx++
+	} else if santriID != "" {
 		base += fmt.Sprintf(" AND p.santri_id = $%d", idx)
 		args = append(args, santriID)
 		idx++
@@ -818,6 +834,16 @@ func (h *PaymentHandler) GetPayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	role := middleware.RoleFromCtx(r.Context())
+	isSantri := role == "santri"
+
+	// Hanya pengelola dan murid pemilik kwitansi yang boleh melihat nominal.
+	// Guru dan pentashih tidak termasuk CanManage, sehingga diblokir di sini.
+	if !middleware.CanManage(role) && !isSantri {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
 	rows, err := h.db.Query(r.Context(),
 		paymentSelect+" WHERE p.id = $1 AND p.deleted_at IS NULL", id)
 	if err != nil {
@@ -834,9 +860,8 @@ func (h *PaymentHandler) GetPayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Santri may only read their own receipt.
-	if middleware.RoleFromCtx(r.Context()) == "santri" &&
-		middleware.UserIDFromCtx(r.Context()) != list[0].SantriID {
+	// Santri hanya boleh membaca kwitansinya sendiri.
+	if isSantri && middleware.UserIDFromCtx(r.Context()) != list[0].SantriID {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}

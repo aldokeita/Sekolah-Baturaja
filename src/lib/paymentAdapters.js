@@ -235,10 +235,6 @@ export const fetchExpenses = async (dateFrom, dateTo) => {
     return data || [];
 };
 
-export const createExpense = async (payload) => {
-    return apiClient.post(EXPENSES_PATH, payload);
-};
-
 export const deleteExpense = async (id) => {
     await apiClient.delete(`${EXPENSES_PATH}/${id}`);
 };
