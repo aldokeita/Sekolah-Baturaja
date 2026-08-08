@@ -539,6 +539,26 @@ func (h *SantriHandler) MoveClass(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Tolak pindah ke kelas yang sama — tidak ada mutasi nyata dan hanya
+	// mengotori riwayat.
+	if fromClass != nil && *fromClass == body.TargetClassID {
+		jsonError(w, "santri sudah berada di kelas tujuan", http.StatusBadRequest)
+		return
+	}
+
+	// Pastikan kelas tujuan benar-benar ada, supaya galat FK tidak muncul sebagai
+	// 500 yang membingungkan.
+	var targetExists bool
+	if err := tx.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM classes WHERE id = $1)`, body.TargetClassID).Scan(&targetExists); err != nil {
+		jsonError(w, "gagal memeriksa kelas tujuan", http.StatusInternalServerError)
+		return
+	}
+	if !targetExists {
+		jsonError(w, "kelas tujuan tidak ditemukan", http.StatusBadRequest)
+		return
+	}
+
 	if _, err := tx.Exec(ctx, `
 		INSERT INTO class_mutations (santri_id, from_class_id, to_class_id, reason, created_by, mutation_date)
 		VALUES ($1, $2, $3, $4, $5, now())
@@ -552,6 +572,28 @@ func (h *SantriHandler) MoveClass(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "gagal memindahkan santri", http.StatusInternalServerError)
 		return
 	}
+
+	// Jaga class_memberships tetap sinkron dengan current_class_id — Detail kelas
+	// membaca daftar anggota dari sini, jadi kalau tidak diperbarui rosternya
+	// akan berbeda dari daftar utama. Tutup keanggotaan aktif lama (unique index
+	// one_active_per_santri hanya mengizinkan satu yang aktif), lalu buka yang
+	// baru di kelas tujuan.
+	if _, err := tx.Exec(ctx, `
+		UPDATE class_memberships
+		SET status = 'moved', end_date = CURRENT_DATE, updated_by = $2
+		WHERE santri_id = $1 AND status = 'active'
+	`, body.SantriID, userID); err != nil {
+		jsonError(w, "gagal menutup keanggotaan lama", http.StatusInternalServerError)
+		return
+	}
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO class_memberships (santri_id, class_id, start_date, status, created_by, updated_by)
+		VALUES ($1, $2, CURRENT_DATE, 'active', $3, $3)
+	`, body.SantriID, body.TargetClassID, userID); err != nil {
+		jsonError(w, "gagal membuat keanggotaan baru", http.StatusInternalServerError)
+		return
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		jsonError(w, "gagal menyimpan mutasi", http.StatusInternalServerError)
 		return

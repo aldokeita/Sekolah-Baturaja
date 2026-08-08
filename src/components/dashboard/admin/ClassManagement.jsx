@@ -12,6 +12,7 @@ import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicCont
 import { useDrag, useDrop } from 'react-dnd';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/contexts/AuthContext';
+import { canManageRole, isAdminRole } from '@/lib/roles';
 import { Badge } from '@/components/ui/badge';
 import SantriDetailModal from '../shared/SantriDetailModal';
 import JilidChangeModal from './JilidChangeModal';
@@ -32,7 +33,8 @@ import {
   moveSantriClass,
   reorderClasses,
   updateClass,
-  updateSantriJilid
+  updateSantriJilid,
+  updateSantriOrder
 } from '@/lib/dataMasterAdapters';
 import { resolveAvatarRecord, resolveAvatarRecords } from '@/lib/storageAdapters';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
@@ -263,7 +265,7 @@ const SessionConfigDialog = ({ open, onOpenChange, config, onSave }) => {
 };
 
 
-const DraggableSantri = ({ santri, index, moveSantri, hasAttended, onViewDetails }) => {
+const DraggableSantri = ({ santri, index, moveSantri, onReorderEnd, hasAttended, onViewDetails }) => {
   const ref = useRef(null);
   const [{ handlerId }, drop] = useDrop({
     accept: ItemTypes.SANTRI,
@@ -288,7 +290,11 @@ const DraggableSantri = ({ santri, index, moveSantri, hasAttended, onViewDetails
     type: ItemTypes.SANTRI,
     item: { santriId: santri.id, fromClassId: santri.id_kelas, index },
     collect: (monitor) => ({ isDragging: !!monitor.isDragging() }),
-  }));
+    end: (item) => {
+      // Simpan urutan hanya untuk reorder di dalam kelas (bukan murid belum terkelas).
+      if (item.fromClassId && onReorderEnd) onReorderEnd(item.fromClassId);
+    },
+  }), [santri.id, santri.id_kelas, index, onReorderEnd]);
   drag(drop(ref));
   return (
     <div ref={ref} data-handler-id={handlerId} style={{ opacity: isDragging ? 0.3 : 1 }} className="flex items-center justify-between gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-move shadow-sm group relative hover:shadow-md transition-all border border-transparent hover:border-primary/20">
@@ -339,7 +345,7 @@ const DroppableColumn = React.forwardRef(({ title, children, onDrop, icon, isOve
 });
 DroppableColumn.displayName = 'DroppableColumn';
 
-const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete, onShowDetails, onShowPerformance, santriCount, userRole }) => {
+const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete, onShowDetails, onShowPerformance, santriCount, canManage }) => {
   const ref = useRef(null);
   const [{ handlerId }, drop] = useDrop({
     accept: ItemTypes.CLASS,
@@ -368,7 +374,7 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
           <div><div className="text-sm text-muted-foreground mb-2">{classItem.guru?.nama || 'Belum ada guru'}{waLink && (<a href={waLink} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-green-600 hover:underline"><Phone className="w-3 h-3 mr-1" /> WA</a>)}</div></div>
         </div>
         <div className="flex justify-end gap-2 mb-2 border-b pb-2 flex-wrap">
-          {userRole !== 'pentashih' && (<><Button size="sm" variant="outline" onClick={() => onEdit(classItem)}><Edit className="w-3 h-3"/></Button><Button size="sm" variant="destructive" onClick={() => onDelete(classItem.id)}><Trash2 className="w-3 h-3"/></Button></>)}
+          {canManage && (<><Button size="sm" variant="outline" onClick={() => onEdit(classItem)}><Edit className="w-3 h-3"/></Button><Button size="sm" variant="destructive" onClick={() => onDelete(classItem.id)}><Trash2 className="w-3 h-3"/></Button></>)}
           <div className="flex gap-1 ml-auto"><Button size="sm" onClick={() => onShowDetails(classItem)} title="Detail Kelas"><BarChart2 className="w-3 h-3 mr-1"/> Detail</Button></div>
         </div>
         {children}
@@ -384,9 +390,17 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
 // bukan lagi sebagai pembeda tampilan — data kelas lama berkategori PTPT tetap
 // terlihat dan tetap bisa dikelola, tidak disembunyikan.
 const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anakSessionConfig', title = 'Manajemen Kelas', subtitle = 'Atur pembagian kelas, guru pengampu, dan mutasi murid.' }) => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  // Gate dari peran asli (useAuth), bukan prop userRole yang default 'admin'.
+  // canManage = admin/superadmin/tata_usaha boleh kelola kelas & mutasi;
+  // canConfig = hanya admin/superadmin boleh atur konfigurasi sesi.
+  const canManage = canManageRole(role);
+  const canConfig = isAdminRole(role);
   const [classes, setClasses] = useState([]);
   const [santriList, setSantriList] = useState([]);
+  // Cermin santriList untuk dibaca di handler drop tanpa terpengaruh async setState.
+  const santriListRef = useRef(santriList);
+  santriListRef.current = santriList;
   const [guruList, setGuruList] = useState([]);
   const [dailyAttendance, setDailyAttendance] = useState([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -540,9 +554,42 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
       }
   };
 
-  const moveSantri = useCallback(() => {
-    // Reorder/mutasi santri membutuhkan operasi backend atomik agar current_class_id
-    // dan class_memberships tetap konsisten.
+  // Drag-reorder murid di dalam satu kelas. Live: memperbarui order_in_class
+  // lokal saat hover supaya urutan bergerak mengikuti kursor. Persist terjadi
+  // saat drop (persistClassOrder) melalui adapter updateSantriOrder.
+  const moveSantri = useCallback((dragIndex, hoverIndex, classId) => {
+    if (!classId) return;
+    setSantriList(prev => {
+      const inClass = prev
+        .filter(s => (s.current_class_id || s.id_kelas) === classId)
+        .sort((a, b) => (a.order_in_class || 999) - (b.order_in_class || 999));
+      if (
+        dragIndex < 0 || hoverIndex < 0 ||
+        dragIndex >= inClass.length || hoverIndex >= inClass.length
+      ) return prev;
+      const reordered = [...inClass];
+      const [moved] = reordered.splice(dragIndex, 1);
+      reordered.splice(hoverIndex, 0, moved);
+      const orderMap = new Map(reordered.map((s, i) => [s.id, i + 1]));
+      return prev.map(s => (orderMap.has(s.id) ? { ...s, order_in_class: orderMap.get(s.id) } : s));
+    });
+  }, []);
+
+  // Simpan urutan akhir satu kelas ke server setelah drop selesai. Membaca
+  // state terkini lewat ref agar tidak tertinggal oleh update async setState.
+  const persistClassOrder = useCallback(async (classId) => {
+    if (!classId) return;
+    const inClass = santriListRef.current
+      .filter(s => (s.current_class_id || s.id_kelas) === classId)
+      .sort((a, b) => (a.order_in_class || 999) - (b.order_in_class || 999));
+    try {
+      await Promise.all(
+        inClass.map((s, i) => updateSantriOrder(s.id, i + 1))
+      );
+    } catch (err) {
+      toast({ title: 'Gagal menyimpan urutan', description: err.message, variant: 'destructive' });
+      fetchAllData();
+    }
   }, []);
 
   useEffect(() => {
@@ -608,8 +655,8 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
   const handleDropSantri = async (item, toClassId) => {
     if (item.fromClassId === toClassId) return;
-    if (userRole !== 'admin') {
-      toast({ title: 'Akses ditolak', description: 'Hanya admin yang boleh memindahkan kelas murid.', variant: 'destructive' });
+    if (!canManage) {
+      toast({ title: 'Akses ditolak', description: 'Anda tidak memiliki akses untuk memindahkan kelas murid.', variant: 'destructive' });
       return;
     }
     if (!toClassId) {
@@ -667,6 +714,20 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Tolak nama kelas duplikat dalam sesi yang sama (abaikan kelas yang sedang
+    // diedit). Nama sama di sesi berbeda dibolehkan (mis. "Kelas 1A" pagi & sore).
+    const namaBaru = (formData.nama_kelas || '').trim().toLowerCase();
+    const isDuplicate = classes.some(c =>
+      c.id !== editingClass?.id &&
+      (c.nama_kelas || '').trim().toLowerCase() === namaBaru &&
+      (c.sesi || '') === (formData.sesi || '')
+    );
+    if (isDuplicate) {
+      toast({ title: 'Nama kelas sudah ada', description: 'Sudah ada kelas dengan nama dan sesi yang sama.', variant: 'destructive' });
+      return;
+    }
+
     // Empty string means "no limit declared" — send null so the column stays
     // NULL rather than tripping the kapasitas > 0 check with a 0.
     const parsedKapasitas = parseInt(formData.kapasitas, 10);
@@ -830,21 +891,23 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
           <div className="admin-panel-header-actions">
             <div className="admin-action-cluster">
-                {userRole !== 'pentashih' && (
+                {canManage && (
                     <button onClick={handleExportToExcel} className="admin-action-cluster-btn">
                         <FileSpreadsheet className="w-3.5 h-3.5"/> Export
                     </button>
                 )}
-                <button onClick={showHistory} className="admin-action-cluster-btn">
-                    <History className="w-3.5 h-3.5"/> Riwayat
-                </button>
-                {userRole === 'admin' && (
+                {canManage && (
+                    <button onClick={showHistory} className="admin-action-cluster-btn">
+                        <History className="w-3.5 h-3.5"/> Riwayat
+                    </button>
+                )}
+                {canConfig && (
                     <button onClick={() => setIsConfigOpen(true)} className="admin-action-cluster-btn">
                          <Settings className="w-3.5 h-3.5"/> Config Sesi
                     </button>
                 )}
             </div>
-            {userRole !== 'pentashih' && (
+            {canManage && (
                 <>
                     <button onClick={() => setIsReorderOpen(true)} className="admin-panel-primary-btn" style={{ backgroundColor: 'hsl(var(--admin-accent-amber))' }}>
                         <ListOrdered className="w-4 h-4"/> Atur Urutan
@@ -896,13 +959,14 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {classesBySession[session].map((classItem) => (
-                <ClassCard key={classItem.id} index={classes.findIndex(c => c.id === classItem.id)} classItem={classItem} onDropSantri={handleDropSantri} onEdit={handleEdit} onDelete={confirmDeleteClass} onShowDetails={handleShowPerformance} onShowPerformance={handleShowPerformance} santriCount={(santriByClass[classItem.id] || []).length} userRole={userRole}>
+                <ClassCard key={classItem.id} index={classes.findIndex(c => c.id === classItem.id)} classItem={classItem} onDropSantri={handleDropSantri} onEdit={handleEdit} onDelete={confirmDeleteClass} onShowDetails={handleShowPerformance} onShowPerformance={handleShowPerformance} santriCount={(santriByClass[classItem.id] || []).length} canManage={canManage}>
                   {(santriByClass[classItem.id] || []).map((santri, santriIndex) => (
                     <DraggableSantri
                         key={santri.id}
                         santri={santri}
                         index={santriIndex}
                         moveSantri={moveSantri}
+                        onReorderEnd={persistClassOrder}
                         hasAttended={attendanceById.has(santri.id)}
                         onViewDetails={handleViewSantriDetails}
                     />

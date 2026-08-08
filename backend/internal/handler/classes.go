@@ -51,9 +51,19 @@ var classesEditable = map[string]bool{
 	"is_active": true, "sort_order": true, "kapasitas": true,
 }
 
+// canSeeRoster reports whether the role may view full class rosters and member
+// PII (nama, NIS, foto, jenis kelamin). Staff, teachers, and the wakil kepala
+// sekolah yes; a santri must never be able to enumerate every classmate across
+// all classes. The class list itself (nama kelas, sesi, wali) is not gated —
+// only the attached roster/member data is.
+func canSeeRoster(role string) bool {
+	return middleware.CanManage(role) || role == "guru" || role == "pentashih"
+}
+
 // GET /api/classes
 func (h *ClassesHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	role := middleware.RoleFromCtx(ctx)
 	limit, offset := paginate(r)
 
 	where := []string{}
@@ -75,7 +85,10 @@ func (h *ClassesHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	includeGuru := r.URL.Query().Get("include_guru") == "true"
-	includeSantri := r.URL.Query().Get("include_santri") == "true"
+	// Roster PII is staff/teacher-only. A santri asking for include_santri gets
+	// the class list without the roster attached, never a forbidden error, so the
+	// student dashboard's class list keeps working.
+	includeSantri := r.URL.Query().Get("include_santri") == "true" && canSeeRoster(role)
 
 	selectCols := "cl.*"
 	joins := ""
@@ -170,6 +183,7 @@ func (h *ClassesHandler) activeSantriByClass(ctx context.Context, classIDs []str
 func (h *ClassesHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
+	role := middleware.RoleFromCtx(ctx)
 
 	// Class + guru info.
 	classRows, err := h.db.Query(ctx, `
@@ -192,26 +206,30 @@ func (h *ClassesHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Active memberships with basic santri info.
-	memberRows, err := h.db.Query(ctx, `
-		SELECT cm.id, cm.santri_id, cm.order_in_class, cm.status,
-		       s.nama_lengkap, s.nama_panggilan, s.nomor_induk_qiroati, s.foto_url
-		FROM class_memberships cm
-		JOIN santri s ON s.id = cm.santri_id
-		WHERE cm.class_id = $1 AND cm.status = 'active'
-		ORDER BY cm.order_in_class NULLS LAST, s.nama_lengkap
-	`, id)
-	if err != nil {
-		jsonError(w, "gagal mengambil anggota kelas", http.StatusInternalServerError)
-		return
+	// Roster PII is staff/teacher-only; a santri gets the class info without the
+	// member list rather than a forbidden error.
+	if canSeeRoster(role) {
+		memberRows, err := h.db.Query(ctx, `
+			SELECT cm.id, cm.santri_id, cm.order_in_class, cm.status,
+			       s.nama_lengkap, s.nama_panggilan, s.nomor_induk_qiroati, s.foto_url
+			FROM class_memberships cm
+			JOIN santri s ON s.id = cm.santri_id
+			WHERE cm.class_id = $1 AND cm.status = 'active'
+			ORDER BY cm.order_in_class NULLS LAST, s.nama_lengkap
+		`, id)
+		if err != nil {
+			jsonError(w, "gagal mengambil anggota kelas", http.StatusInternalServerError)
+			return
+		}
+		members, err := pgx.CollectRows(memberRows, rowToMap)
+		if err != nil {
+			jsonError(w, "gagal membaca anggota kelas", http.StatusInternalServerError)
+			return
+		}
+		class["members"] = members
+	} else {
+		class["members"] = []map[string]any{}
 	}
-	members, err := pgx.CollectRows(memberRows, rowToMap)
-	if err != nil {
-		jsonError(w, "gagal membaca anggota kelas", http.StatusInternalServerError)
-		return
-	}
-
-	class["members"] = members
 	jsonData(w, class)
 }
 
@@ -335,6 +353,11 @@ func (h *ClassesHandler) Reorder(w http.ResponseWriter, r *http.Request) {
 // GET /api/classes/{id}/mutations
 func (h *ClassesHandler) Mutations(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	// Transfer history + reasons are back-office data, same as AllMutations.
+	if !middleware.CanManage(middleware.RoleFromCtx(ctx)) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
 	id := chi.URLParam(r, "id")
 	limit, offset := paginate(r)
 
