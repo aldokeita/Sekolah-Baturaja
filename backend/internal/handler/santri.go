@@ -516,6 +516,10 @@ func (h *SantriHandler) MoveClass(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "santri_id dan target_class_id wajib diisi", http.StatusBadRequest)
 		return
 	}
+	if role == "guru" && !h.guruOwnsSantri(ctx, userID, body.SantriID) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
 
 	tx, err := h.db.Begin(ctx)
 	if err != nil {
@@ -641,8 +645,11 @@ func (h *SantriHandler) guruOwnsSantri(ctx context.Context, guruID, santriID str
 }
 
 // GET /api/santri/by-rfid/{rfid} — kiosk scan lookup.
+// CanManage dan guru: boleh lookup RFID siapapun (untuk absensi kelas).
+// Santri: hanya boleh lookup RFID miliknya sendiri.
 func (h *SantriHandler) ByRFID(w http.ResponseWriter, r *http.Request) {
-	if middleware.RoleFromCtx(r.Context()) == "" {
+	role := middleware.RoleFromCtx(r.Context())
+	if role == "" {
 		jsonError(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -670,6 +677,13 @@ func (h *SantriHandler) ByRFID(w http.ResponseWriter, r *http.Request) {
 		}
 		jsonError(w, "gagal membaca data santri", http.StatusInternalServerError)
 		return
+	}
+	if role == "santri" {
+		userID := middleware.UserIDFromCtx(r.Context())
+		if fmt.Sprintf("%v", item["id"]) != userID {
+			jsonError(w, "forbidden", http.StatusForbidden)
+			return
+		}
 	}
 	jsonData(w, item)
 }

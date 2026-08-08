@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/contexts/AuthContext';
+import { canManageRole } from '@/lib/roles';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { validatePassword } from '@/lib/utils';
@@ -234,7 +235,7 @@ const BulkUploadModal = ({ isOpen, onClose, onUpload, category = 'Anak' }) => {
                 <div className="relative">
                   <Textarea
                       aria-label="Data murid hasil copy dari Excel"
-                      placeholder={'Contoh:\nSantri Dummy\tDummy\tJilid 1A\tKota Dummy\t07-15-2018\tLaki-laki\t...'}
+                      placeholder={'Contoh:\nBudi Santoso\tBudi\t1234567890\tKota Baturaja\t07-15-2018\tLaki-laki\t...'}
                       className="admin-bulk-import-textarea min-h-[280px] rounded-2xl p-4 font-mono text-xs leading-6 whitespace-pre"
                       value={textData}
                       onChange={(event) => setTextData(event.target.value)}
@@ -342,7 +343,8 @@ const UploadReportModal = ({ isOpen, onClose, report, onConfirm }) => {
 };
 
 const SantriManagement = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const canManage = canManageRole(role);
   const [santriList, setSantriList] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [fetchError, setFetchError] = useState(null);
@@ -424,7 +426,7 @@ const SantriManagement = () => {
                 if (!parsedGender) throw new Error(`Jenis Kelamin tidak valid: "${row[5]}". Gunakan "Laki-laki" atau "Perempuan"`);
                 santri.jenis_kelamin = parsedGender;
             } else {
-                santri.jenis_kelamin = 'Laki-laki'; // default if empty but not missing completely
+                throw new Error('Jenis Kelamin wajib diisi (kolom 6). Gunakan "Laki-laki" atau "Perempuan"');
             }
 
             // 7. Alamat
@@ -456,7 +458,9 @@ const SantriManagement = () => {
 
             // Setup Default Password based on Priority
             if (!santri.password) {
-                 santri.password = santri.nisn || santri.nis || santri.nama_panggilan || '1234';
+                 const fallback = santri.nisn || santri.nis || santri.nama_panggilan;
+                 if (!fallback) throw new Error('Password tidak bisa dibuat otomatis — NISN, NIS, atau Nama Panggilan harus diisi minimal satu');
+                 santri.password = fallback;
             }
 
             validData.push(santri);
@@ -823,8 +827,6 @@ const SantriManagement = () => {
     });
   };
 
-  const getMigrationLabel = (targetCategory) => targetCategory === 'Anak' ? 'TPQ' : targetCategory;
-
   const migrateSantriCategory = async (santriId, targetCategory, reason) => {
       return changeSantriCategory({
           santri_id: santriId,
@@ -960,7 +962,7 @@ const SantriManagement = () => {
                 )}
             </button>
 
-            {selectedSantri.size > 0 && (
+            {canManage && selectedSantri.size > 0 && (
                 <div className="admin-bulk-bar">
 
                     <button onClick={() => handleBulkStatusChange('Nonaktif')} className="admin-bulk-btn admin-bulk-btn--deactivate">
@@ -972,16 +974,20 @@ const SantriManagement = () => {
                 </div>
             )}
             <div className="admin-action-cluster">
+                 {canManage && (
                  <button onClick={() => setIsBulkUploadOpen(true)} className="admin-action-cluster-btn">
                     <Upload className="w-3.5 h-3.5"/> Import
                  </button>
+                 )}
                  <button onClick={handleDownloadData} className="admin-action-cluster-btn">
                     <Download className="w-3.5 h-3.5"/> Export
                  </button>
             </div>
+            {canManage && (
             <button onClick={() => { resetForm(); setIsFormOpen(true); }} className="admin-panel-primary-btn">
                 <Plus className="w-4 h-4"/> Tambah Murid
             </button>
+            )}
           </div>
       </div>
 
@@ -1029,7 +1035,7 @@ const SantriManagement = () => {
               <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('guru_pengampu')}><div className="flex items-center">Guru Pengampu <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
               <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer hover:text-foreground transition-colors" onClick={() => requestSort('angkatan')}><div className="flex items-center">Angkatan <ArrowUpDown className="ml-1 h-3 w-3" /></div></th>
               <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Berkas</th>
-              <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aksi</th>
+              {canManage && <th className="p-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aksi</th>}
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-slate-950 divide-y divide-slate-100 dark:divide-slate-800">
@@ -1072,7 +1078,7 @@ const SantriManagement = () => {
                 <td className="p-3 text-sm font-medium text-foreground">{classGuruMap[santri.current_class_id || santri.id_kelas] || <span className="text-muted-foreground italic text-xs">Belum ada</span>}</td>
                 <td className="p-3"><Badge variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200">{santri.angkatan || '-'}</Badge></td>
                 <td className="p-3"><div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-900 border"><FileCheck className={`w-4 h-4 ${santri.berkas_foto && santri.berkas_akta && santri.berkas_kk && santri.berkas_form ? 'text-green-500' : 'text-slate-300'}`} /></div></td>
-                <td className="p-3"><Button onClick={() => handleEdit(santri)} size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 rounded-full"><Edit className="w-4 h-4" /></Button></td>
+                {canManage && <td className="p-3"><Button onClick={() => handleEdit(santri)} size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 rounded-full"><Edit className="w-4 h-4" /></Button></td>}
               </tr>
             ))}
           </tbody>
