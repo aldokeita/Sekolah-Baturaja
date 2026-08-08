@@ -9,6 +9,7 @@ import { toast } from '@/components/ui/use-toast';
 import { BookMarked, CalendarRange, Check, Edit, Loader2, Plus, Trash2, X } from 'lucide-react';
 import {
     SEMESTER_OPTIONS,
+    activatePeriode,
     createMataPelajaran,
     createPeriode,
     deleteMataPelajaran,
@@ -26,7 +27,7 @@ const EMPTY_PERIODE = { id: null, nama: '', tahun_ajaran: '', semester: 'Ganjil'
  * Dialog master data mata pelajaran. Semua mutasi dikirim lewat scheduleAdapters
  * lalu memanggil `onChanged` supaya panel induk memuat ulang daftar terbaru.
  */
-export const MataPelajaranDialog = ({ open, onOpenChange, items = [], isLoading = false, onChanged }) => {
+export const MataPelajaranDialog = ({ open, onOpenChange, items = [], isLoading = false, onChanged, canManage = true }) => {
     const [form, setForm] = useState(EMPTY_MAPEL);
     const [isSaving, setIsSaving] = useState(false);
     const [confirmState, setConfirmState] = useState({ isOpen: false, target: null });
@@ -80,6 +81,7 @@ export const MataPelajaranDialog = ({ open, onOpenChange, items = [], isLoading 
                     <DialogDescription>Kelola daftar mata pelajaran yang dapat dipakai pada jadwal.</DialogDescription>
                 </DialogHeader>
 
+                {canManage && (
                 <form onSubmit={handleSubmit} className="admin-edit-section">
                     <div className="admin-edit-field-grid">
                         <div className="admin-edit-field admin-edit-field-full">
@@ -107,6 +109,7 @@ export const MataPelajaranDialog = ({ open, onOpenChange, items = [], isLoading 
                         </Button>
                     </div>
                 </form>
+                )}
 
                 <div className="max-h-[45vh] overflow-y-auto custom-scrollbar space-y-2 pr-1">
                     {isLoading && (
@@ -126,12 +129,16 @@ export const MataPelajaranDialog = ({ open, onOpenChange, items = [], isLoading 
                                 <p className="truncate text-sm font-semibold">{item.nama}</p>
                                 {item.kode && <p className="text-xs text-muted-foreground">{item.kode}</p>}
                             </div>
+                            {canManage && (
                             <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit ${item.nama}`} onClick={() => setForm({ id: item.id, nama: item.nama || '', kode: item.kode || '', urutan: item.urutan ?? '' })}>
                                 <Edit className="w-4 h-4" />
                             </Button>
+                            )}
+                            {canManage && (
                             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" aria-label={`Nonaktifkan ${item.nama}`} onClick={() => setConfirmState({ isOpen: true, target: item })}>
                                 <Trash2 className="w-4 h-4" />
                             </Button>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -157,7 +164,7 @@ export const MataPelajaranDialog = ({ open, onOpenChange, items = [], isLoading 
  * Dialog master data periode ajaran. Backend menjamin hanya satu periode aktif,
  * jadi menandai satu periode aktif otomatis menonaktifkan sisanya.
  */
-export const PeriodeDialog = ({ open, onOpenChange, items = [], isLoading = false, onChanged }) => {
+export const PeriodeDialog = ({ open, onOpenChange, items = [], isLoading = false, onChanged, canManage = true }) => {
     const [form, setForm] = useState(EMPTY_PERIODE);
     const [isSaving, setIsSaving] = useState(false);
     const [confirmState, setConfirmState] = useState({ isOpen: false, target: null });
@@ -203,7 +210,7 @@ export const PeriodeDialog = ({ open, onOpenChange, items = [], isLoading = fals
 
     const handleActivate = async (item) => {
         try {
-            await updatePeriode(item.id, { is_active: true });
+            await activatePeriode(item.id);
             toast({ title: 'Berhasil', description: `Periode "${item.nama}" kini aktif.` });
             await onChanged?.();
         } catch (error) {
@@ -230,6 +237,7 @@ export const PeriodeDialog = ({ open, onOpenChange, items = [], isLoading = fals
                     <DialogDescription>Kelola tahun ajaran dan semester. Hanya satu periode yang dapat aktif.</DialogDescription>
                 </DialogHeader>
 
+                {canManage && (
                 <form onSubmit={handleSubmit} className="admin-edit-section">
                     <div className="admin-edit-field-grid">
                         <div className="admin-edit-field admin-edit-field-full">
@@ -274,6 +282,7 @@ export const PeriodeDialog = ({ open, onOpenChange, items = [], isLoading = fals
                         </Button>
                     </div>
                 </form>
+                )}
 
                 <div className="max-h-[40vh] overflow-y-auto custom-scrollbar space-y-2 pr-1">
                     {isLoading && (
@@ -297,9 +306,10 @@ export const PeriodeDialog = ({ open, onOpenChange, items = [], isLoading = fals
                                 </p>
                                 <p className="text-xs text-muted-foreground">{item.tahun_ajaran} • Semester {item.semester}</p>
                             </div>
-                            {!item.is_active && (
+                            {canManage && !item.is_active && (
                                 <Button type="button" variant="outline" size="sm" onClick={() => handleActivate(item)}>Aktifkan</Button>
                             )}
+                            {canManage && (
                             <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit ${item.nama}`} onClick={() => setForm({
                                 id: item.id,
                                 nama: item.nama || '',
@@ -311,9 +321,12 @@ export const PeriodeDialog = ({ open, onOpenChange, items = [], isLoading = fals
                             })}>
                                 <Edit className="w-4 h-4" />
                             </Button>
+                            )}
+                            {canManage && (
                             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" aria-label={`Hapus ${item.nama}`} onClick={() => setConfirmState({ isOpen: true, target: item })}>
                                 <Trash2 className="w-4 h-4" />
                             </Button>
+                            )}
                         </div>
                     ))}
                 </div>

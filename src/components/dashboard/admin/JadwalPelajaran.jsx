@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 import { toast } from '@/components/ui/use-toast';
 import {
@@ -284,12 +284,16 @@ const JadwalPelajaran = () => {
 
                 <div className="admin-panel-header-actions">
                     <div className="admin-action-cluster">
-                        <button type="button" onClick={() => setIsMapelOpen(true)} className="admin-action-cluster-btn">
-                            <BookMarked className="h-3.5 w-3.5" /> Mata Pelajaran
-                        </button>
-                        <button type="button" onClick={() => setIsPeriodeOpen(true)} className="admin-action-cluster-btn">
-                            <CalendarRange className="h-3.5 w-3.5" /> Periode
-                        </button>
+                        {canManage && (
+                            <button type="button" onClick={() => setIsMapelOpen(true)} className="admin-action-cluster-btn">
+                                <BookMarked className="h-3.5 w-3.5" /> Mata Pelajaran
+                            </button>
+                        )}
+                        {canManage && (
+                            <button type="button" onClick={() => setIsPeriodeOpen(true)} className="admin-action-cluster-btn">
+                                <CalendarRange className="h-3.5 w-3.5" /> Periode
+                            </button>
+                        )}
                         <button type="button" onClick={loadJadwal} className="admin-action-cluster-btn" disabled={isLoadingJadwal}>
                             <RefreshCw className={`h-3.5 w-3.5 ${isLoadingJadwal ? 'animate-spin' : ''}`} /> Muat Ulang
                         </button>
@@ -485,6 +489,7 @@ const JadwalPelajaran = () => {
                 items={mapelList}
                 isLoading={isLoadingMaster}
                 onChanged={loadMasterData}
+                canManage={canManage}
             />
 
             <PeriodeDialog
@@ -493,6 +498,7 @@ const JadwalPelajaran = () => {
                 items={periodeList}
                 isLoading={isLoadingMaster}
                 onChanged={loadMasterData}
+                canManage={canManage}
             />
 
             <ConfirmationDialog

@@ -85,17 +85,32 @@ func (h *ScheduleHandler) CreatePeriode(w http.ResponseWriter, r *http.Request) 
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
-	// Menyalakan periode baru harus mematikan yang lama, kalau tidak index
-	// periode_ajaran_satu_aktif menolak seluruh penyimpanan.
+	ctx := r.Context()
+
+	// Mematikan periode lama dan menyimpan yang baru harus SATU transaksi. Kalau
+	// tidak, insert yang gagal (mis. tahun ajaran duplikat) meninggalkan sekolah
+	// tanpa periode aktif sama sekali — index periode_ajaran_satu_aktif hanya
+	// mencegah DUA aktif, bukan NOL.
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		jsonError(w, "gagal memulai transaksi", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(ctx)
+
 	if aktif, _ := body["is_active"].(bool); aktif {
-		if err := h.matikanPeriodeLain(r.Context(), ""); err != nil {
+		if err := h.matikanPeriodeLain(ctx, tx, ""); err != nil {
 			jsonError(w, "gagal menonaktifkan periode lama", http.StatusInternalServerError)
 			return
 		}
 	}
-	item, err := insertRow(r.Context(), h.db, "periode_ajaran", body, periodeEditable)
+	item, err := insertRowTx(ctx, tx, "periode_ajaran", body, periodeEditable)
 	if err != nil {
 		jsonError(w, pesanGalatJadwal(err, "periode"), http.StatusBadRequest)
+		return
+	}
+	if err := tx.Commit(ctx); err != nil {
+		jsonError(w, "gagal menyimpan periode", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -109,13 +124,24 @@ func (h *ScheduleHandler) UpdatePeriode(w http.ResponseWriter, r *http.Request) 
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
+	ctx := r.Context()
+
+	// Satu transaksi, alasan sama seperti CreatePeriode: update yang gagal setelah
+	// periode lain dimatikan tidak boleh menyisakan nol periode aktif.
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		jsonError(w, "gagal memulai transaksi", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(ctx)
+
 	if aktif, _ := body["is_active"].(bool); aktif {
-		if err := h.matikanPeriodeLain(r.Context(), id); err != nil {
+		if err := h.matikanPeriodeLain(ctx, tx, id); err != nil {
 			jsonError(w, "gagal menonaktifkan periode lama", http.StatusInternalServerError)
 			return
 		}
 	}
-	item, err := updateRow(r.Context(), h.db, "periode_ajaran", id, body, periodeEditable)
+	item, err := updateRow(ctx, tx, "periode_ajaran", id, body, periodeEditable)
 	if err != nil {
 		if errors.Is(err, errNoFields) {
 			jsonError(w, "tidak ada field yang bisa diperbarui", http.StatusBadRequest)
@@ -128,6 +154,10 @@ func (h *ScheduleHandler) UpdatePeriode(w http.ResponseWriter, r *http.Request) 
 		jsonError(w, pesanGalatJadwal(err, "periode"), http.StatusBadRequest)
 		return
 	}
+	if err := tx.Commit(ctx); err != nil {
+		jsonError(w, "gagal menyimpan periode", http.StatusInternalServerError)
+		return
+	}
 	jsonData(w, item)
 }
 
@@ -135,6 +165,13 @@ func (h *ScheduleHandler) DeletePeriode(w http.ResponseWriter, r *http.Request) 
 	id := chi.URLParam(r, "id")
 	ct, err := h.db.Exec(r.Context(), `DELETE FROM periode_ajaran WHERE id = $1`, id)
 	if err != nil {
+		// Periode yang sudah punya jadwal ditahan foreign key. Beri pesan yang
+		// jelas, bukan 500 mentah, supaya tata usaha tahu harus menghapus
+		// jadwalnya lebih dulu.
+		if strings.Contains(err.Error(), "violates foreign key") {
+			jsonError(w, "Periode ini masih dipakai jadwal pelajaran. Hapus jadwalnya lebih dulu.", http.StatusConflict)
+			return
+		}
 		jsonError(w, "gagal menghapus periode", http.StatusInternalServerError)
 		return
 	}
@@ -145,12 +182,12 @@ func (h *ScheduleHandler) DeletePeriode(w http.ResponseWriter, r *http.Request) 
 	jsonData(w, map[string]any{"id": id})
 }
 
-func (h *ScheduleHandler) matikanPeriodeLain(ctx context.Context, kecuali string) error {
+func (h *ScheduleHandler) matikanPeriodeLain(ctx context.Context, tx pgx.Tx, kecuali string) error {
 	if kecuali == "" {
-		_, err := h.db.Exec(ctx, `UPDATE periode_ajaran SET is_active = false WHERE is_active`)
+		_, err := tx.Exec(ctx, `UPDATE periode_ajaran SET is_active = false WHERE is_active`)
 		return err
 	}
-	_, err := h.db.Exec(ctx,
+	_, err := tx.Exec(ctx,
 		`UPDATE periode_ajaran SET is_active = false WHERE is_active AND id <> $1`, kecuali)
 	return err
 }
@@ -305,6 +342,11 @@ func (h *ScheduleHandler) CreateJadwal(w http.ResponseWriter, r *http.Request) {
 	// Baca ulang supaya jam kembali sebagai string dan kolom join ikut terisi.
 	if lengkap, err := h.jadwalByID(r.Context(), asString(item["id"])); err == nil {
 		item = lengkap
+	} else {
+		// Baca ulang gagal (jarang): buang jam bertipe pgtype.Time agar UI tidak
+		// menampilkan "[object Object]"; daftar berikutnya memuat nilai yang benar.
+		delete(item, "jam_mulai")
+		delete(item, "jam_selesai")
 	}
 	w.WriteHeader(http.StatusCreated)
 	jsonData(w, item)
@@ -317,7 +359,11 @@ func (h *ScheduleHandler) UpdateJadwal(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
-	if pesan := h.periksaBentrok(r.Context(), body, id); pesan != "" {
+	// Update parsial bisa mengubah hanya jam_mulai; tanpa mengisi field lain dari
+	// baris yang ada, periksaBentrok akan terlewat (butuh periode/kelas/jam/hari
+	// lengkap) dan slot bertabrakan lolos. Gabungkan dulu dengan nilai tersimpan.
+	cekBody := h.gabungJadwalUntukBentrok(r.Context(), id, body)
+	if pesan := h.periksaBentrok(r.Context(), cekBody, id); pesan != "" {
 		jsonError(w, pesan, http.StatusConflict)
 		return
 	}
@@ -336,6 +382,9 @@ func (h *ScheduleHandler) UpdateJadwal(w http.ResponseWriter, r *http.Request) {
 	}
 	if lengkap, err := h.jadwalByID(r.Context(), id); err == nil {
 		item = lengkap
+	} else {
+		delete(item, "jam_mulai")
+		delete(item, "jam_selesai")
 	}
 	jsonData(w, item)
 }
@@ -352,6 +401,40 @@ func (h *ScheduleHandler) DeleteJadwal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonData(w, map[string]any{"id": id})
+}
+
+// gabungJadwalUntukBentrok mengisi field yang tidak dikirim update parsial dengan
+// nilai baris yang ada, supaya periksaBentrok punya periode/kelas/jam/hari lengkap.
+// Nilai dari klien selalu menang atas nilai tersimpan. Bila baris tidak terbaca,
+// body dikembalikan apa adanya dan constraint DB tetap jadi jaring terakhir.
+func (h *ScheduleHandler) gabungJadwalUntukBentrok(ctx context.Context, id string, body map[string]any) map[string]any {
+	var (
+		periodeID, classID, guruID string
+		jamMulai, jamSelesai       string
+		hari                       int
+	)
+	err := h.db.QueryRow(ctx, `
+		SELECT periode_id::text, class_id::text, COALESCE(guru_id::text, ''),
+		       hari, to_char(jam_mulai, 'HH24:MI'), to_char(jam_selesai, 'HH24:MI')
+		FROM jadwal_pelajaran WHERE id = $1::uuid
+	`, id).Scan(&periodeID, &classID, &guruID, &hari, &jamMulai, &jamSelesai)
+	if err != nil {
+		return body
+	}
+	merged := map[string]any{
+		"periode_id":  periodeID,
+		"class_id":    classID,
+		"hari":        float64(hari),
+		"jam_mulai":   jamMulai,
+		"jam_selesai": jamSelesai,
+	}
+	if guruID != "" {
+		merged["guru_id"] = guruID
+	}
+	for k, v := range body {
+		merged[k] = v
+	}
+	return merged
 }
 
 // periksaBentrok menolak dua hal yang tidak bisa dijaga index unik: satu kelas
