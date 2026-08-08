@@ -20,7 +20,7 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-prestasi.css';
 
 const PrestasiBody = (vals = {}) => {
-  const { bidang, daftar, detil, detilAda, grafik, grafikTampil, jumlah, podium, sebelum, sesudah, stat, stop, tingkatOpsi, tutup } = vals;
+  const { bidang, daftar, detil, detilAda, grafik, grafikTampil, jumlah, podium, sebelum, sesudah, stat, stop, tingkatOpsi, total, tutup } = vals;
   return (
     <>
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "22px 28px 0" }}>
@@ -52,7 +52,7 @@ const PrestasiBody = (vals = {}) => {
             <p style={{ margin: "24px 0 0", maxWidth: "520px", fontSize: "15.5px", lineHeight: "1.7", color: "rgba(214,218,255,.82)", textWrap: "pretty" }}>Semua penghargaan yang dibawa pulang murid dan guru, dicatat apa adanya beserta tingkat lomba dan tahunnya.</p>
           </div>
           <div style={{ fontFamily: "'Archivo',system-ui,sans-serif", textAlign: "right" }}>
-            <div style={{ fontSize: "142px", lineHeight: "1", paddingBottom: "6px", letterSpacing: "-.06em", fontWeight: "900", fontVariantNumeric: "tabular-nums", color: "transparent", WebkitTextStroke: "2px rgba(255,255,255,.34)" }}><span data-count="86" data-plain="1">0</span></div>
+            <div style={{ fontSize: "142px", lineHeight: "1", paddingBottom: "6px", letterSpacing: "-.06em", fontWeight: "900", fontVariantNumeric: "tabular-nums", color: "transparent", WebkitTextStroke: "2px rgba(255,255,255,.34)" }}><span data-count={total ?? 0} data-plain="1">0</span></div>
             <div style={{ marginTop: "14px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".2em", textTransform: "uppercase", color: "#b3b8ee" }}>Penghargaan tercatat</div>
           </div>
         </div>

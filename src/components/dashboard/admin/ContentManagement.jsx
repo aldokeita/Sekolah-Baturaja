@@ -8,11 +8,12 @@ import { fetchSantriList, fetchGuruList } from '@/lib/dataMasterAdapters';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList, Building2, BookMarked } from 'lucide-react';
+import { ClipboardList, Building2, BookMarked, Award } from 'lucide-react';
 import SchoolIdentitySettings from '@/components/dashboard/admin/SchoolIdentitySettings';
 import HomeContentSettings from '@/components/dashboard/admin/HomeContentSettings';
 import ProfileContentSettings from '@/components/dashboard/admin/ProfileContentSettings';
 import PpdbContentSettings from '@/components/dashboard/admin/PpdbContentSettings';
+import PrestasiContentSettings from '@/components/dashboard/admin/PrestasiContentSettings';
 import SchoolInfoSettings from '@/components/dashboard/admin/SchoolInfoSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
@@ -366,6 +367,7 @@ const ContentManagement = () => {
       { id: 'info', label: 'Info Sekolah', icon: Info },
       { id: 'homepage', label: 'Halaman Depan', icon: Home },
       { id: 'profil', label: 'Halaman Profil', icon: BookMarked },
+      { id: 'prestasi', label: 'Prestasi', icon: Award },
       { id: 'media', label: 'Media & Galeri', icon: ImageIcon },
       { id: 'enrollment', label: 'Informasi Pendaftaran', icon: ClipboardList },
       { id: 'pesan', label: 'Pesan Masuk', icon: Mail },
@@ -454,6 +456,10 @@ const ContentManagement = () => {
 
         <TabsContent value="profil" className="animate-in fade-in slide-in-from-bottom-2">
             <ProfileContentSettings />
+        </TabsContent>
+
+        <TabsContent value="prestasi" className="animate-in fade-in slide-in-from-bottom-2">
+            <PrestasiContentSettings />
         </TabsContent>
 
         <TabsContent value="media" className="grid md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2">
