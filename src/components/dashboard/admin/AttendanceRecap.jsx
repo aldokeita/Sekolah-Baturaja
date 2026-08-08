@@ -14,7 +14,8 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import AttendanceStatusIcon from '../shared/AttendanceStatusIcon';
 import AttendanceDetailsModal from '../shared/AttendanceDetailsModal';
-import { DEFAULT_SESSION_TIMES, buildSessionStartTimestamp, resolveAttendanceRecordStatus, calculateTimeDifference } from '@/utils/AttendanceStatusLogic';
+import { buildSessionStartTimestamp, resolveAttendanceRecordStatus, calculateTimeDifference } from '@/utils/AttendanceStatusLogic';
+import { useAttendanceSessionConfiguration } from '@/hooks/useAttendanceSessionConfiguration';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolveAvatarRecords } from '@/lib/storageAdapters';
 import DataPagination from '@/components/dashboard/shared/DataPagination';
@@ -22,8 +23,6 @@ import { getAllSessions, getSessionNumber } from '@/utils/sessionMapping';
 
 const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 const PAGE_SIZE = 10;
-
-const sessionTimes = DEFAULT_SESSION_TIMES;
 
 export const SantriRecapDetailModal = ({ santri, isOpen, onClose }) => {
     const [year, setYear] = useState(new Date().getFullYear());
@@ -101,6 +100,7 @@ export const SantriRecapDetailModal = ({ santri, isOpen, onClose }) => {
 
 const AttendanceRecap = () => {
     const { role, user } = useAuth();
+    const { sessionTimes } = useAttendanceSessionConfiguration();
     const [attendanceData, setAttendanceData] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
     const [classes, setClasses] = useState([]);
@@ -187,7 +187,12 @@ const AttendanceRecap = () => {
             const { data: santri, total: count } = await fetchSantriPage(santriFilters);
             const santriIds = (santri || []).map((item) => item.id);
             const allAttendance = santriIds.length > 0
-                ? await fetchAttendance({ date_from: startDate, date_to: endDate })
+                ? await fetchAttendance({
+                    date_from: startDate,
+                    date_to: endDate,
+                    limit: 500,
+                    ...(selectedClass !== 'all' ? { class_id: selectedClass } : {}),
+                })
                 : [];
             const santriIdSet = new Set(santriIds);
             const attendance = (allAttendance || []).filter((row) => santriIdSet.has(row.user_id));

@@ -13,7 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { isAdminRole } from '@/lib/roles';
+import { canManageRole } from '@/lib/roles';
+import { useAttendanceSessionConfiguration } from '@/hooks/useAttendanceSessionConfiguration';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GuruPerformanceSummary from './GuruPerformanceSummary';
@@ -40,6 +41,7 @@ const isPresentStatus = (status) => ['hadir', 'terlambat', 'on_time'].includes(
 
 const GuruAttendanceRecap = ({ isReadOnly = false }) => {
     const { role, user } = useAuth();
+    const { sessionTimes } = useAttendanceSessionConfiguration();
     const [attendanceData, setAttendanceData] = useState([]);
     const [gurus, setGurus] = useState([]);
     const [classes, setClasses] = useState([]);
@@ -63,7 +65,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
     const [editTime, setEditTime] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const canEdit = !isReadOnly && isAdminRole(role);
+    const canEdit = !isReadOnly && canManageRole(role);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -122,7 +124,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
 
         const { guruId, dateStr, sesi, record } = editModal.data;
         const normalizedSession = normalizeAttendanceSessionName(sesi);
-        const sessionStart = buildSessionStartTimestamp(dateStr, normalizedSession);
+        const sessionStart = buildSessionStartTimestamp(dateStr, normalizedSession, sessionTimes);
         const attendanceTime = markAbsent ? '' : editTime;
         const checkInTs = attendanceTime ? buildJakartaTimestamp(dateStr, attendanceTime) : null;
 
@@ -252,7 +254,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
                         normalizeAttendanceSessionName(a.sesi) === sesi
                     );
 
-                    const sessionStartTs = buildSessionStartTimestamp(dateStr, sesi);
+                    const sessionStartTs = buildSessionStartTimestamp(dateStr, sesi, sessionTimes);
                     const computedRecordStatus = resolveAttendanceRecordStatus(attendanceRecord, sessionStartTs);
                     const isPresent = isPresentStatus(computedRecordStatus);
 
@@ -336,7 +338,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
 
     // Derived modal data values
     const isReadOnlyMode = editModal.data?.readOnly;
-    const sessionStartTs = editModal.data ? buildSessionStartTimestamp(editModal.data.dateStr, editModal.data.sesi) : null;
+    const sessionStartTs = editModal.data ? buildSessionStartTimestamp(editModal.data.dateStr, editModal.data.sesi, sessionTimes) : null;
     const checkInTs = editTime && editModal.data ? buildJakartaTimestamp(editModal.data.dateStr, editTime) : null;
     const computedStatusForModal = isReadOnlyMode
         ? (editModal.data?.computedStatus || 'Tidak Hadir')
