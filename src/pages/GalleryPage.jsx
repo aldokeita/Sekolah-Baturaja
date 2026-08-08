@@ -38,6 +38,17 @@ const FOTO = [
 ];
 
 const KAT = ['Semua', 'Belajar', 'Ekstrakurikuler', 'Acara', 'Fasilitas', 'Prestasi'];
+const KAT_ITEM = ['Belajar', 'Ekstrakurikuler', 'Acara', 'Fasilitas', 'Prestasi'];
+
+// Pola span mosaik & gradien fallback, dipilih otomatis berdasarkan urutan foto
+// sehingga pembeli tidak perlu menentukan tata letak. (Pola "tampilan di kode".)
+const SPAN = [[2, 2], [1, 1], [1, 1], [2, 1], [1, 1], [1, 2], [2, 1], [1, 1]];
+const PHOTO_GRAD = [
+  'linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)', 'linear-gradient(150deg,#bcd6ff,#9fb6f8)',
+  'linear-gradient(150deg,#bbf7d0,#86efac)', 'linear-gradient(150deg,#ffc9dc,#f2a9c8)',
+  'linear-gradient(150deg,#ffe0b3,#ffc39c 55%,#b6f0e0)', 'linear-gradient(150deg,#c9e8ff,#a5c8f5)',
+  'linear-gradient(150deg,#ffd8ea,#e8b6f0)', 'linear-gradient(150deg,#d7d2ff,#b4b8f8)',
+];
 
 const ALBUM = [
   ['Pentas seni 2025', 42, '#ffc9dc', '#f2a9c8', '#c6b6f6'],
@@ -71,10 +82,27 @@ const GalleryPage = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Mockup: photos filtered by the active category, keeping original indices.
+  // Foto dari CMS bila ada (jumlah bebas), jika kosong pakai contoh bawaan FOTO.
+  // Span mosaik & gradien fallback dipilih otomatis dari urutan.
+  const source = useMemo(() => {
+    if (Array.isArray(cmsPhotos) && cmsPhotos.length > 0) {
+      return cmsPhotos.map((p, i) => ({
+        nama: p.caption || p.name || `Foto ${i + 1}`,
+        kat: KAT_ITEM.includes(p.kategori) ? p.kategori : 'Belajar',
+        ket: p.keterangan || '',
+        tanggal: p.tanggal || '',
+        url: p.url || p.image_url || '',
+        grad: PHOTO_GRAD[i % PHOTO_GRAD.length],
+        col: SPAN[i % SPAN.length][0],
+        row: SPAN[i % SPAN.length][1],
+      }));
+    }
+    return FOTO.map((f) => ({ nama: f[0], kat: f[1], ket: f[2], tanggal: f[3], url: '', grad: f[4], col: f[5], row: f[6] }));
+  }, [cmsPhotos]);
+
   const items = useMemo(
-    () => FOTO.map((f, i) => ({ f, i })).filter((o) => kat === 'Semua' || o.f[1] === kat),
-    [kat],
+    () => source.map((s, i) => ({ s, i })).filter((o) => kat === 'Semua' || o.s.kat === kat),
+    [source, kat],
   );
 
   const move = useCallback((dir) => {
@@ -138,12 +166,8 @@ const GalleryPage = () => {
     if (el) el.scrollBy({ left: dir * Math.min(760, el.clientWidth * 0.72), behavior: 'smooth' });
   };
 
-  // CMS photo (if any) for slot i — replaces the gradient placeholder.
-  const photoFill = (i, fallbackGrad) => {
-    const url = cmsPhotos[i]?.url || cmsPhotos[i]?.image_url;
-    return url ? `background:url("${url}") center/cover no-repeat` : `background:${fallbackGrad}`;
-  };
-  const photoName = (i, fallback) => cmsPhotos[i]?.caption || fallback;
+  // Isi latar satu foto: gambar bila ada url, jika tidak gradien fallback.
+  const fillOf = (s) => (s.url ? `background:url("${s.url}") center/cover no-repeat` : `background:${s.grad}`);
 
   const heroCols = useMemo(() => Array.from({ length: 5 }).map((_, c) => {
     const base = Array.from({ length: 9 }).map((__, t) => {
@@ -153,7 +177,7 @@ const GalleryPage = () => {
     return { tiles: base.concat(base), cls: c % 2 ? 'dcol rev' : 'dcol', style: `animation-duration:${38 + c * 7}s` };
   }), []);
 
-  const cur = idx >= 0 ? FOTO[idx] : null;
+  const cur = idx >= 0 ? source[idx] : null;
   const at = items.findIndex((o) => o.i === idx);
 
   const vals = {
@@ -170,7 +194,7 @@ const GalleryPage = () => {
     ],
 
     kategori: KAT.map((k) => {
-      const n = k === 'Semua' ? FOTO.length : FOTO.filter((f) => f[1] === k).length;
+      const n = k === 'Semua' ? source.length : source.filter((s) => s.kat === k).length;
       const on = kat === k;
       return {
         label: k,
@@ -198,15 +222,15 @@ const GalleryPage = () => {
 
     mosStyle: `display:grid;grid-template-columns:repeat(${COLS},1fr);grid-auto-rows:186px;grid-auto-flow:dense;gap:18px;position:relative;z-index:1`,
 
-    foto: items.map(({ f, i }) => ({
-      nama: photoName(i, f[0]),
-      kat: f[1],
-      ket: f[2],
-      tanggal: f[3],
+    foto: items.map(({ s, i }) => ({
+      nama: s.nama,
+      kat: s.kat,
+      ket: s.ket,
+      tanggal: s.tanggal,
       open: () => setIdx(i),
-      cell: `grid-column:span ${Math.min(COLS, f[5])};grid-row:span ${f[6]};border:1px solid rgba(255,255,255,.72);box-shadow:0 28px 58px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.8)`,
+      cell: `grid-column:span ${Math.min(COLS, s.col)};grid-row:span ${s.row};border:1px solid rgba(255,255,255,.72);box-shadow:0 28px 58px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.8)`,
       frame: 'position:relative;width:min(72vw,880px);height:min(66vh,560px);border-radius:30px;border:1px solid rgba(255,255,255,.72);box-shadow:0 40px 84px -30px rgba(50,60,125,.62),inset 0 1px 0 rgba(255,255,255,.8)',
-      fill: photoFill(i, f[4]),
+      fill: fillOf(s),
     })),
     cinePrev: () => scrollCine(-1),
     cineNext: () => scrollCine(1),
@@ -222,16 +246,16 @@ const GalleryPage = () => {
 
     lightOpen: idx >= 0,
     cur: cur ? {
-      nama: photoName(idx, cur[0]),
-      kat: cur[1],
-      ket: cur[2],
-      tanggal: cur[3],
+      nama: cur.nama,
+      kat: cur.kat,
+      ket: cur.ket,
+      tanggal: cur.tanggal,
       pos: `${at + 1} / ${items.length}`,
-      frame: `position:relative;flex:1;max-width:1080px;height:100%;max-height:74vh;border-radius:28px;overflow:hidden;${photoFill(idx, cur[4])};border:1px solid rgba(255,255,255,.5);box-shadow:0 50px 110px -34px rgba(15,20,60,.8);animation:zoomin .42s cubic-bezier(.2,.9,.25,1) both`,
+      frame: `position:relative;flex:1;max-width:1080px;height:100%;max-height:74vh;border-radius:28px;overflow:hidden;${fillOf(cur)};border:1px solid rgba(255,255,255,.5);box-shadow:0 50px 110px -34px rgba(15,20,60,.8);animation:zoomin .42s cubic-bezier(.2,.9,.25,1) both`,
     } : { nama: '', kat: '', ket: '', tanggal: '', pos: '', frame: '' },
-    thumbs: items.map(({ f, i }) => ({
+    thumbs: items.map(({ s, i }) => ({
       go: () => setIdx(i),
-      style: `flex:none;width:${i === idx ? '104px' : '74px'};height:56px;border-radius:12px;cursor:pointer;padding:0;${photoFill(i, f[4])};transition:width .35s cubic-bezier(.4,1.3,.4,1),opacity .3s ease,border-color .3s ease;opacity:${i === idx ? '1' : '.55'};border:2px solid ${i === idx ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.3)'}`,
+      style: `flex:none;width:${i === idx ? '104px' : '74px'};height:56px;border-radius:12px;cursor:pointer;padding:0;${fillOf(s)};transition:width .35s cubic-bezier(.4,1.3,.4,1),opacity .3s ease,border-color .3s ease;opacity:${i === idx ? '1' : '.55'};border:2px solid ${i === idx ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.3)'}`,
     })),
     prev: () => move(-1),
     next: () => move(1),

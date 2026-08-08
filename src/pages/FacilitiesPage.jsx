@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import FasilitasBody from '@/components/sdnb/generated/FasilitasBody';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
@@ -61,6 +61,14 @@ const F = [
 
 const TOUR_MS = 6000;
 
+// Span mosaik & gradien fallback, dipilih otomatis dari urutan ruang.
+const SPAN = [[2, 2], [2, 1], [1, 1], [1, 1], [2, 1], [1, 2], [1, 1], [1, 1], [1, 1], [2, 1]];
+const GRAD = [
+  'var(--sekolah-aksen),var(--sekolah-aksen-tengah)', 'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)',
+  '#6ab8f0,#8fd8ec', '#5fb8a0,#8fe0c0', 'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)',
+  '#7bbf6a,#b6e8a0', '#f08a8a,#ffc9dc', '#ffd08c,#ffe0b3', 'var(--sekolah-aksen-tengah),#c8a4f0', 'var(--sekolah-aksen),#b4b8f8',
+];
+
 const FacilitiesPage = () => {
   const [aktif, setAktif] = useState(0);
   const [jalan, setJalan] = useState(true);
@@ -76,18 +84,43 @@ const FacilitiesPage = () => {
     return () => { mounted = false; };
   }, []);
 
+  // Ruang dari CMS bila ada (jumlah bebas), jika kosong pakai contoh bawaan F.
+  const source = useMemo(() => {
+    if (Array.isArray(cms) && cms.length > 0) {
+      return cms.map((r, k) => ({
+        nama: r.name || r.nama || `Ruang ${k + 1}`,
+        kategori: r.kategori || 'Penunjang',
+        luas: r.luas || '',
+        cerita: r.description || r.cerita || '',
+        ringkas: r.ringkas || '',
+        meta: Array.isArray(r.meta) ? r.meta : [],
+        url: r.image_url || r.url || '',
+        grad: GRAD[k % GRAD.length],
+        col: SPAN[k % SPAN.length][0],
+        row: SPAN[k % SPAN.length][1],
+      }));
+    }
+    return F.map((f) => ({
+      nama: f[0], kategori: f[1], luas: f[2], cerita: f[4], ringkas: f[5],
+      meta: (f[6] || []).map(([label, value]) => ({ label, value })),
+      url: '', grad: f[3], col: f[7], row: f[8],
+    }));
+  }, [cms]);
+
+  const n = source.length || 1;
+
   // auto tour
   useEffect(() => {
     const id = setInterval(() => {
-      if (jalan) setAktif((s) => (s + 1) % F.length);
+      if (jalan) setAktif((s) => (s + 1) % n);
     }, TOUR_MS);
     return () => clearInterval(id);
-  }, [jalan]);
+  }, [jalan, n]);
 
   const geser = useCallback((dir) => {
-    setAktif((s) => (s + dir + F.length) % F.length);
+    setAktif((s) => (s + dir + n) % n);
     setJalan(false);
-  }, []);
+  }, [n]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -98,32 +131,30 @@ const FacilitiesPage = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [geser]);
 
-  const pilih = (i) => { setAktif(i); setJalan(false); };
+  const pilih = (k) => { setAktif(k); setJalan(false); };
 
-  // CMS photo for slot k, else the mockup's layered gradient (verbatim foto()).
-  const foto = (f, k) => {
-    const url = cms[k]?.image_url || cms[k]?.url;
-    if (url) return `background-image:url("${url}");background-size:cover;background-position:center`;
-    const c = f[3].split(',');
+  // Isi latar satu ruang: gambar bila ada url, jika tidak gradien berlapis.
+  const foto = (s) => {
+    if (s.url) return `background-image:url("${s.url}");background-size:cover;background-position:center`;
+    const c = String(s.grad || '').split(',');
     return `background-image:radial-gradient(62% 120% at 76% 14%,${c[1]} 0%,rgba(255,255,255,0) 62%),`
       + `radial-gradient(52% 104% at 18% 92%,${c[0]} 0%,rgba(255,255,255,0) 58%),`
       + `linear-gradient(122deg,${c[0]} 0%,${c[1]} 54%,${c[0]} 100%)`;
   };
-  const nama = (f, k) => cms[k]?.name || f[0];
 
-  const i = aktif;
-  const a = F[i];
+  const i = Math.min(aktif, n - 1);
+  const a = source[i] || { nama: '', kategori: '', luas: '', cerita: '', meta: [] };
 
   const vals = {
-    panggung: F.map((f, k) => ({ on: k === i ? '1' : '0', foto: foto(f, k) })),
+    panggung: source.map((s, k) => ({ on: k === i ? '1' : '0', foto: foto(s) })),
 
     sorot: {
-      nama: nama(a, i), kategori: a[1], luas: a[2], cerita: a[4],
-      posisi: `${i + 1} dari ${F.length}`,
-      meta: a[6].map(([k, v]) => ({ k, v })),
+      nama: a.nama, kategori: a.kategori, luas: a.luas, cerita: a.cerita,
+      posisi: `${i + 1} dari ${source.length}`,
+      meta: (a.meta || []).map((m) => ({ k: m.label, v: m.value })),
     },
 
-    progres: `height:100%;width:${Math.round(((i + 1) / F.length) * 100)}%;background:linear-gradient(90deg,#7d8bff,var(--sekolah-aksen-ujung));transition:width .6s cubic-bezier(.22,.9,.28,1)`,
+    progres: `height:100%;width:${Math.round(((i + 1) / n) * 100)}%;background:linear-gradient(90deg,#7d8bff,var(--sekolah-aksen-ujung));transition:width .6s cubic-bezier(.22,.9,.28,1)`,
 
     jalanDot: jalan ? '#8ee0b8' : '#f0b48c',
     jalanTeks: jalan ? 'Tur berjalan otomatis' : 'Tur dijeda',
@@ -132,10 +163,10 @@ const FacilitiesPage = () => {
     maju: () => geser(1),
     mundur: () => geser(-1),
 
-    chip: F.map((f, k) => ({
-      nama: nama(f, k),
+    chip: source.map((s, k) => ({
+      nama: s.nama,
       on: k === i ? '1' : '0',
-      foto: foto(f, k),
+      foto: foto(s),
       pick: () => pilih(k),
     })),
 
@@ -146,11 +177,11 @@ const FacilitiesPage = () => {
       { n: 24, suf: '', label: 'Guru dan staf' },
     ].map((r, k) => ({ ...r, box: `padding:28px 28px 28px ${k === 0 ? '0' : '28px'};border-right:${k === 3 ? 'none' : '1px solid rgba(255,255,255,.16)'}` })),
 
-    mozaik: F.map((f, k) => ({
-      nama: nama(f, k), kategori: f[1], luas: f[2], ringkas: f[5],
-      foto: foto(f, k),
+    mozaik: source.map((s, k) => ({
+      nama: s.nama, kategori: s.kategori, luas: s.luas, ringkas: s.ringkas,
+      foto: foto(s),
       pick: () => pilih(k),
-      cell: `grid-column:span ${f[7]};grid-row:span ${f[8]};border-radius:24px;border:1px solid rgba(255,255,255,.16);box-shadow:0 30px 64px -26px rgba(6,10,42,.9)`,
+      cell: `grid-column:span ${s.col};grid-row:span ${s.row};border-radius:24px;border:1px solid rgba(255,255,255,.16);box-shadow:0 30px 64px -26px rgba(6,10,42,.9)`,
     })),
   };
 
