@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { doaHarian, bacaanShalat, suratPendek } from '@/data/islamicContent';
 import { motion } from 'framer-motion';
 import AttendanceConfiguration from './AttendanceConfiguration';
-import { enableGameFeatures } from '@/lib/featureFlags';
+import { enableGameFeatures, enableTahfizh } from '@/lib/featureFlags';
 import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
 import { createDefaultSantriLevelConfig, normalizeLevelConfigShape } from '@/lib/santriLevel';
 import { DEFAULT_WHATSAPP_TEMPLATES, fetchWhatsAppTemplates, saveWhatsAppTemplates } from '@/lib/whatsappTemplateAdapters';
@@ -668,6 +668,15 @@ const TEMPLATE_FIELDS = [
     },
 ];
 
+// Template kenaikan/penurunan jilid hanya relevan bila program tahfizh menyala
+// (sekolah umum tidak memakai jilid). Saat mati, keduanya disembunyikan bersama
+// bagian "Link grup per jilid"; template pembayaran & SPMB tetap tampil untuk
+// semua sekolah. Datanya tetap tersimpan, hanya kontrolnya yang disembunyikan.
+const JILID_TEMPLATE_KEYS = ['jilidPromotion', 'jilidDemotion'];
+const VISIBLE_TEMPLATE_FIELDS = enableTahfizh
+    ? TEMPLATE_FIELDS
+    : TEMPLATE_FIELDS.filter((field) => !JILID_TEMPLATE_KEYS.includes(field.key));
+
 const WhatsAppTemplateSettings = () => {
     const [templates, setTemplates] = useState({ ...DEFAULT_WHATSAPP_TEMPLATES });
     const [groupLinks, setGroupLinks] = useState({});
@@ -692,7 +701,7 @@ const WhatsAppTemplateSettings = () => {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            for (const field of TEMPLATE_FIELDS) {
+            for (const field of VISIBLE_TEMPLATE_FIELDS) {
                 if (!templates[field.key]?.trim()) throw new Error(`Template ${field.title} tidak boleh kosong.`);
             }
             validateWhatsAppGroupLinks(groupLinks);
@@ -727,6 +736,7 @@ const WhatsAppTemplateSettings = () => {
                 </Button>
             </div>
 
+            {enableTahfizh && (
             <section className="whatsapp-links-glass" aria-labelledby="whatsapp-group-links-title">
                 <div className="whatsapp-links-glass__heading">
                     <div className="whatsapp-links-glass__icon" aria-hidden="true"><Link2 className="h-5 w-5" /></div>
@@ -774,10 +784,11 @@ const WhatsAppTemplateSettings = () => {
                     </div>
                 )}
             </section>
+            )}
 
             <div className="grid gap-4 xl:grid-cols-2">
-                {TEMPLATE_FIELDS.map((field, index) => (
-                    <section key={field.key} className={`rounded-lg border bg-background/80 p-4 shadow-sm ${index === 2 ? 'xl:col-span-2' : ''}`}>
+                {VISIBLE_TEMPLATE_FIELDS.map((field) => (
+                    <section key={field.key} className={`rounded-lg border bg-background/80 p-4 shadow-sm ${field.key === 'paymentReceipt' ? 'xl:col-span-2' : ''}`}>
                         <div className="mb-3">
                             <h4 className="font-bold text-foreground">{field.title}</h4>
                             <p className="text-xs leading-relaxed text-muted-foreground">{field.description}</p>

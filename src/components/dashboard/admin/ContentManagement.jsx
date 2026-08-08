@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Edit, Trophy, Star, Video, Users, BookCopy, MessageSquare, FileText, Library, Building, Mail, Info, Image as ImageIcon, Home, Heart, Save } from 'lucide-react';
+import { Plus, Trash2, Edit, Video, Users, BookCopy, MessageSquare, FileText, Library, Building, Mail, Info, Image as ImageIcon, Home, Save } from 'lucide-react';
 import { fetchSantriList, fetchGuruList } from '@/lib/dataMasterAdapters';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -354,9 +354,6 @@ const ContentManagement = () => {
     }
   };
 
-  const handleSantriOfTheMonthChange = (index, personId, alasan) => { const person = santriList.find(p => p.id === personId); if (person) { const newSantriOTM = [...content.santriOfTheMonth]; newSantriOTM[index] = { ...person, alasan }; setContent(prev => ({ ...prev, santriOfTheMonth: newSantriOTM })); } };
-  const handleGuruOfTheMonthChange = (personId, alasan) => { const person = guruList.find(p => p.id === personId); if (person) setContent(prev => ({ ...prev, guruOfTheMonth: { ...person, alasan } })); };
-  const handleLeaderboardChange = (index, personId, achievement) => { const person = santriList.find(p => p.id === personId); if (person) { const newLeaderboard = [...content.leaderboard]; newLeaderboard[index] = { ...person, achievement }; setContent(prev => ({ ...prev, leaderboard: newLeaderboard })); } };
 
   // Identitas website hanya untuk superadmin (pemilik template). Pembeli berperan
   // admin dan tetap bebas mengelola seluruh konten di tab lain. Backend juga
@@ -369,7 +366,6 @@ const ContentManagement = () => {
       { id: 'info', label: 'Info Sekolah', icon: Info },
       { id: 'homepage', label: 'Halaman Depan', icon: Home },
       { id: 'profil', label: 'Halaman Profil', icon: BookMarked },
-      { id: 'apresiasi', label: 'Apresiasi', icon: Heart },
       { id: 'media', label: 'Media & Galeri', icon: ImageIcon },
       { id: 'enrollment', label: 'Informasi Pendaftaran', icon: ClipboardList },
       { id: 'pesan', label: 'Pesan Masuk', icon: Mail },
@@ -458,13 +454,6 @@ const ContentManagement = () => {
 
         <TabsContent value="profil" className="animate-in fade-in slide-in-from-bottom-2">
             <ProfileContentSettings />
-        </TabsContent>
-
-        <TabsContent value="apresiasi" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 flex gap-3 mb-4"><Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" /><div className="text-sm text-blue-700 dark:text-blue-300"><p className="font-bold mb-1">Info Pindah Lokasi</p><p>Pengaturan <strong>TV Leaderboard</strong> telah dipindahkan ke menu <strong>Pengaturan TV</strong> sesuai permintaan.</p></div></div>
-          <div className="admin-card p-4"><h3 className="font-bold text-xl mb-4 flex items-center"><Star className="w-6 h-6 mr-2 text-blue-500" /> Papan Peringkat (Website)</h3>{[0, 1, 2].map(index => (<div key={index} className="admin-card p-4 space-y-3 mb-4 bg-background"><h4 className="font-semibold">Peringkat #{index + 1}</h4><Select onValueChange={val => handleLeaderboardChange(index, val, content.leaderboard?.[index]?.achievement || '')} value={content.leaderboard?.[index]?.id}><SelectTrigger><SelectValue placeholder="Pilih Murid" /></SelectTrigger><SelectContent>{santriList.map(s => <SelectItem key={s.id} value={s.id}>{s.nama_lengkap}</SelectItem>)}</SelectContent></Select><Input placeholder="Deskripsi Prestasi" value={content.leaderboard?.[index]?.achievement || ''} onChange={e => handleLeaderboardChange(index, content.leaderboard?.[index]?.id, e.target.value)} /></div>))}</div>
-          <div className="admin-card p-4"><h3 className="font-bold text-xl mb-4 flex items-center"><Trophy className="w-6 h-6 mr-2 text-amber-500" /> Murid of the Month</h3>{[0, 1, 2].map(index => (<div key={index} className="admin-card p-4 space-y-3 mb-4 bg-background"><h4 className="font-semibold">Pilihan Murid #{index + 1}</h4><Select onValueChange={val => handleSantriOfTheMonthChange(index, val, content.santriOfTheMonth?.[index]?.alasan || '')} value={content.santriOfTheMonth?.[index]?.id}><SelectTrigger><SelectValue placeholder="Pilih Murid" /></SelectTrigger><SelectContent>{santriList.map(s => <SelectItem key={s.id} value={s.id}>{s.nama_lengkap}</SelectItem>)}</SelectContent></Select><Input placeholder="Alasan apresiasi..." value={content.santriOfTheMonth?.[index]?.alasan || ''} onChange={e => handleSantriOfTheMonthChange(index, content.santriOfTheMonth?.[index]?.id, e.target.value)} /></div>))}</div>
-          <div className="admin-card p-4"><h3 className="font-bold text-xl mb-4 flex items-center"><Trophy className="w-6 h-6 mr-2 text-amber-500" /> Guru of the Month</h3><div className="admin-card p-4 space-y-3 bg-background"><Select onValueChange={val => handleGuruOfTheMonthChange(val, content.guruOfTheMonth?.alasan || '')} value={content.guruOfTheMonth?.id}><SelectTrigger><SelectValue placeholder="Pilih Guru" /></SelectTrigger><SelectContent>{guruList.map(g => <SelectItem key={g.id} value={g.id}>{g.nama}</SelectItem>)}</SelectContent></Select><Input placeholder="Alasan apresiasi..." value={content.guruOfTheMonth?.alasan || ''} onChange={e => handleGuruOfTheMonthChange(content.guruOfTheMonth?.id, e.target.value)} /></div></div>
         </TabsContent>
 
         <TabsContent value="media" className="grid md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2">
