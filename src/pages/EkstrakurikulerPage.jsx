@@ -1,49 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import EkskulBody from '@/components/sdnb/generated/EkskulBody';
+import { fetchEkskulContent, normalizeEkskulContent } from '@/lib/ekskulContent';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
 
 /**
- * Ekstrakurikuler — markup generated verbatim from `Ekstrakurikuler.dc.html` by
- * tools/dc-convert.mjs. This file reproduces the mockup's logic class: the
- * rotating name stickers, the index-and-poster layout (clicking an index entry
- * swaps the poster, alternating the `panA`/`panB` animation), and the weekly
- * schedule cards.
+ * Ekstrakurikuler — markup dari mockup (EkskulBody), datanya kini bersumber dari
+ * Konten → Ekstrakurikuler (`website_content` kunci `ekskul_content`). Nama
+ * pembina karangan yang dulu ditanam di kode sudah dihapus. Warna kartu dipilih
+ * otomatis dari GRADIEN berdasarkan urutan, jadi pembeli hanya mengurus teks.
  */
-
-const E = [
-  ['Pramuka Siaga & Penggalang', 'Kepramukaan', 'Jumat', '15.00–16.30', 'Hendra Wijaya, S.Pd.', 'Halaman belakang', 68, 80, 'Kelas III–VI',
-    'Regu berlatih tali-temali, sandi morse, dan pertolongan pertama. Setiap semester diadakan perkemahan satu malam di halaman sekolah, dengan orang tua diundang pada malam api unggun.',
-    'var(--sekolah-aksen),var(--sekolah-aksen-tengah)'],
-  ['Atletik', 'Olahraga', 'Selasa', '15.30–16.30', 'Hendra Wijaya, S.Pd.', 'Lapangan sekolah', 24, 30, 'Kelas IV–VI',
-    'Latihan lari jarak pendek, lompat jauh, dan lempar bola. Murid yang menonjol disiapkan untuk seleksi O2SN tingkat kecamatan setiap Februari.',
-    'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)'],
-  ['Sanggar Tari', 'Seni', 'Rabu', '15.00–16.30', 'Yuliana Sari, S.Pd.SD', 'Aula sekolah', 22, 24, 'Kelas II–VI',
-    'Tari daerah Sumatera Selatan, terutama Gending Sriwijaya dan Tanggai. Kostum dijahit bersama orang tua murid, tampil pada pentas seni Desember.',
-    'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)'],
-  ['Klub Mendongeng', 'Literasi', 'Kamis', '13.30–14.30', 'Siti Aminah, S.Pd.SD', 'Perpustakaan', 18, 20, 'Kelas I–IV',
-    'Murid berlatih membaca nyaring lalu bercerita tanpa teks di depan kelas satu setiap dua pekan. Cerita diambil dari koleksi cerita rakyat perpustakaan.',
-    'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)'],
-  ['Tahfiz & Tilawah', 'Keagamaan', 'Selasa', '13.30–14.30', 'Ratna Dewi, S.Pd.SD', 'Musala', 34, 40, 'Kelas III–VI',
-    'Setoran hafalan juz 30 dan latihan tilawah. Dua anggota kelompok ini menjuarai MTQ pelajar tingkat kabupaten pada 2026.',
-    'var(--sekolah-aksen-pekat),#9fb6f8'],
-  ['Klub Sains', 'Akademik', 'Rabu', '13.30–14.30', 'Dedi Kurniawan, S.Pd.', 'Ruang kelas V A', 20, 24, 'Kelas IV–VI',
-    'Percobaan sederhana memakai bahan dari sekitar sekolah: penjernihan air, tekanan udara, dan tumbuhan. Hasil percobaan dipamerkan pada pekan sains.',
-    '#6ab8f0,#8fd8ec'],
-  ['Seni Musik & Paduan Suara', 'Seni', 'Kamis', '15.00–16.30', 'Yuliana Sari, S.Pd.SD', 'Aula sekolah', 30, 36, 'Kelas III–VI',
-    'Latihan pianika, angklung, dan paduan suara. Mengisi upacara bendera setiap awal bulan serta penutupan pentas seni.',
-    'var(--sekolah-aksen-tengah),#c8a4f0'],
-  ['Dokter Kecil', 'Kesehatan', 'Senin', '13.30–14.30', 'Lestari Ningsih, A.Md.', 'Ruang UKS', 16, 18, 'Kelas IV–VI',
-    'Belajar pertolongan pertama, mengukur tinggi dan berat badan teman, serta menjaga kebersihan kelas. Bertugas bergilir saat upacara.',
-    '#5fb8a0,#8fe0c0'],
-  ['Kebun & Bank Sampah', 'Lingkungan', 'Senin', '15.00–16.00', 'Dedi Kurniawan, S.Pd.', 'Kebun sekolah', 40, 48, 'Kelas IV–VI',
-    'Merawat petak sayur, memilah sampah, dan mencatat hasil panen. Kegiatan ini menjadi dasar penilaian Adiwiyata nasional 2026.',
-    '#7bbf6a,#b6e8a0'],
-  ['Klub Komputer', 'Akademik', 'Jumat', '13.30–14.30', 'Ahmad Zulkarnain, S.Pd.', 'Ruang komputer', 26, 32, 'Kelas V–VI',
-    'Mengetik sepuluh jari, menyusun dokumen sederhana, dan mencari informasi dengan pendampingan guru.',
-    'var(--sekolah-aksen),#b4b8f8'],
-];
 
 const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 const ROT = [-7, 5, -3, 8, -5, 4, -8, 6];
@@ -51,23 +18,57 @@ const POS = [
   [2, 6, null, null], [40, null, 0, null], [null, 4, 22, null], [6, null, null, 24],
   [null, 0, 46, null], [30, null, null, 6], [null, 22, 68, null], [0, null, 92, null],
 ];
+// Palet warna kartu, dipilih berdasarkan urutan kegiatan. Pembeli tidak
+// menyunting warna — hanya teks. (Pola sama seperti PROGRAM_STYLE/FASILITAS_GAYA.)
+const GRADIEN = [
+  'var(--sekolah-aksen),var(--sekolah-aksen-tengah)',
+  'var(--sekolah-aksen-tengah),var(--sekolah-aksen-ujung)',
+  'var(--sekolah-aksen-tengah-2),var(--sekolah-aksen-ujung)',
+  'var(--sekolah-aksen-ujung),var(--sekolah-aksen-hangat)',
+  'var(--sekolah-aksen-pekat),#9fb6f8',
+  '#6ab8f0,#8fd8ec',
+  'var(--sekolah-aksen-tengah),#c8a4f0',
+  '#5fb8a0,#8fe0c0',
+  '#7bbf6a,#b6e8a0',
+  'var(--sekolah-aksen),#b4b8f8',
+];
 
 const EkstrakurikulerPage = () => {
+  const [content, setContent] = useState(() => normalizeEkskulContent(undefined));
   const [aktif, setAktif] = useState(0);
   const [tick, setTick] = useState(0);
 
   useSdnbMotion([]);
 
+  useEffect(() => {
+    let hidup = true;
+    fetchEkskulContent()
+      .then((data) => { if (hidup && data) setContent(data); })
+      .catch(() => { /* biarkan bawaan; halaman tetap tampil */ });
+    return () => { hidup = false; };
+  }, []);
+
+  // Bentuk tuple yang diharapkan EkskulBody: [nama, bidang, hari, jam, pembina,
+  // tempat, terisi, kuota, kelas, cerita, gradien]. Gradien dari palet by index.
+  const E = useMemo(() => (content.records || []).map((r, i) => [
+    r.nama, r.bidang, r.hari, r.jam, r.pembina, r.tempat, r.terisi, r.kuota, r.kelas, r.cerita,
+    GRADIEN[i % GRADIEN.length],
+  ]), [content.records]);
+
   const pilih = (i) => { setAktif(i); setTick((t) => t + 1); };
 
-  const a = E[aktif];
-  const no = String(aktif + 1).padStart(2, '0');
+  const idxAktif = E.length ? Math.min(aktif, E.length - 1) : 0;
+  const a = E[idxAktif] || null;
+  const no = String(idxAktif + 1).padStart(2, '0');
+
+  const muridTerdaftar = E.reduce((t, e) => t + (Number(e[6]) || 0), 0);
+  const pembinaUnik = new Set(E.map((e) => String(e[4] || '').trim()).filter(Boolean)).size;
 
   const vals = {
     angka: [
-      { n: 10, suf: '', label: 'kegiatan aktif' },
-      { n: 298, suf: '', label: 'murid terdaftar' },
-      { n: 9, suf: '', label: 'guru pembina' },
+      { n: E.length, suf: '', label: 'kegiatan aktif' },
+      { n: muridTerdaftar, suf: '', label: 'murid terdaftar' },
+      { n: pembinaUnik, suf: '', label: 'guru pembina' },
     ],
 
     stiker: E.slice(0, 8).map((e, i) => {
@@ -83,9 +84,10 @@ const EkstrakurikulerPage = () => {
     }),
 
     total: `${E.length} kegiatan`,
+    judulJumlah: E.length,
 
     indeks: E.map((e, i) => {
-      const on = i === aktif;
+      const on = i === idxAktif;
       const c = e[10].split(',');
       return {
         nomor: String(i + 1).padStart(2, '0'),
@@ -101,12 +103,16 @@ const EkstrakurikulerPage = () => {
 
     panelCls: tick % 2 === 0 ? 'panA' : 'panB',
 
-    poster: {
+    poster: a ? {
       nomor: no, judul: a[0], bidang: a[1], hari: a[2], jam: a[3], pembina: a[4], tempat: a[5],
       cerita: a[9], kelas: a[8],
       kuotaTeks: `${a[6]} / ${a[7]} murid`,
-      kuotaBar: `height:100%;width:${Math.round((a[6] / a[7]) * 100)}%;border-radius:99px;background:linear-gradient(90deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung));transition:width .7s cubic-bezier(.22,.9,.28,1)`,
+      kuotaBar: `height:100%;width:${a[7] > 0 ? Math.round((a[6] / a[7]) * 100) : 0}%;border-radius:99px;background:linear-gradient(90deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung));transition:width .7s cubic-bezier(.22,.9,.28,1)`,
       wrap: `position:relative;overflow:hidden;min-height:340px;border-radius:32px;background:linear-gradient(140deg,${a[10]});border:1px solid rgba(255,255,255,.4);box-shadow:0 40px 86px -30px rgba(60,70,160,.72)`,
+    } : {
+      nomor: '00', judul: 'Belum ada kegiatan', bidang: '', hari: '', jam: '', pembina: '', tempat: '',
+      cerita: 'Tambahkan kegiatan ekstrakurikuler dari menu Konten → Ekstrakurikuler.', kelas: '',
+      kuotaTeks: '', kuotaBar: 'height:100%;width:0%', wrap: 'position:relative;min-height:340px;border-radius:32px;background:rgba(120,132,200,.12)',
     },
 
     jadwal: HARI.map((h) => ({
@@ -131,7 +137,7 @@ const EkstrakurikulerPage = () => {
     <div className="sdnb-ekskul">
       <Helmet>
         <title>Ekstrakurikuler — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Sepuluh kegiatan ekstrakurikuler, jadwal sepekan, dan cara mendaftar." />
+        <meta name="description" content="Kegiatan ekstrakurikuler, jadwal sepekan, dan cara mendaftar." />
       </Helmet>
       {EkskulBody(vals)}
     </div>

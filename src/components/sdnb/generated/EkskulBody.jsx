@@ -20,7 +20,7 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-ekskul.css';
 
 const EkskulBody = (vals = {}) => {
-  const { angka, indeks, jadwal, langkah, panelCls, poster, stiker, total } = vals;
+  const { angka, indeks, jadwal, judulJumlah, langkah, panelCls, poster, stiker, total } = vals;
   return (
     <>
 <section className="hero2" style={{ maxWidth: "1240px", margin: "0 auto", padding: "30px 28px 0", display: "grid", gridTemplateColumns: "1.02fr .98fr", gap: "34px", alignItems: "center" }}>
@@ -31,7 +31,7 @@ const EkskulBody = (vals = {}) => {
             <span style={{ width: "26px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></span>Tahun ajaran 2025/2026
           </div>
         </div>
-        <h1 className="bigtitle" style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "92px", lineHeight: ".88", letterSpacing: "-.052em", fontWeight: "800", color: "#171827" }}>Sepuluh<br /><span style={{ position: "relative", display: "inline-block", color: "transparent", WebkitTextStroke: "2px var(--sekolah-aksen-pekat)" }}>kegiatan<span aria-hidden="true" style={{ position: "absolute", left: "2%", right: "2%", bottom: "9%", height: "14px", borderRadius: "99px", background: "linear-gradient(90deg,rgba(91,108,255,.28),rgba(240,119,159,.32))", zIndex: "-1" }}></span></span><br />satu halaman.</h1>
+        <h1 className="bigtitle" style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "92px", lineHeight: ".88", letterSpacing: "-.052em", fontWeight: "800", color: "#171827" }}>{judulJumlah}<br /><span style={{ position: "relative", display: "inline-block", color: "transparent", WebkitTextStroke: "2px var(--sekolah-aksen-pekat)" }}>kegiatan<span aria-hidden="true" style={{ position: "absolute", left: "2%", right: "2%", bottom: "9%", height: "14px", borderRadius: "99px", background: "linear-gradient(90deg,rgba(91,108,255,.28),rgba(240,119,159,.32))", zIndex: "-1" }}></span></span><br />satu halaman.</h1>
         <p style={{ margin: "26px 0 0", maxWidth: "470px", fontSize: "16px", lineHeight: "1.7", color: "#4c5175", textWrap: "pretty" }}>Setiap murid mengikuti sedikitnya satu kegiatan setiap tahun ajaran. Latihan berlangsung sore hari di lingkungan sekolah, gratis, dan dibimbing guru pembina.</p>
         <div style={{ marginTop: "30px", display: "flex", flexWrap: "wrap", gap: "26px" }}>
           {(angka || []).map((a, $index) => (<React.Fragment key={$index}>

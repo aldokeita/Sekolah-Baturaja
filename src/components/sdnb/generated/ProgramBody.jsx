@@ -20,7 +20,7 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-program.css';
 
 const ProgramBody = (vals = {}) => {
-  const { angka, bebanTampil, detil, detilAda, gridProgram, jam, pintas, program, sebelum, sesudah, stop, tutup, urutan } = vals;
+  const { angka, bebanTampil, detil, detilAda, gridProgram, jam, judulProgram, pintas, program, ringkasProgram, sebelum, sesudah, stop, tutup, urutan } = vals;
   return (
     <>
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "24px 28px 0" }}>
@@ -34,7 +34,7 @@ const ProgramBody = (vals = {}) => {
         <div style={{ position: "relative", padding: "52px 48px 46px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "11px", padding: "9px 16px", borderRadius: "999px", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)", fontSize: "11.5px", fontWeight: "800", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Kurikulum Merdeka &middot; 2025/2026</div>
           <h1 className="phero" style={{ margin: "26px 0 0", maxWidth: "900px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "76px", lineHeight: ".98", letterSpacing: "-.048em", fontWeight: "800", color: "#141628", textWrap: "pretty" }}>Program belajar yang<br />dijalankan setiap hari,<br /><span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 46%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>bukan hanya tertulis.</span></h1>
-          <p style={{ margin: "26px 0 0", maxWidth: "620px", fontSize: "16px", lineHeight: "1.72", color: "#4c5175", textWrap: "pretty" }}>Enam program berjalan sepanjang tahun ajaran. Tiga di antaranya menempel pada jam pelajaran, tiga lainnya berupa kebiasaan harian yang dijaga seluruh kelas.</p>
+          <p style={{ margin: "26px 0 0", maxWidth: "620px", fontSize: "16px", lineHeight: "1.72", color: "#4c5175", textWrap: "pretty" }}>{ringkasProgram}</p>
           <div style={{ marginTop: "34px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
             {(pintas || []).map((p, $index) => (<React.Fragment key={$index}>
               <a className="pill" href={p.href} style={__dcs(p.style)}>{p.label}</a>
@@ -53,7 +53,7 @@ const ProgramBody = (vals = {}) => {
     </section>
 <section id="program" style={{ maxWidth: "1240px", margin: "0 auto", padding: "64px 28px 0" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "18px", flexWrap: "wrap" }}>
-        <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", lineHeight: "1.1", letterSpacing: "-.032em", fontWeight: "800", color: "#171827" }}>Enam program</h2>
+        <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", lineHeight: "1.1", letterSpacing: "-.032em", fontWeight: "800", color: "#171827" }}>{judulProgram}</h2>
         <span style={{ fontSize: "13px", color: "#6d7192" }}>Klik satu kartu untuk membaca rinciannya</span>
       </div>
       <div className="pgrid" style={__dcs(gridProgram)}>
