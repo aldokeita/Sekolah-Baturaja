@@ -18,8 +18,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { doaHarian, bacaanShalat, suratPendek } from '@/data/islamicContent';
 import { useTheme } from '@/contexts/ThemeContext';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 const QuizHafalanPage = () => {
+  const sekolah = useSchoolIdentity();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { width, height } = useWindowSize();
@@ -425,7 +427,7 @@ const QuizHafalanPage = () => {
 
   return (
     <>
-    <Helmet><title>Quiz Hafalan Gacha - LPQ Al-Fath Maulana</title></Helmet>
+    <Helmet><title>Quiz Hafalan Gacha - {sekolah.name}</title></Helmet>
     <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'} overflow-hidden flex flex-col relative font-sans selection:bg-purple-500 selection:text-white transition-colors duration-300`}>
 
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">

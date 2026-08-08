@@ -1,99 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://lpqalfathmaulana.id/</loc>
-    <lastmod>2026-07-21</lastmod>
+    <loc>https://sekolahbta.id/</loc>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/login</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <loc>https://sekolahbta.id/profil</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/profil</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <loc>https://sekolahbta.id/profil/galeri</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/profil/galeri</loc>
-    <lastmod>2026-07-21</lastmod>
+    <loc>https://sekolahbta.id/pendaftaran</loc>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/pendaftaran/informasi</loc>
-    <lastmod>2026-07-21</lastmod>
+    <loc>https://sekolahbta.id/cek-pendaftaran</loc>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/pendaftaran/brosur</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <loc>https://sekolahbta.id/kontak</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/pendaftaran/sistem</loc>
-    <lastmod>2026-07-21</lastmod>
+    <loc>https://sekolahbta.id/berita</loc>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/parenting</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <loc>https://sekolahbta.id/fasilitas</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/parenting/media-edukatif</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <loc>https://sekolahbta.id/program</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/parenting/diskusi-wali</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <loc>https://sekolahbta.id/prestasi</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/forum</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <loc>https://sekolahbta.id/ekstrakurikuler</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://lpqalfathmaulana.id/kontak</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
-  </url>
-  <url>
-    <loc>https://lpqalfathmaulana.id/berita</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
-  </url>
-  <url>
-    <loc>https://lpqalfathmaulana.id/pengumuman</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
-  </url>
-  <url>
-    <loc>https://lpqalfathmaulana.id/metode-qiroati</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
-  </url>
-  <url>
-    <loc>https://lpqalfathmaulana.id/fasilitas</loc>
-    <lastmod>2026-07-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1</priority>
+    <loc>https://sekolahbta.id/login</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
   </url>
 </urlset>

@@ -33,9 +33,11 @@ import {
 } from '@/lib/academicAdapters';
 import { fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import SantriDevelopmentProfile from '@/components/dashboard/shared/SantriDevelopmentProfile';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }) => {
     const { user, role } = useAuth();
+    const sekolah = useSchoolIdentity();
     const [notes, setNotes] = useState([]);
     const [newNote, setNewNote] = useState('');
     const [editingNote, setEditingNote] = useState(null);
@@ -261,12 +263,12 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 {(onPromote || onDemote) && (
                                     <>
                                         {onPromote && (
-                                            <Button onClick={onPromote} size="sm" className="h-8 flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold" title="Naik Jilid">
-                                                <ChevronUp className="w-4 h-4 mr-1" /> Naik Jilid
+                                            <Button onClick={onPromote} size="sm" className="h-8 flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold" title="Naik Tingkat">
+                                                <ChevronUp className="w-4 h-4 mr-1" /> Naik Tingkat
                                             </Button>
                                         )}
                                         {onDemote && (
-                                            <Button onClick={onDemote} size="sm" variant="outline" className="h-8 flex-1 border-red-200 hover:bg-red-50 text-red-700" title="Turun Jilid">
+                                            <Button onClick={onDemote} size="sm" variant="outline" className="h-8 flex-1 border-red-200 hover:bg-red-50 text-red-700" title="Turun Tingkat">
                                                 <ChevronDown className="w-4 h-4 mr-1" /> Turun
                                             </Button>
                                         )}
@@ -282,7 +284,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                             </div>
                             {jilidDuration !== null && (
                                 <div className={`px-3 py-1 rounded-full text-xs font-bold border ${jilidDuration > 90 ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-blue-100 text-blue-700 border-blue-200'} flex items-center gap-1 mt-1`}>
-                                    <Clock className="w-3 h-3" /> {jilidDuration} Hari di {santri.jilid}
+                                    <Clock className="w-3 h-3" /> {jilidDuration} Hari di tingkat {santri.jilid}
                                 </div>
                             )}
                         </div>
@@ -297,11 +299,11 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <p className="font-bold text-base text-slate-800 dark:text-slate-200">{santri.nama_panggilan || santri.nama_lengkap?.trim().split(' ')[0] || '-'}</p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Jilid Saat Ini</p>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Tingkat Saat Ini</p>
                                 <p className="font-black text-lg text-purple-600 dark:text-purple-400">{santri.jilid}</p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Terakhir Naik Jilid</p>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Terakhir Naik Tingkat</p>
                                 <p className="font-bold flex items-center gap-1 text-slate-800 dark:text-slate-200">
                                     <CalendarDays className="w-4 h-4 text-purple-500" />
                                     {lastPromotedDate ? new Date(lastPromotedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
@@ -534,28 +536,28 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                     <div className="flex items-center gap-2 mb-1">
                                         <ShieldCheck className="w-6 h-6 text-purple-200 print:hidden" />
                                         <h2 className="text-2xl md:text-3xl font-black font-sans tracking-tight uppercase print:text-black">
-                                            RAPOR AKADEMIK & KARAKTER SANTRI
+                                            RAPOR AKADEMIK & KARAKTER MURID
                                         </h2>
                                     </div>
                                     <p className="text-purple-100 font-semibold text-sm print:text-slate-700">
-                                        LPQ AL-FATH MAULANA — METODE QIROATI
+                                        {sekolah.name}
                                     </p>
                                     <p className="text-xs text-purple-200 mt-1 font-mono print:text-slate-500">
                                         Periode Evaluasi: <strong className="text-white print:text-black">{dateRange.periodText}</strong>
                                     </p>
                                 </div>
                                 <Badge className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-md px-4 py-1.5 text-xs font-bold uppercase tracking-widest border border-white/30 print:border-black print:text-black">
-                                    Qiroati Certified
+                                    Rekap Akademik
                                 </Badge>
                             </div>
                         </div>
 
-                        {/* Biodata Santri Card */}
+                        {/* Biodata Murid Card */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/70 dark:border-slate-800 print:border print:bg-white">
                             <div>
                                 <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Nama Murid</p>
                                 <p className="font-extrabold text-base text-slate-900 dark:text-slate-100">{santri.nama_lengkap}</p>
-                                <p className="text-xs text-muted-foreground font-mono">NIQ: {santri.nomor_induk_qiroati || '-'}</p>
+                                <p className="text-xs text-muted-foreground font-mono">Nomor Induk: {santri.nomor_induk_qiroati || '-'}</p>
                             </div>
                             <div>
                                 <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Kelas & Sesi</p>
@@ -563,9 +565,8 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">{getSessionName(santri.sesi_mengaji) || 'Sesi Regular'}</p>
                             </div>
                             <div>
-                                <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Tingkat Jilid</p>
+                                <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Tingkat</p>
                                 <p className="font-black text-lg text-purple-600 dark:text-purple-400">{santri.jilid || '-'}</p>
-                                <p className="text-xs text-muted-foreground">Kategori: {santri.kategori || 'Anak'}</p>
                             </div>
                             <div>
                                 <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Wali Murid (Ibu)</p>
@@ -724,7 +725,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <table className="w-full text-xs text-left">
                                     <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b z-10">
                                         <tr>
-                                            <th className="py-2.5 px-4 text-center">Jilid</th>
+                                            <th className="py-2.5 px-4 text-center">Tingkat</th>
                                             <th className="py-2.5 px-4">Nama Item / Surat</th>
                                             <th className="py-2.5 px-4">Kategori</th>
                                             <th className="py-2.5 px-4 text-center">Skor (1-4)</th>
@@ -743,7 +744,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                                         {item.item_name || item.display_name || item.nama_item || item.title || '-'}
                                                     </td>
                                                     <td className="py-2.5 px-4 text-muted-foreground">
-                                                        {item.category || (isPtpt ? 'Tahfizh PTPT' : 'Surat Pendek')}
+                                                        {item.category || (isPtpt ? 'Tahfizh' : 'Surat Pendek')}
                                                     </td>
                                                     <td className="py-2.5 px-4 text-center font-bold text-slate-700 dark:text-slate-200">
                                                         {item.score ? `${item.score} / 4` : '-'}
@@ -785,7 +786,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 </p>
                             </div>
                             <div className="space-y-16">
-                                <p className="font-semibold text-slate-700 dark:text-slate-300">Guru Pengampu Kelas,<br/>Ustadz / Ustadzah</p>
+                                <p className="font-semibold text-slate-700 dark:text-slate-300">Guru Pengampu Kelas</p>
                                 <p className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-300 dark:border-slate-700 pb-1 w-3/4 mx-auto">
                                     ( {santri.class?.guru?.nama || santri.guru?.nama || santri.nama_guru || '....................................'} )
                                 </p>

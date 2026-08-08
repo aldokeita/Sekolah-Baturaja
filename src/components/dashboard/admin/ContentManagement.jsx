@@ -19,7 +19,6 @@ import ProgramContentSettings from '@/components/dashboard/admin/ProgramContentS
 import SchoolInfoSettings from '@/components/dashboard/admin/SchoolInfoSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
-import { motion } from 'framer-motion';
 import HafalanDisplay from '@/components/dashboard/shared/HafalanDisplay';
 import { createHafalanItem, deactivateHafalanItem, fetchHafalanItems, getAcademicErrorMessage, updateHafalanItem, HAFALAN_SCOPE_PER_KELAS, HAFALAN_SCOPE_PER_JUZ } from '@/lib/academicAdapters';
 import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
@@ -44,6 +43,68 @@ import {
 // Enam tahap, dipakai sebagai Kelas 1-6 untuk sekolah dasar.
 const KELAS_LEVELS = [1, 2, 3, 4, 5, 6].map(String);
 const JUZ_LEVELS = ['Juz 1', 'Juz 2', 'Juz 28', 'Juz 29', 'Juz 30'];
+
+const CONTENT_TAB_GROUPS = [
+  {
+    id: 'sekolah',
+    label: 'Sekolah',
+    description: 'Identitas dan informasi dasar yang menjadi rujukan seluruh situs.',
+    icon: Building2,
+    tabs: [
+      { id: 'identitas', label: 'Identitas Sekolah', icon: Building2, superadminOnly: true },
+      { id: 'info', label: 'Info Sekolah', icon: Info },
+    ],
+  },
+  {
+    id: 'publik',
+    label: 'Halaman Publik',
+    description: 'Narasi utama yang tampil di beranda dan halaman profil sekolah.',
+    icon: Home,
+    tabs: [
+      { id: 'homepage', label: 'Halaman Depan', icon: Home },
+      { id: 'profil', label: 'Halaman Profil', icon: BookMarked },
+    ],
+  },
+  {
+    id: 'program',
+    label: 'Program & Kegiatan',
+    description: 'Program pembelajaran, prestasi, dan kegiatan pengembangan murid.',
+    icon: GraduationCap,
+    tabs: [
+      { id: 'program', label: 'Program', icon: GraduationCap },
+      { id: 'prestasi', label: 'Prestasi', icon: Award },
+      { id: 'ekskul', label: 'Ekstrakurikuler', icon: Sparkles },
+    ],
+  },
+  {
+    id: 'media',
+    label: 'Media & Pendaftaran',
+    description: 'Aset publik, galeri, dan informasi penerimaan murid baru.',
+    icon: ImageIcon,
+    tabs: [
+      { id: 'media', label: 'Media & Galeri', icon: ImageIcon },
+      { id: 'enrollment', label: 'Informasi Pendaftaran', icon: ClipboardList },
+    ],
+  },
+  {
+    id: 'komunikasi',
+    label: 'Pesan',
+    description: 'Pesan yang dikirim pengunjung melalui halaman Kontak.',
+    icon: Mail,
+    tabs: [
+      { id: 'pesan', label: 'Pesan Masuk', icon: Mail },
+    ],
+  },
+  {
+    id: 'akademik',
+    label: 'Hafalan',
+    description: 'Daftar materi hafalan berdasarkan kelas dan juz.',
+    icon: BookCopy,
+    tabs: [
+      { id: 'hafalan', label: 'Hafalan', icon: BookCopy },
+    ],
+  },
+];
 
 const HafalanItemManager = ({
   category,
@@ -174,6 +235,7 @@ const HafalanItemManager = ({
 
 const ContentManagement = () => {
   const { role } = useAuth();
+  const isSuperadmin = role === 'superadmin';
   /* Sebagian kunci di bawah TIDAK punya kendali di panel lagi: slideshow
    * (`heroSlides`), latar CTA, kuota, jadwal pembelajaran, keunggulan, FAQ lama,
    * video qiroati, artikel parenting, diskusi wali murid, dan pengaturan model 3D.
@@ -195,7 +257,15 @@ const ContentManagement = () => {
   const [formState, setFormState] = useState({});
   const [santriList, setSantriList] = useState([]);
   const [guruList, setGuruList] = useState([]);
-  const [activeTab, setActiveTab] = useState("homepage");
+  const [activeGroup, setActiveGroup] = useState('publik');
+  const [activeSubTabs, setActiveSubTabs] = useState({
+    sekolah: isSuperadmin ? 'identitas' : 'info',
+    publik: 'homepage',
+    program: 'program',
+    media: 'media',
+    komunikasi: 'pesan',
+    akademik: 'hafalan',
+  });
 
   useEffect(() => { fetchContent(); fetchSantriAndGuru(); fetchFeedbacks(); }, []);
 
@@ -359,24 +429,21 @@ const ContentManagement = () => {
 
 
   // Identitas website hanya untuk superadmin (pemilik template). Pembeli berperan
-  // admin dan tetap bebas mengelola seluruh konten di tab lain. Backend juga
+  // admin dan tetap bebas mengelola seluruh konten di kelompok lain. Backend juga
   // menolaknya di sisi server, jadi menyembunyikan tab bukan satu-satunya
   // penjagaan — lihat brandKeys di content.go.
-  const isSuperadmin = role === 'superadmin';
+  const contentGroups = CONTENT_TAB_GROUPS
+    .map((group) => ({
+      ...group,
+      tabs: group.tabs.filter((tab) => !tab.superadminOnly || isSuperadmin),
+    }))
+    .filter((group) => group.tabs.length > 0);
 
-  const tabs = [
-      ...(isSuperadmin ? [{ id: 'identitas', label: 'Identitas Sekolah', icon: Building2 }] : []),
-      { id: 'info', label: 'Info Sekolah', icon: Info },
-      { id: 'homepage', label: 'Halaman Depan', icon: Home },
-      { id: 'profil', label: 'Halaman Profil', icon: BookMarked },
-      { id: 'prestasi', label: 'Prestasi', icon: Award },
-      { id: 'ekskul', label: 'Ekstrakurikuler', icon: Sparkles },
-      { id: 'program', label: 'Program', icon: GraduationCap },
-      { id: 'media', label: 'Media & Galeri', icon: ImageIcon },
-      { id: 'enrollment', label: 'Informasi Pendaftaran', icon: ClipboardList },
-      { id: 'pesan', label: 'Pesan Masuk', icon: Mail },
-      { id: 'hafalan', label: 'Hafalan', icon: BookCopy },
-  ];
+  const getActiveSubTab = (group) => activeSubTabs[group.id] || group.tabs[0].id;
+
+  const handleSubTabChange = (groupId, tabId) => {
+    setActiveSubTabs((previous) => ({ ...previous, [groupId]: tabId }));
+  };
 
   const renderModalContent = () => {
     if (!modalType) return null;
@@ -403,38 +470,11 @@ const ContentManagement = () => {
     </div>
   );
 
-  return (
-    <div className="space-y-6">
-      <div className="admin-panel-header">
-        <div className="flex items-center gap-3">
-          <div className="admin-panel-header-icon">
-            <FileText />
-          </div>
-          <div className="admin-panel-header-text">
-            <h2>Manajemen Konten Website</h2>
-            <p>Kelola konten yang tampil di halaman publik {getSchoolIdentity().shortName}.</p>
-          </div>
-        </div>
-        <div className="admin-panel-header-actions">
-          <button onClick={handleSaveAll} className="admin-panel-primary-btn">
-            <Save className="w-4 h-4" /> Simpan Semua Perubahan
-          </button>
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex justify-center mb-6">
-            <div className="admin-segmented-control">
-                {tabs.map((tab) => (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`relative px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ease-out flex items-center gap-2 ${activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'}`}>
-                        {activeTab === tab.id && (<motion.div layoutId="content-pill" className="absolute inset-0 bg-blue-600 dark:bg-blue-500 shadow-sm rounded-full" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />)}
-                        <span className="relative z-10 flex items-center gap-2"><tab.icon className="w-4 h-4" />{tab.label}</span>
-                    </button>
-                ))}
-            </div>
-        </div>
-
-        <TabsContent value="identitas" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+  const renderContentPanel = (tabId) => {
+    switch (tabId) {
+      case 'identitas':
+        return (
+          <>
             <SchoolIdentitySettings />
 
             {/* Logo ada di sini, bukan di tab Halaman Depan. `logoUrl` termasuk
@@ -442,58 +482,50 @@ const ContentManagement = () => {
                 menyimpannya — kalau kendalinya tampil untuk pembeli, ia akan
                 mengunggah logo lalu ditolak server tanpa tahu sebabnya. */}
             <div className="admin-card p-4">
-                <h3 className="font-bold text-xl mb-1">Logo Website</h3>
-                <p className="text-xs text-muted-foreground mb-4">Dipakai di navigasi situs dan kuitansi pembayaran.</p>
-                <Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} />
-                {content.logoUrl && <img src={content.logoUrl} alt="Pratinjau logo" className="w-24 h-24 mt-2 bg-gray-200 p-2 rounded-md" />}
+              <h3 className="font-bold text-xl mb-1">Logo Website</h3>
+              <p className="text-xs text-muted-foreground mb-4">Dipakai di navigasi situs dan kuitansi pembayaran.</p>
+              <Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} />
+              {content.logoUrl && <img src={content.logoUrl} alt="Pratinjau logo" className="w-24 h-24 mt-2 bg-gray-200 p-2 rounded-md" />}
             </div>
-        </TabsContent>
-
-<TabsContent value="info" className="animate-in fade-in slide-in-from-bottom-2">
-            <SchoolInfoSettings />
-        </TabsContent>
-
-        <TabsContent value="homepage" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-            <HomeContentSettings />
-
-        </TabsContent>
-
-        <TabsContent value="profil" className="animate-in fade-in slide-in-from-bottom-2">
-            <ProfileContentSettings />
-        </TabsContent>
-
-        <TabsContent value="prestasi" className="animate-in fade-in slide-in-from-bottom-2">
-            <PrestasiContentSettings />
-        </TabsContent>
-
-        <TabsContent value="ekskul" className="animate-in fade-in slide-in-from-bottom-2">
-            <EkskulContentSettings />
-        </TabsContent>
-
-        <TabsContent value="program" className="animate-in fade-in slide-in-from-bottom-2">
-            <ProgramContentSettings />
-        </TabsContent>
-
-        <TabsContent value="media" className="grid md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2">
-            <div className="col-span-full"><ContentSection title="Galeri Kegiatan" modalType="galleryPhotos" data={content.galleryPhotos} icon={<ImageIcon/>} renderItem={item => <div className="flex items-center gap-2"><img src={item.url} className="w-12 h-12 object-cover rounded-md" /><p className="truncate">{item.caption}</p></div>} /></div>
-            <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><FileText/> Brosur Pendaftaran</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'brochures')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.brochures.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('brochures', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>
-            <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><Library/> Pustaka Digital</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'pustaka')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.pustaka.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('pustaka', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>
-            <ContentSection title="Berita" modalType="news" data={content.news} icon={<BookCopy/>} renderItem={item => <p className="truncate">{item.title}</p>} />
-            <ContentSection title="Pengumuman" modalType="announcements" data={content.announcements} icon={<MessageSquare/>} renderItem={item => <p className="truncate">{item.title}</p>} />
-            <ContentSection title="Video Hafalan" modalType="hafalanVideos" data={content.hafalanVideos} icon={<Video/>} renderItem={item => <p className="truncate">{item.title}</p>} />
-          <ContentSection title="Fasilitas" modalType="facilities" data={content.facilities} icon={<Building/>} renderItem={item => <p className="truncate">{item.name}</p>} />
-        </TabsContent>
-        <TabsContent value="enrollment" className="animate-in fade-in slide-in-from-bottom-2">
-            <PpdbContentSettings />
-        </TabsContent>
-
-        <TabsContent value="pesan" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+          </>
+        );
+      case 'info':
+        return <SchoolInfoSettings />;
+      case 'homepage':
+        return <HomeContentSettings />;
+      case 'profil':
+        return <ProfileContentSettings />;
+      case 'prestasi':
+        return <PrestasiContentSettings />;
+      case 'ekskul':
+        return <EkskulContentSettings />;
+      case 'program':
+        return <ProgramContentSettings />;
+      case 'media':
+        return (
+          <>
+            <div className="col-span-full"><ContentSection title="Galeri Kegiatan" modalType="galleryPhotos" data={content.galleryPhotos} icon={<ImageIcon />} renderItem={item => <div className="flex items-center gap-2"><img src={item.url} alt="" className="w-12 h-12 object-cover rounded-md" /><p className="truncate">{item.caption}</p></div>} /></div>
+            <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><FileText /> Brosur Pendaftaran</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'brochures')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.brochures.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('brochures', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>
+            <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><Library /> Pustaka Digital</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'pustaka')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.pustaka.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('pustaka', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>
+            <ContentSection title="Berita" modalType="news" data={content.news} icon={<BookCopy />} renderItem={item => <p className="truncate">{item.title}</p>} />
+            <ContentSection title="Pengumuman" modalType="announcements" data={content.announcements} icon={<MessageSquare />} renderItem={item => <p className="truncate">{item.title}</p>} />
+            <ContentSection title="Video Hafalan" modalType="hafalanVideos" data={content.hafalanVideos} icon={<Video />} renderItem={item => <p className="truncate">{item.title}</p>} />
+            <ContentSection title="Fasilitas" modalType="facilities" data={content.facilities} icon={<Building />} renderItem={item => <p className="truncate">{item.name}</p>} />
+          </>
+        );
+      case 'enrollment':
+        return <PpdbContentSettings />;
+      case 'pesan':
+        return (
+          <>
             <h3 className="font-bold text-xl flex items-center gap-2"><Mail />Pesan dari Pengunjung</h3>
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-                {feedbacks.length > 0 ? feedbacks.map(fb => (<div key={fb.id} className="admin-card p-4 bg-background relative"><Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => handleDeleteFeedback(fb.id)}><Trash2 className="h-4 w-4" /></Button><p className="font-semibold text-lg">{fb.nama || 'Anonim'}</p><div className="text-sm text-muted-foreground mb-2"><span>{fb.email || '-'}</span> | <span>{fb.phone || '-'}</span> | <span>{new Date(fb.created_at).toLocaleString('id-ID')}</span></div><p className="whitespace-pre-wrap">{fb.message}</p></div>)) : (<p className="text-center text-muted-foreground py-4">Tidak ada pesan masuk.</p>)}
+              {feedbacks.length > 0 ? feedbacks.map(fb => (<div key={fb.id} className="admin-card p-4 bg-background relative"><Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => handleDeleteFeedback(fb.id)}><Trash2 className="h-4 w-4" /></Button><p className="font-semibold text-lg">{fb.nama || 'Anonim'}</p><div className="text-sm text-muted-foreground mb-2"><span>{fb.email || '-'}</span> | <span>{fb.phone || '-'}</span> | <span>{new Date(fb.created_at).toLocaleString('id-ID')}</span></div><p className="whitespace-pre-wrap">{fb.message}</p></div>)) : (<p className="text-center text-muted-foreground py-4">Tidak ada pesan masuk.</p>)}
             </div>
-        </TabsContent>
-        <TabsContent value="hafalan" className="animate-in fade-in slide-in-from-bottom-2">
+          </>
+        );
+      case 'hafalan':
+        return (
           <Tabs defaultValue="per-kelas" className="space-y-5">
             <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-lg bg-muted p-1 sm:w-auto">
               <TabsTrigger value="per-kelas" className="min-w-[150px]">Hafalan per Kelas</TabsTrigger>
@@ -514,7 +546,94 @@ const ContentManagement = () => {
               />
             </TabsContent>
           </Tabs>
-        </TabsContent>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="admin-panel-header">
+        <div className="flex items-center gap-3">
+          <div className="admin-panel-header-icon">
+            <FileText />
+          </div>
+          <div className="admin-panel-header-text">
+            <h2>Manajemen Konten Website</h2>
+            <p>Kelola konten yang tampil di halaman publik {getSchoolIdentity().shortName}.</p>
+          </div>
+        </div>
+        <div className="admin-panel-header-actions">
+          <button onClick={handleSaveAll} className="admin-panel-primary-btn">
+            <Save className="w-4 h-4" /> Simpan Semua Perubahan
+          </button>
+        </div>
+      </div>
+
+      <Tabs value={activeGroup} onValueChange={setActiveGroup} className="w-full">
+        <TabsList aria-label="Kelompok konten website" className="w-full justify-center gap-1 p-1">
+          {contentGroups.map((group) => {
+            const GroupIcon = group.icon;
+            return (
+              <TabsTrigger key={group.id} value={group.id} className="min-w-[7.75rem] shrink-0 px-3 py-2 sm:min-w-0">
+                <GroupIcon className="h-4 w-4" aria-hidden="true" />
+                <span>{group.label}</span>
+                <span className="rounded-full bg-slate-200/70 px-1.5 text-[10px] font-bold text-slate-500 dark:bg-white/10 dark:text-white/70" aria-label={`${group.tabs.length} bagian`}>
+                  {group.tabs.length}
+                </span>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+
+        {contentGroups.map((group) => {
+          const currentSubTab = getActiveSubTab(group);
+          const GroupIcon = group.icon;
+          return (
+            <TabsContent key={group.id} value={group.id} className="mt-5 space-y-5 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex flex-col gap-3 border-b border-slate-200/70 pb-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                    <GroupIcon className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{group.label}</h3>
+                    <p className="max-w-2xl text-sm text-muted-foreground">{group.description}</p>
+                  </div>
+                </div>
+                <span className="w-fit rounded-full border border-slate-200/80 bg-white/60 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  {group.tabs.length} {group.tabs.length === 1 ? 'bagian' : 'bagian terkait'}
+                </span>
+              </div>
+
+              {group.tabs.length === 1 ? (
+                <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                  {renderContentPanel(group.tabs[0].id)}
+                </section>
+              ) : (
+                <Tabs value={currentSubTab} onValueChange={(value) => handleSubTabChange(group.id, value)} className="space-y-5">
+                  <TabsList aria-label={`Bagian ${group.label}`} className="w-full flex-nowrap justify-start overflow-x-auto rounded-xl bg-muted/60 p-1 sm:w-auto sm:flex-wrap">
+                    {group.tabs.map((tab) => {
+                      const TabIcon = tab.icon;
+                      return (
+                        <TabsTrigger key={tab.id} value={tab.id} className="shrink-0 px-3 py-2 text-xs sm:text-sm">
+                          <TabIcon className="h-4 w-4" aria-hidden="true" />
+                          {tab.label}
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+                  {group.tabs.map((tab) => (
+                    <TabsContent key={tab.id} value={tab.id} className={`${tab.id === 'media' ? 'grid gap-6 md:grid-cols-2' : 'space-y-6'} animate-in fade-in slide-in-from-bottom-2`}>
+                      {renderContentPanel(tab.id)}
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              )}
+            </TabsContent>
+          );
+        })}
       </Tabs>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}><DialogContent className="max-w-4xl"><DialogHeader><DialogTitle>{editingItem ? 'Edit' : 'Tambah'} {modalType.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</DialogTitle><DialogDescription>Pastikan untuk menyimpan semua perubahan setelah selesai mengedit.</DialogDescription></DialogHeader>{renderModalContent()}</DialogContent></Dialog>
     </div>

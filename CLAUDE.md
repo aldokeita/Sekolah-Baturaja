@@ -159,3 +159,17 @@ history, and the "Metode Mengaji" admin panel; the underlying data stays intact 
 - Don't disable a field just because the schema lacks it — extend the schema
 - Don't remove or downgrade functionality merely to silence an error
 - Conventional commits: `feat:`, `fix:`, `chore:`, `test:`, `docs:`
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repository's GitHub Issues; use `gh` for operations. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repo; use root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
