@@ -1,6 +1,6 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `3808749`
+**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `86623d1`
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -648,6 +648,23 @@ ke nomor yang sudah terdaftar dianggap cukup; jangan mengajukannya lagi tanpa al
 Tuntas pada 2026-08-08 (putaran audit modul): **delapan modul inti disisir** — Absensi, Pembayaran,
 Backup & Restore, Data Murid, Data Guru, Manajemen Kelas, Kalender Akademik, dan Jadwal Pelajaran.
 Rincian per modul dan polanya di "Putaran audit modul 2026-08-08" pada bagian 7.
+
+Tuntas pada 2026-08-08 (rapikan sisa LPQ + fitur situs):
+- **Pengumuman tersambung ke situs** — halaman Berita menampilkan pengumuman terbit sebagai kartu
+  kategori "Pengumuman" (dulu dibuat admin tapi tak pernah tampil).
+- **Tab "Apresiasi" di Konten dimatikan** (Papan Peringkat + Murid/Guru of the Month). Data tetap di
+  state agar "Simpan Semua" tidak menimpanya.
+- **WhatsApp jilid dirapikan** — template Kenaikan/Penurunan Jilid & "Link grup per jilid"
+  disembunyikan saat `VITE_ENABLE_TAHFIZH` mati (default sekolah umum); template Pembayaran & SPMB
+  tetap tampil untuk semua sekolah.
+- **Mode TV dirombak untuk SD umum** — panel ngaji (kuota sesi pagi/siang/sore, leaderboard ngaji,
+  kutipan wali, kartu profil) diganti panel umum: Pengumuman, Jadwal Hari Ini, Galeri Foto; header
+  pakai identitas sekolah. **Mesin absensi RFID dipertahankan utuh** (kios scan tetap mencatat
+  kehadiran di semua panel). Panel setting TV disederhanakan; bentuk `tv_config` baru, nilai lama
+  jatuh ke default (semua panel nyala). Verifikasi layar TV menuntut login peran operasional — belum
+  dilihat di browser, hanya lolos lint + build.
+- **Kuis Hafalan sengaja dibiarkan menyala**: fitur "Tambah Kategori" sudah ada, jadi kategori
+  pertanyaan umum bisa ditambah pembeli langsung dari dashboard. Keputusan pemilik: jangan matikan.
 
 ### Audit modul: cakupan yang SUDAH dan BELUM diperiksa
 
