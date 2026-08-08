@@ -1,6 +1,6 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `f837c5a`
+**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `5ce5a71`
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -683,12 +683,20 @@ Tuntas pada 2026-08-08 (tiga halaman publik jadi bisa disunting pembeli):
 - **Verifikasi editor admin menuntut login** (agen tak boleh isi sandi) — jalur simpan belum diklik di
   browser; hanya lolos lint + build + render publik. Uji klik saat login untuk memastikan.
 
-### BERIKUTNYA (belum dikerjakan): Galeri & Fasilitas dinamis
+### Galeri & Fasilitas dinamis — TUNTAS (2026-08-08, commit `5ce5a71`)
 
-Dipilih pemilik sebagai pekerjaan berikutnya, **belum dimulai** (baru investigasi). Checkpoint ini
-merekam rencananya supaya bisa dilanjutkan.
+Kedua halaman kini render daftar CMS **penuh** (jumlah bebas), bukan lagi menimpa slot per-indeks.
+Modal editor di ContentManagement diperluas: Galeri → kategori/keterangan/tanggal (di samping foto &
+judul); Fasilitas → kategori/luas/ringkasan/deskripsi. Halaman publik memakai daftar `source` (CMS
+bila ada, jika kosong contoh bawaan `FOTO`/`F`); span mosaik & gradien dipilih otomatis dari urutan
+(pembeli tak menulis tata letak); filter kategori/tur/chip/mozaik/lightbox atas daftar aktif.
+Terverifikasi render default di browser (18 foto, 10 ruang), lint + build hijau.
 
-**Masalahnya (sama di kedua halaman):** CMS sudah ada tapi hanya *menimpa slot per-indeks*, bukan
+**Sisa kecil (opsional):** rincian per-ruang (meta grid) belum ada di editor Fasilitas — saat ruang
+dari CMS, grid rincian kosong (bawaan tetap menampilkannya). Statistik hero/band/ringkas kedua
+halaman dibiarkan hardcoded (dekoratif). Verifikasi klik-simpan editor menuntut login (belum diuji).
+
+**Catatan sejarah — masalah sebelum perbaikan ini:** CMS dulu hanya *menimpa slot per-indeks*, bukan
 daftar dinamis penuh.
 - `GalleryPage.jsx`: 18 foto hardcoded di `FOTO` (nama, kategori, keterangan, tanggal, gradien,
   colSpan, rowSpan). Kunci `galleryPhotos` (dikelola di ContentManagement tab Media, modal
