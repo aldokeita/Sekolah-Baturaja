@@ -10,6 +10,7 @@ import { fetchPaymentDetail, formatPaymentPeriod } from '@/lib/paymentAdapters';
 import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicContentAdapters';
 import { DEFAULT_WHATSAPP_TEMPLATES, fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
 
 const PaymentProofModal = ({ isOpen, onClose, payment }) => {
     const sekolah = useSchoolIdentity();
@@ -18,7 +19,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
     const [isLoadingPayment, setIsLoadingPayment] = useState(false);
     const [completePayment, setCompletePayment] = useState(null);
     const [qrCodeDataURL, setQrCodeDataURL] = useState('');
-    const [receiptLogoUrl, setReceiptLogoUrl] = useState('/logo-lpq-al-fath-maulana.webp');
+    const [receiptLogoUrl, setReceiptLogoUrl] = useState(DEFAULT_LOGO_PATH);
     const [paymentMessageTemplate, setPaymentMessageTemplate] = useState(DEFAULT_WHATSAPP_TEMPLATES.paymentReceipt);
 
     useEffect(() => {
@@ -48,7 +49,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
         let active = true;
         const loadReceiptLogo = async () => {
             if (!isOpen) return;
-            const logoUrl = await fetchReceiptLogoDataUrl('/logo-lpq-al-fath-maulana.webp');
+            const logoUrl = await fetchReceiptLogoDataUrl(DEFAULT_LOGO_PATH);
             if (active) setReceiptLogoUrl(logoUrl);
         };
         loadReceiptLogo();
@@ -93,7 +94,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
                 cacheBust: true,
                 backgroundColor: '#ffffff',
                 pixelRatio: 2,
-                imagePlaceholder: '/logo-lpq-al-fath-maulana.webp',
+                imagePlaceholder: DEFAULT_LOGO_PATH,
             });
             const link = document.createElement('a');
             const santriName = studentName.replace(/\s+/g, '_') || 'Murid';

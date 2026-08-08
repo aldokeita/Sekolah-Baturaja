@@ -9,8 +9,10 @@ import { ArrowLeft, Trophy, Crown, Star, Sparkles, CheckCircle } from 'lucide-re
 import { Helmet } from 'react-helmet';
 import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 const TopScorePage = () => {
+    const sekolah = useSchoolIdentity();
     const navigate = useNavigate();
     const [students, setStudents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -210,8 +212,8 @@ const TopScorePage = () => {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-12 relative overflow-hidden font-sans text-slate-900 dark:text-slate-100">
             <Helmet>
-                <title>Papan Skor Murid Terbaik - LPQ Al-Fath Maulana</title>
-                <meta name="description" content="Leaderboard Top 10 Murid dengan poin tertinggi di LPQ Al-Fath Maulana." />
+                <title>Papan Skor Murid Terbaik - {sekolah.name}</title>
+                <meta name="description" content={`Papan skor 10 murid dengan poin tertinggi di ${sekolah.name}.`} />
             </Helmet>
 
             {/* Hidden RFID Input */}

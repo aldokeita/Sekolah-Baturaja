@@ -1,4 +1,5 @@
 import apiClient, { publicFetch } from '@/lib/apiClient';
+import { DEFAULT_LOGO_PATH, isLegacyLogoPath } from '@/lib/schoolAssets';
 
 const toDateText = (value) => value ? new Date(value).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
 
@@ -108,8 +109,9 @@ const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
   reader.readAsDataURL(blob);
 });
 
-export const getEmbeddableImageUrl = async (url, fallback = '/logo-lpq-al-fath-maulana.webp') => {
-  const target = typeof url === 'string' && url.trim() ? url.trim() : fallback;
+export const getEmbeddableImageUrl = async (url, fallback = DEFAULT_LOGO_PATH) => {
+  const candidate = typeof url === 'string' ? url.trim() : '';
+  const target = candidate && !isLegacyLogoPath(candidate) ? candidate : fallback;
   if (target.startsWith('data:') || target.startsWith('/')) return target;
   try {
     const response = await fetch(target, { mode: 'cors', cache: 'no-store' });
@@ -121,7 +123,7 @@ export const getEmbeddableImageUrl = async (url, fallback = '/logo-lpq-al-fath-m
   }
 };
 
-export const fetchReceiptLogoDataUrl = async (fallback = '/logo-lpq-al-fath-maulana.webp') => {
+export const fetchReceiptLogoDataUrl = async (fallback = DEFAULT_LOGO_PATH) => {
   try {
     const contentMap = await fetchWebsiteContentMap({ keys: ['logoUrl'], publicOnly: true });
     return await getEmbeddableImageUrl(contentMap.logoUrl, fallback);

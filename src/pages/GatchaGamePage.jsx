@@ -11,7 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useTheme } from '@/contexts/ThemeContext';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 const GatchaGamePage = () => {
+  const sekolah = useSchoolIdentity();
   const navigate = useNavigate();
   const {
     isDark,
@@ -160,7 +162,7 @@ const GatchaGamePage = () => {
     }, 3000);
   };
   return <>
-            <Helmet><title>Gatcha Challenge - LPQ Al-Fath Maulana</title></Helmet>
+            <Helmet><title>Gatcha Challenge - {sekolah.name}</title></Helmet>
             <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} relative overflow-hidden flex flex-col transition-colors duration-300`}>
                 {/* Background Animations */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">

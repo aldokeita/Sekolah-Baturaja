@@ -28,25 +28,25 @@ export const OFFICIAL_QUOTAS = Object.freeze({
   sore: 28,
 });
 
-// CATATAN: berkas gambarnya masih peninggalan sekolah Al-Qur'an
-// (hero-al-alaq, hero-qiroati). Teksnya sudah netral, tetapi FOTONYA perlu
-// diganti sebelum template dijual — lihat public/institution/.
+// Gambar bawaan sengaja dikosongkan. Halaman publik akan memakai gradien
+// netral sampai pembeli mengisi media sekolahnya lewat panel Konten; template
+// tidak boleh menampilkan foto lembaga lain sebagai contoh.
 export const OFFICIAL_HERO_SLIDES = Object.freeze([
   {
     id: 'official-hero-learning',
-    url: '/institution/hero-learning.webp',
+    url: '',
     text: 'Setiap anak berhak belajar dengan tenang dan tumbuh dengan percaya diri',
     author: 'Semangat sekolah kami',
   },
   {
     id: 'official-hero-classroom',
-    url: '/institution/hero-al-alaq.webp',
+    url: '',
     text: 'Kelas yang tertata, guru yang mengenal setiap murid',
     author: 'Pendampingan belajar',
   },
   {
     id: 'official-hero-character',
-    url: '/institution/hero-qiroati.webp',
+    url: '',
     text: 'Bukan hanya pandai, tetapi juga jujur, disiplin, dan peduli',
     author: 'Penguatan karakter',
   },
@@ -57,7 +57,7 @@ export const OFFICIAL_FACILITIES = Object.freeze([
     id: 'official-classroom',
     name: 'Ruang Kelas',
     description: 'Ruang kelas yang bersih, terang, dan nyaman sehingga murid dapat belajar dengan fokus.',
-    image_url: '/institution/classroom.webp',
+    image_url: '',
   },
 ]);
 
@@ -67,7 +67,7 @@ export const OFFICIAL_GALLERY = Object.freeze([
     title: 'Kuis bersama murid',
     caption: 'Kuis tanya jawab di dalam kelas.',
     description: 'Kegiatan interaktif untuk menguatkan pemahaman dan kebersamaan murid.',
-    url: '/institution/gallery-quiz.webp',
+    url: '',
   },
 ]);
 
@@ -100,5 +100,5 @@ export const INSTITUTION_PROOF_POINTS = Object.freeze([
   { id: 'progress', title: 'Perkembangan tercatat', text: 'Rapor akademik dan karakter membantu guru serta orang tua memantau kemajuan murid.' },
 ]);
 
-export const OFFICIAL_CTA_BACKGROUND = '/institution/cta-activity.webp';
+export const OFFICIAL_CTA_BACKGROUND = '';
 export const ACADEMIC_YEAR = '2026–2027';

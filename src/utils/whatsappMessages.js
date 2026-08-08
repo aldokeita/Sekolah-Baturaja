@@ -1,4 +1,6 @@
 
+import { getSchoolIdentity } from '@/lib/schoolIdentity';
+
 /**
  * Utility functions for generating WhatsApp messages for Jilid promotions/demotions
  */
@@ -55,6 +57,7 @@ export const generateWhatsAppLink = (phoneNumber, message) => {
  */
 export const generateJilidPromotionMessage = (santriName, newJilidName, newJilidLink) => {
   const finalLink = resolveWhatsAppGroupLink(newJilidName, newJilidLink);
+  const sekolah = getSchoolIdentity();
 
   return `Assalamualaikum Warahmatullahi Wabarakatuh,
 
@@ -70,7 +73,7 @@ _Catatan: Ayah/Bunda dipersilakan keluar dari grup jilid sebelumnya setelah berh
 Semoga Allah ﷻ senantiasa memberkahi langkah ananda dalam belajar Al-Qur'an, menjadikannya anak yang sholeh/sholehah, serta istiqomah dalam menuntut ilmu.
 
 Wassalamualaikum Warahmatullahi Wabarakatuh,
-*Admin LPQ Al-Fath Maulana*`;
+*Admin ${sekolah.name}*`;
 };
 
 /**
@@ -82,6 +85,7 @@ Wassalamualaikum Warahmatullahi Wabarakatuh,
  */
 export const generateJilidDemotionMessage = (santriName, jilidName, jilidLink) => {
   const finalLink = resolveWhatsAppGroupLink(jilidName, jilidLink);
+  const sekolah = getSchoolIdentity();
 
   return `Assalamualaikum Warahmatullahi Wabarakatuh,
 
@@ -99,5 +103,5 @@ Kami mohon dukungan Ayah/Bunda untuk terus memotivasi ananda. Insya Allah, denga
 Semoga ananda tumbuh menjadi generasi Qur'ani yang sholeh/sholehah dan berakhlak mulia.
 
 Wassalamualaikum Warahmatullahi Wabarakatuh,
-*Admin LPQ Al-Fath Maulana*`;
+*Admin ${sekolah.name}*`;
 };

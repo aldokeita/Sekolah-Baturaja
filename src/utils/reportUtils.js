@@ -10,17 +10,21 @@ import {
 } from '../lib/academicAdapters';
 import { fetchAttendance, fetchCalendarEvents } from '../lib/attendanceAdapters';
 import { fetchSantriDetail } from '../lib/dataMasterAdapters';
+import { fetchReceiptLogoDataUrl } from '../lib/publicContentAdapters';
+import { getSchoolIdentity } from '../lib/schoolIdentity';
+import { DEFAULT_LOGO_PATH } from '../lib/schoolAssets';
 import {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     WidthType, AlignmentType, BorderStyle, ShadingType, Footer, PageNumber, ImageRun
 } from 'docx';
 
-export const getLogoBase64 = () => {
+export const getLogoBase64 = async () => {
+    if (typeof window === 'undefined') return null;
+    const logoUrl = await fetchReceiptLogoDataUrl(DEFAULT_LOGO_PATH);
     return new Promise((resolve) => {
-        if (typeof window === 'undefined') return resolve(null);
         const img = new Image();
         img.crossOrigin = 'Anonymous';
-        img.src = '/logo-lpq-al-fath-maulana.webp';
+        img.src = logoUrl;
         img.onload = () => {
             try {
                 const canvas = document.createElement('canvas');
@@ -275,6 +279,7 @@ export const calculateProgressAverageScores = (attendanceData, hafalanData, char
 
 export const generateRaporPDF = async (santriData, attendanceData, hafalanData, pointsData, periodText, characterData, scoresSummary) => {
     const logoBase64 = await getLogoBase64();
+    const sekolah = getSchoolIdentity();
     return new Promise((resolve) => {
         const doc = new jsPDF('p', 'mm', 'a4');
 
@@ -306,7 +311,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(253, 224, 71); // Gold text accent
-        doc.text("LPQ AL-FATH MAULANA (METODE QIROATI)", titleX, 25, { align: "center" });
+        doc.text(sekolah.name.toUpperCase(), titleX, 25, { align: "center" });
 
         doc.setFontSize(9.5);
         doc.setFont('helvetica', 'italic');
@@ -337,13 +342,13 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.text(`: ${santriData.nama_lengkap}`, 48, 60);
         doc.setFont('helvetica', 'normal');
 
-        doc.text("Nomor Induk (NIQ)", 15, 66);
+        doc.text("Nomor Induk", 15, 66);
         doc.text(`: ${santriData.nomor_induk_qiroati || '-'}`, 48, 66);
 
-        doc.text("Tingkat Jilid", 15, 72);
+        doc.text("Tingkat", 15, 72);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(126, 34, 206);
-        doc.text(`: ${santriData.jilid || '-'} (${santriData.kategori || 'Anak'})`, 48, 72);
+        doc.text(`: ${santriData.jilid || '-'}`, 48, 72);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(51, 65, 85);
 
@@ -379,7 +384,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
             startY: 90,
             head: [['Aspek Evaluasi Progress', 'Skor Capaian', 'Bobot Evaluasi', 'Predikat Progress']],
             body: [
-                ['Kehadiran & Keaktifan Mengaji', `${scores.attendanceScore} / 100`, '34%', scores.attendanceScore >= 85 ? 'Sangat Baik' : 'Baik'],
+                ['Kehadiran & Keaktifan Belajar', `${scores.attendanceScore} / 100`, '34%', scores.attendanceScore >= 85 ? 'Sangat Baik' : 'Baik'],
                 ['Ketuntasan Hafalan Doa / Surat', `${scores.hafalanScore} / 100`, '33%', scores.hafalanScore >= 85 ? 'Sangat Baik' : 'Baik'],
                 ['Perkembangan Karakter & Adab', `${scores.characterScore} / 100`, '33%', scores.characterScore >= 85 ? 'Sangat Baik' : 'Baik'],
                 [{ content: 'NILAI AKHIR RATA-RATA KESELURUHAN', colSpan: 2, styles: { fontStyle: 'bold', halign: 'right' } }, { content: `${scores.overallAverage} / 100`, styles: { fontStyle: 'bold', textColor: primaryColor } }, { content: scores.predicate, styles: { fontStyle: 'bold', textColor: successColor } }]
@@ -422,7 +427,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.text("IV. REKAPITULASI PROGRES HAFALAN", 15, currentY);
 
         const hafalanSummaryBody = hafalanData.programScope === 'PTPT'
-            ? [['Tahfizh PTPT', hafalanData.tahfizh.total, hafalanData.tahfizh.completed, `${Math.round((hafalanData.tahfizh.completed / (hafalanData.tahfizh.total || 1)) * 100)}%`]]
+            ? [['Tahfizh', hafalanData.tahfizh.total, hafalanData.tahfizh.completed, `${Math.round((hafalanData.tahfizh.completed / (hafalanData.tahfizh.total || 1)) * 100)}%`]]
             : [
                 ['Doa Harian', hafalanData.doa.total, hafalanData.doa.completed, `${Math.round((hafalanData.doa.completed / (hafalanData.doa.total || 1)) * 100)}%`],
                 ['Bacaan Sholat', hafalanData.sholat.total, hafalanData.sholat.completed, `${Math.round((hafalanData.sholat.completed / (hafalanData.sholat.total || 1)) * 100)}%`],
@@ -532,7 +537,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         if (hafalanRows.length > 0) {
             doc.autoTable({
                 startY: currentY + 4,
-                head: [['Jilid', 'Nama Item / Surat', 'Kategori', 'Skor', 'Status Capaian', 'Tanggal Evaluasi']],
+                head: [['Tingkat', 'Nama Item / Surat', 'Kategori', 'Skor', 'Status Capaian', 'Tanggal Evaluasi']],
                 body: hafalanRows,
                 theme: 'striped',
                 headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', halign: 'center' },
@@ -588,7 +593,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.text("( .................................... )", 20, signY + 36);
 
         doc.text("Guru Pengampu Kelas,", 105, signY, { align: 'center' });
-        doc.text("Ustadz / Ustadzah", 105, signY + 5, { align: 'center' });
+        doc.text("Guru Pengampu", 105, signY + 5, { align: 'center' });
         doc.text(`( ${teacherName} )`, 105, signY + 36, { align: 'center' });
 
         doc.text("Disahkan oleh,", 180, signY, { align: 'right' });
@@ -607,7 +612,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
             doc.setFontSize(8.5);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(148, 163, 184);
-            doc.text(`LPQ Al-Fath Maulana - System Generated Rapor Resmi`, 15, bottomY);
+            doc.text(`${sekolah.name} - Rapor Akademik`, 15, bottomY);
             doc.text(`Halaman ${i} dari ${pageCount}`, 105, bottomY, { align: 'center' });
             doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 195, bottomY, { align: 'right' });
         }
@@ -664,6 +669,7 @@ const createHeaderCell = (text, options = {}) => {
 };
 
 export const generateRaporDOCX = async (santriData, attendanceData, hafalanData, periodText, characterData, scoresSummary) => {
+    const sekolah = getSchoolIdentity();
     const sessionName = getSessionName(santriData.sesi_mengaji || santriData.sesi || santriData.class?.sesi) || 'Sesi Regular';
     const strengthsList = (characterData?.strengths || []).join(', ') || '-';
     const teacherName = santriData.class?.guru?.nama || santriData.guru?.nama || santriData.nama_guru || '....................................';
@@ -703,7 +709,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                         new Paragraph({
                             alignment: AlignmentType.RIGHT,
                             children: [
-                                new TextRun({ text: "LPQ Al-Fath Maulana - System Generated Rapor Resmi  |  Halaman ", size: 16, color: "94A3B8", font: "Arial" }),
+                                new TextRun({ text: `${sekolah.name} - Rapor Akademik  |  Halaman `, size: 16, color: "94A3B8", font: "Arial" }),
                                 new TextRun({ children: [PageNumber.CURRENT], size: 16, color: "94A3B8", font: "Arial" }),
                                 new TextRun({ text: " dari ", size: 16, color: "94A3B8", font: "Arial" }),
                                 new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: "94A3B8", font: "Arial" })
@@ -738,7 +744,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                                         }),
                                         new Paragraph({
                                             alignment: AlignmentType.CENTER,
-                                            children: [new TextRun({ text: "LPQ AL-FATH MAULANA (METODE QIROATI)", bold: true, size: 22, color: "FDE047", font: "Arial" })]
+                                            children: [new TextRun({ text: sekolah.name.toUpperCase(), bold: true, size: 22, color: "FDE047", font: "Arial" })]
                                         }),
                                         new Paragraph({
                                             alignment: AlignmentType.CENTER,
@@ -771,7 +777,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                         }),
                         new TableRow({
                             children: [
-                                createCell("Nomor Induk (NIQ)", { bold: true, shadingColor: "F8FAFC" }),
+                                createCell("Nomor Induk", { bold: true, shadingColor: "F8FAFC" }),
                                 createCell(santriData.nomor_induk_qiroati || '-', { bold: true }),
                                 createCell("Wali Murid (Ibu)", { bold: true, shadingColor: "F8FAFC" }),
                                 createCell(guardianName, { bold: true })
@@ -779,8 +785,8 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                         }),
                         new TableRow({
                             children: [
-                                createCell("Jilid / Tingkat", { bold: true, shadingColor: "F8FAFC" }),
-                                createCell(`${santriData.jilid || '-'} (${santriData.kategori || 'Anak'})`, { bold: true, color: "7E22CE" }),
+                                createCell("Tingkat", { bold: true, shadingColor: "F8FAFC" }),
+                                createCell(santriData.jilid || '-', { bold: true, color: "7E22CE" }),
                                 createCell("Predikat Akhir", { bold: true, shadingColor: "F8FAFC" }),
                                 createCell(`${scores.predicate} (${scoresSummary?.grade || 'A'})`, { bold: true, color: "10B981" })
                             ]
@@ -814,7 +820,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                         }),
                         new TableRow({
                             children: [
-                                createCell("Kehadiran & Keaktifan Mengaji"),
+                                createCell("Kehadiran & Keaktifan Belajar"),
                                 createCell(`${scores.attendanceScore} / 100`, { align: AlignmentType.CENTER }),
                                 createCell("34%", { align: AlignmentType.CENTER }),
                                 createCell(scores.attendanceScore >= 85 ? "Sangat Baik" : "Baik", { align: AlignmentType.CENTER, bold: true, color: "10B981" })
@@ -898,7 +904,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                         ...(hafalanData.programScope === 'PTPT' ? [
                             new TableRow({
                                 children: [
-                                    createCell("Tahfizh PTPT", { bold: true }),
+                                    createCell("Tahfizh", { bold: true }),
                                     createCell(hafalanData.tahfizh?.total || 0, { align: AlignmentType.CENTER }),
                                     createCell(hafalanData.tahfizh?.completed || 0, { align: AlignmentType.CENTER }),
                                     createCell(`${Math.round(((hafalanData.tahfizh?.completed || 0) / (hafalanData.tahfizh?.total || 1)) * 100)}%`, { align: AlignmentType.CENTER, bold: true })
@@ -978,7 +984,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                     rows: [
                         new TableRow({
                             children: [
-                                createHeaderCell("Jilid", { bg: "1D4ED8", width: 10 }),
+                                createHeaderCell("Tingkat", { bg: "1D4ED8", width: 10 }),
                                 createHeaderCell("Nama Item / Surat", { bg: "1D4ED8", align: AlignmentType.LEFT, width: 35 }),
                                 createHeaderCell("Kategori", { bg: "1D4ED8", align: AlignmentType.LEFT, width: 18 }),
                                 createHeaderCell("Skor", { bg: "1D4ED8", width: 10 }),
@@ -1021,7 +1027,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                         new TableRow({
                             children: [
                                 createCell("Mengetahui,\nOrang Tua / Wali Murid\n\n\n\n( .................................... )", { align: AlignmentType.CENTER, width: 33 }),
-                                createCell(`Guru Pengampu Kelas,\nUstadz / Ustadzah\n\n\n\n( ${teacherName} )`, { align: AlignmentType.CENTER, bold: true, width: 34 }),
+                                createCell(`Guru Pengampu Kelas,\nGuru Pengampu\n\n\n\n( ${teacherName} )`, { align: AlignmentType.CENTER, bold: true, width: 34 }),
                                 createCell("Disahkan oleh,\nWakil Kepala Sekolah\n\n\n\n( .................................... )", { align: AlignmentType.CENTER, width: 33 })
                             ]
                         })
@@ -1035,7 +1041,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Rapor_LPQ_${(santriData.nama_lengkap || 'Murid').replace(/\s+/g, '_')}.docx`;
+    a.download = `Rapor_${(santriData.nama_lengkap || 'Murid').replace(/\s+/g, '_')}.docx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

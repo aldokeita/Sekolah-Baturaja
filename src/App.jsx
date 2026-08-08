@@ -31,6 +31,7 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { publicFetch } from '@/lib/apiClient';
 import { enableDeferredFeatures, enableGameFeatures } from '@/lib/featureFlags';
+import { DEFAULT_LOGO_PATH, isLegacyLogoPath } from '@/lib/schoolAssets';
 
 const RouteLogger = () => {
   const location = useLocation();
@@ -54,7 +55,7 @@ const DynamicLogo = ({ className = '', width = 48, height = 48 }) => {
       try {
         const data = await publicFetch('/api/content/website?keys=logoUrl');
         const url = data?.logoUrl;
-        if (!cancelled && url && url !== '/logo-lpq-al-fath-maulana.webp') {
+        if (!cancelled && url && !isLegacyLogoPath(url)) {
           const img = new Image();
           img.onload = () => { if (!cancelled) { setDynamicUrl(url); setReady(true); } };
           img.src = url;
@@ -69,7 +70,7 @@ const DynamicLogo = ({ className = '', width = 48, height = 48 }) => {
     <span className={`relative inline-block ${className}`} style={{ width, height }}>
       {/* Local logo — always present */}
       <img
-        src="/logo-lpq-al-fath-maulana.webp"
+        src={DEFAULT_LOGO_PATH}
         alt="Logo sekolah"
         width={width}
         height={height}

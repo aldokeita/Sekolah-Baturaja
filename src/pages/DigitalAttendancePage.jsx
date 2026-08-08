@@ -68,6 +68,7 @@ import { resolveAvatarUrl } from '@/lib/storageAdapters';
 import AttendanceProfileCard from '@/components/dashboard/shared/AttendanceProfileCard';
 import { useAttendanceSessionConfiguration } from '@/hooks/useAttendanceSessionConfiguration';
 import { resolveSantriLevel } from '@/lib/santriLevel';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 // --- Data (unchanged) ---
 const guruQuotes = [
@@ -96,7 +97,7 @@ const motivationalMessages = [
     "Anak sholeh/sholehah adalah harta terindah Ayah Bunda.",
     "Jadilah alasan Ayah dan Bunda tersenyum hari ini.",
     "Bersih itu ciri orang beriman. Sampahnya dibuang di tempatnya ya.",
-    "Jujur itu hebat! Murid LPQ Al-Fath Maulana pantang berbohong.",
+    "Jujur itu hebat! Murid yang jujur dipercaya banyak orang.",
     "Siapa yang bersungguh-sungguh, pasti akan berhasil. Man Jadda Wajada!",
     "Hari ini pembelajar, besok jadi pemimpin. Aamiin!",
     "Absen diterima! Silakan masuk, pintu ilmu sudah terbuka.",
@@ -278,6 +279,7 @@ const DigitalClock = ({ showSeconds = true }) => {
 
 // --- Main Component ---
 const DigitalAttendancePage = () => {
+  const sekolah = useSchoolIdentity();
   const { sessionTimes } = useAttendanceSessionConfiguration();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
@@ -1070,7 +1072,7 @@ const DigitalAttendancePage = () => {
   // --- Render ---
   return (
     <>
-      <Helmet><title>Absensi Digital - LPQ Al-Fath Maulana</title></Helmet>
+      <Helmet><title>Absensi Digital - {sekolah.name}</title></Helmet>
       <div className="attendance-page">
         {/* Background */}
         <div className="attendance-page__bg" aria-hidden="true" />
@@ -1176,7 +1178,7 @@ const DigitalAttendancePage = () => {
 
         {/* Footer */}
         <footer className="attendance-footer">
-          <p className="attendance-footer__text">LPQ AL-FATH MAULANA &bull; DIGITAL ATTENDANCE SYSTEM v5.0</p>
+          <p className="attendance-footer__text">{sekolah.name} &bull; ABSENSI DIGITAL</p>
         </footer>
       </div>
     </>

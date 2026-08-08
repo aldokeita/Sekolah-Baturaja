@@ -8,10 +8,11 @@ import {
   OFFICIAL_QUOTAS,
   OFFICIAL_SCHEDULES,
 } from '@/lib/institutionContent';
+import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
 
 // BRAND_NAME dihapus: tidak ada pemakainya, dan nama sekolah kini datang dari
 // panel Identitas Sekolah (lihat src/lib/schoolIdentity.js), bukan konstanta.
-export const LOCAL_LOGO = '/logo-lpq-al-fath-maulana.webp';
+export const LOCAL_LOGO = DEFAULT_LOGO_PATH;
 
 export const defaultContent = {
   logoUrl: LOCAL_LOGO,
@@ -72,11 +73,11 @@ export const getHomepagePrograms = ({ schedules = [], quotas = {} }) => {
 
   return [
     {
-      id: 'qiroati',
-      eyebrow: 'Metode inti',
-      title: 'Metode Qiroati',
-      description: 'Pembinaan bacaan dilakukan bertahap agar murid terbiasa membaca dengan benar, tartil, dan terpantau.',
-      route: '/metode-qiroati',
+      id: 'pembelajaran',
+      eyebrow: 'Program inti',
+      title: 'Program Pembelajaran',
+      description: 'Pembelajaran disusun bertahap agar murid memahami materi, berlatih, dan berkembang dengan percaya diri.',
+      route: '/program',
       featured: true,
     },
     {
@@ -99,7 +100,7 @@ export const getHomepagePrograms = ({ schedules = [], quotas = {} }) => {
       id: 'adab',
       eyebrow: 'Pembinaan',
       title: 'Adab sebelum capaian',
-      description: 'Rutinitas kelas disusun agar murid tumbuh dalam disiplin, sopan santun, dan kecintaan pada Al-Qur’an.',
+      description: 'Rutinitas kelas disusun agar murid tumbuh dalam disiplin, sopan santun, dan tanggung jawab.',
       route: '/profil',
     },
     {

@@ -1,24 +1,13 @@
 ## Pages
-- [- LPQ Al-Fath Maulana](/forumtopic): No description available
-- [— LPQ Al-Fath Maulana](/announcementdetail): No description available
-- [— LPQ Al-Fath Maulana](/newsdetail): No description available
-- [Absensi Digital - LPQ Al-Fath Maulana](/digitalattendance): No description available
-- [Berita & Cerita — LPQ Al-Fath Maulana](/news): Kabar terkini, kegiatan, dan cerita inspiratif dari LPQ Al-Fath Maulana.
-- [Brosur & Pustaka — LPQ Al-Fath Maulana](/brochure): Unduh brosur pendaftaran resmi dan materi pustaka dari LPQ Al-Fath Maulana. Galeri publikasi dan informasi lembaga.
-- [Dashboard - LPQ Al-Fath Maulana](/dashboard): Dashboard sistem manajemen LPQ Al-Fath Maulana
-- [Diskusi Wali Santri - LPQ Al-Fath Maulana](/walidiscussion): Jadwal diskusi online untuk wali santri LPQ Al-Fath Maulana.
-- [Fasilitas - LPQ Al-Fath Maulana](/facilities): No description available
-- [Forum Diskusi - LPQ Al-Fath Maulana](/forum): Forum diskusi untuk wali murid, santri, dan guru LPQ Al-Fath Maulana.
-- [Galeri Kegiatan - LPQ Al-Fath Maulana](/gallery): No description available
-- [Gatcha Challenge - LPQ Al-Fath Maulana](/gatchagame): No description available
-- [Informasi Pendaftaran — LPQ Al-Fath Maulana](/registrationinfo): Informasi lengkap pendaftaran santri baru LPQ Al-Fath Maulana — biaya, syarat, dan prosedur untuk program TPQ anak maupun dewasa.
-- [Kontak - LPQ Al-Fath Maulana](/contact): Alamat, WhatsApp, telepon, email, dan lokasi resmi LPQ Al-Fath Maulana di Baturaja.
-- [Login - LPQ Al-Fath Maulana](/login): No description available
-- [Media Edukatif - LPQ Al-Fath Maulana](/edumedia): Jelajahi media edukatif Islami, termasuk game tebak huruf hijaiyah dan kamus tajwid mini, untuk pembelajaran yang menyenangkan.
-- [Papan Skor Santri Terbaik - LPQ Al-Fath Maulana](/topscore): Leaderboard Top 10 Santri dengan poin tertinggi di LPQ Al-Fath Maulana.
-- [Parenting Islami - LPQ Al-Fath Maulana](/parenting): Artikel dan tips parenting Islami untuk orang tua Muslim. Dukung peran Anda sebagai pendidik utama di rumah bersama LPQ Al-Fath Maulana.
-- [Pengumuman — LPQ Al-Fath Maulana](/announcement): Pengumuman resmi terbaru dari LPQ Al-Fath Maulana untuk wali santri dan masyarakat.
-- [Profil Lembaga - LPQ Al-Fath Maulana](/profile): Profil LPQ Al-Fath Maulana.
-- [Quiz Hafalan Gacha - LPQ Al-Fath Maulana](/quizhafalan): No description available
-- [Sistem Mengaji - LPQ Al-Fath Maulana](/system): Pelajari alur dan sistem pembelajaran mengaji dengan metode Qiroati di LPQ Al-Fath Maulana.
-- [Untitled Page](/home): Website resmi LPQ Al-Fath Maulana: pendaftaran, berita, pengumuman, feedback, dan portal pendidikan Al-Qur
+- [SDN Baturaja](/): Website resmi sekolah, berita, program, dan informasi layanan.
+- [Profil Sekolah - SDN Baturaja](/profil): Profil, visi, misi, dan perjalanan SDN Baturaja.
+- [Galeri Sekolah - SDN Baturaja](/profil/galeri): Dokumentasi kegiatan dan lingkungan sekolah.
+- [Berita - SDN Baturaja](/berita): Berita dan pengumuman terbaru sekolah.
+- [Program - SDN Baturaja](/program): Program pembelajaran dan kegiatan sekolah.
+- [Prestasi - SDN Baturaja](/prestasi): Prestasi dan capaian murid sekolah.
+- [Ekstrakurikuler - SDN Baturaja](/ekstrakurikuler): Pilihan kegiatan pengembangan minat dan bakat murid.
+- [Fasilitas - SDN Baturaja](/fasilitas): Fasilitas pendukung pembelajaran di sekolah.
+- [SPMB - SDN Baturaja](/pendaftaran): Informasi dan formulir Sistem Penerimaan Murid Baru.
+- [Cek Pendaftaran - SDN Baturaja](/cek-pendaftaran): Cek status pendaftaran murid baru.
+- [Kontak - SDN Baturaja](/kontak): Alamat, telepon, email, dan lokasi sekolah.
+- [Login - SDN Baturaja](/login): Portal masuk warga sekolah.

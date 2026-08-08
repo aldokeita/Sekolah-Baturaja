@@ -5,12 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Download, Calendar, BarChart, TrendingUp, Search, User, Users, RefreshCw, X as XIcon } from 'lucide-react';
+import { Download, Calendar, BarChart, TrendingUp, Search, User, RefreshCw, X as XIcon } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ResponsiveContainer, BarChart as RechartsBarChart, LineChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import AttendanceStatusIcon from '../shared/AttendanceStatusIcon';
 import AttendanceDetailsModal from '../shared/AttendanceDetailsModal';
@@ -116,7 +114,6 @@ const AttendanceRecap = () => {
     const [detailSantri, setDetailSantri] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [holidays, setHolidays] = useState(new Set());
-    const [activeTab, setActiveTab] = useState('tpq');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -131,7 +128,7 @@ const AttendanceRecap = () => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedYear, selectedMonth, selectedClass, selectedSession, activeTab, debouncedSearch, sortKey, sortOrder]);
+    }, [selectedYear, selectedMonth, selectedClass, selectedSession, debouncedSearch, sortKey, sortOrder]);
 
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);
@@ -160,9 +157,6 @@ const AttendanceRecap = () => {
                 page: currentPage - 1,
                 limit: PAGE_SIZE,
             };
-
-            if (activeTab === 'dewasa') santriFilters.kategori = 'Dewasa';
-            else santriFilters.excludeKategori = 'Dewasa';
 
             if (selectedClass !== 'all') {
                 santriFilters.classId = selectedClass;
@@ -225,13 +219,16 @@ const AttendanceRecap = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, currentPage, debouncedSearch, selectedYear, selectedMonth, role, user?.id, selectedClass, selectedSession]);
+    }, [currentPage, debouncedSearch, selectedYear, selectedMonth, role, user?.id, selectedClass, selectedSession]);
 
     useEffect(() => {
         fetchAllData();
     }, [fetchAllData]);
 
-    const getSessionStartTimestamp = (dateStr, sesiName) => buildSessionStartTimestamp(dateStr, sesiName, sessionTimes);
+    const getSessionStartTimestamp = useCallback(
+        (dateStr, sesiName) => buildSessionStartTimestamp(dateStr, sesiName, sessionTimes),
+        [sessionTimes],
+    );
 
     const handleIconClick = (record, day, user) => {
         const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -306,12 +303,7 @@ const AttendanceRecap = () => {
             return y === selectedYear && (m - 1) === selectedMonth;
         });
 
-        let usersToRecap = allUsers;
-        if (activeTab === 'tpq') {
-            usersToRecap = allUsers.filter(u => u.role === 'santri' && u.kategori !== 'Dewasa');
-        } else {
-            usersToRecap = allUsers.filter(u => u.role === 'santri' && u.kategori === 'Dewasa');
-        }
+        let usersToRecap = allUsers.filter(u => u.role === 'santri');
 
         if (selectedClass !== 'all') { usersToRecap = usersToRecap.filter(u => (u.current_class_id || u.id_kelas) === selectedClass); }
         if (searchTerm) { usersToRecap = usersToRecap.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase())); }
@@ -382,7 +374,7 @@ const AttendanceRecap = () => {
         });
 
         return { userRecap, weekdaysInMonth };
-    }, [attendanceData, allUsers, selectedYear, selectedMonth, selectedClass, searchTerm, sortKey, sortOrder, holidays, activeTab]);
+    }, [attendanceData, allUsers, selectedYear, selectedMonth, selectedClass, searchTerm, sortKey, sortOrder, holidays, getSessionStartTimestamp]);
 
     const chartData = useMemo(() => {
         return recapData.weekdaysInMonth.map(day => {
@@ -412,9 +404,9 @@ const AttendanceRecap = () => {
             ws['!cols'] = wscols;
 
             const wb = XLSX.utils.book_new();
-            const sheetName = activeTab === 'tpq' ? "Rekap TPQ" : "Rekap Dewasa";
+            const sheetName = 'Rekap Absensi Murid';
             XLSX.utils.book_append_sheet(wb, ws, sheetName);
-            XLSX.writeFile(wb, `Rekap_Absensi_${activeTab}_${months[selectedMonth]}_${selectedYear}.xlsx`);
+            XLSX.writeFile(wb, `Rekap_Absensi_Murid_${months[selectedMonth]}_${selectedYear}.xlsx`);
             toast({ title: "Ekspor Berhasil", description: "File rekap absensi telah diunduh." });
         } catch (error) { toast({ title: "Ekspor Gagal", description: error.message, variant: 'destructive' }); }
     };
@@ -431,11 +423,6 @@ const AttendanceRecap = () => {
     };
 
     if (isLoading) return <div className="admin-table-loading" style={{ position: 'relative', minHeight: '12rem', borderRadius: '0.75rem', border: '1px solid hsl(var(--admin-border))', backgroundColor: 'hsl(var(--admin-surface))' }}><div className="admin-table-loading-spinner"></div><p>Memuat rekap absensi...</p></div>;
-
-    const subTabs = [
-        { id: 'tpq', label: 'Rekap Absensi Murid TPQ', icon: Users },
-        { id: 'dewasa', label: 'Rekap Absensi Murid Dewasa', icon: User },
-    ];
 
     return (
         <>
@@ -490,35 +477,7 @@ const AttendanceRecap = () => {
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <div className="flex justify-center mb-6">
-                    <div className="admin-glass-tab-list inline-flex p-1.5 rounded-full gap-1">
-                        {subTabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`
-                                    admin-glass-tab-button relative px-6 py-2 rounded-full text-sm font-semibold flex items-center gap-2
-                                    ${activeTab === tab.id ? 'text-primary dark:text-white' : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'}
-                                `}
-                            >
-                                {activeTab === tab.id && (
-                                    <motion.div
-                                        layoutId="subtab-pill-recap"
-                                        className="admin-glass-tab-indicator"
-                                        transition={{ type: 'spring', stiffness: 430, damping: 34, mass: 0.72 }}
-                                    />
-                                )}
-                                <span className="relative z-10 flex items-center gap-2">
-                                    <tab.icon className="w-4 h-4" />
-                                    {tab.label}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <TabsContent value={activeTab} className="space-y-4">
+            <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                         <div className="relative flex-grow w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -621,10 +580,9 @@ const AttendanceRecap = () => {
                         totalItems={totalUsers}
                         pageSize={PAGE_SIZE}
                         onPageChange={setCurrentPage}
-                        itemLabel="santri"
+                        itemLabel="murid"
                     />
-                </TabsContent>
-            </Tabs>
+            </div>
         </div>
 
         <SantriRecapDetailModal santri={detailSantri} isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} />

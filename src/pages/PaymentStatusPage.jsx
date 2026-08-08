@@ -25,6 +25,8 @@ import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
 import { calculateAttendanceData, getHafalanProgressData, getPointsData } from '@/utils/reportUtils';
 import { fetchAllPayments, fetchPaymentDetail } from '@/lib/paymentAdapters';
+import { fetchReceiptLogoDataUrl } from '@/lib/publicContentAdapters';
+import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
 
 const PaymentStatusPage = () => {
   const sekolah = useSchoolIdentity();
@@ -41,6 +43,7 @@ const PaymentStatusPage = () => {
   const [attendanceSummary, setAttendanceSummary] = useState(null);
   const [hafalanData, setHafalanData] = useState(null);
   const [santriPoints, setSantriPoints] = useState(0);
+  const [receiptLogoUrl, setReceiptLogoUrl] = useState(DEFAULT_LOGO_PATH);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -98,6 +101,16 @@ const PaymentStatusPage = () => {
     }
   }, [paymentData]);
 
+  useEffect(() => {
+    let active = true;
+    fetchReceiptLogoDataUrl(DEFAULT_LOGO_PATH).then((logoUrl) => {
+      if (active) setReceiptLogoUrl(logoUrl);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const saveReportCard = async () => {
     if (!paymentData || !receiptRef.current) return;
     setIsSaving(true);
@@ -149,7 +162,7 @@ const PaymentStatusPage = () => {
   }
 
   const totalAmount = relatedPayments.reduce((sum, p) => sum + p.jumlah, 0);
-  const teacherName = paymentData.santri?.class?.guru?.nama || 'Ustadz/Ustadzah';
+  const teacherName = paymentData.santri?.class?.guru?.nama || 'Guru Pengampu';
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 flex justify-center relative overflow-hidden">
@@ -166,7 +179,7 @@ const PaymentStatusPage = () => {
               {/* HEADER SECTION (Dual Logos) */}
               <div className="px-10 pt-10 pb-6 border-b-4 border-primary/20 relative">
                   <div className="flex justify-between items-center">
-                      <img src="/logo-lpq-al-fath-maulana.webp" alt={`Logo ${sekolah.name}`} className="w-20 h-20 object-contain"/>
+                      <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-20 h-20 object-contain"/>
                       <div className="text-center flex-1 px-4">
                           <h1 className="text-2xl font-black text-slate-900 font-serif uppercase tracking-widest">{sekolah.name}</h1>
                           <h2 className="text-lg font-bold text-primary tracking-wide">{sekolah.tagline}</h2>
@@ -176,7 +189,7 @@ const PaymentStatusPage = () => {
                           </p>
                       </div>
                       <div className="w-20 h-20 flex items-center justify-center border-2 border-slate-200 rounded-full bg-slate-50 text-[10px] font-bold text-center text-slate-400">
-                          <span className="font-serif">METODE<br/>QIROATI</span>
+                          <span className="font-serif">{sekolah.logoAbbr || sekolah.shortName}</span>
                       </div>
                   </div>
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-white px-4">
@@ -193,7 +206,7 @@ const PaymentStatusPage = () => {
                           <table className="w-full">
                               <tbody>
                                   <tr><td className="w-32 text-slate-500 font-medium pb-1">Nama Lengkap</td><td className="font-bold text-slate-900 pb-1">: {paymentData.santri?.nama_lengkap}</td></tr>
-                                  <tr><td className="w-32 text-slate-500 font-medium pb-1">Jilid Saat Ini</td><td className="font-bold text-slate-900 pb-1">: {paymentData.santri?.jilid || '-'}</td></tr>
+                                  <tr><td className="w-32 text-slate-500 font-medium pb-1">Tingkat Saat Ini</td><td className="font-bold text-slate-900 pb-1">: {paymentData.santri?.jilid || '-'}</td></tr>
                                   <tr><td className="w-32 text-slate-500 font-medium">Kelas / Sesi</td><td className="font-bold text-slate-900">: {paymentData.santri?.class?.nama_kelas || '-'} / {paymentData.santri?.sesi_mengaji || '-'}</td></tr>
                               </tbody>
                           </table>

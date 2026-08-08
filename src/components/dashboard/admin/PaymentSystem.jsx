@@ -31,6 +31,7 @@ import {
   validatePaymentAmount,
 } from '@/lib/paymentAdapters';
 import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicContentAdapters';
+import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
 import PaymentProofModal from './PaymentProofModal';
 import { fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
@@ -198,7 +199,7 @@ const PaymentSystem = () => {
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [receiptLogoUrl, setReceiptLogoUrl] = useState('/logo-lpq-al-fath-maulana.webp');
+  const [receiptLogoUrl, setReceiptLogoUrl] = useState(DEFAULT_LOGO_PATH);
   const [historyProofPayment, setHistoryProofPayment] = useState(null);
 
   const location = useLocation();
@@ -265,7 +266,7 @@ const PaymentSystem = () => {
     let active = true;
     const loadReceiptLogo = async () => {
       if (!isReceiptOpen) return;
-      const logoUrl = await fetchReceiptLogoDataUrl('/logo-lpq-al-fath-maulana.webp');
+      const logoUrl = await fetchReceiptLogoDataUrl(DEFAULT_LOGO_PATH);
       if (active) setReceiptLogoUrl(logoUrl);
     };
     loadReceiptLogo();
@@ -441,7 +442,7 @@ const PaymentSystem = () => {
         cacheBust: true,
         backgroundColor: '#ffffff',
         pixelRatio: 2,
-        imagePlaceholder: '/logo-lpq-al-fath-maulana.webp',
+        imagePlaceholder: DEFAULT_LOGO_PATH,
       });
 
       const link = document.createElement('a');
