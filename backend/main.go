@@ -56,6 +56,7 @@ func main() {
 	loginLogsHandler := handler.NewLoginLogsHandler(pool, cfg)
 	whatsappHandler := handler.NewWhatsAppHandler(pool)
 	ppdbHandler := handler.NewPpdbHandler(pool)
+	backupHandler := handler.NewBackupHandler(pool)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -146,6 +147,9 @@ func main() {
 		// WhatsApp per-jilid group links. Reads are admin+guru (guru opens
 		// JilidChangeModal from GuruDashboard); writes are admin only.
 		r.Mount("/api/whatsapp", whatsappHandler.Routes())
+
+		// Backup & restore — admin only (diperiksa di dalam handler).
+		r.Mount("/api/backup", backupHandler.Routes())
 
 		// Media player — two separate top-level paths in the frontend adapter
 		// (mediaPlayerAdapters.js), so they mount separately rather than under a

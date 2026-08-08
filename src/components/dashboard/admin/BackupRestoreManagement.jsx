@@ -111,23 +111,12 @@ const BackupRestoreManagement = () => {
         const date = new Date();
         const dateStr = date.toISOString().split('T')[0];
         const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '');
-        return `backup-lpq-${type}-${dateStr}-${timeStr}.${ext}`;
+        return `backup-${type}-${dateStr}-${timeStr}.${ext}`;
     };
 
-    // Backup/restore read arbitrary tables by name and upsert arbitrary rows
-    // back. The Go API exposes no generic table dump/restore route, and inventing
-    // one would mean a admin-only "run this against any table" endpoint — a much
-    // larger design and security decision than this migration pass.
-    //
-    // Until that capability exists deliberately, both paths fail loudly with an
-    // actionable message instead of throwing ReferenceError on an undefined
-    // client. Per-table screens (santri, guru, kelas, pembayaran) still work.
-    const BACKUP_UNSUPPORTED_MESSAGE = 'Backup & restore belum tersedia pada backend baru. '
-        + 'Fitur ini membutuhkan endpoint dump/restore tabel yang belum dibuat. '
-        + 'Gunakan ekspor per-modul (murid, guru, kelas, pembayaran) sebagai gantinya.';
-
     const fetchTableData = async (tableName) => {
-        throw new Error(`${tableName}: ${BACKUP_UNSUPPORTED_MESSAGE}`);
+        const data = await apiClient.get(`/api/backup/table/${tableName}`);
+        return Array.isArray(data) ? data : [];
     };
 
     const createDirectBackup = async () => {
@@ -191,16 +180,12 @@ const BackupRestoreManagement = () => {
         };
     };
 
-    // Restore needs a generic "upsert arbitrary rows into arbitrary table"
-    // capability. The Go API has none, so this fails loudly instead of throwing
-    // ponytail: backup runs client-side via Go API; no server-side dump endpoint yet.
-    //
-    // The previous implementation carried real production hardening (missing-column
-    // pruning, FK repair, chunk bisection on constraint violations). That logic is
-    // in git history and should be ported when a dump/restore endpoint is designed
-    // — it is not kept here as unreachable code.
-    const upsertRowsResilient = async (tableName) => {
-        throw new Error(`${tableName}: ${BACKUP_UNSUPPORTED_MESSAGE}`);
+    const upsertRowsResilient = async (tableName, chunk, report) => {
+        const result = await apiClient.post('/api/backup/restore', { table: tableName, rows: chunk });
+        report.restoredRows += result?.restored ?? 0;
+        if (result?.skipped > 0) {
+            report.skippedRows.push({ table: tableName, reason: result.first_error || 'baris tidak kompatibel' });
+        }
     };
 
     const restoreDirectly = async (payload) => {
@@ -482,7 +467,7 @@ const BackupRestoreManagement = () => {
                 <CardHeader>
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-lg"><Database className="w-6 h-6 text-blue-600 dark:text-blue-400" /></div>
-                        <div><CardTitle className="text-2xl font-bold text-slate-800 dark:text-white">Backup & Restore Database</CardTitle><CardDescription>Kelola cadangan data sistem untuk keamanan dan pemulihan bencana. Jalur admin langsung aktif dan Edge Function digunakan otomatis bila tersedia.</CardDescription></div>
+                        <div><CardTitle className="text-2xl font-bold text-slate-800 dark:text-white">Backup & Restore Database</CardTitle><CardDescription>Buat cadangan seluruh data sistem dan pulihkan dari file backup bila diperlukan.</CardDescription></div>
                     </div>
                 </CardHeader>
                 <CardContent>
