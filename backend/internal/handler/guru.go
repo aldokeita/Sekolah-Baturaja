@@ -39,6 +39,13 @@ func (h *GuruHandler) Routes() chi.Router {
 	return r
 }
 
+// guruSafeColumns lists every guru column EXCEPT password — used in SELECT to
+// prevent bcrypt hashes from leaking to the client.
+const guruSafeColumns = `g.id, g.nama, g.email, g.no_hp, g.alamat, g.foto_url,
+	g.rfid_tag, g.jabatan, g.roles, g.is_notulen, g.jenis_kelamin,
+	g.tanggal_lahir, g.status_guru, g.status, g.created_at, g.updated_at,
+	g.deleted_at, g.created_by, g.updated_by, g.avatar_path`
+
 // Columns a client may set/update on guru.
 var guruEditable = map[string]bool{
 	"nama": true, "email": true, "no_hp": true, "alamat": true, "foto_url": true,
@@ -100,7 +107,7 @@ func (h *GuruHandler) List(w http.ResponseWriter, r *http.Request) {
 	limit, offset := paginate(r)
 
 	rows, err := h.db.Query(ctx, `
-		SELECT g.* FROM guru g
+		SELECT `+guruSafeColumns+` FROM guru g
 		LEFT JOIN user_profiles up ON up.id = g.id
 		WHERE g.status = 'active'
 		  AND (NOT $3::boolean OR up.role IS NULL OR up.role <> 'superadmin')
@@ -137,7 +144,7 @@ func (h *GuruHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.db.Query(ctx, `SELECT * FROM guru WHERE id = $1`, id)
+	rows, err := h.db.Query(ctx, `SELECT `+guruSafeColumns+` FROM guru g WHERE g.id = $1`, id)
 	if err != nil {
 		jsonError(w, "gagal mengambil data guru", http.StatusInternalServerError)
 		return
@@ -176,13 +183,14 @@ func (h *GuruHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Non-admins cannot change roles/status.
+	// Non-admins cannot change sensitive fields.
 	if !middleware.IsAdmin(role) {
 		delete(body, "roles")
 		delete(body, "status")
 		delete(body, "status_guru")
 		delete(body, "jabatan")
 		delete(body, "password")
+		delete(body, "email")
 	}
 
 	if err := hashPasswordField(body); err != nil {
@@ -241,8 +249,16 @@ func (h *GuruHandler) Create(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "email wajib diisi", http.StatusBadRequest)
 		return
 	}
+	if !strings.Contains(email, "@") || !strings.Contains(email[strings.Index(email, "@"):], ".") {
+		jsonError(w, "format email tidak valid", http.StatusBadRequest)
+		return
+	}
 	if strings.TrimSpace(body.Password) == "" {
 		jsonError(w, "password awal wajib diisi", http.StatusBadRequest)
+		return
+	}
+	if len(body.Password) < 6 {
+		jsonError(w, "password minimal 6 karakter", http.StatusBadRequest)
 		return
 	}
 
@@ -367,7 +383,7 @@ func (h *GuruHandler) ByRFID(w http.ResponseWriter, r *http.Request) {
 	}
 	rfid := chi.URLParam(r, "rfid")
 	rows, err := h.db.Query(r.Context(), `
-		SELECT g.* FROM guru g
+		SELECT `+guruSafeColumns+` FROM guru g
 		LEFT JOIN user_profiles up ON up.id = g.id
 		WHERE g.rfid_tag = $1 AND g.status = 'active'
 		  AND (NOT $2::boolean OR up.role IS NULL OR up.role <> 'superadmin')

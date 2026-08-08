@@ -83,7 +83,7 @@ const GuruManagement = () => {
   const resetForm = () => {
     setFormData({
       nama: '', jabatan: '', email: '', no_hp: '', alamat: '', rfid_tag: '', is_notulen: false, foto_url: '', avatar_path: '', password: '',
-      roles: [], jenis_kelamin: 'Laki-laki', status_guru: 'Non-Syahadah', nomor_induk_qiroati: '', tanggal_lahir: ''
+      roles: [], jenis_kelamin: 'Laki-laki', status_guru: 'Belum Bersertifikat', nomor_induk_qiroati: '', tanggal_lahir: ''
     });
     setEditingGuru(null);
   };
@@ -95,10 +95,10 @@ const GuruManagement = () => {
     setEditingGuru(guru);
     setFormData({
         ...guru,
-        password: guru.password || '',
+        password: '',
         roles: guru.roles || [],
         jenis_kelamin: guru.jenis_kelamin || 'Laki-laki',
-        status_guru: guru.status_guru || 'Non-Syahadah',
+        status_guru: guru.status_guru || 'Belum Bersertifikat',
         nomor_induk_qiroati: guru.nomor_induk_qiroati || '',
         tanggal_lahir: guru.tanggal_lahir || ''
     });
@@ -136,10 +136,10 @@ const GuruManagement = () => {
             'No Telepon': guru.no_hp || '-',
             'Alamat': guru.alamat || '-',
             'Tanggal Bergabung': guru.created_at ? new Date(guru.created_at).toLocaleDateString('id-ID') : '-',
-            'Status': guru.status_guru || 'Non-Syahadah',
+            'Status': guru.status_guru || 'Belum Bersertifikat',
             'Jabatan': guru.jabatan || '-',
             'Role': guru.roles && guru.roles.length > 0 ? guru.roles.join(', ') : '-',
-            'No Induk Qiroati': guru.nomor_induk_qiroati || '-',
+            'NUPTK': guru.nomor_induk_qiroati || '-',
             'Jenis Kelamin': guru.jenis_kelamin || '-',
             'Tanggal Lahir': guru.tanggal_lahir ? new Date(guru.tanggal_lahir).toLocaleDateString('id-ID') : '-',
         }));
@@ -318,11 +318,13 @@ const GuruManagement = () => {
                 )}
             </button>
 
+            {isAdmin && (
             <div className="admin-action-cluster">
                  <button onClick={handleBackupToExcel} className="admin-action-cluster-btn" title="Backup data guru ke Excel">
                     <Download className="w-3.5 h-3.5"/> Export
                  </button>
             </div>
+            )}
             {isAdmin && (
               <button onClick={handleAdd} className="admin-panel-primary-btn">
                   <Plus className="w-4 h-4"/> Tambah Guru
@@ -381,13 +383,13 @@ const GuruManagement = () => {
                 </td>
                 <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--admin-text-secondary))' }}>{guru.nomor_induk_qiroati || '-'}</td>
                 <td className="p-3">
-                    <span className={guru.status_guru === 'Syahadah' ? 'admin-status-badge admin-status-badge--success' : 'admin-status-badge admin-status-badge--neutral'}>
-                        {guru.status_guru || 'Non-Syahadah'}
+                    <span className={guru.status_guru === 'Bersertifikat' ? 'admin-status-badge admin-status-badge--success' : 'admin-status-badge admin-status-badge--neutral'}>
+                        {guru.status_guru || 'Belum Bersertifikat'}
                     </span>
                 </td>
                 <td className="p-3">
                     <div className="flex flex-wrap gap-1">
-                        {(guru.roles && guru.roles.length > 0) ? guru.roles.map(role => <span key={role} className="admin-status-badge admin-status-badge--info">{role}</span>) : <span style={{ color: 'hsl(var(--admin-text-muted))' }}>-</span>}
+                        {(guru.roles && guru.roles.length > 0) ? guru.roles.map(r => <span key={r} className="admin-status-badge admin-status-badge--info">{ROLE_LABELS[r] || r}</span>) : <span style={{ color: 'hsl(var(--admin-text-muted))' }}>-</span>}
                     </div>
                 </td>
                 <td className="p-3"><div className="flex flex-col"><span className="text-xs" style={{ color: 'hsl(var(--admin-text-primary))' }}>{guru.email}</span><span className="text-xs" style={{ color: 'hsl(var(--admin-text-muted))' }}>{guru.no_hp}</span></div></td>
@@ -435,7 +437,7 @@ const GuruManagement = () => {
                  <div className="col-span-full font-semibold text-lg border-b pb-2 text-primary">Informasi Pribadi</div>
 
                  <div className="space-y-1.5"><label htmlFor="nama" className="text-xs font-medium uppercase text-muted-foreground">Nama Lengkap</label><Input id="nama" value={formData.nama || ''} onChange={handleInputChange} required /></div>
-                 <div className="space-y-1.5"><label htmlFor="nomor_induk_qiroati" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3"/> No. Induk Qiroati</label><Input id="nomor_induk_qiroati" value={formData.nomor_induk_qiroati || ''} onChange={handleInputChange} placeholder="Contoh: 123456789" /></div>
+                 <div className="space-y-1.5"><label htmlFor="nomor_induk_qiroati" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3"/> NUPTK</label><Input id="nomor_induk_qiroati" value={formData.nomor_induk_qiroati || ''} onChange={handleInputChange} placeholder="Contoh: 123456789" /></div>
                  <div className="space-y-1.5"><label htmlFor="jabatan" className="text-xs font-medium uppercase text-muted-foreground">Jabatan Utama (Display)</label><Input id="jabatan" value={formData.jabatan || ''} onChange={handleInputChange} /></div>
 
                  <div className="space-y-1.5"><label htmlFor="no_hp" className="text-xs font-medium uppercase text-muted-foreground">No. HP</label><Input id="no_hp" value={formData.no_hp || ''} onChange={handleInputChange} /></div>
@@ -449,9 +451,9 @@ const GuruManagement = () => {
                  <div className="space-y-1.5"><label htmlFor="tanggal_lahir" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3"/> Tanggal Lahir</label><Input id="tanggal_lahir" type="date" value={formData.tanggal_lahir || ''} onChange={handleInputChange} /></div>
 
                  <div className="space-y-1.5"><label className="text-xs font-medium uppercase text-muted-foreground">Status Sertifikasi</label>
-                    <Select value={formData.status_guru || 'Non-Syahadah'} onValueChange={val => setFormData(prev => ({...prev, status_guru: val}))}>
+                    <Select value={formData.status_guru || 'Belum Bersertifikat'} onValueChange={val => setFormData(prev => ({...prev, status_guru: val}))}>
                         <SelectTrigger><SelectValue placeholder="Pilih Status" /></SelectTrigger>
-                        <SelectContent><SelectItem value="Syahadah">Syahadah</SelectItem><SelectItem value="Non-Syahadah">Non-Syahadah</SelectItem></SelectContent>
+                        <SelectContent><SelectItem value="Bersertifikat">Bersertifikat</SelectItem><SelectItem value="Belum Bersertifikat">Belum Bersertifikat</SelectItem></SelectContent>
                     </Select>
                  </div>
 
