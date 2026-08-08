@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import BeritaBody from '@/components/sdnb/generated/BeritaBody';
-import { fetchPublicTeachers, fetchPublishedNews } from '@/lib/publicContentAdapters';
+import { fetchPublicTeachers, fetchPublishedAnnouncements, fetchPublishedNews } from '@/lib/publicContentAdapters';
 import { inisialNama, sebutanStaf, stafKe } from '@/lib/staf';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
@@ -116,6 +116,7 @@ const NewsPage = () => {
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(-1);
   const [cmsNews, setCmsNews] = useState([]);
+  const [pengumuman, setPengumuman] = useState([]);
   const [staf, setStaf] = useState([]);
 
   useSdnbMotion([]);
@@ -125,6 +126,9 @@ const NewsPage = () => {
     fetchPublishedNews()
       .then((rows) => { if (mounted && Array.isArray(rows) && rows.length) setCmsNews(rows); })
       .catch(() => {});
+    fetchPublishedAnnouncements({ limit: 20 })
+      .then((rows) => { if (mounted && Array.isArray(rows) && rows.length) setPengumuman(rows); })
+      .catch(() => { /* pengumuman opsional; halaman tetap tampil tanpa itu */ });
     fetchPublicTeachers()
       .then((rows) => { if (mounted && Array.isArray(rows)) setStaf(rows); })
       .catch(() => { /* penulis jatuh ke sebutan umum, halaman tetap tampil */ });
@@ -146,8 +150,18 @@ const NewsPage = () => {
       salinan[8] = sebutanStaf(guru);
       return salinan;
     });
-    return [...cmsNews.map(cmsToTuple), ...contoh];
-  }, [cmsNews, staf]);
+    // Pengumuman resmi dari panel admin muncul paling depan (backend sudah
+    // mengurutkan prioritas tinggi lebih dulu), lalu berita CMS, lalu contoh
+    // bawaan. Kategori dipaksa 'Pengumuman' agar tampil di filter Pengumuman
+    // dan memakai kartu/reader yang sama dengan berita.
+    const pengumumanTuples = pengumuman.map((item, i) => cmsToTuple({
+      ...item,
+      category: 'Pengumuman',
+      author: item.author || 'Sekolah',
+      author_role: item.author_role || 'Pengumuman Resmi',
+    }, i));
+    return [...pengumumanTuples, ...cmsNews.map(cmsToTuple), ...contoh];
+  }, [pengumuman, cmsNews, staf]);
 
   const list = useMemo(() => {
     const query = q.trim().toLowerCase();
