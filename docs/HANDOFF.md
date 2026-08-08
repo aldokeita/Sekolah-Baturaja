@@ -719,10 +719,13 @@ Diurutkan dari yang paling berdampak ke penjualan.
    Guru, Kelas, Kalender, dan Jadwal Pelajaran semuanya tuntas (lihat "Putaran audit modul
    2026-08-08"). Bila menambah modul baru, sisir dengan pola yang sama dan jalankan sebagai peran
    **selain admin** — itulah yang membuat cacat terparah lolos berbulan-bulan.
-2. **Kalender publik belum tampil di situs.** Endpoint `/api/public/calendar` dan adapter
-   `fetchPublicCalendar` sudah siap dan terbukti jalan tanpa login, tetapi situs SDN belum punya
-   halaman/bagian Agenda yang memakainya. Butuh keputusan penempatan (halaman baru vs. bagian di
-   beranda) sebelum dibangun — murni frontend, backend-nya sudah ada.
+2. **Kalender publik SENGAJA tidak ditampilkan di situs — keputusan pemilik (2026-08-08).** Endpoint
+   `/api/public/calendar` dan adapter `fetchPublicCalendar` sudah siap dan terbukti jalan tanpa login,
+   tetapi pemilik memutuskan **tidak** menampilkannya di situs untuk saat ini. Endpoint & adapter
+   dibiarkan menganggur sebagai infrastruktur siap-pakai (pola yang sama seperti infra dorman lain di
+   app ini). **Jangan bangun UI kalender publik tanpa instruksi baru.** Catatan: endpoint tetap dapat
+   diakses tanpa login dan mengembalikan event `is_public` — datanya tidak sensitif (agenda/hari
+   libur), dan pemilik sudah tahu ini saat memilih membiarkannya.
 3. **Kuota jalur tidak menahan apa pun, dan itu keputusan pemilik.** Panel menunjukkan sisa kursi
    tapi tidak menegur maupun memblokir. Bila kelak diminta menegur, tempatnya di `ubahStatus` pada
    panel — bukan di server, supaya tata usaha tidak pernah terhalang bekerja.
