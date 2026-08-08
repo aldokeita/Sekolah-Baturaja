@@ -1,6 +1,6 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `1e3e8f3`
+**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `3808749`
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -645,9 +645,9 @@ Tuntas pada 2026-08-08 (putaran ketiga): **wilayah domisili yang diisi pembeli**
 SPMB siap cetak**. Otomatisasi pengiriman kabar **ditolak pemilik dengan sengaja** — WhatsApp manual
 ke nomor yang sudah terdaftar dianggap cukup; jangan mengajukannya lagi tanpa alasan baru.
 
-Tuntas pada 2026-08-08 (putaran audit modul): **tujuh modul inti disisir** — Absensi, Pembayaran,
-Backup & Restore, Data Murid, Data Guru, Manajemen Kelas, Kalender Akademik. Rincian per modul dan
-polanya di "Putaran audit modul 2026-08-08" pada bagian 7.
+Tuntas pada 2026-08-08 (putaran audit modul): **delapan modul inti disisir** — Absensi, Pembayaran,
+Backup & Restore, Data Murid, Data Guru, Manajemen Kelas, Kalender Akademik, dan Jadwal Pelajaran.
+Rincian per modul dan polanya di "Putaran audit modul 2026-08-08" pada bagian 7.
 
 ### Audit modul: cakupan yang SUDAH dan BELUM diperiksa
 
@@ -676,9 +676,9 @@ Cakupan sekarang:
 | Kalender Akademik | **Tuntas** | 3 fix + endpoint publik baru |
 | Pembayaran & Pengeluaran | **Tuntas** | 2 kebocoran data ditutup + sisa TPQ |
 | Backup & Restore | **Tuntas** | Backend dibangun dari nol |
-| **Jadwal Pelajaran** | **BELUM** | Fitur baru, sudah diuji CRUD tapi belum diaudit pola cacat |
+| Jadwal Pelajaran | **Tuntas** | 6 bug — termasuk aktivasi periode tak atomik |
 
-Jangan simpulkan bagian bertanda BELUM itu bersih. Ia belum diperiksa saja.
+**Seluruh modul inti kini sudah diaudit.** Tidak ada lagi baris BELUM.
 
 ### Putaran audit modul 2026-08-08
 
@@ -696,23 +696,29 @@ disajikan sebagai opsi; perbaikan diverifikasi lewat API + build.
 | Data Guru | `462544f` | **Hash sandi bocor** di List/Detail/ByRFID (`SELECT *`) → kolom eksplisit tanpa `password`; tata usaha tak boleh ubah email; validasi email & panjang sandi; role badge pakai `ROLE_LABELS`; Syahadah/Qiroati → Bersertifikat/NUPTK |
 | Manajemen Kelas | `6cbf6d8` | Roster PII & riwayat mutasi ditutup dari santri; **`MoveClass` kini sinkron `class_memberships`** (dulu hanya `current_class_id`, bikin roster beda); role gate dari peran asli (bukan prop default 'admin'); cek nama kelas duplikat; drag-reorder murid dihidupkan (dulu no-op) |
 | Kalender Akademik | `1e3e8f3` | Validasi tanggal (400 bukan 500); bug tampilan UTC; **endpoint publik `/api/public/calendar`** agar situs bisa tampilkan agenda tanpa login (infrastruktur `is_public` sebelumnya menganggur) |
+| Jadwal Pelajaran | `3808749` | **Aktivasi periode kini atomik** (dulu insert gagal bisa sisakan NOL periode aktif); cek bentrok jam saat edit sebagian (dulu ubah jam_mulai saja lolos); baca-ulang gagal tak balikkan jam objek; DeletePeriode error FK jadi 409 jelas; tombol master-data digate `canManage` |
 
 Kalender akademik ternyata ada di `attendance.go` (bukan `academic.go`), di bawah
 `/api/attendance/calendar`. `academic.go` hanya menangani hafalan/murojaah/karakter.
 
-Pola yang paling perlu diingat dari putaran ini: **`MoveClass` memutakhirkan
-`current_class_id` tapi tidak `class_memberships`**, padahal `Detail` kelas membaca
-anggota dari memberships. Kalau menyentuh perpindahan murid, jaga kedua sumber tetap
-sinkron dalam satu transaksi.
+Dua pola yang paling perlu diingat dari putaran ini:
+
+- **`MoveClass` memutakhirkan `current_class_id` tapi tidak `class_memberships`**,
+  padahal `Detail` kelas membaca anggota dari memberships. Kalau menyentuh
+  perpindahan murid, jaga kedua sumber tetap sinkron dalam satu transaksi.
+- **Aktivasi periode ajaran dulu dua statement tanpa transaksi** (matikan lama →
+  insert baru). Index `periode_ajaran_satu_aktif` hanya mencegah DUA aktif, bukan
+  NOL — jadi insert yang gagal setelah mematikan yang lama meninggalkan sekolah
+  tanpa periode aktif. Operasi "matikan lalu aktifkan pengganti" wajib satu tx.
 
 ### Yang masih terbuka
 
 Diurutkan dari yang paling berdampak ke penjualan.
 
-1. **Audit tersisa satu modul: Jadwal Pelajaran.** Tujuh modul inti sudah tuntas (lihat "Putaran
-   audit modul 2026-08-08"). Jadwal Pelajaran fitur baru yang sudah diuji CRUD-nya tapi belum disisir
-   untuk pola cacat yang sama. Pemeriksaan tetap harus dijalankan sebagai peran **selain admin** —
-   itulah yang membuat cacat terparah lolos berbulan-bulan.
+1. **Audit modul inti SELESAI — delapan modul disisir.** Absensi, Pembayaran, Backup, Data Murid,
+   Guru, Kelas, Kalender, dan Jadwal Pelajaran semuanya tuntas (lihat "Putaran audit modul
+   2026-08-08"). Bila menambah modul baru, sisir dengan pola yang sama dan jalankan sebagai peran
+   **selain admin** — itulah yang membuat cacat terparah lolos berbulan-bulan.
 2. **Kalender publik belum tampil di situs.** Endpoint `/api/public/calendar` dan adapter
    `fetchPublicCalendar` sudah siap dan terbukti jalan tanpa login, tetapi situs SDN belum punya
    halaman/bagian Agenda yang memakainya. Butuh keputusan penempatan (halaman baru vs. bagian di
