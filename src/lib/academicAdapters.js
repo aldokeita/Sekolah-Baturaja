@@ -19,7 +19,7 @@ export const CHARACTER_STRENGTH_OPTIONS = [
 export const VIOLATION_LEVELS = {
     Ringan: { examples: 'Terlambat, lupa membawa buku, tidak memakai ID Card, atau bercanda saat belajar', followUp: 'Nasihat dan pengingat dari guru' },
     Sedang: { examples: 'Mengganggu teman berulang kali, tidak sopan kepada guru, atau tidak mengerjakan hafalan berulang', followUp: 'Pembinaan, pencatatan, dan pemberitahuan kepada orang tua' },
-    Berat: { examples: 'Berkelahi, merusak fasilitas, membawa barang berbahaya, atau tindakan yang membahayakan', followUp: 'Pertemuan dengan orang tua, pembinaan intensif, dan keputusan kepala LPQ' }
+    Berat: { examples: 'Berkelahi, merusak fasilitas, membawa barang berbahaya, atau tindakan yang membahayakan', followUp: 'Pertemuan dengan orang tua, pembinaan intensif, dan keputusan kepala sekolah' }
 };
 
 export const getDevelopmentScoreMeta = (score) => (

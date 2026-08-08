@@ -4,7 +4,7 @@
 
 ## 1. Latar belakang dan tujuan
 
-Aldo dan Novem membangun sebuah PaaS untuk sekolah/lembaga pendidikan. Novem membangun aplikasi kontrol PaaS (provisioning, manajemen tenant, billing/paket). Aldo membangun template website yang akan ditawarkan ke sekolah-sekolah, diturunkan dari arsitektur sistem **LPQ Al-Fath Maulana** (dashboard admin/guru/pentashih/santri, absensi, pembayaran, hafalan, MMQ, kalender akademik, konten publik, gamifikasi) yang sebelumnya berjalan di atas React + Vite + Supabase.
+Aldo dan Novem membangun sebuah PaaS untuk sekolah/lembaga pendidikan. Novem membangun aplikasi kontrol PaaS (provisioning, manajemen tenant, billing/paket). Aldo membangun template website yang akan ditawarkan ke sekolah-sekolah, diturunkan dari arsitektur sistem manajemen sekolah terdahulu (dashboard admin/guru/murid, absensi, pembayaran, kalender akademik, konten publik, dan gamifikasi) yang sebelumnya berjalan di atas React + Vite + Supabase.
 
 Rencana bisnis: menawarkan 3 kategori template ke sekolah calon pelanggan, masing-masing dengan 3 tingkatan paket (Basic, Pro, Max) yang membedakan fitur/modul yang aktif.
 
@@ -14,7 +14,7 @@ Rencana bisnis: menawarkan 3 kategori template ke sekolah calon pelanggan, masin
 2. Yayasan dengan banyak sekolah (umum / islam terpadu)
 3. Pondok pesantren
 
-Setiap kategori memiliki karakter visual, copywriting, dan struktur navigasi publik yang berbeda, meski kebutuhan dashboard operasionalnya (admin, guru, santri/siswa) banyak yang serupa.
+Setiap kategori memiliki karakter visual, copywriting, dan struktur navigasi publik yang berbeda, meski kebutuhan dashboard operasionalnya (admin, guru, murid) banyak yang serupa.
 
 ### 1.2 Tiga tingkatan paket
 
@@ -41,7 +41,7 @@ Kontrak antara template website (Aldo) dan build service (Novem) — input yang 
 
 Setiap sekolah punya backend Go dan database Postgres miliknya sendiri (bukan backend terpusat yang dibagi banyak sekolah). Auth (JWT) diterbitkan oleh backend masing-masing sekolah, bukan oleh layanan auth terpusat dari PaaS.
 
-Referensi implementasi backend Go yang sudah berjalan untuk sistem LPQ Al-Fath Maulana ada di repo `https://github.com/npdkdev/sekolah-baturaja.git` (Go + [chi](https://github.com/go-chi/chi) + Postgres 16 + Docker Compose), dan repo ini akan menjadi **main project website** Aldo ke depan (menggantikan versi Supabase). Struktur backend-nya (`backend/internal/handler`, `backend/internal/auth`, `backend/internal/middleware`, `backend/internal/storage`) menjadi baseline pola untuk kategori template lain.
+Referensi implementasi backend Go yang sudah berjalan untuk sistem pendahulu ada di repo `https://github.com/npdkdev/sekolah-baturaja.git` (Go + [chi](https://github.com/go-chi/chi) + Postgres 16 + Docker Compose), dan repo ini akan menjadi **main project website** Aldo ke depan (menggantikan versi Supabase). Struktur backend-nya (`backend/internal/handler`, `backend/internal/auth`, `backend/internal/middleware`, `backend/internal/storage`) menjadi baseline pola untuk kategori template lain.
 
 ### 2.4 Feature flag: runtime config, bukan rebuild
 
@@ -51,7 +51,7 @@ Setelah provisioning awal selesai, perubahan paket (Basic → Pro → Max, atau 
 
 ### 2.5 Struktur repo: 3 codebase independen
 
-Tiga kategori template (sekolah tunggal, yayasan, pondok pesantren) masing-masing punya **codebase/repo yang sepenuhnya independen** — tidak ada monorepo atau package bersama di antara ketiganya. Setiap template bebas berevolusi sendiri (termasuk dashboard admin/guru/santri) tanpa dependensi ke template lain. Trade-off yang disadari: bug fix atau fitur baru pada logika dashboard yang serupa di ketiga template harus dikerjakan berulang di masing-masing repo — ini keputusan sadar demi fleksibilitas dan independensi penuh per template, bukan oversight.
+Tiga kategori template (sekolah tunggal, yayasan, pondok pesantren) masing-masing punya **codebase/repo yang sepenuhnya independen** — tidak ada monorepo atau package bersama di antara ketiganya. Setiap template bebas berevolusi sendiri (termasuk dashboard admin/guru/murid) tanpa dependensi ke template lain. Trade-off yang disadari: bug fix atau fitur baru pada logika dashboard yang serupa di ketiga template harus dikerjakan berulang di masing-masing repo — ini keputusan sadar demi fleksibilitas dan independensi penuh per template, bukan oversight.
 
 ## 3. Ringkasan keputusan
 

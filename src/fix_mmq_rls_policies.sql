@@ -45,7 +45,7 @@ CREATE POLICY "Guru update own mmq_attendance" ON mmq_attendance FOR UPDATE USIN
 -- 5. DEFAULT MMQ SCHEDULE ENTRY
 -- Insert default Friday 10:00 AM schedule if none exists for Friday (5)
 INSERT INTO mmq_schedule (day_of_week, start_time, location, is_active)
-SELECT 5, '10:00:00', 'LPQ Al-Fath Maulana', true
+SELECT 5, '10:00:00', 'SDN Baturaja', true
 WHERE NOT EXISTS (SELECT 1 FROM mmq_schedule WHERE day_of_week = 5);
 
 -- 6. VERIFICATION QUERIES (To be run by Admin in SQL Editor)

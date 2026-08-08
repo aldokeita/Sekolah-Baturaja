@@ -1,193 +1,193 @@
 /* ============================================================
-   Admin Dashboard — Premium Institutional Command Center
-   Design tokens and component styles for admin dashboard.
+   Admin Dashboard — SDN Baturaja workspace
+   Shared tokens follow docs/design-reference/DESIGN.md.
    ============================================================ */
 
 /* --- Admin Design Tokens --- */
 :root {
   /* Light theme admin tokens */
-  --admin-bg: 30 33% 96%;               /* warm ivory */
-  --admin-surface: 0 0% 100%;           /* white-cream */
-  --admin-surface-raised: 0 0% 100%;    /* elevated white */
-  --admin-surface-sunken: 30 20% 93%;   /* light stone */
-  --admin-border: 30 12% 85%;           /* warm light gray */
-  --admin-border-subtle: 30 10% 90%;    /* very subtle border */
-  --admin-text-primary: 220 15% 15%;    /* charcoal */
-  --admin-text-secondary: 220 8% 40%;   /* warm gray */
-  --admin-text-muted: 220 6% 60%;       /* muted gray */
+  --admin-bg: 222 42% 94%;               /* #e9edf6 */
+  --admin-surface: 0 0% 100%;
+  --admin-surface-raised: 0 0% 100%;
+  --admin-surface-sunken: 226 40% 96%;
+  --admin-border: 230 40% 89%;
+  --admin-border-subtle: 230 40% 93%;
+  --admin-text-primary: 236 26% 12%;     /* #171827 */
+  --admin-text-secondary: 232 18% 40%;
+  --admin-text-muted: 233 15% 50%;
 
-  --admin-accent: 221 83% 40%;          /* royal blue */
-  --admin-accent-muted: 217 70% 50%;    /* muted blue */
-  --admin-accent-soft: 214 100% 96%;     /* light ice blue */
-  --admin-accent-cyan: 199 89% 48%;     /* cyan accent */
-  --admin-accent-violet: 265 70% 55%;   /* violet accent */
-  --admin-accent-amber: 38 92% 50%;     /* warm amber */
+  --admin-accent: 234 100% 68%;          /* #5b6cff */
+  --admin-accent-muted: 234 70% 60%;
+  --admin-accent-soft: 232 100% 96%;
+  --admin-accent-secondary: 340 80% 70%; /* rose */
+  --admin-accent-violet: 261 82% 68%;
+  --admin-accent-amber: 38 92% 50%;      /* semantic warning */
 
-  --admin-nav-active-bg: 221 83% 40%;   /* blue active */
+  --admin-nav-active-bg: 234 100% 68%;
   --admin-nav-active-fg: 0 0% 100%;     /* white */
-  --admin-nav-hover-bg: 214 90% 94%;    /* light blue hover */
-  --admin-nav-indicator: 221 83% 40%;   /* blue indicator */
+  --admin-nav-hover-bg: 232 100% 96%;
+  --admin-nav-indicator: 234 100% 68%;
 
-  --admin-glow: 221 83% 40%;
-  --admin-shadow-color: 220 15% 60%;
+  --admin-glow: 234 100% 68%;
+  --admin-shadow-color: 232 30% 60%;
 }
 
 .dark {
   /* Dark theme admin tokens */
-  --admin-bg: 222 30% 8%;               /* midnight navy */
-  --admin-surface: 222 20% 12%;         /* charcoal */
-  --admin-surface-raised: 222 18% 15%;  /* lighter charcoal */
-  --admin-surface-sunken: 222 35% 6%;   /* deeper navy */
-  --admin-border: 222 18% 18%;          /* subtle navy border */
-  --admin-border-subtle: 222 15% 15%;   /* very subtle */
-  --admin-text-primary: 30 30% 92%;     /* warm ivory */
-  --admin-text-secondary: 30 15% 65%;   /* muted warm gray */
-  --admin-text-muted: 222 10% 45%;      /* muted */
+  --admin-bg: 235 30% 10%;
+  --admin-surface: 235 24% 14%;
+  --admin-surface-raised: 235 20% 18%;
+  --admin-surface-sunken: 235 31% 9%;
+  --admin-border: 235 16% 28%;
+  --admin-border-subtle: 235 15% 22%;
+  --admin-text-primary: 230 30% 96%;
+  --admin-text-secondary: 230 16% 76%;
+  --admin-text-muted: 230 13% 60%;
 
-  --admin-accent: 217 91% 60%;          /* bright blue */
-  --admin-accent-muted: 221 70% 45%;    /* darker muted blue */
-  --admin-accent-soft: 222 50% 16%;     /* subtle blue bg */
-  --admin-accent-cyan: 199 80% 55%;
-  --admin-accent-violet: 265 60% 60%;
+  --admin-accent: 234 100% 72%;
+  --admin-accent-muted: 234 70% 62%;
+  --admin-accent-soft: 234 30% 18%;
+  --admin-accent-secondary: 340 72% 72%;
+  --admin-accent-violet: 261 76% 74%;
   --admin-accent-amber: 38 85% 55%;
 
-  --admin-nav-active-bg: 217 91% 60%;
+  --admin-nav-active-bg: 234 100% 68%;
   --admin-nav-active-fg: 0 0% 100%;
-  --admin-nav-hover-bg: 222 40% 18%;
-  --admin-nav-indicator: 217 91% 60%;
+  --admin-nav-hover-bg: 235 19% 21%;
+  --admin-nav-indicator: 234 100% 68%;
 
-  --admin-glow: 217 91% 60%;
-  --admin-shadow-color: 222 30% 5%;
+  --admin-glow: 234 100% 72%;
+  --admin-shadow-color: 235 36% 5%;
 }
 
 /* --- Admin Dashboard Surface --- */
-.lpq-admin-surface {
+.school-admin-surface {
   background-color: hsl(var(--admin-bg));
   color: hsl(var(--admin-text-primary));
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Dark mode: transparent surface so SideRays animated background is visible */
-.dark .lpq-admin-surface {
-  background-color: transparent;
+/* Dark mode keeps the same hierarchy on a solid, low-distraction foundation. */
+.dark .school-admin-surface {
+  background-color: hsl(var(--admin-bg));
 }
 
 /* Override the global green body and bg-background in admin context */
-.dark body.lpq-admin-context {
-  background-color: hsl(222 30% 4%) !important;
+.dark body.school-admin-context {
+  background-color: hsl(var(--admin-bg)) !important;
 }
 
-.dark body.lpq-admin-context .bg-background,
-.dark body.lpq-admin-context .bg-background,
-.dark body.lpq-admin-context > #root > div {
-  background-color: transparent !important;
+.dark body.school-admin-context .bg-background,
+.dark body.school-admin-context .bg-background,
+.dark body.school-admin-context > #root > div {
+  background-color: hsl(var(--admin-bg)) !important;
 }
 
 /* ============================================================
    PORTAL DROPDOWN OVERRIDES — Covers all portal-rendered menus
-   These selectors target portal content that escapes .lpq-admin-surface
+   These selectors target portal content that escapes .school-admin-surface
    ============================================================ */
 
 /* --- Select Content (Portal) --- */
-.lpq-admin-surface [data-radix-select-viewport] + [data-radix-select-scroll-up-button],
-.lpq-admin-surface [data-radix-select-viewport] + [data-radix-select-scroll-down-button] {
+.school-admin-surface [data-radix-select-viewport] + [data-radix-select-scroll-up-button],
+.school-admin-surface [data-radix-select-viewport] + [data-radix-select-scroll-down-button] {
   color: hsl(var(--admin-text-muted));
 }
 
 /* --- Select Item — Light Mode --- */
-.lpq-admin-surface [data-radix-select-item] {
+.school-admin-surface [data-radix-select-item] {
   color: hsl(var(--admin-text-primary));
   border-radius: 0.375rem;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.lpq-admin-surface [data-radix-select-item][data-highlighted] {
+.school-admin-surface [data-radix-select-item][data-highlighted] {
   background-color: hsl(var(--admin-accent) / 0.1);
   color: hsl(var(--admin-text-primary));
   outline: none;
 }
 
-.lpq-admin-surface [data-radix-select-item][data-state="checked"] {
+.school-admin-surface [data-radix-select-item][data-state="checked"] {
   color: hsl(var(--admin-accent));
   font-weight: 600;
 }
 
-.lpq-admin-surface [data-radix-select-item][data-disabled] {
+.school-admin-surface [data-radix-select-item][data-disabled] {
   opacity: 0.4;
   pointer-events: none;
 }
 
 /* --- DropdownMenuItem — Light Mode --- */
-.lpq-admin-surface [data-radix-dropdown-menu-item] {
+.school-admin-surface [data-radix-dropdown-menu-item] {
   border-radius: 0.375rem;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.lpq-admin-surface [data-radix-dropdown-menu-item][data-highlighted] {
+.school-admin-surface [data-radix-dropdown-menu-item][data-highlighted] {
   background-color: hsl(var(--admin-accent) / 0.1);
   color: hsl(var(--admin-text-primary));
   outline: none;
 }
 
 /* --- Popover Content — Light Mode --- */
-.lpq-admin-surface [data-radix-popper-content-wrapper] [data-radix-popover-content] {
+.school-admin-surface [data-radix-popper-content-wrapper] [data-radix-popover-content] {
   background-color: hsl(0 0% 100%);
   border-color: hsl(var(--admin-border));
   color: hsl(var(--admin-text-primary));
 }
 
 /* --- Dark Mode — ALL Portal Dropdowns --- */
-.dark .lpq-admin-surface [data-radix-select-content],
-.dark .lpq-admin-surface [role="listbox"],
-.dark .lpq-admin-surface [data-radix-popper-content-wrapper],
-.dark .lpq-admin-surface [data-radix-dropdown-menu-content],
-.dark .lpq-admin-surface [data-radix-dropdown-menu-sub-content],
-.dark .lpq-admin-surface [data-radix-popover-content],
-.dark .lpq-admin-surface [data-radix-popper-content-wrapper] [data-radix-popover-content] {
+.dark .school-admin-surface [data-radix-select-content],
+.dark .school-admin-surface [role="listbox"],
+.dark .school-admin-surface [data-radix-popper-content-wrapper],
+.dark .school-admin-surface [data-radix-dropdown-menu-content],
+.dark .school-admin-surface [data-radix-dropdown-menu-sub-content],
+.dark .school-admin-surface [data-radix-popover-content],
+.dark .school-admin-surface [data-radix-popper-content-wrapper] [data-radix-popover-content] {
   background-color: hsl(222 20% 12%) !important;
   border-color: hsl(222 18% 20%) !important;
   color: hsl(30 30% 92%) !important;
   box-shadow: 0 10px 40px hsl(222 30% 3% / 0.5), 0 2px 8px hsl(222 30% 3% / 0.3) !important;
 }
 
-.dark .lpq-admin-surface [data-radix-select-item],
-.dark .lpq-admin-surface [role="option"],
-.dark .lpq-admin-surface [data-radix-dropdown-menu-item],
-.dark .lpq-admin-surface [data-radix-dropdown-menu-checkbox-item],
-.dark .lpq-admin-surface [data-radix-dropdown-menu-radio-item],
-.dark .lpq-admin-surface [data-radix-dropdown-menu-sub-trigger] {
+.dark .school-admin-surface [data-radix-select-item],
+.dark .school-admin-surface [role="option"],
+.dark .school-admin-surface [data-radix-dropdown-menu-item],
+.dark .school-admin-surface [data-radix-dropdown-menu-checkbox-item],
+.dark .school-admin-surface [data-radix-dropdown-menu-radio-item],
+.dark .school-admin-surface [data-radix-dropdown-menu-sub-trigger] {
   color: hsl(30 20% 82%) !important;
   border-radius: 0.375rem;
 }
 
-.dark .lpq-admin-surface [data-radix-select-item][data-highlighted],
-.dark .lpq-admin-surface [role="option"]:hover,
-.dark .lpq-admin-surface [data-radix-dropdown-menu-item][data-highlighted],
-.dark .lpq-admin-surface [data-radix-dropdown-menu-sub-trigger][data-highlighted],
-.dark .lpq-admin-surface [data-radix-dropdown-menu-checkbox-item][data-highlighted],
-.dark .lpq-admin-surface [data-radix-dropdown-menu-radio-item][data-highlighted] {
+.dark .school-admin-surface [data-radix-select-item][data-highlighted],
+.dark .school-admin-surface [role="option"]:hover,
+.dark .school-admin-surface [data-radix-dropdown-menu-item][data-highlighted],
+.dark .school-admin-surface [data-radix-dropdown-menu-sub-trigger][data-highlighted],
+.dark .school-admin-surface [data-radix-dropdown-menu-checkbox-item][data-highlighted],
+.dark .school-admin-surface [data-radix-dropdown-menu-radio-item][data-highlighted] {
   background-color: hsl(222 18% 18%) !important;
   color: hsl(30 30% 96%) !important;
 }
 
-.dark .lpq-admin-surface [data-radix-select-item][data-state="checked"],
-.dark .lpq-admin-surface [role="option"][aria-selected="true"] {
+.dark .school-admin-surface [data-radix-select-item][data-state="checked"],
+.dark .school-admin-surface [role="option"][aria-selected="true"] {
   color: hsl(152 45% 55%) !important;
   font-weight: 600;
 }
 
-.dark .lpq-admin-surface [data-radix-dropdown-menu-label],
-.dark .lpq-admin-surface [data-radix-select-group] [data-radix-select-label] {
+.dark .school-admin-surface [data-radix-dropdown-menu-label],
+.dark .school-admin-surface [data-radix-select-group] [data-radix-select-label] {
   color: hsl(var(--admin-text-muted)) !important;
 }
 
 /* --- Light Mode — ALL Portal Dropdowns --- */
-.lpq-admin-surface [data-radix-select-content],
-.lpq-admin-surface [role="listbox"],
-.lpq-admin-surface [data-radix-popper-content-wrapper],
-.lpq-admin-surface [data-radix-dropdown-menu-content],
-.lpq-admin-surface [data-radix-dropdown-menu-sub-content],
-.lpq-admin-surface [data-radix-popover-content] {
+.school-admin-surface [data-radix-select-content],
+.school-admin-surface [role="listbox"],
+.school-admin-surface [data-radix-popper-content-wrapper],
+.school-admin-surface [data-radix-dropdown-menu-content],
+.school-admin-surface [data-radix-dropdown-menu-sub-content],
+.school-admin-surface [data-radix-popover-content] {
   background-color: hsl(30 20% 97%) !important;
   border-color: hsl(var(--admin-border)) !important;
   color: hsl(var(--admin-text-primary)) !important;
@@ -195,25 +195,25 @@
 }
 
 /* --- Command Palette (if used) --- */
-.dark .lpq-admin-surface [cmdk-root],
-.dark .lpq-admin-surface [cmdk-list],
-.dark .lpq-admin-surface [cmdk-group] {
+.dark .school-admin-surface [cmdk-root],
+.dark .school-admin-surface [cmdk-list],
+.dark .school-admin-surface [cmdk-group] {
   background-color: hsl(222 20% 12%) !important;
   color: hsl(30 30% 92%) !important;
 }
 
-.dark .lpq-admin-surface [cmdk-item][data-selected="true"] {
+.dark .school-admin-surface [cmdk-item][data-selected="true"] {
   background-color: hsl(222 18% 18%) !important;
   color: hsl(30 30% 96%) !important;
 }
 
-.lpq-admin-surface [cmdk-root],
-.lpq-admin-surface [cmdk-list] {
+.school-admin-surface [cmdk-root],
+.school-admin-surface [cmdk-list] {
   background-color: hsl(30 20% 97%) !important;
   color: hsl(var(--admin-text-primary)) !important;
 }
 
-.lpq-admin-surface [cmdk-item][data-selected="true"] {
+.school-admin-surface [cmdk-item][data-selected="true"] {
   background-color: hsl(var(--admin-accent) / 0.1) !important;
 }
 
@@ -420,7 +420,7 @@
   font-weight: 800;
   color: hsl(var(--admin-text-primary));
   line-height: 1.2;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -474,7 +474,7 @@
 }
 
 .admin-stat-card--accent .admin-stat-card-icon {
-  color: hsl(var(--admin-accent-cyan) / 0.9);
+  color: hsl(var(--admin-accent-secondary) / 0.9);
 }
 
 .admin-stat-card--accent:hover .admin-stat-card-icon {
@@ -491,15 +491,15 @@
 
 /* Accent variants for stat cards */
 .admin-stat-card--accent {
-  background-color: hsl(var(--admin-accent-cyan) / 0.04);
-  border-color: hsl(var(--admin-accent-cyan) / 0.2);
+  background-color: hsl(var(--admin-accent-secondary) / 0.04);
+  border-color: hsl(var(--admin-accent-secondary) / 0.2);
 }
 
 .admin-stat-card--accent:hover {
-  box-shadow: 0 0 20px hsl(var(--admin-accent-cyan) / 0.12),
-              0 0 40px hsl(var(--admin-accent-cyan) / 0.06),
+  box-shadow: 0 0 20px hsl(var(--admin-accent-secondary) / 0.12),
+              0 0 40px hsl(var(--admin-accent-secondary) / 0.06),
               0 4px 16px hsl(var(--admin-shadow-color) / 0.1);
-  border-color: hsl(var(--admin-accent-cyan) / 0.35);
+  border-color: hsl(var(--admin-accent-secondary) / 0.35);
 }
 
 .admin-stat-card--amber {
@@ -607,8 +607,8 @@
 }
 
 .admin-status-badge--info {
-  background-color: hsl(var(--admin-accent-cyan) / 0.1);
-  color: hsl(var(--admin-accent-cyan));
+  background-color: hsl(var(--admin-accent-secondary) / 0.1);
+  color: hsl(var(--admin-accent-secondary));
 }
 
 .admin-status-badge--neutral {
@@ -798,12 +798,12 @@
   background-color: hsl(var(--admin-accent-muted));
 }
 
-.admin-btn-action--cyan {
-  background-color: hsl(var(--admin-accent-cyan));
+.admin-btn-action--secondary {
+  background-color: hsl(var(--admin-accent-secondary));
 }
 
-.admin-btn-action--cyan:hover {
-  background-color: hsl(var(--admin-accent-cyan) / 0.85);
+.admin-btn-action--secondary:hover {
+  background-color: hsl(var(--admin-accent-secondary) / 0.85);
 }
 
 .admin-btn-action--amber {
@@ -881,7 +881,7 @@
   background: linear-gradient(
     90deg,
     hsl(var(--admin-accent) / 0.9),
-    hsl(var(--admin-accent-cyan) / 0.5),
+    hsl(var(--admin-accent-secondary) / 0.5),
     hsl(var(--admin-accent-violet) / 0.3)
   );
   border-radius: 0.875rem 0.875rem 0 0;
@@ -1418,7 +1418,7 @@
 }
 
 /* --- Override shadcn CSS variables inside admin to remove green tint --- */
-.lpq-admin-surface {
+.school-admin-surface {
   --background: var(--admin-bg);
   --foreground: var(--admin-text-primary);
   --card: var(--admin-surface);
@@ -1434,8 +1434,8 @@
   --accent-foreground: 0 0% 100%;
 }
 
-.lpq-admin-surface .dark,
-.dark .lpq-admin-surface {
+.school-admin-surface .dark,
+.dark .school-admin-surface {
   --background: var(--admin-bg);
   --foreground: var(--admin-text-primary);
   --card: var(--admin-surface);
@@ -1452,224 +1452,224 @@
 }
 
 /* --- White-field input style for admin (inspired by TV Settings Kuota & Pendaftaran) --- */
-.lpq-admin-surface input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-.lpq-admin-surface textarea,
-.lpq-admin-surface select {
+.school-admin-surface input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.school-admin-surface textarea,
+.school-admin-surface select {
   background-color: hsl(0 0% 100%) !important;
   border-color: hsl(var(--admin-border)) !important;
   color: hsl(var(--admin-text-primary)) !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.dark .lpq-admin-surface input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-.dark .lpq-admin-surface textarea,
-.dark .lpq-admin-surface select {
+.dark .school-admin-surface input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.dark .school-admin-surface textarea,
+.dark .school-admin-surface select {
   background-color: hsl(222 20% 10%) !important;
   border-color: hsl(var(--admin-border)) !important;
   color: hsl(30 30% 94%) !important;
 }
 
-.lpq-admin-surface input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
-.lpq-admin-surface textarea:focus,
-.lpq-admin-surface select:focus {
+.school-admin-surface input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
+.school-admin-surface textarea:focus,
+.school-admin-surface select:focus {
   border-color: hsl(var(--admin-accent) / 0.5) !important;
   box-shadow: 0 0 0 3px hsl(var(--admin-accent) / 0.1) !important;
 }
 
-.dark .lpq-admin-surface input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
-.dark .lpq-admin-surface textarea:focus,
-.dark .lpq-admin-surface select:focus {
+.dark .school-admin-surface input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
+.dark .school-admin-surface textarea:focus,
+.dark .school-admin-surface select:focus {
   border-color: hsl(var(--admin-accent) / 0.5) !important;
   box-shadow: 0 0 0 3px hsl(var(--admin-accent) / 0.12) !important;
 }
 
 /* Override shadcn SelectTrigger inside admin — remove green tint */
-.lpq-admin-surface button[role="combobox"],
-.lpq-admin-surface [data-radix-select-trigger],
-.lpq-admin-surface [data-slot="select-trigger"] {
+.school-admin-surface button[role="combobox"],
+.school-admin-surface [data-radix-select-trigger],
+.school-admin-surface [data-slot="select-trigger"] {
   background-color: hsl(30 20% 97%) !important;
   border-color: hsl(var(--admin-border)) !important;
   color: hsl(var(--admin-text-primary)) !important;
   --ring: var(--admin-accent) !important;
 }
 
-.dark .lpq-admin-surface button[role="combobox"],
-.dark .lpq-admin-surface [data-radix-select-trigger],
-.dark .lpq-admin-surface [data-slot="select-trigger"] {
+.dark .school-admin-surface button[role="combobox"],
+.dark .school-admin-surface [data-radix-select-trigger],
+.dark .school-admin-surface [data-slot="select-trigger"] {
   background-color: hsl(222 20% 10%) !important;
   border-color: hsl(var(--admin-border)) !important;
   color: hsl(30 30% 94%) !important;
 }
 
 /* Override select trigger focus state to use admin accent instead of green */
-.lpq-admin-surface button[role="combobox"]:focus,
-.lpq-admin-surface button[role="combobox"]:focus-visible,
-.lpq-admin-surface [data-radix-select-trigger]:focus,
-.lpq-admin-surface [data-radix-select-trigger]:focus-visible {
+.school-admin-surface button[role="combobox"]:focus,
+.school-admin-surface button[role="combobox"]:focus-visible,
+.school-admin-surface [data-radix-select-trigger]:focus,
+.school-admin-surface [data-radix-select-trigger]:focus-visible {
   border-color: hsl(var(--admin-accent) / 0.5) !important;
   box-shadow: 0 0 0 3px hsl(var(--admin-accent) / 0.1) !important;
   outline: none !important;
 }
 
 /* Override shadcn Card inside admin to remove green */
-.lpq-admin-surface [data-slot="card"],
-.lpq-admin-surface .admin-card {
+.school-admin-surface [data-slot="card"],
+.school-admin-surface .admin-card {
   background-color: hsl(var(--admin-surface)) !important;
   border-color: hsl(var(--admin-border)) !important;
 }
 
 /* Override shadcn Dialog inside admin to remove green tint */
-.lpq-admin-surface [data-radix-dialog-overlay] {
+.school-admin-surface [data-radix-dialog-overlay] {
   background-color: rgba(0, 0, 0, 0.6) !important;
 }
 
-.lpq-admin-surface [data-radix-dialog-content],
-.lpq-admin-surface [role="dialog"] {
+.school-admin-surface [data-radix-dialog-content],
+.school-admin-surface [role="dialog"] {
   background-color: hsl(var(--admin-surface)) !important;
   border-color: hsl(var(--admin-border)) !important;
   color: hsl(var(--admin-text-primary)) !important;
 }
 
-.dark .lpq-admin-surface [data-radix-dialog-content],
-.dark .lpq-admin-surface [role="dialog"] {
+.dark .school-admin-surface [data-radix-dialog-content],
+.dark .school-admin-surface [role="dialog"] {
   background-color: hsl(var(--admin-surface)) !important;
   border-color: hsl(var(--admin-border)) !important;
 }
 
 /* Override shadcn Popover/SelectContent inside admin */
-.lpq-admin-surface [data-radix-popper-content-wrapper],
-.lpq-admin-surface [data-radix-select-content],
-.lpq-admin-surface [role="listbox"],
-.lpq-admin-surface [role="dialog"] [data-radix-select-content],
-.lpq-admin-surface [role="dialog"] [data-radix-popper-content-wrapper],
-.lpq-admin-surface [role="dialog"] [data-radix-dropdown-menu-content] {
+.school-admin-surface [data-radix-popper-content-wrapper],
+.school-admin-surface [data-radix-select-content],
+.school-admin-surface [role="listbox"],
+.school-admin-surface [role="dialog"] [data-radix-select-content],
+.school-admin-surface [role="dialog"] [data-radix-popper-content-wrapper],
+.school-admin-surface [role="dialog"] [data-radix-dropdown-menu-content] {
   background-color: hsl(30 20% 97%) !important;
   border-color: hsl(var(--admin-border)) !important;
 }
 
-.dark .lpq-admin-surface [data-radix-popper-content-wrapper],
-.dark .lpq-admin-surface [data-radix-select-content],
-.dark .lpq-admin-surface [role="listbox"],
-.dark .lpq-admin-surface [role="dialog"] [data-radix-select-content],
-.dark .lpq-admin-surface [role="dialog"] [data-radix-popper-content-wrapper],
-.dark .lpq-admin-surface [role="dialog"] [data-radix-dropdown-menu-content] {
+.dark .school-admin-surface [data-radix-popper-content-wrapper],
+.dark .school-admin-surface [data-radix-select-content],
+.dark .school-admin-surface [role="listbox"],
+.dark .school-admin-surface [role="dialog"] [data-radix-select-content],
+.dark .school-admin-surface [role="dialog"] [data-radix-popper-content-wrapper],
+.dark .school-admin-surface [role="dialog"] [data-radix-dropdown-menu-content] {
   background-color: hsl(222 20% 12%) !important;
   border-color: hsl(222 18% 20%) !important;
 }
 
-.dark .lpq-admin-surface [data-radix-select-item],
-.dark .lpq-admin-surface [role="option"] {
+.dark .school-admin-surface [data-radix-select-item],
+.dark .school-admin-surface [role="option"] {
   color: hsl(30 20% 82%) !important;
 }
 
-.dark .lpq-admin-surface [data-radix-select-item]:hover,
-.dark .lpq-admin-surface [data-radix-select-item][data-highlighted],
-.dark .lpq-admin-surface [role="option"]:hover {
+.dark .school-admin-surface [data-radix-select-item]:hover,
+.dark .school-admin-surface [data-radix-select-item][data-highlighted],
+.dark .school-admin-surface [role="option"]:hover {
   background-color: hsl(222 18% 18%) !important;
   color: hsl(30 30% 96%) !important;
 }
 
 /* Override highlighted/selected item inside select to remove green accent */
-.lpq-admin-surface [data-radix-select-item][data-highlighted] {
+.school-admin-surface [data-radix-select-item][data-highlighted] {
   background-color: hsl(var(--admin-accent) / 0.1) !important;
   color: hsl(var(--admin-text-primary)) !important;
 }
 
-.lpq-admin-surface [data-radix-select-item][data-state="checked"] {
+.school-admin-surface [data-radix-select-item][data-state="checked"] {
   color: hsl(var(--admin-accent)) !important;
 }
 
 /* Override shadcn TabsList inside admin */
-.lpq-admin-surface [role="tablist"] {
+.school-admin-surface [role="tablist"] {
   background-color: hsl(var(--admin-surface-sunken)) !important;
 }
 
-.dark .lpq-admin-surface [role="tablist"] {
+.dark .school-admin-surface [role="tablist"] {
   background-color: hsl(222 25% 10%) !important;
 }
 
-.lpq-admin-surface [role="tab"][data-state="active"],
-.lpq-admin-surface [role="tab"][data-state="active"]:hover {
+.school-admin-surface [role="tab"][data-state="active"],
+.school-admin-surface [role="tab"][data-state="active"]:hover {
   background-color: hsl(var(--admin-surface)) !important;
   color: hsl(var(--admin-text-primary)) !important;
   box-shadow: 0 1px 3px hsl(var(--admin-shadow-color) / 0.1) !important;
 }
 
-.dark .lpq-admin-surface [role="tab"][data-state="active"],
-.dark .lpq-admin-surface [role="tab"][data-state="active"]:hover {
+.dark .school-admin-surface [role="tab"][data-state="active"],
+.dark .school-admin-surface [role="tab"][data-state="active"]:hover {
   background-color: hsl(222 18% 18%) !important;
   color: hsl(30 30% 94%) !important;
 }
 
 /* Override toast / sonner inside admin */
-.lpq-admin-surface [data-sonner-toast],
-.lpq-admin-surface [data-state="open"][data-sonner-toast] {
+.school-admin-surface [data-sonner-toast],
+.school-admin-surface [data-state="open"][data-sonner-toast] {
   background-color: hsl(var(--admin-surface)) !important;
   border-color: hsl(var(--admin-border)) !important;
   color: hsl(var(--admin-text-primary)) !important;
 }
 
 /* Payment receipt footer — ensure buttons visible in dark mode */
-.lpq-admin-surface .bg-slate-50 {
+.school-admin-surface .bg-slate-50 {
   background-color: hsl(var(--admin-surface-sunken)) !important;
 }
 
-.dark .lpq-admin-surface .bg-slate-50 {
+.dark .school-admin-surface .bg-slate-50 {
   background-color: hsl(222 25% 10%) !important;
 }
 
-.lpq-admin-surface .bg-slate-50 .border-t {
+.school-admin-surface .bg-slate-50 .border-t {
   border-color: hsl(var(--admin-border)) !important;
 }
 
 /* Ensure dialog footer buttons are visible in dark mode */
-.lpq-admin-surface [role="dialog"] .flex.justify-center,
-.lpq-admin-surface [role="dialog"] .p-4.bg-slate-50 {
+.school-admin-surface [role="dialog"] .flex.justify-center,
+.school-admin-surface [role="dialog"] .p-4.bg-slate-50 {
   background-color: hsl(var(--admin-surface-sunken)) !important;
   border-color: hsl(var(--admin-border)) !important;
 }
 
-.dark .lpq-admin-surface [role="dialog"] .flex.justify-center,
-.dark .lpq-admin-surface [role="dialog"] .p-4.bg-slate-50 {
+.dark .school-admin-surface [role="dialog"] .flex.justify-center,
+.dark .school-admin-surface [role="dialog"] .p-4.bg-slate-50 {
   background-color: hsl(222 22% 13%) !important;
   border-color: hsl(var(--admin-border)) !important;
 }
 
 /* Override Badge inside admin for dark mode consistency */
-.dark .lpq-admin-surface .bg-green-50 {
+.dark .school-admin-surface .bg-green-50 {
   background-color: hsl(152 45% 42% / 0.15) !important;
 }
 
-.dark .lpq-admin-surface .border-green-100,
-.dark .lpq-admin-surface .border-green-200 {
+.dark .school-admin-surface .border-green-100,
+.dark .school-admin-surface .border-green-200 {
   border-color: hsl(152 45% 42% / 0.3) !important;
 }
 
-.dark .lpq-admin-surface .text-green-600,
-.dark .lpq-admin-surface .text-green-800 {
+.dark .school-admin-surface .text-green-600,
+.dark .school-admin-surface .text-green-800 {
   color: hsl(152 50% 55%) !important;
 }
 
-.dark .lpq-admin-surface .text-green-700,
-.dark .lpq-admin-surface .text-green-900 {
+.dark .school-admin-surface .text-green-700,
+.dark .school-admin-surface .text-green-900 {
   color: hsl(152 50% 60%) !important;
 }
 
-.dark .lpq-admin-surface .hover\:bg-green-50:hover {
+.dark .school-admin-surface .hover\:bg-green-50:hover {
   background-color: hsl(152 45% 42% / 0.15) !important;
 }
 
 /* --- Theme-aware Skeleton inside admin --- */
-.lpq-admin-surface .skeleton,
-.lpq-admin-surface [class*="Skeleton"],
-.lpq-admin-surface [data-slot="skeleton"] {
+.school-admin-surface .skeleton,
+.school-admin-surface [class*="Skeleton"],
+.school-admin-surface [data-slot="skeleton"] {
   background-color: hsl(var(--admin-surface-sunken)) !important;
   border-radius: 0.75rem;
 }
 
-.dark .lpq-admin-surface .skeleton,
-.dark .lpq-admin-surface [class*="Skeleton"],
-.dark .lpq-admin-surface [data-slot="skeleton"] {
+.dark .school-admin-surface .skeleton,
+.dark .school-admin-surface [class*="Skeleton"],
+.dark .school-admin-surface [data-slot="skeleton"] {
   background-color: hsl(var(--admin-surface-raised)) !important;
 }
 
@@ -1679,7 +1679,7 @@
   100% { background-position: -200% 0; }
 }
 
-.lpq-admin-surface .admin-skeleton-shimmer {
+.school-admin-surface .admin-skeleton-shimmer {
   background: linear-gradient(
     90deg,
     hsl(var(--admin-surface-sunken)) 25%,
@@ -1690,7 +1690,7 @@
   animation: admin-skeleton-shimmer 1.8s ease-in-out infinite;
 }
 
-.dark .lpq-admin-surface .admin-skeleton-shimmer {
+.dark .school-admin-surface .admin-skeleton-shimmer {
   background: linear-gradient(
     90deg,
     hsl(var(--admin-surface-raised)) 25%,
@@ -1743,7 +1743,7 @@
 }
 
 .admin-loading-spinner-ring--delay {
-  border-top-color: hsl(var(--admin-accent-cyan));
+  border-top-color: hsl(var(--admin-accent-secondary));
   animation-delay: 0.15s;
   opacity: 0.6;
   inset: 4px;
@@ -1777,7 +1777,7 @@
   background: linear-gradient(
     90deg,
     hsl(var(--admin-accent)),
-    hsl(var(--admin-accent-cyan))
+    hsl(var(--admin-accent-secondary))
   );
   animation: admin-loading-bar 1.5s ease-in-out infinite;
 }
@@ -1790,76 +1790,76 @@
 
 /* ============================================================
    BODY-SCOPED PORTAL OVERRIDES
-   Radix portals render under <body>, escaping .lpq-admin-surface.
-   The lpq-admin-context class is added to <body> by useAdminBodyClass hook
+   Radix portals render under <body>, escaping .school-admin-surface.
+   The school-admin-context class is added to <body> by useAdminBodyClass hook
    when an admin page is active. This ensures dropdown styling only applies
    in admin context, never on public pages.
    ============================================================ */
 
 /* --- Body-scoped Select Trigger overrides — covers bg-background, bg-primary, bg-white leaks --- */
-body.lpq-admin-context [data-radix-select-trigger],
-body.lpq-admin-context button[role="combobox"] {
+body.school-admin-context [data-radix-select-trigger],
+body.school-admin-context button[role="combobox"] {
   background-color: hsl(30 20% 97%) !important;
   border-color: hsl(30 12% 85%) !important;
   color: hsl(220 15% 15%) !important;
 }
 
-.dark body.lpq-admin-context [data-radix-select-trigger],
-.dark body.lpq-admin-context button[role="combobox"] {
+.dark body.school-admin-context [data-radix-select-trigger],
+.dark body.school-admin-context button[role="combobox"] {
   background-color: hsl(222 20% 10%) !important;
   border-color: hsl(222 18% 18%) !important;
   color: hsl(30 30% 94%) !important;
 }
 
-body.lpq-admin-context [data-radix-select-trigger]:focus,
-body.lpq-admin-context [data-radix-select-trigger]:focus-visible,
-body.lpq-admin-context button[role="combobox"]:focus,
-body.lpq-admin-context button[role="combobox"]:focus-visible {
+body.school-admin-context [data-radix-select-trigger]:focus,
+body.school-admin-context [data-radix-select-trigger]:focus-visible,
+body.school-admin-context button[role="combobox"]:focus,
+body.school-admin-context button[role="combobox"]:focus-visible {
   border-color: hsl(152 58% 37% / 0.5) !important;
   box-shadow: 0 0 0 3px hsl(152 58% 37% / 0.1) !important;
   outline: none !important;
 }
 
-.dark body.lpq-admin-context [data-radix-select-trigger]:focus,
-.dark body.lpq-admin-context [data-radix-select-trigger]:focus-visible,
-.dark body.lpq-admin-context button[role="combobox"]:focus,
-.dark body.lpq-admin-context button[role="combobox"]:focus-visible {
+.dark body.school-admin-context [data-radix-select-trigger]:focus,
+.dark body.school-admin-context [data-radix-select-trigger]:focus-visible,
+.dark body.school-admin-context button[role="combobox"]:focus,
+.dark body.school-admin-context button[role="combobox"]:focus-visible {
   border-color: hsl(152 45% 42% / 0.5) !important;
   box-shadow: 0 0 0 3px hsl(152 45% 42% / 0.12) !important;
   outline: none !important;
 }
 
 /* Override explicit bg-white on triggers in admin context */
-body.lpq-admin-context .bg-white[class*="SelectTrigger"],
-body.lpq-admin-context [data-radix-select-trigger].bg-white {
+body.school-admin-context .bg-white[class*="SelectTrigger"],
+body.school-admin-context [data-radix-select-trigger].bg-white {
   background-color: hsl(30 20% 97%) !important;
 }
 
-.dark body.lpq-admin-context .bg-white[class*="SelectTrigger"],
-.dark body.lpq-admin-context [data-radix-select-trigger].bg-white,
-.dark body.lpq-admin-context [data-radix-select-trigger].bg-black,
-.dark body.lpq-admin-context [data-radix-select-trigger][class*="dark:bg-"] {
+.dark body.school-admin-context .bg-white[class*="SelectTrigger"],
+.dark body.school-admin-context [data-radix-select-trigger].bg-white,
+.dark body.school-admin-context [data-radix-select-trigger].bg-black,
+.dark body.school-admin-context [data-radix-select-trigger][class*="dark:bg-"] {
   background-color: hsl(222 20% 10%) !important;
 }
 
 /* Neutralize bg-primary on trigger buttons in admin (e.g. non-semantic primary bg) */
-body.lpq-admin-context [data-radix-select-trigger].bg-primary,
-body.lpq-admin-context button[role="combobox"].bg-primary {
+body.school-admin-context [data-radix-select-trigger].bg-primary,
+body.school-admin-context button[role="combobox"].bg-primary {
   background-color: hsl(30 20% 97%) !important;
 }
 
-.dark body.lpq-admin-context [data-radix-select-trigger].bg-primary,
-.dark body.lpq-admin-context button[role="combobox"].bg-primary {
+.dark body.school-admin-context [data-radix-select-trigger].bg-primary,
+.dark body.school-admin-context button[role="combobox"].bg-primary {
   background-color: hsl(222 20% 10%) !important;
 }
 
 /* --- Portal Dropdown Content — Light Mode --- */
-body.lpq-admin-context [data-radix-select-content],
-body.lpq-admin-context [role="listbox"],
-body.lpq-admin-context [data-radix-popper-content-wrapper],
-body.lpq-admin-context [data-radix-dropdown-menu-content],
-body.lpq-admin-context [data-radix-dropdown-menu-sub-content],
-body.lpq-admin-context [data-radix-popover-content] {
+body.school-admin-context [data-radix-select-content],
+body.school-admin-context [role="listbox"],
+body.school-admin-context [data-radix-popper-content-wrapper],
+body.school-admin-context [data-radix-dropdown-menu-content],
+body.school-admin-context [data-radix-dropdown-menu-sub-content],
+body.school-admin-context [data-radix-popover-content] {
   background-color: hsl(30 20% 97%) !important;
   border-color: hsl(30 12% 85%) !important;
   color: hsl(220 15% 15%) !important;
@@ -1867,12 +1867,12 @@ body.lpq-admin-context [data-radix-popover-content] {
 }
 
 /* --- Portal Dropdown Content — Dark Mode --- */
-.dark body.lpq-admin-context [data-radix-select-content],
-.dark body.lpq-admin-context [role="listbox"],
-.dark body.lpq-admin-context [data-radix-popper-content-wrapper],
-.dark body.lpq-admin-context [data-radix-dropdown-menu-content],
-.dark body.lpq-admin-context [data-radix-dropdown-menu-sub-content],
-.dark body.lpq-admin-context [data-radix-popover-content] {
+.dark body.school-admin-context [data-radix-select-content],
+.dark body.school-admin-context [role="listbox"],
+.dark body.school-admin-context [data-radix-popper-content-wrapper],
+.dark body.school-admin-context [data-radix-dropdown-menu-content],
+.dark body.school-admin-context [data-radix-dropdown-menu-sub-content],
+.dark body.school-admin-context [data-radix-popover-content] {
   background-color: hsl(222 20% 12%) !important;
   border-color: hsl(222 18% 20%) !important;
   color: hsl(30 30% 92%) !important;
@@ -1880,105 +1880,105 @@ body.lpq-admin-context [data-radix-popover-content] {
 }
 
 /* --- Portal Select Item — Light Mode --- */
-body.lpq-admin-context [data-radix-select-item],
-body.lpq-admin-context [role="option"],
-body.lpq-admin-context [data-radix-dropdown-menu-item],
-body.lpq-admin-context [data-radix-dropdown-menu-checkbox-item],
-body.lpq-admin-context [data-radix-dropdown-menu-radio-item],
-body.lpq-admin-context [data-radix-dropdown-menu-sub-trigger] {
+body.school-admin-context [data-radix-select-item],
+body.school-admin-context [role="option"],
+body.school-admin-context [data-radix-dropdown-menu-item],
+body.school-admin-context [data-radix-dropdown-menu-checkbox-item],
+body.school-admin-context [data-radix-dropdown-menu-radio-item],
+body.school-admin-context [data-radix-dropdown-menu-sub-trigger] {
   color: hsl(220 15% 15%);
   border-radius: 0.375rem;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-body.lpq-admin-context [data-radix-select-item][data-highlighted],
-body.lpq-admin-context [role="option"]:hover,
-body.lpq-admin-context [data-radix-dropdown-menu-item][data-highlighted],
-body.lpq-admin-context [data-radix-dropdown-menu-sub-trigger][data-highlighted],
-body.lpq-admin-context [data-radix-dropdown-menu-checkbox-item][data-highlighted],
-body.lpq-admin-context [data-radix-dropdown-menu-radio-item][data-highlighted] {
+body.school-admin-context [data-radix-select-item][data-highlighted],
+body.school-admin-context [role="option"]:hover,
+body.school-admin-context [data-radix-dropdown-menu-item][data-highlighted],
+body.school-admin-context [data-radix-dropdown-menu-sub-trigger][data-highlighted],
+body.school-admin-context [data-radix-dropdown-menu-checkbox-item][data-highlighted],
+body.school-admin-context [data-radix-dropdown-menu-radio-item][data-highlighted] {
   background-color: hsl(152 58% 37% / 0.1) !important;
   color: hsl(220 15% 15%) !important;
   outline: none;
 }
 
-body.lpq-admin-context [data-radix-select-item][data-state="checked"],
-body.lpq-admin-context [role="option"][aria-selected="true"] {
+body.school-admin-context [data-radix-select-item][data-state="checked"],
+body.school-admin-context [role="option"][aria-selected="true"] {
   color: hsl(152 58% 37%) !important;
   font-weight: 600;
 }
 
-body.lpq-admin-context [data-radix-select-item][data-disabled],
-body.lpq-admin-context [data-radix-dropdown-menu-item][data-disabled] {
+body.school-admin-context [data-radix-select-item][data-disabled],
+body.school-admin-context [data-radix-dropdown-menu-item][data-disabled] {
   opacity: 0.4;
   pointer-events: none;
 }
 
 /* --- Portal Select Item — Dark Mode --- */
-.dark body.lpq-admin-context [data-radix-select-item],
-.dark body.lpq-admin-context [role="option"],
-.dark body.lpq-admin-context [data-radix-dropdown-menu-item],
-.dark body.lpq-admin-context [data-radix-dropdown-menu-checkbox-item],
-.dark body.lpq-admin-context [data-radix-dropdown-menu-radio-item],
-.dark body.lpq-admin-context [data-radix-dropdown-menu-sub-trigger] {
+.dark body.school-admin-context [data-radix-select-item],
+.dark body.school-admin-context [role="option"],
+.dark body.school-admin-context [data-radix-dropdown-menu-item],
+.dark body.school-admin-context [data-radix-dropdown-menu-checkbox-item],
+.dark body.school-admin-context [data-radix-dropdown-menu-radio-item],
+.dark body.school-admin-context [data-radix-dropdown-menu-sub-trigger] {
   color: hsl(30 20% 82%) !important;
   border-radius: 0.375rem;
 }
 
-.dark body.lpq-admin-context [data-radix-select-item][data-highlighted],
-.dark body.lpq-admin-context [role="option"]:hover,
-.dark body.lpq-admin-context [data-radix-dropdown-menu-item][data-highlighted],
-.dark body.lpq-admin-context [data-radix-dropdown-menu-sub-trigger][data-highlighted],
-.dark body.lpq-admin-context [data-radix-dropdown-menu-checkbox-item][data-highlighted],
-.dark body.lpq-admin-context [data-radix-dropdown-menu-radio-item][data-highlighted] {
+.dark body.school-admin-context [data-radix-select-item][data-highlighted],
+.dark body.school-admin-context [role="option"]:hover,
+.dark body.school-admin-context [data-radix-dropdown-menu-item][data-highlighted],
+.dark body.school-admin-context [data-radix-dropdown-menu-sub-trigger][data-highlighted],
+.dark body.school-admin-context [data-radix-dropdown-menu-checkbox-item][data-highlighted],
+.dark body.school-admin-context [data-radix-dropdown-menu-radio-item][data-highlighted] {
   background-color: hsl(222 18% 18%) !important;
   color: hsl(30 30% 96%) !important;
 }
 
-.dark body.lpq-admin-context [data-radix-select-item][data-state="checked"],
-.dark body.lpq-admin-context [role="option"][aria-selected="true"] {
+.dark body.school-admin-context [data-radix-select-item][data-state="checked"],
+.dark body.school-admin-context [role="option"][aria-selected="true"] {
   color: hsl(152 45% 55%) !important;
   font-weight: 600;
 }
 
 /* --- Portal scroll buttons --- */
-body.lpq-admin-context [data-radix-select-scroll-up-button],
-body.lpq-admin-context [data-radix-select-scroll-down-button] {
+body.school-admin-context [data-radix-select-scroll-up-button],
+body.school-admin-context [data-radix-select-scroll-down-button] {
   color: hsl(220 6% 60%);
 }
 
-.dark body.lpq-admin-context [data-radix-select-scroll-up-button],
-.dark body.lpq-admin-context [data-radix-select-scroll-down-button] {
+.dark body.school-admin-context [data-radix-select-scroll-up-button],
+.dark body.school-admin-context [data-radix-select-scroll-down-button] {
   color: hsl(222 10% 45%);
 }
 
 /* --- Portal dropdown labels --- */
-body.lpq-admin-context [data-radix-dropdown-menu-label],
-body.lpq-admin-context [data-radix-select-group] [data-radix-select-label] {
+body.school-admin-context [data-radix-dropdown-menu-label],
+body.school-admin-context [data-radix-select-group] [data-radix-select-label] {
   color: hsl(220 6% 60%);
 }
 
-.dark body.lpq-admin-context [data-radix-dropdown-menu-label],
-.dark body.lpq-admin-context [data-radix-select-group] [data-radix-select-label] {
+.dark body.school-admin-context [data-radix-dropdown-menu-label],
+.dark body.school-admin-context [data-radix-select-group] [data-radix-select-label] {
   color: hsl(222 10% 45%) !important;
 }
 
 /* --- Command palette portal (if used) --- */
-body.lpq-admin-context [cmdk-root],
-body.lpq-admin-context [cmdk-list] {
+body.school-admin-context [cmdk-root],
+body.school-admin-context [cmdk-list] {
   background-color: hsl(30 20% 97%) !important;
   color: hsl(220 15% 15%) !important;
 }
 
-body.lpq-admin-context [cmdk-item][data-selected="true"] {
+body.school-admin-context [cmdk-item][data-selected="true"] {
   background-color: hsl(152 58% 37% / 0.1) !important;
 }
 
 /* ============================================================
-   GURU PROFILE — LPQ AURORA NEO-GLASS
+   GURU PROFILE — SDN BATURAJA PROFILE SURFACE
    ============================================================ */
 
-.guru-profile-neo {
+.guru-profile-card {
   --guru-profile-accent: #3b82f6;
   --guru-profile-accent-deep: #1d4ed8;
   --guru-profile-accent-soft: rgb(147 197 253 / 0.34);
@@ -2001,7 +2001,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   backdrop-filter: blur(22px) saturate(132%);
 }
 
-.guru-profile-neo--female {
+.guru-profile-card--female {
   --guru-profile-accent: #ec4899;
   --guru-profile-accent-deep: #be185d;
   --guru-profile-accent-soft: rgb(249 168 212 / 0.35);
@@ -2016,7 +2016,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
     inset 0 1px 0 rgb(255 255 255 / 0.94);
 }
 
-.guru-profile-neo__aurora {
+.guru-profile-card__atmosphere {
   position: absolute;
   z-index: -1;
   width: clamp(16rem, 32vw, 30rem);
@@ -2030,7 +2030,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   pointer-events: none;
 }
 
-.guru-profile-neo__rail {
+.guru-profile-card__rail {
   position: absolute;
   z-index: 3;
   inset: 0 auto 0 0;
@@ -2039,7 +2039,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   box-shadow: 0 0 18px var(--guru-profile-accent-soft);
 }
 
-.guru-profile-neo__constellation {
+.guru-profile-card__constellation {
   position: absolute;
   z-index: -1;
   inset: 0;
@@ -2047,7 +2047,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   pointer-events: none;
 }
 
-.guru-profile-neo__content {
+.guru-profile-card__content {
   position: relative;
   z-index: 2;
   display: grid;
@@ -2057,7 +2057,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   padding: clamp(1.35rem, 3vw, 2.2rem);
 }
 
-.guru-profile-neo__avatar-shell {
+.guru-profile-card__avatar-shell {
   position: relative;
   display: grid;
   place-items: center;
@@ -2074,7 +2074,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
     inset -3px -3px 7px rgb(255 255 255 / 0.82);
 }
 
-.guru-profile-neo__avatar-orbit {
+.guru-profile-card__avatar-orbit {
   position: absolute;
   inset: -0.35rem;
   border: 1px solid color-mix(in srgb, var(--guru-profile-accent) 48%, transparent);
@@ -2083,7 +2083,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   animation: guru-profile-orbit 12s linear infinite;
 }
 
-.guru-profile-neo__avatar-orbit::after {
+.guru-profile-card__avatar-orbit::after {
   content: "";
   position: absolute;
   top: 11%;
@@ -2096,7 +2096,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   box-shadow: 0 0 14px var(--guru-profile-accent);
 }
 
-.guru-profile-neo__avatar-button {
+.guru-profile-card__avatar-button {
   position: relative;
   display: block;
   width: 100%;
@@ -2105,16 +2105,16 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.guru-profile-neo__avatar-button:hover {
+.guru-profile-card__avatar-button:hover {
   transform: scale(1.035);
 }
 
-.guru-profile-neo__avatar-button:focus-visible {
+.guru-profile-card__avatar-button:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--guru-profile-accent) 72%, white);
   outline-offset: 4px;
 }
 
-.guru-profile-neo__avatar {
+.guru-profile-card__avatar {
   width: 100% !important;
   height: 100% !important;
   min-width: clamp(8.5rem, 12vw, 10.2rem);
@@ -2125,18 +2125,18 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
     0 4px 14px -2px rgb(15 23 42 / 0.28);
 }
 
-.guru-profile-neo__avatar-fallback {
+.guru-profile-card__avatar-fallback {
   color: var(--guru-profile-accent-deep);
   background: color-mix(in srgb, var(--guru-profile-accent) 14%, white);
   font-size: 2.5rem;
   font-weight: 900;
 }
 
-.guru-profile-neo__identity {
+.guru-profile-card__identity {
   min-width: 0;
 }
 
-.guru-profile-neo__eyebrow {
+.guru-profile-card__eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -2148,7 +2148,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   text-transform: uppercase;
 }
 
-.guru-profile-neo__name {
+.guru-profile-card__name {
   overflow: hidden;
   color: #10213c;
   font-size: clamp(1.8rem, 4vw, 2.65rem);
@@ -2159,21 +2159,21 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   white-space: nowrap;
 }
 
-.guru-profile-neo__role {
+.guru-profile-card__role {
   margin-top: 0.4rem;
   color: #64748b;
   font-size: 0.96rem;
   font-weight: 700;
 }
 
-.guru-profile-neo__metrics {
+.guru-profile-card__metrics {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
   margin-top: 1rem;
 }
 
-.guru-profile-neo__metric {
+.guru-profile-card__metric {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -2191,24 +2191,24 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   font-weight: 700;
 }
 
-.guru-profile-neo__metric svg,
-.guru-profile-neo__metric strong {
+.guru-profile-card__metric svg,
+.guru-profile-card__metric strong {
   color: var(--guru-profile-accent-deep);
 }
 
-.guru-profile-neo__actions {
+.guru-profile-card__actions {
   display: grid;
   min-width: 12rem;
   gap: 0.6rem;
 }
 
-.guru-profile-neo__action-pair {
+.guru-profile-card__action-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.55rem;
 }
 
-.guru-profile-neo__button {
+.guru-profile-card__button {
   border-color: rgb(255 255 255 / 0.78) !important;
   background: rgb(255 255 255 / 0.5) !important;
   box-shadow:
@@ -2218,7 +2218,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
-.guru-profile-neo__button:hover {
+.guru-profile-card__button:hover {
   color: var(--guru-profile-accent-deep) !important;
   border-color: color-mix(in srgb, var(--guru-profile-accent) 44%, white) !important;
   background: color-mix(in srgb, var(--guru-profile-accent) 9%, white) !important;
@@ -2226,12 +2226,12 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   transform: translateY(-2px);
 }
 
-.guru-profile-neo__button:active {
+.guru-profile-card__button:active {
   box-shadow: inset 3px 3px 7px rgb(15 23 42 / 0.12), inset -2px -2px 6px rgb(255 255 255 / 0.65);
   transform: translateY(0) scale(0.985);
 }
 
-.guru-profile-neo__button--accent {
+.guru-profile-card__button--accent {
   position: relative;
   color: white !important;
   border-color: color-mix(in srgb, var(--guru-profile-accent) 72%, white) !important;
@@ -2239,13 +2239,13 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   box-shadow: 0 12px 24px -14px color-mix(in srgb, var(--guru-profile-accent) 78%, #0f172a);
 }
 
-.guru-profile-neo__button--accent:hover {
+.guru-profile-card__button--accent:hover {
   color: white !important;
   border-color: white !important;
   background: linear-gradient(135deg, var(--guru-profile-accent), var(--guru-profile-accent-deep)) !important;
 }
 
-.guru-profile-neo__notification-dot {
+.guru-profile-card__notification-dot {
   position: absolute;
   top: 0.35rem;
   right: 0.4rem;
@@ -2257,7 +2257,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   box-shadow: 0 0 10px rgb(251 113 133 / 0.7);
 }
 
-.dark .guru-profile-neo {
+.dark .guru-profile-card {
   --guru-profile-surface: rgb(10 18 37 / 0.82);
   color: #f8fafc;
   border-color: rgb(255 255 255 / 0.11);
@@ -2271,14 +2271,14 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
     inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 
-.dark .guru-profile-neo__constellation {
+.dark .guru-profile-card__constellation {
   display: block;
   opacity: 0.88;
 }
 
-.dark .guru-profile-neo__avatar-shell,
-.dark .guru-profile-neo__metric,
-.dark .guru-profile-neo__button {
+.dark .guru-profile-card__avatar-shell,
+.dark .guru-profile-card__metric,
+.dark .guru-profile-card__button {
   border-color: rgb(255 255 255 / 0.1) !important;
   background: rgb(15 23 42 / 0.58) !important;
   box-shadow:
@@ -2288,27 +2288,27 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   backdrop-filter: blur(14px);
 }
 
-.dark .guru-profile-neo__avatar {
+.dark .guru-profile-card__avatar {
   border-color: rgb(30 41 59 / 0.92);
   box-shadow: 0 0 28px color-mix(in srgb, var(--guru-profile-accent) 34%, transparent);
 }
 
-.dark .guru-profile-neo__name {
+.dark .guru-profile-card__name {
   color: #f8fafc;
 }
 
-.dark .guru-profile-neo__role,
-.dark .guru-profile-neo__metric {
+.dark .guru-profile-card__role,
+.dark .guru-profile-card__metric {
   color: #a9b7ca;
 }
 
-.dark .guru-profile-neo__eyebrow,
-.dark .guru-profile-neo__metric svg,
-.dark .guru-profile-neo__metric strong {
+.dark .guru-profile-card__eyebrow,
+.dark .guru-profile-card__metric svg,
+.dark .guru-profile-card__metric strong {
   color: color-mix(in srgb, var(--guru-profile-accent) 62%, white);
 }
 
-.dark .guru-profile-neo__button--accent {
+.dark .guru-profile-card__button--accent {
   color: white !important;
   border-color: color-mix(in srgb, var(--guru-profile-accent) 45%, transparent) !important;
   background: linear-gradient(135deg, color-mix(in srgb, var(--guru-profile-accent) 76%, #334155), var(--guru-profile-accent-deep)) !important;
@@ -2319,37 +2319,37 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 }
 
 @media (max-width: 900px) {
-  .guru-profile-neo__content {
+  .guru-profile-card__content {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .guru-profile-neo__actions {
+  .guru-profile-card__actions {
     grid-column: 1 / -1;
     grid-template-columns: 1fr 1fr 1.2fr;
   }
 }
 
 @media (max-width: 640px) {
-  .guru-profile-neo__content {
+  .guru-profile-card__content {
     grid-template-columns: 1fr;
     justify-items: center;
     padding: 1.4rem 1rem;
     text-align: center;
   }
 
-  .guru-profile-neo__identity {
+  .guru-profile-card__identity {
     width: 100%;
   }
 
-  .guru-profile-neo__name {
+  .guru-profile-card__name {
     white-space: normal;
   }
 
-  .guru-profile-neo__metrics {
+  .guru-profile-card__metrics {
     justify-content: center;
   }
 
-  .guru-profile-neo__actions {
+  .guru-profile-card__actions {
     grid-column: auto;
     grid-template-columns: 1fr;
     width: 100%;
@@ -2357,23 +2357,23 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .guru-profile-neo__avatar-orbit {
+  .guru-profile-card__avatar-orbit {
     animation: none;
   }
 
-  .guru-profile-neo__button,
-  .guru-profile-neo__avatar-button {
+  .guru-profile-card__button,
+  .guru-profile-card__avatar-button {
     transition: none;
   }
 }
 
-.dark body.lpq-admin-context [cmdk-root],
-.dark body.lpq-admin-context [cmdk-list] {
+.dark body.school-admin-context [cmdk-root],
+.dark body.school-admin-context [cmdk-list] {
   background-color: hsl(222 20% 12%) !important;
   color: hsl(30 30% 92%) !important;
 }
 
-.dark body.lpq-admin-context [cmdk-item][data-selected="true"] {
+.dark body.school-admin-context [cmdk-item][data-selected="true"] {
   background-color: hsl(222 18% 18%) !important;
   color: hsl(30 30% 96%) !important;
 }
@@ -2384,25 +2384,25 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
    ============================================================ */
 
 /* Category panel wrapper (e.g. "Santri Paling Disiplin") */
-.dark .lpq-admin-surface .bg-slate-50\/50,
-.dark .lpq-admin-surface [class*="bg-slate-50"] {
+.dark .school-admin-surface .bg-slate-50\/50,
+.dark .school-admin-surface [class*="bg-slate-50"] {
   background-color: hsl(var(--admin-surface-raised)) !important;
   border-color: hsl(var(--admin-border)) !important;
 }
 
 /* Session cards (Pagi/Siang/Sore) inside Leaderboard */
-.dark .lpq-admin-surface .bg-white {
+.dark .school-admin-surface .bg-white {
   background-color: hsl(var(--admin-surface-sunken)) !important;
   border-color: hsl(var(--admin-border)) !important;
   box-shadow: 0 1px 3px hsl(222 30% 3% / 0.2) !important;
 }
 
 /* Info banners (blue-50) in TV Settings Leaderboard */
-.dark .lpq-admin-surface .bg-blue-50 {
+.dark .school-admin-surface .bg-blue-50 {
   background-color: hsl(222 30% 14%) !important;
   border-color: hsl(222 30% 22%) !important;
 }
-.dark .lpq-admin-surface .bg-blue-50 .text-blue-700 {
+.dark .school-admin-surface .bg-blue-50 .text-blue-700 {
   color: hsl(200 80% 70%) !important;
 }
 
@@ -2440,71 +2440,71 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 }
 
 /* ============================================================
-   ATTENDANCE DIGITAL — Premium Design Tokens
+   ATTENDANCE DIGITAL — SDN BATURAJA DESIGN TOKENS
    ============================================================ */
 
 :root {
   /* Attendance semantic tokens */
-  --att-bg: 30 33% 96%;
+  --att-bg: 222 42% 94%;
   --att-surface: 0 0% 100%;
-  --att-surface-raised: 30 20% 97%;
-  --att-surface-sunken: 30 20% 93%;
-  --att-border: 30 12% 88%;
-  --att-border-subtle: 30 10% 92%;
-  --att-text-primary: 220 15% 15%;
-  --att-text-secondary: 220 8% 40%;
-  --att-text-muted: 220 6% 58%;
+  --att-surface-raised: 0 0% 100%;
+  --att-surface-sunken: 226 40% 96%;
+  --att-border: 230 40% 89%;
+  --att-border-subtle: 230 40% 93%;
+  --att-text-primary: 236 26% 12%;
+  --att-text-secondary: 232 18% 40%;
+  --att-text-muted: 233 15% 50%;
 
-  --att-accent: 217 91% 54%;
-  --att-accent-muted: 221 70% 50%;
-  --att-accent-soft: 214 100% 96%;
-  --att-accent-bg: 214 100% 97%;
-  --att-accent-border: 214 80% 82%;
-  --att-cyan: 199 89% 48%;
-  --att-violet: 265 70% 55%;
+  --att-accent: 234 100% 68%;
+  --att-accent-muted: 234 70% 60%;
+  --att-accent-soft: 232 100% 96%;
+  --att-accent-bg: 232 100% 98%;
+  --att-accent-border: 234 82% 86%;
+  --att-secondary: 340 80% 70%;
+  --att-violet: 261 82% 68%;
   --att-amber: 38 92% 50%;
   --att-amber-bg: 38 90% 95%;
   --att-amber-border: 38 80% 78%;
-  --att-success: 217 91% 54%;
+  --att-success: 142 71% 45%;
   --att-danger: 0 84% 55%;
   --att-danger-bg: 0 84% 96%;
   --att-danger-border: 0 70% 80%;
 
-  --att-glow: 217 91% 54%;
-  --att-shadow-color: 220 15% 60%;
+  --att-glow: 234 100% 68%;
+  --att-shadow-color: 232 30% 60%;
   --att-radius: 1rem;
   --att-radius-sm: 0.625rem;
   --att-radius-lg: 1.5rem;
 }
 
 .dark {
-  --att-bg: 222 30% 8%;
-  --att-surface: 222 20% 12%;
-  --att-surface-raised: 222 18% 15%;
-  --att-surface-sunken: 222 35% 6%;
-  --att-border: 222 18% 18%;
-  --att-border-subtle: 222 15% 15%;
-  --att-text-primary: 30 30% 92%;
-  --att-text-secondary: 30 15% 65%;
-  --att-text-muted: 222 10% 45%;
+  --att-bg: 235 30% 10%;
+  --att-surface: 235 24% 14%;
+  --att-surface-raised: 235 20% 18%;
+  --att-surface-sunken: 235 31% 9%;
+  --att-border: 235 16% 28%;
+  --att-border-subtle: 235 15% 22%;
+  --att-text-primary: 230 30% 96%;
+  --att-text-secondary: 230 16% 76%;
+  --att-text-muted: 230 13% 60%;
 
-  --att-accent: 217 91% 60%;
-  --att-accent-muted: 221 70% 45%;
-  --att-accent-soft: 222 50% 16%;
-  --att-accent-bg: 222 50% 14%;
-  --att-accent-border: 222 40% 25%;
-  --att-cyan: 199 80% 55%;
-  --att-violet: 265 60% 60%;
+  --att-accent: 234 100% 72%;
+  --att-accent-muted: 234 70% 62%;
+  --att-accent-soft: 234 30% 18%;
+  --att-accent-bg: 234 28% 16%;
+  --att-accent-border: 234 24% 30%;
+  --att-secondary: 340 72% 72%;
+  --att-violet: 261 76% 74%;
   --att-amber: 38 85% 55%;
   --att-amber-bg: 38 40% 14%;
   --att-amber-border: 38 35% 25%;
-  --att-success: 217 91% 60%;
+  --att-success: 142 64% 58%;
   --att-danger: 0 70% 55%;
   --att-danger-bg: 0 50% 14%;
   --att-danger-border: 0 40% 25%;
 
-  --att-glow: 217 91% 60%;
-  --att-shadow-color: 222 30% 5%;
+  --att-glow: 234 100% 72%;
+  --att-shadow-color: 235 36% 5%;
 }
 
 /* ============================================================
@@ -2815,7 +2815,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   position: absolute;
   inset: -4px;
   border-radius: 1rem;
-  background: linear-gradient(135deg, hsl(var(--att-accent) / 0.2), hsl(var(--att-cyan) / 0.15));
+  background: linear-gradient(135deg, hsl(var(--att-accent) / 0.2), hsl(var(--att-secondary) / 0.15));
   filter: blur(12px);
   opacity: 0.5;
   transition: opacity 0.5s ease;
@@ -2968,7 +2968,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   position: absolute;
   inset: -6px;
   border: 2px solid hsl(var(--att-accent) / 0.2);
-  border-top-color: hsl(var(--att-cyan) / 0.4);
+  border-top-color: hsl(var(--att-secondary) / 0.4);
   border-radius: 9999px;
   animation: att-spin-pulse 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite reverse;
 }
@@ -3057,7 +3057,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 }
 
 .attendance-result-card--info {
-  border-color: hsl(var(--att-cyan) / 0.3);
+  border-color: hsl(var(--att-secondary) / 0.3);
 }
 
 .attendance-result-card--info::before {
@@ -3067,7 +3067,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, hsl(var(--att-cyan)), hsl(var(--att-violet) / 0.5));
+  background: linear-gradient(90deg, hsl(var(--att-secondary)), hsl(var(--att-violet) / 0.5));
 }
 
 /* Confirmation card */
@@ -3124,7 +3124,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   background:
     linear-gradient(135deg, hsl(var(--att-surface) / 0.78), hsl(var(--att-surface) / 0.52)),
     radial-gradient(circle at 18% 10%, hsl(var(--att-accent) / 0.12), transparent 34%),
-    radial-gradient(circle at 88% 16%, hsl(var(--att-cyan) / 0.1), transparent 30%);
+    radial-gradient(circle at 88% 16%, hsl(var(--att-secondary) / 0.1), transparent 30%);
   border: 1px solid hsl(var(--att-border) / 0.7);
   border-radius: var(--att-radius-lg);
   padding: 2rem 1.75rem 2.5rem;
@@ -3546,7 +3546,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 }
 
 /* ============================================================
-   WHITE GLASS NEUMORPHISM — Teacher & Student Profile
+   WHITE SURFACE — Teacher & Student Profile
    ============================================================ */
 
 .attendance-profile-card--white-glass {
@@ -3872,7 +3872,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   }
 }
 
-/* Student-only refinement: borderless raised neumorphism */
+/* Student-only refinement: borderless raised surface */
 .attendance-profile-card--white-glass.attendance-profile-card--student,
 .attendance-profile-card--white-glass.attendance-profile-card--student.attendance-profile-card--point-glow {
   border: 0 !important;
@@ -5229,7 +5229,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 }
 
 /* ============================================================
-   SOLID GLASS ACTIONS & NEUMORPHIC ADMIN INSIGHTS
+   SOLID ACTIONS & ADMIN INSIGHTS
    ============================================================ */
 
 .attendance-header__action-btn {
@@ -5321,19 +5321,19 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 }
 
 .admin-stat-card--students {
-  --stat-accent-rgb: 16 185 129;
+  --stat-accent-rgb: 91 108 255;
 }
 
 .admin-stat-card--income {
-  --stat-accent-rgb: 6 182 212;
+  --stat-accent-rgb: 154 108 240;
 }
 
 .admin-stat-card--expense {
-  --stat-accent-rgb: 244 63 94;
+  --stat-accent-rgb: 240 119 159;
 }
 
 .admin-stat-card--kiosk {
-  --stat-accent-rgb: 99 102 241;
+  --stat-accent-rgb: 91 108 255;
 }
 
 .admin-stat-card--clickable:hover {
@@ -5413,7 +5413,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 }
 
 /* ============================================================
-   ATTENDANCE CLOCK, SCANNER & FULL GLASS MEDIA PLAYER
+   ATTENDANCE CLOCK, SCANNER & MEDIA PLAYER SURFACES
    ============================================================ */
 
 .attendance-clock__time {
@@ -5422,7 +5422,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
     linear-gradient(
       105deg,
       hsl(var(--att-accent)) 0%,
-      hsl(var(--att-cyan)) 50%,
+      hsl(var(--att-secondary)) 50%,
       hsl(var(--att-accent)) 100%
     );
   background-size: 180% 100%;
@@ -5439,13 +5439,13 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
     linear-gradient(
       105deg,
       hsl(var(--att-accent)) 0%,
-      hsl(var(--att-cyan)) 50%,
+      hsl(var(--att-secondary)) 50%,
       hsl(var(--att-accent)) 100%
     );
   background-size: 180% 100%;
   -webkit-background-clip: text;
   background-clip: text;
-  filter: drop-shadow(0 4px 12px hsl(var(--att-cyan) / 0.15));
+  filter: drop-shadow(0 4px 12px hsl(var(--att-secondary) / 0.15));
   text-shadow: none;
 }
 
@@ -5909,7 +5909,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
 
 
 /* ============================================================
-   ADMIN GLASS TABS — shared spring pill surfaces
+   ADMIN SEGMENTED TABS — shared pill surfaces
    ============================================================ */
 
 .admin-module-nav > div,
@@ -6059,7 +6059,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   }
 }
 
-/* Guru student transfer — focused Aurora Neo-Glass workflow. */
+/* Guru student transfer — focused SDN Baturaja workflow. */
 .guru-transfer-dialog {
   isolation: isolate;
   border: 1px solid rgb(255 255 255 / 0.76) !important;
@@ -6080,7 +6080,7 @@ body.lpq-admin-context [cmdk-item][data-selected="true"] {
   height: auto;
 }
 
-.guru-transfer-aurora {
+.guru-transfer-atmosphere {
   position: absolute;
   z-index: -1;
   inset: -30%;

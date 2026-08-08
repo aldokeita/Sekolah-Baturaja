@@ -31,15 +31,15 @@ import {
 } from '@/lib/scheduleAdapters';
 import { MataPelajaranDialog, PeriodeDialog } from './JadwalMasterDialogs';
 
-// Gradasi aurora teal → violet dibagi rata sepanjang Senin..Sabtu, sehingga
+// Urutan indigo → violet → rose dibagi rata sepanjang Senin..Sabtu, sehingga
 // posisi hari dalam minggu langsung terbaca dari warna kepala kolom.
 const DAY_ACCENT = {
-    1: 'from-teal-400 to-cyan-400',
-    2: 'from-cyan-400 to-sky-400',
-    3: 'from-sky-400 to-blue-400',
-    4: 'from-blue-400 to-indigo-400',
-    5: 'from-indigo-400 to-violet-400',
-    6: 'from-violet-400 to-fuchsia-400',
+    1: 'from-indigo-400 to-indigo-500',
+    2: 'from-indigo-400 to-violet-400',
+    3: 'from-violet-400 to-violet-500',
+    4: 'from-violet-400 to-fuchsia-400',
+    5: 'from-fuchsia-400 to-rose-400',
+    6: 'from-rose-400 to-pink-400',
 };
 
 const EMPTY_FORM = {
@@ -48,9 +48,9 @@ const EMPTY_FORM = {
 };
 
 const SlotCard = ({ slot, canManage, onEdit, onDelete }) => (
-    <article className="group relative overflow-hidden rounded-xl border border-white/70 bg-white/60 p-3 shadow-sm backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/80 hover:shadow-md dark:border-slate-700/70 dark:bg-slate-900/50 dark:hover:border-cyan-700/80">
+    <article className="group relative overflow-hidden rounded-xl border border-white/70 bg-white/60 p-3 shadow-sm backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-300/80 hover:shadow-md dark:border-slate-700/70 dark:bg-slate-900/50 dark:hover:border-indigo-700/80">
         <div className="flex items-start justify-between gap-2">
-            <span className="inline-flex items-center gap-1 rounded-md bg-cyan-500/10 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-cyan-700 dark:text-cyan-300">
+            <span className="inline-flex items-center gap-1 rounded-md bg-indigo-500/10 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-indigo-700 dark:text-indigo-300">
                 <Clock className="h-3 w-3" aria-hidden="true" />
                 {formatJamRange(slot.jam_mulai, slot.jam_selesai)}
             </span>
@@ -100,7 +100,7 @@ const DayColumn = ({ day, slots, canManage, onEdit, onDelete, onAdd }) => (
                 </p>
             )}
             {canManage && (
-                <button type="button" onClick={() => onAdd(day.value)} className="flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-cyan-400/50 py-2 text-xs font-medium text-cyan-700 transition-colors hover:border-cyan-500 hover:bg-cyan-500/10 dark:text-cyan-300">
+                <button type="button" onClick={() => onAdd(day.value)} className="flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-indigo-400/50 py-2 text-xs font-medium text-indigo-700 transition-colors hover:border-indigo-500 hover:bg-indigo-500/10 dark:text-indigo-300">
                     <Plus className="h-3.5 w-3.5" /> Tambah
                 </button>
             )}

@@ -329,7 +329,7 @@ const DigitalAttendance = () => {
 
     const ScanResult = ({ scan }) => {
         const variants = {
-            success: { bg: 'bg-gradient-to-br from-green-500 to-teal-500', icon: <CheckCircle className="w-16 h-16 mb-4" /> },
+            success: { bg: 'bg-gradient-to-br from-emerald-500 to-green-500', icon: <CheckCircle className="w-16 h-16 mb-4" /> },
             error: { bg: 'bg-gradient-to-br from-red-500 to-rose-600', icon: <XCircle className="w-16 h-16 mb-4" /> },
             warning: { bg: 'bg-gradient-to-br from-yellow-500 to-amber-500', icon: <AlertTriangle className="w-16 h-16 mb-4" /> },
             confirmation: { bg: 'bg-gradient-to-br from-blue-500 to-indigo-500', icon: <HelpCircle className="w-16 h-16 mb-4 animate-pulse" /> },
@@ -338,7 +338,7 @@ const DigitalAttendance = () => {
         if (scan?.type === 'scanning') {
           return <motion.div key="scanning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center h-full">
             <div className="w-48 h-32 bg-gray-800 rounded-xl relative overflow-hidden border-2 border-blue-400">
-              <motion.div className="absolute top-0 left-0 w-full h-1 bg-cyan-400 shadow-[0_0_10px_2px_#0ff]" animate={{ y: [0, 128] }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} />
+              <motion.div className="absolute top-0 left-0 h-1 w-full bg-indigo-400" animate={{ y: [0, 128] }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} />
               <p className="text-white text-center mt-12">Scanning ID Card...</p>
             </div>
           </motion.div>

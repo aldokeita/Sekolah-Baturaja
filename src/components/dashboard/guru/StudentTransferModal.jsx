@@ -107,7 +107,7 @@ const StudentTransferModal = ({ isOpen, onClose, santri, onTransferSuccess }) =>
         return (
             <Dialog open={isOpen} onOpenChange={() => { if(!isSubmitting) setShowConfirmation(false); }}>
                 <DialogContent className="guru-transfer-dialog guru-transfer-dialog--confirm max-w-xl overflow-hidden p-0">
-                    <div className="guru-transfer-aurora" aria-hidden="true" />
+                    <div className="guru-transfer-atmosphere" aria-hidden="true" />
                     <div className="relative p-6 sm:p-8">
                         <DialogHeader className="text-left">
                             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-teal-200/70 bg-teal-50/80 text-teal-700 shadow-sm dark:border-teal-400/20 dark:bg-teal-400/10 dark:text-teal-200">
@@ -151,7 +151,7 @@ const StudentTransferModal = ({ isOpen, onClose, santri, onTransferSuccess }) =>
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="guru-transfer-dialog flex h-[min(88vh,760px)] max-w-4xl flex-col overflow-hidden p-0">
-                <div className="guru-transfer-aurora" aria-hidden="true" />
+                <div className="guru-transfer-atmosphere" aria-hidden="true" />
 
                 <div className="guru-transfer-header relative z-10 px-5 pb-5 pt-6 sm:px-7 sm:pt-7">
                     <DialogHeader className="text-left">

@@ -75,7 +75,8 @@ const renderModule = (value) => {
  * Both the Admin dashboard and the Tata Usaha dashboard render this component;
  * they differ only in the `title`, `subtitle`, and the `tabs` they pass in.
  * Layout, styling, stats, global search, quick actions, and the module registry
- * are identical across roles by construction (LPQ Aurora Neo-Glass).
+ * are identical across roles by construction and follow the SDN Baturaja
+ * public-site design system.
  *
  * Props:
  * - title, subtitle: page header text
@@ -177,8 +178,8 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
   };
 
   return (
-    // `sdnb-dash` keeps the light shell's Aurora language while the dark theme
-    // switches to a solid, token-driven admin palette (see sdnb-dashboard.css).
+    // `sdnb-dash` mirrors the public light shell and switches to a solid,
+    // token-driven dark workspace (see sdnb-dashboard.css).
     <div className="sdnb-dash">
       <div className="sdnb-dash__bg" aria-hidden="true" />
       <div className="sdnb-dash__orb sdnb-dash__orb--a" aria-hidden="true" />
@@ -197,7 +198,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
         <button
           type="button"
           onClick={() => navigate('/tv-display-mode')}
-          className="attendance-header__action-btn attendance-header__action-btn--tv lpq-shiny-button"
+          className="attendance-header__action-btn attendance-header__action-btn--tv school-shine-button"
         >
           <Tv className="w-4 h-4"/><span>TV Display</span>
         </button>
@@ -206,7 +207,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
             <button
               type="button"
               onClick={() => navigate('/gatcha-game')}
-              className="attendance-header__action-btn attendance-header__action-btn--gatcha lpq-shiny-button"
+              className="attendance-header__action-btn attendance-header__action-btn--gatcha school-shine-button"
             >
               <Gamepad2 className="w-4 h-4"/><span>Play Gatcha</span>
             </button>
@@ -214,7 +215,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
             <button
               type="button"
               onClick={() => navigate('/random-name')}
-              className="attendance-header__action-btn attendance-header__action-btn--random lpq-shiny-button"
+              className="attendance-header__action-btn attendance-header__action-btn--random school-shine-button"
             >
               <Shuffle className="w-4 h-4"/><span>Acak Nama</span>
             </button>

@@ -104,7 +104,7 @@ const AttendanceConfiguration = () => {
       <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-slate-100">
-            <Clock3 className="h-5 w-5 text-cyan-600" />
+            <Clock3 className="h-5 w-5 text-indigo-600" />
             Waktu Absensi Digital
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -122,9 +122,9 @@ const AttendanceConfiguration = () => {
         </div>
       </div>
 
-      <div className="flex items-start justify-between gap-5 rounded-lg border border-cyan-200 bg-cyan-50/70 p-4 dark:border-cyan-900/70 dark:bg-cyan-950/25">
+      <div className="flex items-start justify-between gap-5 rounded-lg border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-900/70 dark:bg-indigo-950/25">
         <div className="flex gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-cyan-700 dark:text-cyan-300" />
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-indigo-700 dark:text-indigo-300" />
           <div>
             <Label htmlFor="enforce-session-end" className="text-sm font-bold text-slate-900 dark:text-slate-100">
               Tutup absensi otomatis setelah sesi berakhir

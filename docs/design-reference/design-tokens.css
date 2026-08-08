@@ -1,172 +1,112 @@
 /* =============================================================================
-   design-tokens.css — Template Sekolah Tunggal (Varian Umum)
-   Proyek: Sekolah Baturaja PaaS
-   -----------------------------------------------------------------------------
-   Sumber kebenaran visual: DESIGN.md (hasil Claude Design "SDN Baturaja").
-   Token di bawah menurunkan nilai-nilai konkret dari DESIGN.md dengan DUA
-   penyesuaian yang sudah disepakati:
+   design-tokens.css — Sistem visual SDN Baturaja
 
-   1. PALET DICONDONGKAN ke identitas platform: teal - cyan - blue - violet
-      (menggantikan blue - pink - mint pada desain asli). Ini berlaku untuk
-      warna blob latar DAN gradasi aksen, agar seluruh halaman tetap koheren.
-
-   2. LAPISAN NEUMORPHISM TIPIS ditambahkan KHUSUS untuk elemen interaktif
-      (tombol & input) lewat --neu-*. Ini penambahan di atas DESIGN.md, bukan
-      pengganti sistem glass-nya. Permukaan konten (kartu, panel) tetap glass
-      murni sesuai DESIGN.md — jangan pakai --neu-* di kartu/panel besar.
-
-   Varian Islam Terpadu dibuat menyusul sebagai palette-swap (emerald-teal-gold)
-   di file terpisah; JANGAN gandakan struktur, cukup timpa nilai --brand-*.
+   Sumber kebenaran: DESIGN.md dan implementasi halaman publik saat ini.
+   File ini adalah referensi token, bukan palet alternatif. Jika halaman publik
+   berubah secara sengaja, perbarui nilainya di sini agar dashboard dan fitur
+   baru tetap berangkat dari arah visual yang sama.
    ============================================================================= */
 
 :root {
   /* ---------------------------------------------------------------------------
-     1. WARNA MEREK / AKSEN  (teal - cyan - blue - violet)
+     1. WARNA MEREK / AKSEN
      --------------------------------------------------------------------------- */
-  --brand-teal:   #14b8a6;
-  --brand-cyan:   #38bdf8;
-  --brand-blue:   #3b82f6;
-  --brand-violet: #8b5cf6;
+  --brand-indigo: #5b6cff;
+  --brand-violet: #9a6cf0;
+  --brand-rose: #f0779f;
+  --brand-indigo-soft: #e9ecff;
+  --brand-white: #ffffff;
 
-  /* Gradasi aksen utama — tombol utama, penanda aktif, gradient text.
-     (DESIGN.md asli: 135deg,#5b6cff,#8a6cf0 55%,#e58fc4 — digeser ke brand) */
-  --accent-gradient: linear-gradient(135deg, #14b8a6 0%, #3b82f6 52%, #8b5cf6 100%);
-  /* Blok poster/CTA besar — versi lebih pekat dengan alpha */
+  /* Gunakan pada aksi utama atau navigasi aktif, bukan sebagai wallpaper. */
+  --accent-gradient: linear-gradient(135deg, #5b6cff 0%, #8a6cf0 55%, #e58fc4 100%);
   --cta-gradient: linear-gradient(135deg,
-      rgba(20,184,166,.95) 0%,
-      rgba(59,130,246,.92) 48%,
-      rgba(139,92,246,.92) 100%);
+    rgba(100,112,255,.95) 0%,
+    rgba(138,108,240,.92) 52%,
+    rgba(229,143,196,.92) 100%);
 
   /* ---------------------------------------------------------------------------
      2. LATAR & PERMUKAAN
      --------------------------------------------------------------------------- */
-  /* Latar dasar (position:fixed di body). Ujung merah muda DESIGN.md (#f4eef4)
-     digeser ke violet-netral (#f1f0f9) agar selaras palet baru. */
   --bg-base: #e9edf6;
-  --bg-gradient: linear-gradient(160deg, #eef1f8 0%, #e7edf7 40%, #f1f0f9 100%);
+  --bg-gradient: linear-gradient(160deg, #eef1f8 0%, #e7edf7 40%, #f4eef4 100%);
 
-  /* Tiga bola cahaya latar (position:fixed, blur 20-24px, animasi floaty).
-     Ganti dari blue/pink/mint -> teal/cyan/violet. Pakai di ::before/::after
-     dekoratif, beri aria-hidden. */
-  --blob-1: radial-gradient(circle at 35% 35%, rgba(45,212,191,.60), transparent 60%); /* teal   */
-  --blob-2: radial-gradient(circle at 50% 50%, rgba(56,189,248,.55), transparent 62%); /* cyan   */
-  --blob-3: radial-gradient(circle at 50% 50%, rgba(139,92,246,.50), transparent 62%); /* violet */
+  /* Lapisan atmosfer cukup di belakang halaman publik atau ruang longgar. */
+  --blob-1: radial-gradient(circle at 35% 35%, rgba(150,170,255,.55), transparent 68%);
+  --blob-2: radial-gradient(circle at 50% 50%, rgba(255,178,214,.50), transparent 68%);
+  --blob-3: radial-gradient(circle at 50% 50%, rgba(160,240,225,.45), transparent 66%);
   --blob-blur: 22px;
 
-  /* Permukaan kaca (glassmorphism) — untuk kartu, panel, navbar */
-  --glass-bg:        rgba(255,255,255,.54);
-  --glass-bg-strong: rgba(255,255,255,.66);
-  --glass-border:    rgba(255,255,255,.82);
-  --glass-blur:      blur(26px) saturate(185%);
-  --glass-inset:     inset 0 1px 0 rgba(255,255,255,.95);
+  --surface: rgba(255,255,255,.54);
+  --surface-strong: rgba(255,255,255,.66);
+  --surface-solid: #ffffff;
+  --surface-border: rgba(255,255,255,.82);
+  --surface-blur: blur(26px) saturate(185%);
+  --surface-highlight: inset 0 1px 0 rgba(255,255,255,.95);
 
   /* ---------------------------------------------------------------------------
-     3. TEKS  (nilai dari DESIGN.md; tautan digeser ke biru brand)
+     3. TEKS & TIPOGRAFI
      --------------------------------------------------------------------------- */
-  --text-heading:   #171827;
-  --text-body:      #4c5175;
-  --text-body-2:    #535878;
+  --text-heading: #171827;
+  --text-body: #4c5175;
+  --text-body-strong: #535878;
   --text-secondary: #6d7192;
-  --text-label:     #8a8ea8;
+  --text-label: #8a8ea8;
   --text-on-accent: #ffffff;
-  --text-shadow-on-media: 0 2px 14px rgba(25,30,70,.5);
 
-  --link:       #2563eb;
-  --link-hover: #1d4ed8;
-
-  /* ---------------------------------------------------------------------------
-     4. TIPOGRAFI
-     --------------------------------------------------------------------------- */
   --font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-body:    'Archivo', system-ui, -apple-system, sans-serif;
-
+  --font-body: 'Archivo', system-ui, -apple-system, sans-serif;
   --fw-heading: 800;
-  --fw-body:    400;
+  --fw-body: 400;
   --fw-body-strong: 700;
 
-  /* Tangga ukuran (DESIGN.md §3) */
-  --fs-hero:      clamp(2.75rem, 6vw, 6rem);   /* 44 - 96px */
-  --fs-section:   clamp(1.9rem, 3vw, 2.375rem);/* ~38px     */
-  --fs-card-title:1.15rem;                     /* 16.5-20px */
-  --fs-body:      1rem;                         /* 13.5-16.5 */
-  --fs-label:     0.72rem;                      /* 11-12px   */
-
-  --ls-heading: -0.03em;   /* -.02 s/d -.05em */
-  --ls-label:   0.12em;    /* .08 s/d .16em   */
+  --fs-hero: clamp(2.75rem, 6vw, 6rem);
+  --fs-section: clamp(1.9rem, 3vw, 2.375rem);
+  --fs-card-title: 1.15rem;
+  --fs-body: 1rem;
+  --fs-label: .72rem;
+  --ls-heading: -.03em;
+  --ls-label: .12em;
   --lh-heading: 1.02;
-  --lh-body:    1.6;
-  --measure:    40rem;     /* max-width paragraf (300-640px) */
+  --lh-body: 1.6;
+  --measure: 40rem;
 
   /* ---------------------------------------------------------------------------
-     5. RADIUS  (bertingkat sesuai peran — DESIGN.md §4)
+     4. SPASI, RADIUS, BAYANGAN, DAN FOKUS
      --------------------------------------------------------------------------- */
-  --r-xs:    6px;    /* halaman teknis (Fasilitas) */
-  --r-sm:    9px;
-  --r-pill:  14px;   /* pil / tombol   */
-  --r-icon:  14px;   /* avatar / ikon  */
-  --r-card:  24px;   /* kartu          */
-  --r-panel: 30px;   /* panel besar    */
-  --r-full:  999px;
+  --r-xs: 6px;
+  --r-sm: 9px;
+  --r-control: 14px;
+  --r-icon: 14px;
+  --r-card: 24px;
+  --r-panel: 30px;
+  --r-full: 999px;
 
-  /* ---------------------------------------------------------------------------
-     6. BAYANGAN — GLASS/DROP (permukaan konten; DESIGN.md §4)
-     --------------------------------------------------------------------------- */
-  --shadow-card:  0 26px 56px -24px rgba(55,65,120,.5);
-  --shadow-panel: 0 32px 68px -26px rgba(55,65,120,.5);
-  --shadow-hover: 0 40px 78px -28px rgba(50,60,125,.6);
+  --shadow-card: 0 26px 56px -24px rgba(55,65,120,.50);
+  --shadow-panel: 0 32px 68px -26px rgba(55,65,120,.50);
+  --shadow-hover: 0 40px 78px -28px rgba(50,60,125,.60);
+  --focus-ring: 0 0 0 4px rgba(91,108,255,.16);
 
-  /* ---------------------------------------------------------------------------
-     7. NEUMORPHISM — LAPISAN TAMBAHAN (HANYA tombol & input!)
-        Jangan dipakai di kartu/panel besar — itu tetap glass murni.
-     --------------------------------------------------------------------------- */
-  /* Tombol / kontrol menonjol (raised) */
-  --neu-raised:
-      6px 6px 16px rgba(15,23,42,.14),
-     -5px -5px 14px rgba(255,255,255,.90);
-  /* Tombol utama (raised + halo aksen) */
-  --neu-raised-accent:
-      6px 6px 16px rgba(15,23,42,.14),
-     -4px -4px 12px rgba(255,255,255,.90),
-      0 10px 24px rgba(59,130,246,.32);
-  /* Input / field (inset lembut) */
-  --neu-inset:
-      inset 4px 4px 10px rgba(15,23,42,.10),
-      inset -4px -4px 10px rgba(255,255,255,.85);
+  --container: 1240px;
+  --container-pad: 28px;
+  --section-gap: clamp(3.5rem, 6vw, 5.75rem);
+  --nav-offset: 96px;
 
-  /* Cincin fokus (digeser ke cyan/blue brand; DESIGN.md pakai indigo .16) */
-  --focus-ring: 0 0 0 4px rgba(56,132,255,.18);
-
-  /* ---------------------------------------------------------------------------
-     8. TATA LETAK  (DESIGN.md §6)
-     --------------------------------------------------------------------------- */
-  --container:      1240px;
-  --container-pad:  28px;
-  --section-gap:    clamp(3.5rem, 6vw, 5.75rem); /* 56-92px */
-  --nav-offset:     96px;   /* sticky filter bar top */
-
-  /* ---------------------------------------------------------------------------
-     9. GERAK  (DESIGN.md §7)
-     --------------------------------------------------------------------------- */
-  --ease:        cubic-bezier(.22,.8,.28,1);
-  --ease-bounce: cubic-bezier(.3,1.3,.4,1);
+  --ease: cubic-bezier(.22,.8,.28,1);
   --dur-fast: .25s;
-  --dur-mid:  .4s;
+  --dur-mid: .4s;
   --dur-slow: .6s;
 }
 
-/* Palet placeholder gambar (dipakai saat foto asli belum ada; DESIGN.md §9).
-   Digeser ke keluarga teal-cyan-blue-violet. Timpa isi tanpa mengubah ukuran/
-   radius bidang gambar saat foto nyata tersedia. */
+/* Placeholder visual bila foto belum tersedia. Tidak menggantikan aset nyata. */
 :root {
-  --img-1: linear-gradient(150deg,#c6b6f6,#9fc4f8 55%,#a9eede); /* violet-blue-teal */
-  --img-2: linear-gradient(140deg,#a7f3d0,#7dd3fc);             /* mint-cyan        */
-  --img-3: linear-gradient(140deg,#bae6fd,#a5b4fc);             /* sky-indigo       */
-  --img-4: linear-gradient(140deg,#99f6e4,#67e8f9);             /* teal-cyan        */
-  --img-5: linear-gradient(150deg,#c4b5fd,#93c5fd);             /* violet-blue      */
+  --img-1: linear-gradient(150deg, #c6cfff, #b4b4f5 55%, #f4bad7);
+  --img-2: linear-gradient(140deg, #f6c3dc, #d7cbfa);
+  --img-3: linear-gradient(140deg, #d9e2ff, #b9d8df);
+  --img-4: linear-gradient(140deg, #d1f0e9, #b8d1ff);
+  --img-5: linear-gradient(150deg, #d9d0ff, #ffc8dc);
   --img-overlay: radial-gradient(115% 75% at 22% 10%, rgba(255,255,255,.45), transparent 58%);
 }
 
-/* Reduced motion — matikan animasi latar & transisi berjalan (DESIGN.md §7/§12) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .001ms !important;

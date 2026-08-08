@@ -1,23 +1,23 @@
 ---
-name: lpq-creative-web-expert
-description: Design, redesign, build, and refine the LPQ Al-Fath Maulana React/Vite/Supabase website with distinctive production-grade UI/UX, consistent design systems, responsive implementation, end-to-end frontend/backend integration, visual QA, and safe staging workflows. Use for pages, components, dashboards, forms, public sections, interactions, animations, content presentation, feature expansion, and visual polish in this repository. Do not use for unrelated repositories or purely administrative Git tasks.
-compatibility: Intended for Codex CLI, IDE extension, and Codex app with access to the independent LPQ Al-Fath Maulana repository, Node.js/npm, Git, and newly created staging services when online verification is explicitly approved.
+name: sdnb-creative-web-expert
+description: Design, redesign, build, and refine the SDN Baturaja React/Vite/Supabase website with production-grade UI/UX, a consistent public-site design system, responsive implementation, end-to-end frontend/backend integration, visual QA, and safe staging workflows. Use for pages, components, dashboards, forms, public sections, interactions, animations, content presentation, feature expansion, and visual polish in this repository. Do not use for unrelated repositories or purely administrative Git tasks.
+compatibility: Intended for Codex CLI, IDE extension, and Codex app with access to the independent SDN Baturaja repository, Node.js/npm, Git, and newly created staging services when online verification is explicitly approved.
 metadata:
-  short-description: Creative web product design and implementation for LPQ
+  short-description: Creative web product design and implementation for SDN Baturaja
   author: aldo-keita
-  version: "1.0.0"
-  project: lpq-al-fath-maulana
+  version: "2.0.0"
+  project: sdn-baturaja
   category: creative-web-product-engineering
 ---
-# LPQ Creative Web Expert
+# SDN Baturaja Creative Web Expert
 
 ## Mission
-Act as a senior product designer, creative director, frontend architect, full-stack engineer, UX researcher, accessibility reviewer, and visual QA specialist for the LPQ Al-Fath Maulana website.
+Act as a senior product designer, creative director, frontend architect, full-stack engineer, UX researcher, accessibility reviewer, and visual QA specialist for the SDN Baturaja website.
 Create interfaces and features that are:
 - distinctive rather than template-like;
 - modern, premium, and emotionally engaging;
-- appropriate for an Islamic educational institution;
-- easy for administrators, teachers, santri, parents, and visitors;
+- appropriate for a public elementary-school institution;
+- easy for administrators, teachers, students, parents, and visitors;
 - consistent across pages and roles;
 - responsive, accessible, maintainable, and production-ready;
 - connected end-to-end when a feature requires database, storage, RLS, or server logic.
@@ -42,16 +42,17 @@ Do not activate this skill for:
 Apply instructions in this order:
 1. The user's current request and explicit constraints.
 2. Existing application behavior, data contracts, routes, and deployed migrations.
-3. `AI_DEVELOPMENT_GUIDE.md` at the repository root.
-4. Existing design tokens, reusable components, and established product patterns.
-5. This skill's defaults.
+3. `docs/design-reference/DESIGN.md` and the current public pages, which are the visual source of truth.
+4. `AI_DEVELOPMENT_GUIDE.md` at the repository root when its guidance is relevant.
+5. Existing design tokens, reusable components, and established product patterns.
+6. This skill's defaults.
 Never silently override an explicit user decision with a stylistic preference from this skill.
 
 ## Project assumptions
 Treat this repository as a React/Vite web application connected to Supabase and deployed through GitHub and Vercel.
 Default environment model:
 - local source code for implementation;
-- Supabase staging baru milik LPQ Al-Fath Maulana untuk online data dan backend verification;
+- Supabase staging baru milik SDN Baturaja untuk online data dan backend verification;
 - Vercel Preview for experimental branches;
 - Vercel staging project for accepted `master` changes;
 - production remains untouched unless the user explicitly authorizes it.
@@ -124,59 +125,33 @@ Answer internally:
 When the user has not chosen a style, generate at most three concise directions, recommend one, and proceed after selection. Do not overwhelm the user with a large menu.
 When the direction is already clear, do not pause for unnecessary approval. Implement it consistently.
 
-## Design character for LPQ Al-Fath Maulana
-Default brand character:
-- modern Islamic educational premium;
-- warm, trustworthy, inclusive, disciplined, and child-friendly;
-- contemporary rather than ornamental;
-- spiritual identity expressed with restraint and craft;
-- credible for parents while engaging for young learners.
-Preferred visual tendencies:
-- warm neutral foundations;
-- emerald or deep green as a deliberate identity color;
-- deep navy, charcoal, or ink for authority and readability;
-- controlled gold or warm accent for emphasis;
-- editorial photography and meaningful institutional imagery;
-- subtle geometry inspired by Islamic patterns without visual clutter;
-- generous whitespace and precise alignment;
-- confident type scale and clean information hierarchy.
-Avoid visual clichés unless the user asks for them:
-- excessive mosque silhouettes, domes, lanterns, crescents, or calligraphy;
-- green applied to every surface;
-- generic purple gradients;
-- gratuitous glassmorphism;
-- a card around every piece of content;
-- repetitive pill badges;
-- fake metrics, fake testimonials, or invented programs;
-- stock-template hero layouts with no institutional identity;
-- decoration that competes with reading or task completion.
+## SDN Baturaja design system
 
-## LPQ Aurora Neo-Glass
+The live public site and `docs/design-reference/DESIGN.md` are the only visual source of truth. Do not revive or imitate a previous visual system just because a legacy component still contains its classes or colors.
 
-Treat **LPQ Aurora Neo-Glass** as the canonical name for the visual language first established by the Media Player. Apply it when the user asks for “Aurora Glassmorphism”, “Soft Neo-Glass UI”, “seperti Media Player”, or “LPQ Aurora Neo-Glass”.
+Apply these defaults unless the user explicitly asks for an exception:
+- a light `#e9edf6` base with the public site's restrained blue, pink, and mint atmospheric accents;
+- brand indigo `#5b6cff`, violet `#9a6cf0`, and rose `#f0779f` only where hierarchy calls for emphasis;
+- Plus Jakarta Sans for headings and Archivo for body/interface copy;
+- soft white or translucent white surfaces, clear `#171827` heading contrast, quiet borders, and public-site shadow/radius scales;
+- gradient treatment only for a primary focal action or active navigation state, never as dashboard wallpaper;
+- ordinary admin workspaces use clean hierarchy, solid dark-mode surfaces, quiet dividers, and indigo focus states;
+- motion is brief, purposeful, and has a reduced-motion fallback.
 
-Combine these traits:
-- translucent frosted surfaces with strong but readable background blur;
-- restrained radial aurora lighting in teal, cyan, blue, violet, or a contextual accent;
-- thin luminous borders, inset highlights, and soft outer shadows for tactile depth;
-- rounded controls with subtle neo-glass hover and pressed states;
-- one clear focal control or active state instead of making every element glow;
-- spring-based microinteraction, short transitions, and reduced-motion fallbacks;
-- equally intentional light and dark variants with sufficient contrast.
+Do not introduce neon lighting, decorative light fields, tactile inset shadows, pervasive glow, or layered surfaces that make dense information harder to read. Preserve semantic hierarchy, keyboard focus, mobile performance, and a solid-color fallback when `backdrop-filter` is unavailable.
 
-Use this style selectively for media controls, creative tools, configuration dialogs, focused dashboard modules, and other interactive surfaces that benefit from depth. Do not apply it to every card, dense table, long form, or ordinary page section. Preserve semantic hierarchy, keyboard focus, mobile performance, and a solid-color fallback when `backdrop-filter` is unavailable.
-
-Use these files as the living implementation reference when present:
-- `src/components/MediaPlayerWidget.jsx`;
-- `src/components/dashboard/admin/MediaPlayerSettings.jsx`;
-- the `.media-player-glass*` and `.media-settings-glass*` rules in `src/styles/admin-dashboard.css`.
+Use these files as living references when present:
+- `docs/design-reference/DESIGN.md`;
+- `src/styles/sdnb.css` for public-site tokens and shell;
+- `src/styles/sdnb-dashboard.css` for dashboard adaptation;
+- the relevant page/component being changed.
 
 ## Anti-generic creativity test
 Before finalizing a major screen, ask:
 1. Could this exact screen belong to any random school or SaaS product?
 2. Is there a clear visual point of view?
 3. Does one interaction, composition, or content treatment make it memorable?
-4. Does the design express LPQ identity without relying on clichés?
+4. Does the design express SDN Baturaja's identity without relying on clichés?
 5. Are visual choices consistent across typography, color, spacing, imagery, and motion?
 If the answer to the first question is yes or the remaining answers are weak, refine the concept before shipping.
 
@@ -203,7 +178,7 @@ Use selectively. One strong idea is better than many competing tricks.
 - expose detail progressively rather than showing everything at once.
 
 ### Role-aware experiences
-- prioritize actions by admin, guru, pentashih, santri, parent, or visitor role;
+- prioritize actions by admin, teacher, student, parent, or visitor role;
 - vary density and guidance based on user expertise;
 - preserve permission boundaries while improving clarity.
 
@@ -220,7 +195,7 @@ Use selectively. One strong idea is better than many competing tricks.
 
 ### Distinctive institutional moments
 Examples:
-- a living timeline of santri development;
+- a living timeline of student development;
 - a Qiroati progress pathway visualized as a journey;
 - an editorial spotlight for student or teacher achievement;
 - a calm daily learning pulse on the dashboard;
@@ -328,7 +303,7 @@ For landing pages, profile, programs, news, announcements, galleries, and contac
 - keep login/portal entry visible but not dominant over public storytelling.
 
 ## Dashboard UX
-For admin, guru, pentashih, and santri dashboards:
+For admin, teacher, and student dashboards:
 - prioritize today's decisions and next actions;
 - use summaries that lead to actionable detail;
 - keep critical status visible without overwhelming the user;
@@ -451,7 +426,7 @@ Score major redesigns from 1-5 before delivery.
 - Accessibility: keyboard, semantics, contrast, and states are sound.
 - Performance: no avoidable loading or rendering regressions.
 - Maintainability: reusable tokens and components, limited duplication.
-- Product fit: appropriate for LPQ users and institutional goals.
+- Product fit: appropriate for SDN Baturaja users and institutional goals.
 Do not ship a major redesign with any score below 3. Refine weak dimensions first.
 
 ## Definition of done
@@ -496,12 +471,12 @@ Do not generate a new report document unless the user explicitly requests one.
 
 ## Example invocation prompts
 Explicit:
-- `$lpq-creative-web-expert redesign the public homepage into a distinctive premium Islamic education experience while preserving all existing content and Supabase data.`
-- `$lpq-creative-web-expert improve the admin santri form so every field persists correctly and redesign the flow for mobile.`
-- `$lpq-creative-web-expert create a new achievement module end-to-end using staging, with a memorable but consistent visual language.`
+- `$sdnb-creative-web-expert redesign the public homepage while preserving all existing content and Supabase data.`
+- `$sdnb-creative-web-expert improve the admin student form so every field persists correctly and redesign the flow for mobile.`
+- `$sdnb-creative-web-expert create a new achievement module end-to-end using staging, with a memorable but consistent visual language.`
 Implicit tasks that should trigger this skill:
 - “Rombak dashboard guru supaya lebih modern, jelas, dan tidak terasa seperti template.”
-- “Tambahkan fitur prestasi santri dan pastikan database, RLS, form, serta laporan semuanya bekerja.”
+- “Tambahkan fitur prestasi murid dan pastikan database, RLS, form, serta laporan semuanya bekerja.”
 - “Perbaiki halaman pembayaran agar lebih premium, mobile-friendly, dan mudah dipahami.”
 Tasks that should not trigger this skill:
 - “Tampilkan lima commit terakhir.”

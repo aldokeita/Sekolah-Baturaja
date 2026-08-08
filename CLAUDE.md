@@ -6,10 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 School management system with an Indonesian-language UI, deployed on Vercel.
 
-The app is **mid-migration**: it began as LPQ Al-Fath Maulana (an Islamic Qur'an school / TPQ) and is
-being converted into **SDN Baturaja**, a general public elementary school. Package name, admin email,
-and parts of the design-system naming still carry the LPQ identity. Terminology, flows, and modules
-are what change — the mature parts of the old app are kept, not rewritten.
+The app is **mid-migration**: it began as a different school-management product and is being converted
+into **SDN Baturaja**, a general public elementary school. Legacy data contracts may remain for
+compatibility, but current naming and the design system must follow SDN Baturaja.
 
 Read `AGENTS.md` for operational rules, `docs/HANDOFF.md` before continuing migration work (it holds
 the binding decisions and known traps), and `AI_DEVELOPMENT_GUIDE.md` as a reference handbook — only
@@ -110,13 +109,13 @@ per-route by `src/components/ProtectedRoute.jsx`.
 
 ### UI system
 
-Two coexisting visual layers — do not mix them:
+One visual direction, applied with different density for public and back-office contexts:
 
 - **Public site (SDN Baturaja):** `src/components/sdnb/` with `PublicLayout`, `SiteNav`,
   `SiteFooter`, and page bodies in `sdnb/generated/`. Styled by `src/styles/sdnb*.css`.
-- **Dashboards ("LPQ Aurora Neo-Glass"):** frosted glass, aurora teal–cyan–blue–violet palette,
-  neumorphic depth, spring animations. shadcn/ui primitives in `src/components/ui/`, visual effects
-  in `src/components/reactbits/`.
+- **Dashboards:** inherit the same color, typography, and surface system through
+  `src/styles/sdnb-dashboard.css`; use solid dark surfaces, quiet dividers, and indigo focus states.
+  shadcn/ui primitives stay in `src/components/ui/`.
 
 ### Key directories
 

@@ -336,7 +336,7 @@ const QuizSettings = () => {
         <div className="game-config-panel game-config-panel--quiz space-y-6">
             <div className="game-config-section-heading">
                 <div>
-                    <h3 className="text-lg font-black flex items-center gap-2"><Sparkles className="w-5 h-5 text-cyan-500" /> Bank Soal Quiz Hafalan</h3>
+                    <h3 className="text-lg font-black flex items-center gap-2"><Sparkles className="w-5 h-5 text-indigo-500" /> Bank Soal Quiz Hafalan</h3>
                     <p className="text-sm text-muted-foreground">Kategori dan soal di sini langsung digunakan roda quiz; guru memilih serta menilai murid tanpa RFID.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -606,7 +606,7 @@ const LevelSettings = () => {
             <div className="game-config-section-heading">
                 <div>
                     <h3 className="text-lg font-black">Level & Visual Profile Card</h3>
-                    <p className="text-sm text-muted-foreground">Atur rentang poin, nama level, warna aksen, serta depth neumorphic untuk murid putra dan putri.</p>
+                    <p className="text-sm text-muted-foreground">Atur rentang poin, nama level, warna aksen, serta kedalaman permukaan untuk murid putra dan putri.</p>
                 </div>
                 <Button type="button" onClick={saveLevelConfig} disabled={isLoading || isSaving} className="game-config-save">
                     <Save className="w-4 h-4 mr-2"/> {isSaving ? 'Menyimpan...' : 'Simpan Konfigurasi Level'}

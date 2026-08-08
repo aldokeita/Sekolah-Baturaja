@@ -263,7 +263,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 {(onPromote || onDemote) && (
                                     <>
                                         {onPromote && (
-                                            <Button onClick={onPromote} size="sm" className="h-8 flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold" title="Naik Tingkat">
+                                            <Button onClick={onPromote} size="sm" className="h-8 flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold" title="Naik Tingkat">
                                                 <ChevronUp className="w-4 h-4 mr-1" /> Naik Tingkat
                                             </Button>
                                         )}
@@ -277,9 +277,9 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <Button
                                     size="sm"
                                     onClick={() => setIsAttendanceRecapOpen(true)}
-                                    className="h-8 bg-gradient-to-r from-teal-500/15 via-cyan-500/20 to-blue-500/15 hover:from-teal-500/25 hover:to-blue-500/25 text-cyan-800 dark:text-cyan-200 border border-cyan-400/40 dark:border-cyan-700/50 backdrop-blur-md shadow-xs font-bold rounded-xl transition-all duration-200 px-3.5"
+                                    className="h-8 bg-gradient-to-r from-indigo-500/15 via-violet-500/20 to-rose-500/15 hover:from-indigo-500/25 hover:to-rose-500/25 text-indigo-800 dark:text-indigo-200 border border-indigo-400/40 dark:border-indigo-700/50 backdrop-blur-md shadow-xs font-bold rounded-xl transition-all duration-200 px-3.5"
                                 >
-                                    <History className="w-4 h-4 mr-1.5 text-cyan-600 dark:text-cyan-400" /> Absensi
+                                    <History className="w-4 h-4 mr-1.5 text-indigo-600 dark:text-indigo-400" /> Absensi
                                 </Button>
                             </div>
                             {jilidDuration !== null && (
@@ -395,7 +395,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
             </Dialog>
 
             {/* ========================================================================================= */}
-            {/* LPQ AURORA NEO GLASS - COMPREHENSIVE INTERACTIVE RAPOR PREVIEW & PRINT MODAL               */}
+            {/* COMPREHENSIVE INTERACTIVE RAPOR PREVIEW & PRINT MODAL */}
             {/* ========================================================================================= */}
             <Dialog open={isReportViewOpen} onOpenChange={setIsReportViewOpen}>
                 <DialogContent className="max-w-7xl w-[95vw] max-h-[96vh] overflow-y-auto p-0 bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:max-w-none print:max-h-none print:overflow-visible print:w-full">
@@ -526,7 +526,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         </div>
                     </div>
 
-                    {/* RAPOR CONTENT BODY (AURORA NEO GLASS DESIGN) */}
+                    {/* RAPOR CONTENT BODY */}
                     <div className="p-6 md:p-8 space-y-8 bg-white dark:bg-slate-900 m-4 md:m-6 rounded-3xl shadow-xl border border-slate-200/80 dark:border-slate-800 print:m-0 print:p-6 print:border-none print:shadow-none print:bg-white">
 
                         {/* Kop / Header Rapor Official */}
@@ -945,7 +945,7 @@ const AttendanceMatrixPanel = ({ santriId }) => {
                             return (
                                 <div key={day}
                                     title={`${day} — ${cfg.title}`}
-                                    className={`flex flex-col items-center justify-center rounded-xl p-1.5 min-h-[56px] text-center transition-all cursor-default border ${cfg.bg} ${cfg.text} ${isToday ? 'ring-2 ring-offset-1 ring-cyan-500' : ''}`}>
+                                    className={`flex flex-col items-center justify-center rounded-xl p-1.5 min-h-[56px] text-center transition-all cursor-default border ${cfg.bg} ${cfg.text} ${isToday ? 'ring-2 ring-offset-1 ring-indigo-500' : ''}`}>
                                     <span className="text-[9px] font-bold opacity-75">{day}</span>
                                     <span className="text-[13px] font-black leading-tight mt-0.5">{cfg.label}</span>
                                 </div>

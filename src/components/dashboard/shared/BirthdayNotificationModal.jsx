@@ -16,7 +16,7 @@ const BirthdayNotificationModal = ({ isOpen, onClose, students = [], audience = 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="lpq-dialog-surface max-h-[88vh] max-w-2xl overflow-hidden border-slate-200/90 bg-slate-50/[0.97] p-0 shadow-[0_28px_90px_rgba(15,23,42,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/[0.94]">
+      <DialogContent className="school-dialog-surface max-h-[88vh] max-w-2xl overflow-hidden border-slate-200/90 bg-slate-50/[0.97] p-0 shadow-[0_28px_90px_rgba(15,23,42,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/[0.94]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,63,94,0.1),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.08),transparent_42%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(244,63,94,0.14),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.12),transparent_42%)]" />
         <DialogHeader className="relative border-b border-slate-200/80 px-6 pb-5 pt-6 text-left dark:border-white/10 sm:px-8 sm:pt-8">
           <DialogTitle className="flex items-center gap-2 text-2xl font-black text-slate-900 dark:text-white">

@@ -51,7 +51,7 @@ const SantriArchiveDialog = ({ open, onOpenChange, categories = [], title = 'Ars
       await setSantriArchived({ santriId: item.id, archived: false });
       setRows((current) => current.filter((row) => row.id !== item.id));
       await onRestored?.();
-      window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
+      window.dispatchEvent(new CustomEvent('school:student-data-changed'));
       toast({
         title: 'Murid dipulihkan',
         description: `${item.nama_lengkap} kembali aktif beserta kelas dan seluruh riwayatnya.`,

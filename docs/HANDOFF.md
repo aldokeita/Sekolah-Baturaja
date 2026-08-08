@@ -735,7 +735,7 @@ Permukaan template yang masih menampilkan identitas LPQ dinetralkan. Fallback lo
 `public/logo-sekolah.svg` melalui `src/lib/schoolAssets.js`; identitas sekolah tersimpan tetap menjadi
 sumber utama. Metadata publik, sitemap, robots, pesan WhatsApp, laporan, kuitansi, absensi digital,
 permainan, kuis, dan beberapa kartu/placeholder konten juga sudah diarahkan ke identitas sekolah
-yang netral. Asset lama `public/logo-lpq-al-fath-maulana.webp` masih disimpan sebagai legacy dan belum
+yang netral. Asset lama kini bernama `public/logo-legacy-sekolah.webp` dan tetap disimpan sebagai legacy
 dihapus karena belum diperlukan untuk perubahan ini.
 
 #### Navigasi Manajemen Konten disederhanakan — commit `abb1c00`
@@ -864,7 +864,7 @@ pembeli — ganti sandi admin, ganti data contoh, isi konten, dan penjelasan bah
 dikunci untuk penjual.
 
 Kalau mengubah alur pemasangan, `SETUP.md` harus ikut diperbarui. Catatan lama di sana pernah salah
-selama berbulan-bulan: judulnya masih "LPQ Al-Fath Maulana", email admin masih
+selama berbulan-bulan: judulnya masih memakai identitas pendahulu, email admin masih
 `admin@lpqalfathmaulana.id`, jumlah migrasi masih 45, dan tabel troubleshooting-nya menyuruh memasang
 `docker-compose` v1 padahal proyek ini memakai `docker compose` v2. Pembeli tidak punya cara
 mengetahui bahwa panduannya keliru.
@@ -1521,14 +1521,15 @@ Yang tersisa:
      disunting admin, atau dibaca dari tabel `guru`. Belum diputuskan.
    - **Alamat di `KontakBody.jsx:138`** masih menuliskan "Jalan Dr. Moh. Hatta No. 14" secara
      harfiah. Berkas `generated/` hasil konversi mockup, jadi perlu ditangani hati-hati.
-   - **Nama berkas logo** `public/logo-lpq-al-fath-maulana.webp` masih berbau LPQ. Menggantinya
-     berarti memindahkan berkas plus menyesuaikan rujukannya di beberapa tempat.
+   - **Nama berkas logo** sudah dinetralkan menjadi `public/logo-legacy-sekolah.webp`; rujukan
+     fallback dan pemeriksaan skripnya sudah mengikuti nama ini.
    - **Contoh isi halaman publik** di `institutionContent.js` (jadwal sesi, kuota, slide hero, FAQ
      biaya TPQ, fasilitas, galeri) masih bernuansa TPQ. Isinya memang cuma nilai awal sebelum admin
      mengisi lewat panel Konten, tapi FAQ "biaya pendaftaran TPQ" jelas tidak pantas bagi pembeli.
 
-   Nama kelas CSS `lpq-*` dan nama design system "LPQ Aurora Neo-Glass" **dibiarkan** — itu nama
-   internal, tidak terlihat pengguna.
+   Keputusan lama untuk membiarkan nama kelas CSS dan sistem desain lama sudah digantikan. Kelas UI,
+   pedoman agent, dan dashboard sekarang mengikuti identitas SDN Baturaja serta `DESIGN.md`; nama
+   data atau aset lama hanya dipertahankan bila menjadi kontrak kompatibilitas.
 
 2. **Perluas jaring test.** 40 test yang ada hanya menutupi logika murni di `src/lib/`.
    Belum ada satu pun test komponen (butuh `@testing-library/react`) maupun test Go
@@ -1573,5 +1574,5 @@ Isi lamanya menyesatkan setiap sesi baru. Yang diperbaiki:
 - Edge function di `supabase/functions/` **dorman** — tidak ada satu pun pemanggil di `src/`.
 - Env: tidak ada `VITE_SUPABASE_*`; yang dipakai `VITE_API_URL`.
 - Hitungan disegarkan: 50 migrasi, 37 panel admin, 19 halaman, 17 handler Go.
-- Ditambahkan: dua lapisan visual yang berdampingan (`sdnb/` publik vs dashboard Aurora), jebakan
+- Ditambahkan: satu arah visual SDN Baturaja untuk publik dan dashboard, jebakan
   "menulis migrasi ≠ menerapkan migrasi", dan allowlist `validConfigKeys`.

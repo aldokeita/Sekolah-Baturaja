@@ -126,3 +126,18 @@ Target sentuh minimal 44px. Tombol geser carousel tidak boleh disembunyikan di l
 - Modal dapat ditutup dengan Esc; navigasi isi memakai panah kiri/kanan.
 - Elemen dekoratif diberi `aria-hidden="true"`.
 - Fokus papan tik tidak dihapus; pakai cincin fokus aksen sesuai design system.
+
+## 13. Adaptasi dashboard
+
+Dashboard admin memakai desain yang sama, dengan kepadatan informasi yang lebih tinggi. Gunakan warna,
+tipografi, radius, dan perilaku fokus dari bagian di atas; `src/styles/sdnb-dashboard.css` adalah
+adaptasi implementasinya.
+
+- Mode terang boleh memakai latar dan permukaan lembut seperti halaman publik. Gunakan aksen gradasi
+  hanya pada aksi utama atau navigasi aktif; tabel, filter, dan formulir tetap tenang dan mudah dipindai.
+- Mode gelap menggunakan latar tinta solid, panel berlapis yang solid, garis pemisah jelas, teks kontras,
+  serta fokus indigo. Jangan gunakan lapisan dekoratif, cahaya berwarna, atau inset bayangan pada ruang
+  kerja yang padat.
+- Heading dashboard memakai Plus Jakarta Sans; data, label, kontrol, dan isi tabel memakai Archivo.
+- Status semantik boleh memakai warna khusus secukupnya, tetapi tidak boleh menggantikan palet utama atau
+  membuat setiap kartu terlihat berbeda.

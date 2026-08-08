@@ -1,6 +1,6 @@
 /* ============================================================================
-   sdnb-dashboard.css — brings the dashboards into the SDN Baturaja
-   "Aurora Glass" language used by the public pages (see sdnb.css).
+   sdnb-dashboard.css — dashboard adaptation of the SDN Baturaja public system
+   Source: docs/design-reference/DESIGN.md and src/styles/sdnb.css.
 
    admin-dashboard.css is fully token-driven (`--admin-*` HSL triplets), so the
    whole surface — including all 36 admin panels — re-skins by remapping those
@@ -31,9 +31,9 @@
   --admin-accent: 234 100% 68%;         /* var(--sekolah-aksen-pekat) */
   --admin-accent-muted: 234 70% 60%;
   --admin-accent-soft: 232 100% 96%;
-  --admin-accent-cyan: 190 75% 62%;
+  --admin-accent-secondary: 340 80% 70%; /* public rose */
   --admin-accent-violet: 261 82% 68%;   /* var(--sekolah-aksen-tengah-2) */
-  --admin-accent-amber: 340 80% 70%;    /* var(--sekolah-aksen-ujung) — the palette's warm accent */
+  --admin-accent-amber: 38 92% 50%;     /* semantic warning */
 
   --admin-nav-active-bg: 234 100% 68%;
   --admin-nav-active-fg: 0 0% 100%;
@@ -53,7 +53,8 @@
 .sdnb-dash h2,
 .sdnb-dash h3,
 .sdnb-dash .admin-page-header h1,
-.sdnb-dash .admin-stat-card__value {
+.sdnb-dash .admin-stat-card__value,
+.sdnb-dash .admin-stat-card-value {
   font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
   letter-spacing: -0.02em;
 }
@@ -78,10 +79,10 @@
 .sdnb-dash__orb--c { bottom: -260px; left: 28%; width: 680px; height: 680px; background: radial-gradient(circle at 50% 50%, rgba(160, 240, 225, .45), rgba(160, 240, 225, 0) 66%); filter: blur(26px); animation-duration: 23s; }
 .sdnb-dash__content { position: relative; z-index: 1; }
 
-html[data-theme="dark"] .sdnb-dash__bg { background: #0f141c; }
+html[data-theme="dark"] .sdnb-dash__bg { background: #171827; }
 html[data-theme="dark"] .sdnb-dash__orb { display: none; }
 
-/* ── glass panels ────────────────────────────────────────────────────────── */
+/* ── public-site surfaces ────────────────────────────────────────────────── */
 .sdnb-dash .admin-panel,
 .sdnb-dash .admin-table-shell,
 .sdnb-dash .admin-section,
@@ -99,8 +100,11 @@ html[data-theme="dark"] .sdnb-dash .admin-table-shell,
 html[data-theme="dark"] .sdnb-dash .admin-section,
 html[data-theme="dark"] .sdnb-dash .admin-filter-bar,
 html[data-theme="dark"] .sdnb-dash .admin-form-section {
-  background: rgba(28, 30, 66, .55) !important;
-  border-color: rgba(255, 255, 255, .12) !important;
+  background: hsl(var(--admin-surface)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: 0 1px 2px hsl(var(--admin-shadow-color) / 0.34) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* ── module navigation pills ─────────────────────────────────────────────── */
@@ -175,6 +179,9 @@ html[data-theme="dark"] .sdnb-dash .admin-form-section {
 .sdnb-dash .admin-panel-primary-btn:hover,
 .sdnb-dash .attendance-header__action-btn:hover { filter: brightness(1.07); }
 
+/* Dashboard actions stay tactile through contrast and focus, not a sheen sweep. */
+.sdnb-dash .school-shine-button::after { display: none; }
+
 .sdnb-dash .admin-action-cluster-btn {
   border-radius: 13px;
   background: rgba(255, 255, 255, .62);
@@ -184,7 +191,7 @@ html[data-theme="dark"] .sdnb-dash .admin-form-section {
 }
 .sdnb-dash .admin-action-cluster-btn:hover { background: rgba(255, 255, 255, .92); color: #4a4fd0; }
 
-/* ── segmented sub-tabs (Santri TPQ/PTPT/Dewasa) ─────────────────────────── */
+/* ── segmented sub-tabs ─────────────────────────────────────────────────── */
 .sdnb-dash .admin-glass-tab-list {
   background: rgba(255, 255, 255, .55);
   border: 1px solid rgba(255, 255, 255, .85);
@@ -204,35 +211,34 @@ html[data-theme="dark"] .sdnb-dash .admin-form-section {
 /* ============================================================================
    SOLID DARK ADMIN THEME
 
-   The light dashboard keeps the Aurora Glass treatment for continuity with
-   the public site. Dark mode is intentionally calmer: a solid foundation,
-   layered charcoal surfaces, one restrained teal accent, and readable
-   separators. This block is scoped to the back-office shell so public pages
-   and the light theme keep their existing visual language.
+   Light mode adopts the public site's soft surfaces. Dark mode intentionally
+   uses a solid foundation, layered ink surfaces, indigo focus states, and
+   readable separators. This block is scoped to the back-office shell so the
+   public pages keep their existing visual language.
    ========================================================================== */
 
 html[data-theme="dark"] .sdnb-dash {
-  --admin-bg: 220 22% 8%;
-  --admin-surface: 220 19% 12%;
-  --admin-surface-raised: 220 17% 15%;
-  --admin-surface-sunken: 220 24% 6%;
-  --admin-border: 218 15% 24%;
-  --admin-border-subtle: 218 14% 19%;
-  --admin-text-primary: 210 30% 96%;
-  --admin-text-secondary: 215 16% 75%;
-  --admin-text-muted: 215 14% 60%;
-  --admin-accent: 160 64% 46%;
-  --admin-accent-muted: 160 55% 38%;
-  --admin-accent-soft: 160 32% 16%;
-  --admin-accent-cyan: 185 72% 52%;
-  --admin-accent-violet: 185 52% 44%;
+  --admin-bg: 235 30% 10%;
+  --admin-surface: 235 24% 14%;
+  --admin-surface-raised: 235 20% 18%;
+  --admin-surface-sunken: 235 31% 9%;
+  --admin-border: 235 16% 28%;
+  --admin-border-subtle: 235 15% 22%;
+  --admin-text-primary: 230 30% 96%;
+  --admin-text-secondary: 230 16% 76%;
+  --admin-text-muted: 230 13% 60%;
+  --admin-accent: 234 100% 72%;
+  --admin-accent-muted: 234 70% 62%;
+  --admin-accent-soft: 234 30% 18%;
+  --admin-accent-secondary: 340 72% 72%;
+  --admin-accent-violet: 261 76% 74%;
   --admin-accent-amber: 38 88% 58%;
-  --admin-nav-active-bg: 160 64% 40%;
+  --admin-nav-active-bg: 234 100% 68%;
   --admin-nav-active-fg: 0 0% 100%;
-  --admin-nav-hover-bg: 220 16% 20%;
-  --admin-nav-indicator: 160 64% 40%;
-  --admin-glow: 160 64% 46%;
-  --admin-shadow-color: 220 28% 3%;
+  --admin-nav-hover-bg: 235 19% 21%;
+  --admin-nav-indicator: 234 100% 68%;
+  --admin-glow: 234 100% 72%;
+  --admin-shadow-color: 235 36% 5%;
 
   --background: var(--admin-bg);
   --foreground: var(--admin-text-primary);
@@ -249,35 +255,35 @@ html[data-theme="dark"] .sdnb-dash {
   --primary-foreground: 0 0% 100%;
 }
 
-html[data-theme="dark"] body.lpq-admin-context {
-  --admin-bg: 220 22% 8%;
-  --admin-surface: 220 19% 12%;
-  --admin-surface-raised: 220 17% 15%;
-  --admin-surface-sunken: 220 24% 6%;
-  --admin-border: 218 15% 24%;
-  --admin-border-subtle: 218 14% 19%;
-  --admin-text-primary: 210 30% 96%;
-  --admin-text-secondary: 215 16% 75%;
-  --admin-text-muted: 215 14% 60%;
-  --admin-accent: 160 64% 46%;
-  --admin-accent-muted: 160 55% 38%;
-  --admin-accent-soft: 160 32% 16%;
-  --admin-accent-cyan: 185 72% 52%;
-  --admin-accent-violet: 185 52% 44%;
+html[data-theme="dark"] body.school-admin-context {
+  --admin-bg: 235 30% 10%;
+  --admin-surface: 235 24% 14%;
+  --admin-surface-raised: 235 20% 18%;
+  --admin-surface-sunken: 235 31% 9%;
+  --admin-border: 235 16% 28%;
+  --admin-border-subtle: 235 15% 22%;
+  --admin-text-primary: 230 30% 96%;
+  --admin-text-secondary: 230 16% 76%;
+  --admin-text-muted: 230 13% 60%;
+  --admin-accent: 234 100% 72%;
+  --admin-accent-muted: 234 70% 62%;
+  --admin-accent-soft: 234 30% 18%;
+  --admin-accent-secondary: 340 72% 72%;
+  --admin-accent-violet: 261 76% 74%;
   --admin-accent-amber: 38 88% 58%;
-  --admin-nav-active-bg: 160 64% 40%;
+  --admin-nav-active-bg: 234 100% 68%;
   --admin-nav-active-fg: 0 0% 100%;
-  --admin-nav-hover-bg: 220 16% 20%;
-  --admin-nav-indicator: 160 64% 40%;
-  --admin-glow: 160 64% 46%;
-  --admin-shadow-color: 220 28% 3%;
+  --admin-nav-hover-bg: 235 19% 21%;
+  --admin-nav-indicator: 234 100% 68%;
+  --admin-glow: 234 100% 72%;
+  --admin-shadow-color: 235 36% 5%;
 
-  background-color: #0f141c !important;
+  background-color: #171827 !important;
 }
 
 html[data-theme="dark"] .sdnb-dash,
 html[data-theme="dark"] .sdnb-dash__bg {
-  background-color: #0f141c;
+  background-color: #171827;
   background-image: none !important;
 }
 
@@ -452,7 +458,7 @@ html[data-theme="dark"] .sdnb-dash .admin-search-dropdown {
 html[data-theme="dark"] .sdnb-dash .admin-panel-primary-btn,
 html[data-theme="dark"] .sdnb-dash .admin-btn-primary,
 html[data-theme="dark"] .sdnb-dash .admin-btn-action--emerald,
-html[data-theme="dark"] .sdnb-dash .admin-btn-action--cyan,
+html[data-theme="dark"] .sdnb-dash .admin-btn-action--secondary,
 html[data-theme="dark"] .sdnb-dash .admin-btn-action--amber,
 html[data-theme="dark"] .sdnb-dash .attendance-header__action-btn {
   background: hsl(var(--admin-accent)) !important;
@@ -466,7 +472,7 @@ html[data-theme="dark"] .sdnb-dash .attendance-header__action-btn {
 html[data-theme="dark"] .sdnb-dash .admin-panel-primary-btn:hover,
 html[data-theme="dark"] .sdnb-dash .admin-btn-primary:hover,
 html[data-theme="dark"] .sdnb-dash .admin-btn-action--emerald:hover,
-html[data-theme="dark"] .sdnb-dash .admin-btn-action--cyan:hover,
+html[data-theme="dark"] .sdnb-dash .admin-btn-action--secondary:hover,
 html[data-theme="dark"] .sdnb-dash .admin-btn-action--amber:hover,
 html[data-theme="dark"] .sdnb-dash .attendance-header__action-btn:hover {
   background: hsl(var(--admin-accent-muted)) !important;
@@ -476,7 +482,7 @@ html[data-theme="dark"] .sdnb-dash .attendance-header__action-btn:hover {
 }
 
 html[data-theme="dark"] .sdnb-dash .attendance-header__action-btn::before,
-html[data-theme="dark"] .sdnb-dash .lpq-shiny-button::after {
+html[data-theme="dark"] .sdnb-dash .school-shine-button::after {
   display: none !important;
 }
 
@@ -506,6 +512,24 @@ html[data-theme="dark"] .sdnb-dash .admin-segmented-control {
   box-shadow: 0 1px 2px hsl(var(--admin-shadow-color) / 0.34) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-module-nav {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-nav-pill {
+  color: hsl(var(--admin-text-secondary)) !important;
+  border-color: transparent !important;
+  background: transparent !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-nav-group-label {
+  color: hsl(var(--admin-text-muted)) !important;
 }
 
 html[data-theme="dark"] .sdnb-dash .admin-nav-pill:hover,
@@ -539,7 +563,7 @@ html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
   background-color: hsl(var(--admin-border)) !important;
 }
 
-/* Stat cards keep their semantic icon colors but lose radial washes and glow. */
+/* Stat cards use the public palette on one solid, readable surface. */
 html[data-theme="dark"] .sdnb-dash .admin-stat-card,
 html[data-theme="dark"] .sdnb-dash .admin-stat-card:hover {
   background: hsl(var(--admin-surface-raised)) !important;
@@ -555,18 +579,24 @@ html[data-theme="dark"] .sdnb-dash .admin-stat-card::before {
 }
 
 html[data-theme="dark"] .sdnb-dash .admin-stat-card-icon {
-  opacity: 0.28;
+  opacity: 0.36;
   filter: none;
 }
 
+html[data-theme="dark"] .sdnb-dash .admin-stat-card:hover .admin-stat-card-icon,
+html[data-theme="dark"] .sdnb-dash .admin-stat-card:hover .admin-stat-card__icon {
+  opacity: 0.36;
+  transform: none;
+}
+
 /* Radix portals escape `.sdnb-dash`; keep their dark surfaces solid too. */
-html[data-theme="dark"] body.lpq-admin-context [data-radix-dialog-content],
-html[data-theme="dark"] body.lpq-admin-context [role="dialog"],
-html[data-theme="dark"] body.lpq-admin-context [data-radix-select-content],
-html[data-theme="dark"] body.lpq-admin-context [role="listbox"],
-html[data-theme="dark"] body.lpq-admin-context [data-radix-popper-content-wrapper],
-html[data-theme="dark"] body.lpq-admin-context [data-radix-dropdown-menu-content],
-html[data-theme="dark"] body.lpq-admin-context [data-radix-popover-content] {
+html[data-theme="dark"] body.school-admin-context [data-radix-dialog-content],
+html[data-theme="dark"] body.school-admin-context [role="dialog"],
+html[data-theme="dark"] body.school-admin-context [data-radix-select-content],
+html[data-theme="dark"] body.school-admin-context [role="listbox"],
+html[data-theme="dark"] body.school-admin-context [data-radix-popper-content-wrapper],
+html[data-theme="dark"] body.school-admin-context [data-radix-dropdown-menu-content],
+html[data-theme="dark"] body.school-admin-context [data-radix-popover-content] {
   background: hsl(var(--admin-surface)) !important;
   background-image: none !important;
   border-color: hsl(var(--admin-border)) !important;
@@ -576,26 +606,26 @@ html[data-theme="dark"] body.lpq-admin-context [data-radix-popover-content] {
   -webkit-backdrop-filter: none !important;
 }
 
-html[data-theme="dark"] body.lpq-admin-context [data-radix-select-trigger],
-html[data-theme="dark"] body.lpq-admin-context button[role="combobox"],
-html[data-theme="dark"] body.lpq-admin-context input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-html[data-theme="dark"] body.lpq-admin-context textarea,
-html[data-theme="dark"] body.lpq-admin-context select {
+html[data-theme="dark"] body.school-admin-context [data-radix-select-trigger],
+html[data-theme="dark"] body.school-admin-context button[role="combobox"],
+html[data-theme="dark"] body.school-admin-context input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-theme="dark"] body.school-admin-context textarea,
+html[data-theme="dark"] body.school-admin-context select {
   background-color: hsl(var(--admin-surface-sunken)) !important;
   background-image: none !important;
   border-color: hsl(var(--admin-border)) !important;
   color: hsl(var(--admin-text-primary)) !important;
 }
 
-html[data-theme="dark"] body.lpq-admin-context [data-radix-select-item],
-html[data-theme="dark"] body.lpq-admin-context [role="option"],
-html[data-theme="dark"] body.lpq-admin-context [data-radix-dropdown-menu-item] {
+html[data-theme="dark"] body.school-admin-context [data-radix-select-item],
+html[data-theme="dark"] body.school-admin-context [role="option"],
+html[data-theme="dark"] body.school-admin-context [data-radix-dropdown-menu-item] {
   color: hsl(var(--admin-text-secondary)) !important;
 }
 
-html[data-theme="dark"] body.lpq-admin-context [data-radix-select-item][data-highlighted],
-html[data-theme="dark"] body.lpq-admin-context [role="option"]:hover,
-html[data-theme="dark"] body.lpq-admin-context [data-radix-dropdown-menu-item][data-highlighted] {
+html[data-theme="dark"] body.school-admin-context [data-radix-select-item][data-highlighted],
+html[data-theme="dark"] body.school-admin-context [role="option"]:hover,
+html[data-theme="dark"] body.school-admin-context [data-radix-dropdown-menu-item][data-highlighted] {
   background: hsl(var(--admin-nav-hover-bg)) !important;
   color: hsl(var(--admin-text-primary)) !important;
 }

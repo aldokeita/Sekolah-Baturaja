@@ -173,7 +173,7 @@ const PpdbRegistrations = () => {
       setDialog(null);
       await muat({ diam: true });
       // Panel Data Murid menyegarkan dirinya lewat peristiwa ini.
-      window.dispatchEvent(new Event('lpq:santri-data-changed'));
+      window.dispatchEvent(new Event('school:student-data-changed'));
     } catch (error) {
       toast({ title: 'Gagal mencatat murid', description: getPpdbErrorMessage(error), variant: 'destructive' });
     } finally {

@@ -456,36 +456,36 @@ const GuruDashboard = () => {
             </div>
         </div>
         {guruData && (
-          <section className={cn('guru-profile-neo', isFemale ? 'guru-profile-neo--female' : 'guru-profile-neo--male')}>
+          <section className={cn('guru-profile-card', isFemale ? 'guru-profile-card--female' : 'guru-profile-card--male')}>
             {isDark && (
-              <div className="guru-profile-neo__constellation">
+              <div className="guru-profile-card__constellation">
                 <Suspense fallback={null}><ProfileConstellationScene accentColor={isFemale ? '#f472b6' : '#60a5fa'} points={myClasses.length * 7} /></Suspense>
               </div>
             )}
-            <div className="guru-profile-neo__aurora" aria-hidden="true" />
-            <div className="guru-profile-neo__rail" aria-hidden="true" />
-            <div className="guru-profile-neo__content">
-              <div className="guru-profile-neo__avatar-shell">
-                <span className="guru-profile-neo__avatar-orbit" aria-hidden="true" />
-                <button type="button" onClick={() => setIsOwnAvatarPreviewOpen(true)} className="guru-profile-neo__avatar-button" aria-label="Lihat foto profil guru">
-                  <Avatar className="guru-profile-neo__avatar w-full h-full"><AvatarImage src={guruData.foto_url} className="object-cover"/><AvatarFallback className="guru-profile-neo__avatar-fallback">{guruData.nama?.charAt(0)}</AvatarFallback></Avatar>
+            <div className="guru-profile-card__atmosphere" aria-hidden="true" />
+            <div className="guru-profile-card__rail" aria-hidden="true" />
+            <div className="guru-profile-card__content">
+              <div className="guru-profile-card__avatar-shell">
+                <span className="guru-profile-card__avatar-orbit" aria-hidden="true" />
+                <button type="button" onClick={() => setIsOwnAvatarPreviewOpen(true)} className="guru-profile-card__avatar-button" aria-label="Lihat foto profil guru">
+                  <Avatar className="guru-profile-card__avatar w-full h-full"><AvatarImage src={guruData.foto_url} className="object-cover"/><AvatarFallback className="guru-profile-card__avatar-fallback">{guruData.nama?.charAt(0)}</AvatarFallback></Avatar>
                 </button>
               </div>
-              <div className="guru-profile-neo__identity">
-                <div className="guru-profile-neo__eyebrow"><Sparkles className="h-3.5 w-3.5" /> Profil pengajar</div>
+              <div className="guru-profile-card__identity">
+                <div className="guru-profile-card__eyebrow"><Sparkles className="h-3.5 w-3.5" /> Profil pengajar</div>
                 <div>
-                  <h2 className="guru-profile-neo__name">{guruData.nama}</h2>
-                  <p className="guru-profile-neo__role">{guruData.jabatan}</p>
+                  <h2 className="guru-profile-card__name">{guruData.nama}</h2>
+                  <p className="guru-profile-card__role">{guruData.jabatan}</p>
                 </div>
-                <div className="guru-profile-neo__metrics" aria-label="Ringkasan profil guru">
-                  <span className="guru-profile-neo__metric"><Users className="h-4 w-4" /><strong>{myClasses.length}</strong> kelas</span>
-                  <span className="guru-profile-neo__metric"><UserCheck className="h-4 w-4" /><strong>Aktif</strong></span>
+                <div className="guru-profile-card__metrics" aria-label="Ringkasan profil guru">
+                  <span className="guru-profile-card__metric"><Users className="h-4 w-4" /><strong>{myClasses.length}</strong> kelas</span>
+                  <span className="guru-profile-card__metric"><UserCheck className="h-4 w-4" /><strong>Aktif</strong></span>
                 </div>
               </div>
-              <div className="guru-profile-neo__actions">
-                <Button onClick={() => setIsEditProfileOpen(true)} variant="outline" className="guru-profile-neo__button"><Edit className="mr-2 h-4 w-4" /> Edit Profil</Button>
-                <div className="guru-profile-neo__action-pair"><Button onClick={() => setIsMmqOpen(true)} size="sm" variant="outline" className="guru-profile-neo__button">Rapat Guru</Button><Button onClick={() => setIsRecapOpen(true)} size="sm" variant="outline" className="guru-profile-neo__button">Absensi</Button></div>
-                <Button onClick={() => setIsMurojaahOpen(true)} size="sm" className="guru-profile-neo__button guru-profile-neo__button--accent"><Mic className="mr-2 h-4 w-4"/> Setoran Muroja'ah{pendingSubmissionsCount > 0 && <span className="guru-profile-neo__notification-dot" aria-label={`${pendingSubmissionsCount} setoran menunggu peninjauan`}></span>}</Button>
+              <div className="guru-profile-card__actions">
+                <Button onClick={() => setIsEditProfileOpen(true)} variant="outline" className="guru-profile-card__button"><Edit className="mr-2 h-4 w-4" /> Edit Profil</Button>
+                <div className="guru-profile-card__action-pair"><Button onClick={() => setIsMmqOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Rapat Guru</Button><Button onClick={() => setIsRecapOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Absensi</Button></div>
+                <Button onClick={() => setIsMurojaahOpen(true)} size="sm" className="guru-profile-card__button guru-profile-card__button--accent"><Mic className="mr-2 h-4 w-4"/> Setoran Muroja'ah{pendingSubmissionsCount > 0 && <span className="guru-profile-card__notification-dot" aria-label={`${pendingSubmissionsCount} setoran menunggu peninjauan`}></span>}</Button>
               </div>
             </div>
           </section>

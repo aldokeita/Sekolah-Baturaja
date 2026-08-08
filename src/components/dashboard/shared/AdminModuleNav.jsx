@@ -84,7 +84,7 @@ const AdminModuleNav = ({ tabs, activeTab, onTabChange }) => {
                   role="tab"
                   aria-selected={isActive}
                   tabIndex={isActive ? 0 : -1}
-                  className={`admin-nav-pill lpq-shiny-button ${isActive ? 'active' : ''}`}
+                  className={`admin-nav-pill school-shine-button ${isActive ? 'active' : ''}`}
                   onClick={() => onTabChange(tab.value)}
                   onKeyDown={(e) => handleKeyDown(e, currentFlatIdx)}
                 >

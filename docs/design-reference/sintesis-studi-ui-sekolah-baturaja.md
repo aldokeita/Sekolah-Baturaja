@@ -21,7 +21,9 @@ Export dari Claude Design berbasis design system **Modernist** (`_ds/modernist-.
 
 **Bentuk**: radius bertingkat sesuai konteks — pil/tombol 12–16px, kartu 22–26px, panel besar 28–34px (terverifikasi di kode: 6, 8, 9, 11–30, 999px semua dipakai konsisten sesuai peran elemen, bukan satu radius seragam).
 
-**Catatan penting**: desain ini **tidak memakai neumorphism** (shadow ganda terang-gelap yang kita rencanakan di arah Aurora Neo-Glass) — ini murni glassmorphism + blob gradient + bayangan drop biasa (`0 26px 56px -24px rgba(55,65,120,.5)`). Ini poin yang perlu diputuskan saat kombinasi: adopsi penuh gaya ini (lebih flat, sangat bersih), atau tetap selipkan neumorphism tipis di tombol/input sesuai arah awal kita.
+**Keputusan final**: gunakan permukaan kaca lembut dan bayangan drop biasa
+(`0 26px 56px -24px rgba(55,65,120,.5)`) seperti desain ini. Jangan menambah
+inset shadow atau lapisan cahaya dekoratif pada kontrol dan ruang kerja padat.
 
 ## 3. Yang membuat desain ini terasa premium & tidak generik
 
@@ -34,20 +36,20 @@ Export dari Claude Design berbasis design system **Modernist** (`_ds/modernist-.
 
 Beranda (fold & full page) sudah dirender dan dikirim terpisah di chat — dipakai sebagai bukti visual nyata, bukan deskripsi saja.
 
-## 5. Rekonsiliasi dengan arah yang sudah kita sepakati sebelumnya
+## 5. Keputusan desain yang berlaku
 
-| Poin | Arah sebelumnya (LPQ/Aurora Neo-Glass) | Desain Claude Design ini | Rekomendasi |
-|---|---|---|---|
-| Latar | Aurora teal-cyan-blue-violet, radial glow | Blob pastel blue/pink/mint, lebih soft-pastel | Pakai formula blob dari desain ini (lebih tenang & premium), tapi condongkan hue ke teal/cyan/violet supaya tetap selaras identitas platform |
-| Kartu | Glass + neumorphism | Glass murni, drop shadow biasa | Adopsi glass-nya, tambahkan neumorphic shadow tipis khusus di tombol & input saja (kompromi, bukan ganti total arah) |
-| Tipografi | Font display editorial | Plus Jakarta Sans 800 + Archivo | Cocok, bisa langsung dipakai/diselaraskan dengan yang sudah ada di repo |
-| Radius | Belum ditentukan angka pasti | Sistem bertingkat 6–34px sesuai peran elemen | Adopsi langsung — lebih matang daripada menebak angka baru |
-| Konten hero | Anti-AI-slop checklist kita | Sudah selaras (angka nyata, tanpa ilustrasi stok) | Pertahankan pola ini |
+| Poin | Keputusan |
+|---|---|
+| Latar | Gunakan dasar `#e9edf6` dan blob pastel blue/pink/mint sesuai DESIGN.md. |
+| Kartu dan panel | Gunakan permukaan putih lembut dengan drop shadow biasa; tidak ada depth inset atau cahaya dekoratif. |
+| Tipografi | Plus Jakarta Sans 800 untuk judul dan Archivo untuk isi/interface. |
+| Radius | Gunakan sistem bertingkat 6–34px sesuai peran elemen. |
+| Dashboard | Ikuti palet dan tipografi publik; mode gelap memakai permukaan tinta solid, divider tenang, dan fokus indigo. |
+| Konten hero | Pertahankan angka nyata, komposisi editorial, dan tidak ada ilustrasi stok generik. |
 
 ## 6. Yang perlu diadaptasi untuk konteks kita (bukan copy langsung)
 
-- Struktur data sekolah negeri umum ini lebih sederhana (siswa/kelas/jurusan) dibanding sistem kita yang sudah punya santri/guru/pentashih/hafalan/MMQ. Layout kartu & grid bisa dipakai, tapi field/copy harus disesuaikan skema data Go+Postgres yang sudah ada.
-- Varian Islam Terpadu perlu palet & nada terpisah (mengikuti keputusan sebelumnya: emerald-teal-gold), desain ini hanya mewakili varian Umum.
+- Sejumlah kontrak data lama masih memiliki istilah spesifik. Layout kartu dan grid boleh dipakai, tetapi field/copy baru harus memakai bahasa SDN Baturaja serta tetap melalui adapter Go+Postgres yang ada.
 - Halaman `/login` di desain ini (`Login.dc.html`) belum berhasil aku render sebagai gambar (butuh runtime Design Canvas) — deskripsi pola form ada di `DESIGN.md` bagian 8 (Formulir): label 12.5px tebal, kolom radius 16px, focus ring `rgba(120,132,255,.16)`.
 - Beberapa halaman kita (Berita, Pendaftaran, Parenting, Profil, Kontak) punya pasangan langsung di desain ini (Berita, Formulir PPDB→Pendaftaran, Profil Sekolah, Kontak) — Parenting tidak ada pasangan, perlu dirancang menyesuaikan pola kartu editorial yang sama.
 

@@ -457,7 +457,7 @@ Add-Check "payment proof uses uploaded website logo as embeddable image" {
   if ($helper -notmatch "readAsDataURL") { throw "receipt logo is not embedded for html-to-image" }
   if ($modal -notmatch "fetchReceiptLogoDataUrl") { throw "payment proof modal does not load uploaded logo" }
   if ($system -notmatch "fetchReceiptLogoDataUrl") { throw "payment system receipt does not load uploaded logo" }
-  if ($modal -notmatch "imagePlaceholder: '/logo-lpq-al-fath-maulana.webp'" -or $system -notmatch "imagePlaceholder: '/logo-lpq-al-fath-maulana.webp'") { throw "receipt image generation lacks official local logo fallback" }
+  if ($modal -notmatch "imagePlaceholder: '/logo-legacy-sekolah.webp'" -or $system -notmatch "imagePlaceholder: '/logo-legacy-sekolah.webp'") { throw "receipt image generation lacks official local logo fallback" }
   if ($helper -notmatch "waitForImagesToLoad") { throw "receipt image helper does not wait for embedded logo/images" }
   if ($modal -notmatch "waitForImagesToLoad\(receiptRef\.current\)" -or $system -notmatch "waitForImagesToLoad\(receiptRef\.current\)") { throw "receipt export does not wait for images before rendering" }
 }
@@ -509,7 +509,7 @@ Add-Check "all avatar uploads are converted to bounded WebP" {
 
 Add-Check "official logo is the document favicon" {
   $html = Read-Text "index.html"
-  if (-not (Test-Path "public/logo-lpq-al-fath-maulana.webp")) { throw "official local logo asset is missing" }
+  if (-not (Test-Path "public/logo-legacy-sekolah.webp")) { throw "official local logo asset is missing" }
   if ($html -notmatch 'href="/favicon\.ico\?v=2"' -or $html -notmatch 'href="/apple-touch-icon\.png\?v=2"') { throw "document does not reference official favicon assets" }
 }
 

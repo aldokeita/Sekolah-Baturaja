@@ -37,6 +37,7 @@ const tombol = {
   borderRadius: 12,
   fontSize: 13,
   fontWeight: 700,
+  fontFamily: "'Archivo', system-ui, sans-serif",
   cursor: 'pointer',
   border: '1px solid rgba(255,255,255,.55)',
   background: 'rgba(255,255,255,.62)',
@@ -55,12 +56,12 @@ const DashboardTopBar = () => {
   const topbarButtonStyle = {
     ...tombol,
     ...(isDark ? {
-      background: '#202732',
-      border: '1px solid #364152',
-      color: '#dbe4ef',
+      background: '#25284a',
+      border: '1px solid #3b3f68',
+      color: '#eef0ff',
       backdropFilter: 'none',
       WebkitBackdropFilter: 'none',
-      boxShadow: '0 2px 6px rgba(0,0,0,.34)',
+      boxShadow: '0 2px 6px rgba(10,12,30,.34)',
     } : {}),
   };
 
@@ -75,22 +76,22 @@ const DashboardTopBar = () => {
         style={{
           maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12,
           padding: '10px 12px 10px 14px', borderRadius: 18,
-          background: isDark ? '#151b24' : 'rgba(255,255,255,.55)',
+          background: isDark ? '#1f2242' : 'rgba(255,255,255,.55)',
           backdropFilter: isDark ? 'none' : 'blur(26px) saturate(185%)',
           WebkitBackdropFilter: isDark ? 'none' : 'blur(26px) saturate(185%)',
-          border: isDark ? '1px solid #2e3744' : '1px solid rgba(255,255,255,.7)',
-          boxShadow: isDark ? '0 8px 20px rgba(0,0,0,.3)' : '0 18px 40px -20px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)',
+          border: isDark ? '1px solid #3b3f68' : '1px solid rgba(255,255,255,.7)',
+          boxShadow: isDark ? '0 8px 20px rgba(10,12,30,.3)' : '0 18px 40px -20px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)',
         }}
       >
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0, color: 'inherit' }}>
-          <div style={{ flex: 'none', width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', background: isDark ? '#138a6a' : 'linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))', boxShadow: isDark ? '0 6px 14px rgba(0,0,0,.3)' : '0 10px 20px -8px rgba(110,120,220,.75),inset 0 1px 0 rgba(255,255,255,.8)' }}>
+          <div style={{ flex: 'none', width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', background: isDark ? '#5b6cff' : 'linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))', boxShadow: isDark ? '0 6px 14px rgba(10,12,30,.3)' : '0 10px 20px -8px rgba(110,120,220,.75),inset 0 1px 0 rgba(255,255,255,.8)' }}>
             {sekolah.logoAbbr}
           </div>
           <div style={{ minWidth: 0, lineHeight: 1.2 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: '-.01em', color: isDark ? '#f1f5f9' : '#1b1c28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontFamily: "'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif", fontSize: 13.5, fontWeight: 800, letterSpacing: '-.01em', color: isDark ? '#f4f5ff' : '#1b1c28', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {sekolah.shortName}
             </div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: isDark ? '#9aa6b5' : '#6c718f' }}>
+            <div style={{ fontSize: 11, fontWeight: 500, color: isDark ? '#b6badb' : '#6c718f' }}>
               {LABEL_PERAN[role] || 'Portal sekolah'}
             </div>
           </div>

@@ -198,7 +198,7 @@ const SchoolIdentitySettings = () => {
                 role="radio"
                 aria-checked={aktif}
                 onClick={() => setField('accentMode', opsi.nilai)}
-                className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${aktif ? 'border-cyan-300 bg-white/85 shadow-sm dark:border-cyan-700 dark:bg-slate-900/80' : 'border-white/70 bg-white/45 hover:bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/35'}`}
+                className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${aktif ? 'border-indigo-300 bg-white/85 shadow-sm dark:border-indigo-700 dark:bg-slate-900/80' : 'border-white/70 bg-white/45 hover:bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/35'}`}
               >
                 {opsi.label}
               </button>

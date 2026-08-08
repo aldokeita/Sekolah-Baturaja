@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
-const HISTORY_KEY = 'lpq_global_search_history';
+const HISTORY_KEY = 'school_global_search_history';
+const LEGACY_HISTORY_KEY = 'lpq_global_search_history';
 const MAX_HISTORY = 10;
 
 export const useSearchHistory = (enabled = true) => {
@@ -8,10 +9,12 @@ export const useSearchHistory = (enabled = true) => {
 
   useEffect(() => {
     if (enabled) {
-      const stored = localStorage.getItem(HISTORY_KEY);
+      const stored = localStorage.getItem(HISTORY_KEY) || localStorage.getItem(LEGACY_HISTORY_KEY);
       if (stored) {
         try {
-          setHistory(JSON.parse(stored));
+          const parsed = JSON.parse(stored);
+          setHistory(parsed);
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(parsed));
         } catch (e) {
           console.error("Failed to parse search history", e);
         }
@@ -42,7 +45,8 @@ export const useSearchHistory = (enabled = true) => {
 
   const clearHistory = () => {
     setHistory([]);
-    localStorage.removeItem(HISTORY_KEY);
+      localStorage.removeItem(HISTORY_KEY);
+      localStorage.removeItem(LEGACY_HISTORY_KEY);
   };
 
   return { history, addToHistory, removeFromHistory, clearHistory };
