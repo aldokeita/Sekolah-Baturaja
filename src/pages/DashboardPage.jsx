@@ -54,8 +54,8 @@ const DashboardPage = () => {
       }
   }, [role, user]);
 
-  // Admin and Tata Usaha render through DashboardWorkspace, which already
-  // brings the SDN Aurora Glass shell (background wash + orbs).
+  // Admin and Tata Usaha render through DashboardWorkspace, which owns the
+  // shared SDN shell and its theme-specific background treatment.
   const usesSdnbTheme = role === 'admin' || role === 'superadmin' || role === 'tata_usaha';
 
   const renderDashboard = () => {

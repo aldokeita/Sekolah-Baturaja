@@ -177,9 +177,8 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
   };
 
   return (
-    // `sdnb-dash` re-skins the whole surface to the SDN Baturaja Aurora Glass
-    // language (see styles/sdnb-dashboard.css). Because admin-dashboard.css is
-    // token-driven, every module panel inside inherits the new palette.
+    // `sdnb-dash` keeps the light shell's Aurora language while the dark theme
+    // switches to a solid, token-driven admin palette (see sdnb-dashboard.css).
     <div className="sdnb-dash">
       <div className="sdnb-dash__bg" aria-hidden="true" />
       <div className="sdnb-dash__orb sdnb-dash__orb--a" aria-hidden="true" />

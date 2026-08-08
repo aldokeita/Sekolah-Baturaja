@@ -129,9 +129,9 @@ const GlobalSearch = ({ onNavigate }) => {
   };
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto z-[45]" ref={containerRef}>
+    <div className="admin-global-search relative w-full max-w-2xl mx-auto z-[45]" ref={containerRef}>
       <div
-        className={`relative flex items-center transition-all duration-300 rounded-full border-2 ${
+        className={`admin-global-search__field relative flex items-center transition-all duration-300 rounded-full border-2 ${
           isOpen
             ? 'border-primary/50 bg-white dark:bg-slate-900 shadow-xl shadow-primary/10'
             : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 hover:bg-white dark:hover:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
@@ -153,7 +153,7 @@ const GlobalSearch = ({ onNavigate }) => {
           }}
           onKeyDown={handleKeyDown}
           placeholder="Cari murid, guru, kelas, pembayaran..."
-          className={`w-full bg-transparent border-none py-3.5 pl-12 pr-12 text-sm sm:text-base outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-slate-100 rounded-full font-medium ${isLoading ? 'opacity-80' : ''}`}
+          className={`admin-global-search__input w-full bg-transparent border-none py-3.5 pl-12 pr-12 text-sm sm:text-base outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-slate-100 rounded-full font-medium ${isLoading ? 'opacity-80' : ''}`}
           aria-expanded={isOpen}
           aria-autocomplete="list"
           aria-controls="search-results"

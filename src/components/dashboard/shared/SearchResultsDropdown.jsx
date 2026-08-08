@@ -45,7 +45,7 @@ const SearchResultsDropdown = ({
       exit={{ opacity: 0, y: -10, scale: 0.98 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
       onMouseDown={(e) => e.preventDefault()} // Prevent input blur when clicking inside the dropdown
-      className="absolute top-full left-0 right-0 mt-2 w-full max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 shadow-2xl rounded-2xl z-40 flex flex-col ring-1 ring-black/5 overscroll-contain"
+      className="admin-search-dropdown absolute top-full left-0 right-0 mt-2 w-full max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 shadow-2xl rounded-2xl z-40 flex flex-col ring-1 ring-black/5 overscroll-contain"
     >
       {isLoading ? (
         <div className="p-8 flex flex-col items-center justify-center text-slate-500">
