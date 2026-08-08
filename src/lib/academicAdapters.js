@@ -1,4 +1,4 @@
-import apiClient from '@/lib/apiClient';
+import apiClient, { publicFetch } from '@/lib/apiClient';
 
 export const progressStatusToComplete = (status) => status === 'lulus';
 export const completeToProgressStatus = (complete) => (complete ? 'lulus' : 'proses');
@@ -97,6 +97,15 @@ export const saveCalendarEvent = async ({ existingId, selectedDate, title, descr
 
 export const deleteCalendarEvent = async (id) => {
     await apiClient.delete(`/api/attendance/calendar/${id}`);
+};
+
+// Kalender publik untuk situs sekolah — tanpa login, hanya event is_public.
+// Berbeda dari fetchCalendarEvents (yang butuh JWT & mengembalikan metadata
+// internal), ini memakai publicFetch dan hanya field aman untuk ditampilkan.
+export const fetchPublicCalendar = async ({ startDate, endDate }) => {
+    const params = new URLSearchParams({ date_from: startDate, date_to: endDate });
+    const data = await publicFetch(`/api/public/calendar?${params}`);
+    return Array.isArray(data) ? data : [];
 };
 
 export const fetchHafalanItems = async (category = null, programScope = null) => {

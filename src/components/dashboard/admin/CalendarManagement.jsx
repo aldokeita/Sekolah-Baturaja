@@ -242,7 +242,12 @@ const CalendarManagement = () => {
             <DialogHeader>
                 <DialogTitle>Agenda Tanggal Ini</DialogTitle>
                 <DialogDescription>
-                    {selectedDate && new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {selectedDate && (() => {
+                        // Parse dari komponen y/m/d agar tidak dianggap UTC (yang
+                        // bisa menggeser tampilan tanggal mundur satu hari).
+                        const [y, m, d] = selectedDate.split('-').map(Number);
+                        return new Date(y, m - 1, d).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                    })()}
                 </DialogDescription>
             </DialogHeader>
 

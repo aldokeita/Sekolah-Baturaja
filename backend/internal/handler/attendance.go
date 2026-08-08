@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -14,6 +15,14 @@ import (
 
 	"lpq-backend/internal/middleware"
 )
+
+// isValidISODate melaporkan apakah s berformat tanggal YYYY-MM-DD yang sah.
+// Dipakai untuk menolak tanggal ngawur di endpoint kalender sebelum menyentuh
+// kolom `date`, supaya galat muncul sebagai 400 yang jelas, bukan 500.
+func isValidISODate(s string) bool {
+	_, err := time.Parse("2006-01-02", s)
+	return err == nil
+}
 
 // AttendanceHandler menangani domain absensi (santri & guru), kalender akademik,
 // serta self check-in kiosk.
@@ -683,6 +692,61 @@ func (h *AttendanceHandler) Calendar(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]any{"data": dates})
 }
 
+// PublicCalendar GET /api/public/calendar — agenda yang boleh tampil di website
+// sekolah. Tanpa autentikasi: hanya mengembalikan baris is_public = true dan
+// hanya field yang aman ditampilkan publik (tanpa metadata internal). Dipakai
+// situs SDN Baturaja lewat publicFetch.
+func (h *AttendanceHandler) PublicCalendar(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	from := q.Get("date_from")
+	to := q.Get("date_to")
+	if from == "" || to == "" {
+		jsonError(w, "date_from dan date_to wajib diisi", http.StatusBadRequest)
+		return
+	}
+	if !isValidISODate(from) || !isValidISODate(to) {
+		jsonError(w, "format tanggal tidak valid (harus YYYY-MM-DD)", http.StatusBadRequest)
+		return
+	}
+
+	rows, err := h.db.Query(r.Context(), `
+		SELECT date::text, title, description, is_holiday, event_type
+		FROM academic_calendar
+		WHERE is_public = true AND date BETWEEN $1 AND $2
+		ORDER BY date ASC, created_at ASC
+	`, from, to)
+	if err != nil {
+		jsonError(w, "gagal mengambil kalender akademik", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	items := make([]map[string]any, 0)
+	for rows.Next() {
+		var (
+			date, title            string
+			description, eventType *string
+			isHoliday              bool
+		)
+		if err := rows.Scan(&date, &title, &description, &isHoliday, &eventType); err != nil {
+			jsonError(w, "gagal membaca kalender akademik", http.StatusInternalServerError)
+			return
+		}
+		items = append(items, map[string]any{
+			"date":        date,
+			"title":       title,
+			"description": description,
+			"is_holiday":  isHoliday,
+			"event_type":  eventType,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		jsonError(w, "gagal membaca kalender akademik", http.StatusInternalServerError)
+		return
+	}
+	jsonOK(w, map[string]any{"data": items})
+}
+
 // calendarFull returns every agenda entry in the range, holidays and school
 // days alike, ordered so that entries sharing a date keep a stable sequence.
 func (h *AttendanceHandler) calendarFull(w http.ResponseWriter, r *http.Request, from, to string) {
@@ -743,6 +807,10 @@ func (h *AttendanceHandler) CreateCalendar(w http.ResponseWriter, r *http.Reques
 	}
 	if in.Date == "" {
 		jsonError(w, "date wajib diisi", http.StatusBadRequest)
+		return
+	}
+	if !isValidISODate(in.Date) {
+		jsonError(w, "format tanggal tidak valid (harus YYYY-MM-DD)", http.StatusBadRequest)
 		return
 	}
 	isHoliday := true
@@ -815,6 +883,15 @@ func (h *AttendanceHandler) UpdateCalendar(w http.ResponseWriter, r *http.Reques
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
+	}
+	// Tolak tanggal ngawur sebelum menyentuh DB — kalau tidak, muncul 400 generik
+	// dari driver, bukan pesan yang jelas.
+	if d, ok := body["date"]; ok {
+		ds, isStr := d.(string)
+		if !isStr || !isValidISODate(ds) {
+			jsonError(w, "format tanggal tidak valid (harus YYYY-MM-DD)", http.StatusBadRequest)
+			return
+		}
 	}
 	// The client sends created_by/updated_by for parity with the insert path;
 	// they are not in the allowlist and updateRow drops them silently.

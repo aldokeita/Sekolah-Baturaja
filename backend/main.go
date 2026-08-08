@@ -77,6 +77,11 @@ func main() {
 	r.Get("/api/santri/count", santriHandler.Count)
 	r.Get("/api/guru/count", guruHandler.Count)
 
+	// ── Public: kalender akademik (hanya event is_public = true) ─────────────
+	// Situs sekolah menampilkan agenda/hari libur tanpa login. Endpoint ini
+	// memfilter is_public sendiri, jadi aman di luar RequireAuth.
+	r.Get("/api/public/calendar", attendanceHandler.PublicCalendar)
+
 	// ── Public: website content (news, announcements, feedback) ──────────────
 	// Admin write endpoints inside this handler check role themselves via
 	// CanManage(RoleFromCtx(...)), so this mount needs OptionalAuth to put the
