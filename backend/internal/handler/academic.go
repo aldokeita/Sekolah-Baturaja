@@ -330,15 +330,18 @@ func (h *AcademicHandler) ListMurojah(w http.ResponseWriter, r *http.Request) {
 		args = append(args, id)
 		where = append(where, "ms.santri_id = $"+itoa(len(args)))
 	}
-	switch role {
-	case "admin":
-	case "guru":
+	// CanManage, bukan daftar peran manual — lihat catatan pada santri.go List:
+	// daftar manual di sini juga hanya memuat "admin", jadi tata usaha dan
+	// superadmin menerima 403.
+	switch {
+	case middleware.CanManage(role):
+	case role == "guru":
 		args = append(args, userID)
 		i := itoa(len(args))
 		where = append(where,
 			"(ms.target_guru_id = $"+i+" OR s.current_class_id IN "+
 				"(SELECT id FROM classes WHERE id_guru = $"+i+"))")
-	case "santri":
+	case role == "santri":
 		args = append(args, userID)
 		where = append(where, "ms.santri_id = $"+itoa(len(args)))
 	default:

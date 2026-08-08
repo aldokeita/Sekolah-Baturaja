@@ -41,9 +41,8 @@ func (h *AttendanceHandler) Routes() chi.Router {
 	r.Get("/count", h.Count)
 	r.Get("/recap", h.Recap)
 
-	// Calendar. Reads are open to any authenticated user (the attendance recap,
-	// rapor generator and salary calculation all need the holiday list); writes
-	// are staff-only.
+	// Calendar. Reads are open to any authenticated user (the attendance recap and
+	// rapor generator both need the holiday list); writes are staff-only.
 	r.Get("/calendar", h.Calendar)
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequireRole("admin", "tata_usaha"))
@@ -175,12 +174,17 @@ func (h *AttendanceHandler) Create(w http.ResponseWriter, r *http.Request) {
 	jsonCreated(w, row)
 }
 
-// isValidAppRole mencocokkan nilai dengan enum public.app_role
-// (20260624000100_extensions_and_types.sql). Nilai di luar daftar ini akan
-// ditolak Postgres saat cast ke enum.
+// isValidAppRole mencocokkan nilai dengan enum public.app_role. Nilai di luar
+// daftar ini akan ditolak Postgres saat cast ke enum.
+//
+// Daftarnya HARUS memuat keenam nilai enum. Dua ditambahkan migrasi yang lebih
+// baru — `tata_usaha` (20260805000100) dan `superadmin` (20260806000700) — dan
+// keduanya sempat tertinggal di sini, sehingga absensi yang dicatat oleh kedua
+// peran itu ditolak sebagai peran tidak sah. Menambah nilai enum baru berarti
+// menambahkannya di sini juga.
 func isValidAppRole(role string) bool {
 	switch role {
-	case "admin", "guru", "santri", "pentashih":
+	case "admin", "guru", "santri", "pentashih", "tata_usaha", "superadmin":
 		return true
 	}
 	return false
@@ -640,8 +644,8 @@ func (h *AttendanceHandler) Calendar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Two shapes, deliberately. The default returns bare holiday dates because
-	// every attendance consumer (rapor, rekap, bisyaroh) only ever asks "is this
-	// day off?" — keeping that payload small matters on a year-wide range.
+	// every attendance consumer (rapor, rekap) only ever asks "is this day off?" —
+	// keeping that payload small matters on a year-wide range.
 	// `view=full` returns whole rows and is what the calendar admin panel needs
 	// to list, edit and delete individual agenda entries.
 	if q.Get("view") == "full" {
@@ -650,7 +654,7 @@ func (h *AttendanceHandler) Calendar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// DISTINCT because a date may now carry several agenda entries; a duplicated
-	// date would make holiday counts in SalaryCalculation double-count.
+	// date would make any consumer counting holidays double-count them.
 	rows, err := h.db.Query(r.Context(), `
 		SELECT DISTINCT date::text
 		FROM academic_calendar

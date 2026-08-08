@@ -10,7 +10,8 @@ import { enableTahfizh } from '@/lib/featureFlags';
 // Tata Usaha (administrative staff) module set. Mirrors the Admin dashboard's
 // layout and flow via the shared DashboardWorkspace, but deliberately omits the
 // admin-only modules:
-//   - Bisyaroh (salary)      — payroll is an admin decision
+// (Bisyaroh/payroll dulu juga dikecualikan di sini. Panelnya sudah DICABUT
+//  permanen dari seluruh dashboard — lihat catatan di AdminDashboard.jsx.)
 //   - Backup & Restore       — system maintenance
 //   - Log Login              — security audit trail
 // Account/role provisioning inside Data Guru is additionally hidden and blocked

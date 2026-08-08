@@ -509,7 +509,7 @@ const GuruManagement = () => {
                   )}
                   {(formData.roles || []).includes('Tata Usaha') && !(formData.roles || []).includes('Admin') && (
                     <p className="relative mt-3 rounded-xl border border-cyan-200/80 bg-cyan-50/80 px-3 py-2 text-xs font-medium text-cyan-900 dark:border-cyan-800/70 dark:bg-cyan-950/30 dark:text-cyan-200" role="status">
-                      Saat login, akun ini akan diarahkan ke Dashboard Tata Usaha (administrasi &amp; operasional, tanpa bisyaroh, backup, atau log login).
+                      Saat login, akun ini akan diarahkan ke Dashboard Tata Usaha (administrasi &amp; operasional, tanpa backup atau log login).
                     </p>
                   )}
               </div>

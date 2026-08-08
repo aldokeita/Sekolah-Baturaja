@@ -149,22 +149,31 @@ func (h *SantriHandler) List(w http.ResponseWriter, r *http.Request) {
 				"OR s.rfid_tag ILIKE $%d)", i, i, i, i, i, i, i))
 	}
 
-	// Authz scoping.
-	switch role {
-	case "admin":
-		// full access
-	case "pentashih":
+	/* Authz scoping.
+	 *
+	 * Cabang akses-penuh memakai CanManage, BUKAN daftar peran yang ditulis satu
+	 * per satu. Daftar manual di sini dulu hanya memuat "admin", sehingga
+	 * `tata_usaha` dan `superadmin` jatuh ke `default` dan menerima 403 — padahal
+	 * Data Murid justru pekerjaan utama tata usaha, dan tabnya tetap ditampilkan
+	 * kepada mereka. Keduanya ditambahkan migrasi yang lebih baru dan switch ini
+	 * tidak pernah ikut diperbarui.
+	 *
+	 * Dengan CanManage, peran pengelola baru tidak bisa lagi terkunci diam-diam. */
+	switch {
+	case middleware.CanManage(role):
+		// admin, superadmin, tata_usaha — akses penuh
+	case role == "pentashih":
 		// Pentashih review santri lintas kelas, jadi aksesnya baca-penuh —
 		// sama dengan policy santri_pentashih_select di migrasi
 		// 20260725000100_pentashih_full_read_access_rls.sql.
-	case "guru":
+	case role == "guru":
 		args = append(args, userID)
 		i := len(args)
 		where = append(where, fmt.Sprintf(
 			"(s.current_class_id IN (SELECT id FROM classes WHERE id_guru = $%d) "+
 				"OR s.id IN (SELECT cm.santri_id FROM class_memberships cm "+
 				"JOIN classes c ON c.id = cm.class_id WHERE c.id_guru = $%d AND cm.status = 'active'))", i, i))
-	case "santri":
+	case role == "santri":
 		add("s.id = $%d", userID)
 	default:
 		jsonError(w, "forbidden", http.StatusForbidden)
@@ -335,11 +344,14 @@ func (h *SantriHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/* Sama seperti List: cabang akses-penuh memakai CanManage, bukan daftar peran
+	 * manual. Daftar lama hanya memuat "admin", jadi tata usaha TIDAK BISA
+	 * menyunting satu pun data murid — padahal itu pekerjaan intinya. */
 	allowed := santriInsertable
-	switch role {
-	case "admin":
+	switch {
+	case middleware.CanManage(role):
 		// full field access
-	case "santri":
+	case role == "santri":
 		if userID != id {
 			jsonError(w, "forbidden", http.StatusForbidden)
 			return

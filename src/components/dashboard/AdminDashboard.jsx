@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, LogIn, FileText,
-  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, Calculator,
+  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar,
   Database, CalendarDays, Inbox,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
@@ -20,7 +20,16 @@ const adminTabs = [
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },
   { value: 'rapat-guru', label: 'Rapat Guru', icon: Users, group: 'akademik' },
   ...(enableTahfizh ? [{ value: 'metode-mengaji', label: 'Metode Mengaji', icon: BookOpen, group: 'akademik' }] : []),
-  { value: 'salary', label: 'Bisyaroh', icon: Calculator, group: 'akademik' },
+  /* Panel Bisyaroh DICABUT permanen, bukan disembunyikan di balik flag.
+   *
+   * Ia menghitung gaji guru per sesi memakai tarif "Syahadah / Non-Syahadah" —
+   * sertifikasi guru Al-Qur'an, tidak berarti apa pun di SD negeri — dan
+   * tombol Simpannya hanya menampilkan pesan sukses tanpa memanggil API sama
+   * sekali. Tidak ada tabel, rute, maupun adapter untuk menyimpannya, jadi
+   * seluruh isian hilang setiap halaman dimuat ulang.
+   *
+   * Dicabut atas keputusan pemilik. Jangan dikembalikan tanpa membangun
+   * penyimpanannya lebih dulu — lihat docs/HANDOFF.md. */
   { value: 'academic-calendar', label: 'Kalender', icon: Calendar, group: 'akademik' },
   { value: 'payment', label: 'Pembayaran', icon: DollarSign, group: 'keuangan' },
   { value: 'recap', label: 'Rekap SPP', icon: PieChart, group: 'keuangan' },

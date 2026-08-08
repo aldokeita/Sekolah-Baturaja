@@ -37,7 +37,6 @@ Tidak ada subdirektori. Setiap `.jsx` file adalah satu panel admin yang di-rende
 | Bukti | `PaymentProofModal.jsx` | Modal upload/lihat bukti bayar |
 | Catatan | `PaymentNotes.jsx` | Catatan pembayaran |
 | Pengeluaran | `ExpenseManagement.jsx` | CRUD pengeluaran operasional |
-| Gaji | `SalaryCalculation.jsx` | Kalkulasi gaji guru |
 
 ### Akademik
 | Panel | File | Fungsi |
@@ -60,7 +59,17 @@ Tidak ada subdirektori. Setiap `.jsx` file adalah satu panel admin yang di-rende
 | Gatcha | `GatchaSettings.jsx` | Setting gatcha reward |
 | Login Logs | `LoginLogs.jsx` | Monitor log login pengguna |
 | Backup | `BackupRestoreManagement.jsx` | Backup & restore data |
-| Visitor Stats | `VisitorStats.jsx` | Statistik pengunjung |
+
+## Panel yang sudah dicabut — jangan dikembalikan
+
+| Panel | Berkas (dihapus) | Alasan dicabut |
+|-------|------------------|----------------|
+| Bisyaroh | `SalaryCalculation.jsx` | Tidak pernah menyimpan apa pun: tombol Simpan hanya menampilkan pesan sukses, dan tidak ada tabel, rute, maupun adapter untuk gaji. Tarifnya juga memakai "Syahadah / Non-Syahadah", sertifikasi guru Al-Qur'an yang tidak berlaku di SD negeri. |
+| Visitor Stats | `VisitorStats.jsx` | Berkas mati — tidak diimpor di mana pun. Isinya hanya papan penunjuk ke tab Log Login. |
+
+Keduanya dicabut atas keputusan pemilik. Bila kelak dibutuhkan, **bangun
+penyimpanannya lebih dulu** (migrasi → handler → adapter), jangan menghidupkan
+kembali panel yang isinya hilang setiap halaman dimuat ulang.
 
 ## Konvensi
 

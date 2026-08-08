@@ -37,6 +37,7 @@ dibongkar tanpa instruksi baru.
 | **PPDB** | **Modul sungguhan dengan tabel dan panelnya sendiri**, bukan lagi dititipkan ke `feedbacks` | Pendaftaran punya siklus hidup dan 20 kolom; pesan pengunjung tidak punya satu pun |
 | **Istilah SPMB** | **Seluruh tulisan yang dilihat orang memakai SPMB, bukan PPDB.** Nama berkas, tabel, dan rute TIDAK diubah | Permendikdasmen No. 3 Tahun 2025 mencabut aturan PPDB; lihat "Aturan SPMB 2025" di bawah |
 | **Kuota jalur** | **Angka pemerintah jadi bawaan, sistem TIDAK menegur** bila dilanggar | Ada kondisi lapangan yang tidak bisa ditebak sistem; memblokir berisiko melumpuhkan tata usaha |
+| **Bisyaroh (gaji guru)** | **DICABUT PERMANEN.** Panel dan berkasnya dihapus | Tidak pernah menyimpan apa pun, dan tarifnya memakai istilah sekolah Al-Qur'an — lihat "Bisyaroh dicabut" di bawah |
 | **Warna sekolah** | **Dua warna saja** (atau satu bila solid). Palet tidak boleh memunculkan rona ketiga | Sekolah memilih dua warna; warna ketiga yang diturunkan mendarat di rona yang tidak dipilih siapa pun |
 
 ### Dua tingkat izin: superadmin vs admin
@@ -250,7 +251,7 @@ Jangan mengikuti kalimat lama itu.
 | `npm run build` | Hijau, exit 0 |
 | `npm run lint` | Bersih, exit 0 |
 | `npm test` | **160 test hijau** (Vitest 3, 9 berkas) |
-| Guard `scripts/validate-*.ps1` | **6 dari 7 hijau** — lihat catatan di bawah |
+| Guard `scripts/validate-*.ps1` | **7 dari 8 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
 | Login 6 akun | **Terbukti jalan** lewat API |
 | `resolveUser` tahan kegagalan | **Terbukti lewat uji suntik kerusakan** (rename kolom `nisn`) |
@@ -301,10 +302,24 @@ Jangan mengikuti kalimat lama itu.
 | **Penyaring wilayah di panel** | **Tuntas di browser**: menyaring "Kelurahan Baturaja Timur" menyisakan tepat satu pendaftar yang benar |
 | **Lembar rekap** | **Tuntas di browser**: keempat pengelompokan terisi, total 5 pendaftar konsisten, dan pemecahan wilayah 4/1 benar |
 | **Cetak lembar rekap dari dashboard** | **Tuntas**: aturan cetak terbukti dimuat DI DASHBOARD (4 aturan `.bukti-cetak`) setelah dipindah ke `cetak-bukti.css`; saat diterapkan, bilah menu dan kartu statistik tersembunyi dan hanya lembar rekap berkepala surat yang terlihat |
+| **Akses peran ke data inti** | **Tuntas lewat API**: admin, tata usaha, dan superadmin ketiganya 200 pada `/api/santri`, `/api/guru`, `/api/classes`, `/api/academic/murojah`, `/api/ppdb`, dan **PUT murid berhasil** — sebelumnya tata usaha & superadmin 403 pada dua di antaranya. Guru tetap 403 pada `/api/ppdb` |
+| **Penjaga akses peran bisa gagal** | **Terbukti**: bug-nya dimasukkan kembali dengan sengaja, `validate-akses-peran.ps1` melaporkan `FAIL tata_usaha /api/santri -> 403` dan keluar bukan-nol; perbaikannya lalu dipulihkan dan guard hijau kembali |
+| **Pencabutan Bisyaroh** | **Tuntas di browser**: tab Bisyaroh hilang (19 → 18 tab admin), dan **kedelapan belas panel sisanya dibuka satu per satu** dengan sesi yang sah — nol panel kosong, nol pesan galat. Dashboard tata usaha 16 tab, Data Murid kini memuat daftar murid |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
-Ada **tujuh** skrip `validate-*.ps1`.
+Ada **delapan** skrip `validate-*.ps1`.
+
+**`validate-akses-peran.ps1` ditambahkan setelah audit modul**, dan alasannya perlu
+diingat: seluruh uji dan guard lain memakai akun **admin**, sehingga cacat yang
+hanya menimpa `tata_usaha` dan `superadmin` lolos berbulan-bulan (lihat bagian
+"Tata usaha dan superadmin terkunci dari Data Murid"). Guard ini masuk sebagai tiap
+peran lalu memastikan jalur inti terbuka — dan memastikan guru TETAP ditolak pada
+`/api/ppdb`. Penjaganya sendiri sudah diuji: bug-nya dimasukkan kembali dengan
+sengaja, guard-nya gagal dan keluar bukan-nol, lalu perbaikannya dipulihkan.
+
+Bila menambah peran baru, tambahkan ia ke guard ini juga.
+
 `validate-production-migration-local.ps1` selalu gagal dengan "Safe summary tidak
 ditemukan" karena menuntut `_private_reference/migration-work/prepared-production-data/safe-summary.json`
 dan container `supabase_db_*`. Keduanya **tidak ada** di repo maupun di Docker sini —
@@ -627,21 +642,50 @@ Tuntas pada 2026-08-08 (putaran ketiga): **wilayah domisili yang diisi pembeli**
 SPMB siap cetak**. Otomatisasi pengiriman kabar **ditolak pemilik dengan sengaja** — WhatsApp manual
 ke nomor yang sudah terdaftar dianggap cukup; jangan mengajukannya lagi tanpa alasan baru.
 
+### Audit modul: cakupan yang SUDAH dan BELUM diperiksa
+
+Audit dijalankan untuk mencari satu kelas cacat: **panel yang tampak jadi tapi
+tidak benar-benar tersambung.** Pola yang dicari diambil dari yang sudah terbukti
+terjadi di modul PPDB — data karangan di markup, tulisan tanpa `await` dengan galat
+ditelan, nol validasi, janji ke pengguna yang tak pernah ditepati, kolom yang
+ditulis tapi tak pernah dibaca, kontrol mati, dan penjagaan peran yang bolong.
+
+**Auditnya BELUM lengkap.** Lima pemeriksa paralel dijalankan dan kelimanya mati
+kena batas sesi; sisanya dikerjakan manual. Cakupannya:
+
+| Bagian | Status | Hasil |
+|---|---|---|
+| Bisyaroh / gaji | **Dalam** | Dicabut permanen — lihat di atas |
+| Penjagaan peran (empat switch) | **Dalam** | Cacat terparah ditemukan & diperbaiki |
+| Kunci konten seluruh panel | **Tuntas** | Kesepuluhnya terbukti dibaca. Pola "panel menyimpan ke tempat yang tak dibaca siapa pun" **tidak terulang** |
+| Izin & kepemilikan Forum | **Tuntas** | **Sehat, dan patut dicontoh:** identitas dari JWT, `author_id` dari badan permintaan sengaja diabaikan, penghapusan memeriksa kepemilikan (`!isAdmin && authorID != userID`) |
+| Angka karangan (seluruh kode) | **Tuntas** | Bersih. Setiap `Math.random()` sah (kutipan, gatcha, pengocok nama, konfeti) |
+| Survei rasio penjagaan 18 handler | **Permukaan** | Hanya hitungan; `forum.go` yang paling mencurigakan justru terbukti benar |
+| **Absensi** | **BELUM** | Paling perlu diperiksa berikutnya — satu-satunya modul yang sengaja tidak pernah dirombak |
+| **Data Murid, Guru, Kelas, Jadwal** | **BELUM** | Selain cacat peran di atas |
+| **Pembayaran & Pengeluaran** | **BELUM** | |
+| **Backup & Restore** | **BELUM** | |
+
+Jangan simpulkan bagian bertanda BELUM itu bersih. Ia belum diperiksa saja.
+
 ### Yang masih terbuka
 
 Diurutkan dari yang paling berdampak ke penjualan.
 
-1. **Kuota jalur tidak menahan apa pun, dan itu keputusan pemilik.** Panel menunjukkan sisa kursi
+1. **Audit belum selesai** — lihat tabel cakupan di atas. Absensi paling perlu diperiksa berikutnya,
+   dan setiap pemeriksaan berikutnya harus dijalankan sebagai peran **selain admin**, karena itulah
+   yang membuat cacat terparah lolos selama berbulan-bulan.
+2. **Kuota jalur tidak menahan apa pun, dan itu keputusan pemilik.** Panel menunjukkan sisa kursi
    tapi tidak menegur maupun memblokir. Bila kelak diminta menegur, tempatnya di `ubahStatus` pada
    panel — bukan di server, supaya tata usaha tidak pernah terhalang bekerja.
-2. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
+3. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
    tapi sekolah besar dengan beberapa gelombang akan melewatinya. Batasnya dicatat di panel, tidak
    disembunyikan. Lembar rekap TIDAK terkena batas ini — ia dihitung di basis data.
-3. **Aturan SPMB bisa berubah lagi.** Bawaan sekarang mengikuti Permendikdasmen No. 3 Tahun 2025.
+4. **Aturan SPMB bisa berubah lagi.** Bawaan sekarang mengikuti Permendikdasmen No. 3 Tahun 2025.
    Sebelum gelombang penerimaan berikutnya, periksa ulang apakah jalur, persentase, dan syarat usia
    masih sama — semuanya bisa disunting pembeli, jadi perubahan aturan tidak menuntut rilis kode,
    hanya pembaruan bawaan dan `SETUP.md`.
-4. **Belum ada yang menguji alur SPMB sebagai pengguna sungguhan.** Seluruh verifikasi dilakukan agen
+5. **Belum ada yang menguji alur SPMB sebagai pengguna sungguhan.** Seluruh verifikasi dilakukan agen
    lewat API dan penyuntikan JavaScript di browser; pemilik memilih tidak menguji sendiri. Yang
    BELUM pernah dijalankan: mengetik dengan papan ketik sungguhan, menekan tombol dengan tetikus,
    dan **melihat hasil cetak yang sebenarnya** — aturan cetaknya dibuktikan dengan menerapkannya
@@ -869,6 +913,79 @@ Validasi sekarang ada di **server** (`ppdbInput.periksa()`), berbahasa Indonesia
 dan ditampilkan apa adanya di formulir. Pemeriksaan di browser (`kurang` di
 `PpdbPage.jsx`) hanya menutup kesalahan yang paling sering, **bukan salinan seluruh
 aturannya** — supaya keduanya tidak bisa berbeda pendapat.
+
+### Bisyaroh dicabut permanen, dan kenapa
+
+Keputusan pemilik setelah audit. Panelnya (`SalaryCalculation.jsx`, 451 baris) dan
+tabnya sudah dihapus dari kedua dashboard.
+
+Tiga alasan, ditemukan dengan melacak kodenya:
+
+1. **Tombol Simpan tidak menyimpan apa pun.** Isinya hanya
+   `toast({ title: "Disimpan" })` lalu menutup dialog. Nol panggilan API. Dan
+   memang tidak ada yang bisa dipanggil: nol tabel gaji di basis data, nol rute
+   salary di Go, nol adapter. Seluruh isian — jabatan tiap guru, potongan absen,
+   entri badal, bahkan nominal tarifnya — hilang setiap halaman dimuat ulang.
+   Bendahara mengisi ulang semuanya setiap bulan, dan hasilnya hanya bisa diekspor.
+2. **Tarifnya milik sekolah Al-Qur'an.** Kolomnya berbunyi "Sesi Syahadah"
+   Rp700.000 dan "Sesi Non-Syahadah" Rp400.000 — syahadah itu sertifikasi guru
+   Al-Qur'an, tidak berarti apa pun di SD negeri. Ada juga `deductionTpQ`.
+3. **Ia bertentangan dengan panel lain.** Rekap Guru menyimpan koreksi sesi
+   mengajar ke `guru_session_overrides` (dan itu sungguhan tersimpan), tapi
+   Bisyaroh menghitung dari penugasan kelas dan mengabaikannya. Dua panel menjawab
+   "berapa sesi guru ini" dengan angka berbeda.
+
+Ia juga memuat kode mati: `c.kategori === 'Dewasa'`, padahal kategori murid sudah
+dihapus seluruhnya.
+
+**Jangan dikembalikan tanpa membangun penyimpanannya lebih dulu** (migrasi →
+handler → adapter), dan tanpa memastikan sekolah pembeli memang menggaji gurunya
+sendiri — guru PNS bergaji pemerintah, bukan dari kas sekolah.
+
+`VisitorStats.jsx` ikut dihapus di kesempatan yang sama: berkas mati, tidak diimpor
+di mana pun, isinya hanya papan penunjuk ke tab Log Login.
+
+### Tata usaha dan superadmin terkunci dari Data Murid — SUDAH DIPERBAIKI
+
+Ditemukan saat audit modul, dan ini **cacat terparah yang pernah ditemukan di
+repo ini**: dua dari lima peran tidak bisa membuka maupun menyunting data murid.
+
+Penyebabnya satu kebiasaan yang terulang di empat tempat — daftar peran ditulis
+satu per satu alih-alih memakai predikat yang sudah ada:
+
+```go
+switch role {
+case "admin":
+    // full access
+...
+default:
+    jsonError(w, "forbidden", http.StatusForbidden)
+```
+
+`tata_usaha` (ditambahkan `20260805000100`) dan `superadmin` (ditambahkan
+`20260806000700`) masuk ke enum `app_role` lewat migrasi yang lebih baru, dan
+keempat switch ini tidak pernah ikut diperbarui. Keduanya jatuh ke `default`.
+
+| Tempat | Akibatnya |
+|---|---|
+| `santri.go` List | tata usaha & superadmin **403** saat membuka Data Murid |
+| `santri.go` Update | tata usaha & superadmin **tidak bisa menyunting satu pun murid** |
+| `academic.go` ListMurojah | keduanya 403 |
+| `attendance.go` `isValidAppRole` | absensi yang dicatat kedua peran itu ditolak sebagai "peran tidak sah" |
+
+Data Murid adalah **pekerjaan utama tata usaha**, tabnya tetap ditampilkan kepada
+mereka, dan panelnya gagal dengan "Gagal memuat data murid: forbidden".
+
+**Perbaikannya bukan menambah dua `case` lagi** — itu akan terulang pada peran
+berikutnya. Cabang akses-penuh sekarang memakai `middleware.CanManage(role)`,
+predikat yang sudah menjadi acuan seluruh handler lain. `isValidAppRole` diperbaiki
+dengan memuat keenam nilai enum dan diberi catatan bahwa daftarnya harus ikut
+bertambah.
+
+**Kenapa tidak ada yang menangkapnya selama berbulan-bulan:** setiap uji dan setiap
+guard memakai akun **admin**. Peran lain tidak pernah diuji sama sekali. Itu celah
+metode, bukan celah kode — dan itulah yang ditutup
+`scripts/validate-akses-peran.ps1` (lihat bagian guard).
 
 ### Aturan SPMB 2025 — bawaan lama memakai aturan yang sudah dicabut
 

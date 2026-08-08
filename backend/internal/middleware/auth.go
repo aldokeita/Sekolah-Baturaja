@@ -109,7 +109,9 @@ func IsAdmin(role string) bool {
 //   - account & role provisioning (create/delete staff, assign role/status/password)
 //   - login logs
 //   - backup & restore
-//   - bisyaroh/salary
+//
+// (Bisyaroh/salary dulu ada di daftar ini. Panelnya sudah dicabut permanen dan
+//  tidak pernah punya endpoint, jadi tidak ada apa pun di sini yang menjaganya.)
 func CanManage(role string) bool {
 	return IsAdmin(role) || role == "tata_usaha"
 }

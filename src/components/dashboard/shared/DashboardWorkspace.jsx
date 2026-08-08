@@ -24,7 +24,6 @@ import GuruAttendanceRecap from '../admin/GuruAttendanceRecap';
 import TvDisplaySettings from '../admin/TvDisplaySettings';
 import GameConfiguration from '../admin/GameConfiguration';
 import CalendarManagement from '../admin/CalendarManagement';
-import SalaryCalculation from '../admin/SalaryCalculation';
 import BackupRestoreManagement from '../admin/BackupRestoreManagement';
 
 import GlobalSearch from './GlobalSearch';
@@ -53,7 +52,9 @@ const renderModule = (value) => {
     case 'guru': return <GuruManagement />;
     case 'rekap-absensi': return <AttendanceRecap />;
     case 'rekap-guru': return <GuruAttendanceRecap />;
-    case 'salary': return <SalaryCalculation />;
+    /* `salary` (Bisyaroh) dicabut permanen — panelnya tidak pernah menyimpan
+     * apa pun dan tarifnya memakai istilah sekolah Al-Qur'an. Lihat catatan di
+     * AdminDashboard.jsx. */
     case 'academic-calendar': return <CalendarManagement />;
     case 'payment': return <PaymentSystem />;
     case 'recap': return <PaymentRecap />;
