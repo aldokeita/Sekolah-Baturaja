@@ -1,6 +1,6 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-06 · **Branch:** `migrate-frontpage-baru` (**sudah di-push**, sinkron dengan origin) · **HEAD:** `9fbe113`
+**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `1e3e8f3`
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -305,6 +305,9 @@ Jangan mengikuti kalimat lama itu.
 | **Akses peran ke data inti** | **Tuntas lewat API**: admin, tata usaha, dan superadmin ketiganya 200 pada `/api/santri`, `/api/guru`, `/api/classes`, `/api/academic/murojah`, `/api/ppdb`, dan **PUT murid berhasil** — sebelumnya tata usaha & superadmin 403 pada dua di antaranya. Guru tetap 403 pada `/api/ppdb` |
 | **Penjaga akses peran bisa gagal** | **Terbukti**: bug-nya dimasukkan kembali dengan sengaja, `validate-akses-peran.ps1` melaporkan `FAIL tata_usaha /api/santri -> 403` dan keluar bukan-nol; perbaikannya lalu dipulihkan dan guard hijau kembali |
 | **Pencabutan Bisyaroh** | **Tuntas di browser**: tab Bisyaroh hilang (19 → 18 tab admin), dan **kedelapan belas panel sisanya dibuka satu per satu** dengan sesi yang sah — nol panel kosong, nol pesan galat. Dashboard tata usaha 16 tab, Data Murid kini memuat daftar murid |
+| **Data Guru — hash sandi tak lagi bocor** | **Tuntas lewat API**: `GET /api/guru` sebagai admin tidak lagi memuat field `password`; sebelumnya `SELECT *` mengembalikan hash bcrypt tiap guru ke klien mana pun |
+| **Manajemen Kelas — pindah sinkron membership** | **Tuntas lewat API**: memindahkan murid membuat `Detail` kelas tujuan (yang baca `class_memberships`) langsung memuatnya, kelas lama tidak lagi; pindah ke kelas sama ditolak 400 |
+| **Kalender publik tanpa login** | **Tuntas lewat API**: `GET /api/public/calendar` menjawab tanpa token dan hanya event `is_public`; buat event → muncul di endpoint publik → hapus, semuanya jalan; tanggal ngawur ditolak 400 |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
@@ -642,6 +645,10 @@ Tuntas pada 2026-08-08 (putaran ketiga): **wilayah domisili yang diisi pembeli**
 SPMB siap cetak**. Otomatisasi pengiriman kabar **ditolak pemilik dengan sengaja** — WhatsApp manual
 ke nomor yang sudah terdaftar dianggap cukup; jangan mengajukannya lagi tanpa alasan baru.
 
+Tuntas pada 2026-08-08 (putaran audit modul): **tujuh modul inti disisir** — Absensi, Pembayaran,
+Backup & Restore, Data Murid, Data Guru, Manajemen Kelas, Kalender Akademik. Rincian per modul dan
+polanya di "Putaran audit modul 2026-08-08" pada bagian 7.
+
 ### Audit modul: cakupan yang SUDAH dan BELUM diperiksa
 
 Audit dijalankan untuk mencari satu kelas cacat: **panel yang tampak jadi tapi
@@ -650,8 +657,9 @@ terjadi di modul PPDB — data karangan di markup, tulisan tanpa `await` dengan 
 ditelan, nol validasi, janji ke pengguna yang tak pernah ditepati, kolom yang
 ditulis tapi tak pernah dibaca, kontrol mati, dan penjagaan peran yang bolong.
 
-**Auditnya BELUM lengkap.** Lima pemeriksa paralel dijalankan dan kelimanya mati
-kena batas sesi; sisanya dikerjakan manual. Cakupannya:
+Putaran audit kedua (2026-08-08) menuntaskan tujuh modul inti yang sebelumnya
+BELUM — lihat "Putaran audit modul 2026-08-08" di bawah untuk rinciannya.
+Cakupan sekarang:
 
 | Bagian | Status | Hasil |
 |---|---|---|
@@ -661,31 +669,65 @@ kena batas sesi; sisanya dikerjakan manual. Cakupannya:
 | Izin & kepemilikan Forum | **Tuntas** | **Sehat, dan patut dicontoh:** identitas dari JWT, `author_id` dari badan permintaan sengaja diabaikan, penghapusan memeriksa kepemilikan (`!isAdmin && authorID != userID`) |
 | Angka karangan (seluruh kode) | **Tuntas** | Bersih. Setiap `Math.random()` sah (kutipan, gatcha, pengocok nama, konfeti) |
 | Survei rasio penjagaan 18 handler | **Permukaan** | Hanya hitungan; `forum.go` yang paling mencurigakan justru terbukti benar |
-| **Absensi** | **BELUM** | Paling perlu diperiksa berikutnya — satu-satunya modul yang sengaja tidak pernah dirombak |
-| **Data Murid, Guru, Kelas, Jadwal** | **BELUM** | Selain cacat peran di atas |
-| **Pembayaran & Pengeluaran** | **BELUM** | |
-| **Backup & Restore** | **BELUM** | |
+| Absensi | **Tuntas** | 3 bug — lihat putaran kedua di bawah |
+| Data Murid | **Tuntas** | 6 bug diperbaiki |
+| Data Guru | **Tuntas** | 9 bug — termasuk kebocoran hash sandi |
+| Manajemen Kelas | **Tuntas** | 10 bug — termasuk membership tak sinkron |
+| Kalender Akademik | **Tuntas** | 3 fix + endpoint publik baru |
+| Pembayaran & Pengeluaran | **Tuntas** | 2 kebocoran data ditutup + sisa TPQ |
+| Backup & Restore | **Tuntas** | Backend dibangun dari nol |
+| **Jadwal Pelajaran** | **BELUM** | Fitur baru, sudah diuji CRUD tapi belum diaudit pola cacat |
 
 Jangan simpulkan bagian bertanda BELUM itu bersih. Ia belum diperiksa saja.
+
+### Putaran audit modul 2026-08-08
+
+Tujuh modul inti diperiksa dengan pola yang sama seperti PPDB (penjagaan peran
+bolong, panel yang tak menyimpan, data karangan, kolom ditulis tak dibaca).
+Setiap modul: satu agen membaca handler Go, satu membaca panel React; temuan
+disajikan sebagai opsi; perbaikan diverifikasi lewat API + build.
+
+| Modul | Commit | Perbaikan utama |
+|---|---|---|
+| Absensi | `6aa292b` | Rekap terpotong 50 baris → diperbaiki; tata usaha terkunci menyunting → dibuka; jam sesi tidak lagi dari `DEFAULT_SESSION_TIMES`, tapi dari konfigurasi admin |
+| Pembayaran & Pengeluaran | `c484772` | **Dua kebocoran:** `ListPayments` tanpa penjagaan peran (siapa pun baca semua riwayat) & `GetPayment` cek peran SETELAH query — ditutup; item TPQ dibersihkan; adapter `createExpense` ganda dihapus |
+| Backup & Restore | `59485fc` | Endpoint Go dibangun dari nol (`backup.go`): dump per-tabel & restore upsert, admin-only, allowlist 12 tabel; frontend disambungkan (dulu stub `throw`) |
+| Data Murid | `cd04165` | `ByRFID` santri hanya bisa lihat dirinya; `MoveClass` guru dibatasi kelasnya; role gate frontend; placeholder TPQ; gender wajib; sandi import "1234" dibuang |
+| Data Guru | `462544f` | **Hash sandi bocor** di List/Detail/ByRFID (`SELECT *`) → kolom eksplisit tanpa `password`; tata usaha tak boleh ubah email; validasi email & panjang sandi; role badge pakai `ROLE_LABELS`; Syahadah/Qiroati → Bersertifikat/NUPTK |
+| Manajemen Kelas | `6cbf6d8` | Roster PII & riwayat mutasi ditutup dari santri; **`MoveClass` kini sinkron `class_memberships`** (dulu hanya `current_class_id`, bikin roster beda); role gate dari peran asli (bukan prop default 'admin'); cek nama kelas duplikat; drag-reorder murid dihidupkan (dulu no-op) |
+| Kalender Akademik | `1e3e8f3` | Validasi tanggal (400 bukan 500); bug tampilan UTC; **endpoint publik `/api/public/calendar`** agar situs bisa tampilkan agenda tanpa login (infrastruktur `is_public` sebelumnya menganggur) |
+
+Kalender akademik ternyata ada di `attendance.go` (bukan `academic.go`), di bawah
+`/api/attendance/calendar`. `academic.go` hanya menangani hafalan/murojaah/karakter.
+
+Pola yang paling perlu diingat dari putaran ini: **`MoveClass` memutakhirkan
+`current_class_id` tapi tidak `class_memberships`**, padahal `Detail` kelas membaca
+anggota dari memberships. Kalau menyentuh perpindahan murid, jaga kedua sumber tetap
+sinkron dalam satu transaksi.
 
 ### Yang masih terbuka
 
 Diurutkan dari yang paling berdampak ke penjualan.
 
-1. **Audit belum selesai** — lihat tabel cakupan di atas. Absensi paling perlu diperiksa berikutnya,
-   dan setiap pemeriksaan berikutnya harus dijalankan sebagai peran **selain admin**, karena itulah
-   yang membuat cacat terparah lolos selama berbulan-bulan.
-2. **Kuota jalur tidak menahan apa pun, dan itu keputusan pemilik.** Panel menunjukkan sisa kursi
+1. **Audit tersisa satu modul: Jadwal Pelajaran.** Tujuh modul inti sudah tuntas (lihat "Putaran
+   audit modul 2026-08-08"). Jadwal Pelajaran fitur baru yang sudah diuji CRUD-nya tapi belum disisir
+   untuk pola cacat yang sama. Pemeriksaan tetap harus dijalankan sebagai peran **selain admin** —
+   itulah yang membuat cacat terparah lolos berbulan-bulan.
+2. **Kalender publik belum tampil di situs.** Endpoint `/api/public/calendar` dan adapter
+   `fetchPublicCalendar` sudah siap dan terbukti jalan tanpa login, tetapi situs SDN belum punya
+   halaman/bagian Agenda yang memakainya. Butuh keputusan penempatan (halaman baru vs. bagian di
+   beranda) sebelum dibangun — murni frontend, backend-nya sudah ada.
+3. **Kuota jalur tidak menahan apa pun, dan itu keputusan pemilik.** Panel menunjukkan sisa kursi
    tapi tidak menegur maupun memblokir. Bila kelak diminta menegur, tempatnya di `ubahStatus` pada
    panel — bukan di server, supaya tata usaha tidak pernah terhalang bekerja.
-3. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
+4. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
    tapi sekolah besar dengan beberapa gelombang akan melewatinya. Batasnya dicatat di panel, tidak
    disembunyikan. Lembar rekap TIDAK terkena batas ini — ia dihitung di basis data.
-4. **Aturan SPMB bisa berubah lagi.** Bawaan sekarang mengikuti Permendikdasmen No. 3 Tahun 2025.
+5. **Aturan SPMB bisa berubah lagi.** Bawaan sekarang mengikuti Permendikdasmen No. 3 Tahun 2025.
    Sebelum gelombang penerimaan berikutnya, periksa ulang apakah jalur, persentase, dan syarat usia
    masih sama — semuanya bisa disunting pembeli, jadi perubahan aturan tidak menuntut rilis kode,
    hanya pembaruan bawaan dan `SETUP.md`.
-5. **Belum ada yang menguji alur SPMB sebagai pengguna sungguhan.** Seluruh verifikasi dilakukan agen
+6. **Belum ada yang menguji alur SPMB sebagai pengguna sungguhan.** Seluruh verifikasi dilakukan agen
    lewat API dan penyuntikan JavaScript di browser; pemilik memilih tidak menguji sendiri. Yang
    BELUM pernah dijalankan: mengetik dengan papan ketik sungguhan, menekan tombol dengan tetikus,
    dan **melihat hasil cetak yang sebenarnya** — aturan cetaknya dibuktikan dengan menerapkannya
