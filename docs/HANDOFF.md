@@ -1,6 +1,6 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `86623d1`
+**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `f837c5a`
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -665,6 +665,23 @@ Tuntas pada 2026-08-08 (rapikan sisa LPQ + fitur situs):
   dilihat di browser, hanya lolos lint + build.
 - **Kuis Hafalan sengaja dibiarkan menyala**: fitur "Tambah Kategori" sudah ada, jadi kategori
   pertanyaan umum bisa ditambah pembeli langsung dari dashboard. Keputusan pemilik: jangan matikan.
+
+Tuntas pada 2026-08-08 (tiga halaman publik jadi bisa disunting pembeli):
+- **Prestasi, Ekstrakurikuler, Program** — dulu isinya terkunci di kode, termasuk nama juara & pembina
+  karangan ("Rafi Alfarizi, kelas VI A", "Hendra Wijaya, S.Pd.") yang tampil di situs pembeli seolah
+  nyata, plus statistik hardcoded ("86 penghargaan", "Enam/Sepuluh"). Kini masing-masing punya kunci
+  `website_content` (`prestasi_content`, `ekskul_content`, `program_content`), lib normalize/fetch/save,
+  komponen `*ContentSettings.jsx`, dan tab di Manajemen Konten. Pola sama persis seperti
+  `ppdbContent.js` + `PpdbContentSettings.jsx`.
+- **Pola yang ditegakkan** ("teks disunting pembeli, tampilan tetap di kode"): warna kartu/gradien
+  dipilih otomatis dari palet berdasarkan urutan (pembeli tidak menulis CSS); statistik yang bisa
+  dihitung (jumlah item, total JP, hitungan tingkat) diturunkan otomatis dari daftar, bukan disimpan;
+  angka & kata hardcoded di berkas `generated/*Body.jsx` (mis. "86", "Enam", "Sepuluh") diganti prop
+  dinamis. Bawaan sengaja NETRAL (placeholder tanpa nama terlihat asli) dengan peringatan "ganti".
+- Terbukti end-to-end untuk Prestasi: seed `prestasi_content` lewat API → halaman publik menampilkan
+  data tersimpan (catatan, grafik, podium). Ekskul & Program memakai mekanisme simpan/muat yang sama.
+- **Verifikasi editor admin menuntut login** (agen tak boleh isi sandi) — jalur simpan belum diklik di
+  browser; hanya lolos lint + build + render publik. Uji klik saat login untuk memastikan.
 
 ### Audit modul: cakupan yang SUDAH dan BELUM diperiksa
 
