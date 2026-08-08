@@ -1,6 +1,9 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-08 · **Branch:** `master` · **HEAD:** `5ce5a71`
+**Diperbarui:** 2026-08-08 · **Branch:** `feat/sederhanakan-tab-konten` · **HEAD:** `abb1c00`
+
+HEAD saat ini sudah tersinkron ke `origin/feat/sederhanakan-tab-konten`. Branch ini belum di-merge
+ke `master`; `master` tetap berada di commit `8c80e39` pada checkout lokal.
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -256,6 +259,7 @@ Jangan mengikuti kalimat lama itu.
 | Login 6 akun | **Terbukti jalan** lewat API |
 | `resolveUser` tahan kegagalan | **Terbukti lewat uji suntik kerusakan** (rename kolom `nisn`) |
 | 18 tab dashboard admin | **Semua merender**, nol crash — disapu satu per satu di browser |
+| **Navigasi Manajemen Konten Website** | **Tuntas di browser**: 11 tab datar disusun menjadi 6 kelompok untuk superadmin dan 5 kelompok untuk admin; semua sub-tab dan panel lama tetap tersedia |
 | Panel Metode Mengaji | **Tuntas di browser**: pilih Iqro → simpan → DB → bertahan setelah muat ulang |
 | Tab Rapat Guru | **Tuntas**, tab merender bersih |
 | Dashboard guru — 4 tombol hafalan | **Tuntas di browser** (Doa/Sholat/Surat/Tahfizh, Tahfizh terbuka berisi) |
@@ -722,6 +726,41 @@ daftar dinamis penuh.
 
 Risiko: `galleryPhotos` juga dibaca HomePage (beranda) — pastikan penambahan field tidak merusak
 konsumsi di sana (HomePage hanya pakai url/caption, jadi field tambahan aman diabaikan).
+
+### Branding bawaan dan navigasi Konten — TUNTAS (2026-08-08)
+
+#### Branding legacy dicabut — commit `8c80e39`
+
+Permukaan template yang masih menampilkan identitas LPQ dinetralkan. Fallback logo sekarang memakai
+`public/logo-sekolah.svg` melalui `src/lib/schoolAssets.js`; identitas sekolah tersimpan tetap menjadi
+sumber utama. Metadata publik, sitemap, robots, pesan WhatsApp, laporan, kuitansi, absensi digital,
+permainan, kuis, dan beberapa kartu/placeholder konten juga sudah diarahkan ke identitas sekolah
+yang netral. Asset lama `public/logo-lpq-al-fath-maulana.webp` masih disimpan sebagai legacy dan belum
+dihapus karena belum diperlukan untuk perubahan ini.
+
+#### Navigasi Manajemen Konten disederhanakan — commit `abb1c00`
+
+Panel `src/components/dashboard/admin/ContentManagement.jsx` tidak lagi menampilkan seluruh fungsi
+sebagai deretan tab datar. Fitur yang sudah ada dikelompokkan berdasarkan tujuan:
+
+| Kelompok | Bagian yang tetap tersedia |
+|---|---|
+| **Sekolah** | Identitas Sekolah (superadmin), Info Sekolah |
+| **Halaman Publik** | Halaman Depan, Halaman Profil |
+| **Program & Kegiatan** | Program, Prestasi, Ekstrakurikuler |
+| **Media & Pendaftaran** | Media & Galeri, Informasi Pendaftaran |
+| **Pesan** | Pesan Masuk |
+| **Hafalan** | Hafalan, dengan sub-tab Per Kelas dan Per Juz tetap utuh |
+
+Visibilitas Identitas Sekolah tetap khusus `superadmin`. Handler, state konten, kunci
+`website_content`, upload, CRUD, dan tombol Simpan Semua tidak dihapus atau dipindahkan ke API baru.
+
+**Verifikasi perubahan navigasi:** lint, 160 test Vitest, build, `git diff --check`, dan pemindaian
+no-secret semuanya hijau. Di preview `http://localhost:3000/dashboard`, seluruh kelompok serta sub-tab
+yang relevan dibuka satu per satu; pada desktop tidak ada overflow horizontal. Saat membuka Hafalan
+per Juz, sesi browser sempat menerima `401` dari endpoint item akademik; ini memengaruhi pemuatan data
+panel, bukan perpindahan navigasinya. Kemampuan viewport pada browser yang digunakan tidak tersedia,
+jadi sapuan ulang khusus pada lebar 375px perlu dilakukan bila perubahan mobile ini akan diserahkan.
 
 ### Audit modul: cakupan yang SUDAH dan BELUM diperiksa
 
