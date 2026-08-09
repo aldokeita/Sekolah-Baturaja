@@ -254,9 +254,9 @@ Jangan mengikuti kalimat lama itu.
 
 | Lapisan | Status |
 |---|---|
-| `npm run build` | Hijau, exit 0 |
-| `npm run lint` | Bersih, exit 0 |
-| `npm test` | **183 test hijau** (Vitest 3, 10 berkas) |
+| Build produksi (`node tools/build.js`) | Hijau, exit 0 |
+| Lint langsung (`node node_modules/eslint/bin/eslint.js . --quiet`) | Bersih, exit 0 |
+| Vitest langsung (`node node_modules/vitest/vitest.mjs run`) | **183 test hijau** (10 berkas) |
 | Guard `scripts/validate-*.ps1` | **7 dari 8 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
 | Login 6 akun | **Terbukti jalan** lewat API |
@@ -1535,6 +1535,9 @@ yang tersisa di lapisan data hanya dipertahankan bila menjadi kontrak kompatibil
 npm test          # sekali jalan
 npm run test:watch
 ```
+
+Pada mesin dev 2026-08-09, launcher `npm` global menunjuk ke instalasi yang hilang; fallback
+verifikasi yang setara adalah `node node_modules/vitest/vitest.mjs run`.
 
 Konfigurasi di `vitest.config.js` (berdiri sendiri, tidak memuat plugin build; environment
 `jsdom` karena beberapa modul menyinggung localStorage saat dimuat).
