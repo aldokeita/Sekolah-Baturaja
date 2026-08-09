@@ -100,10 +100,10 @@ html { scroll-behavior: smooth; }
 .th-toggle:hover { transform: translateY(-2px); }
 html[data-theme="dark"] .th-i-sun { display: none; }
 html[data-theme="light"] .th-i-moon { display: none; }
-html[data-theme="dark"] .sdnb { background: #141338; }
-html[data-theme="dark"] .th-bg { background: linear-gradient(155deg, #141338 0%, #181a44 38%, #241a4a 70%, #2c1b3f 100%) !important; }
-html[data-theme="dark"] .th-orb { opacity: .78; filter: blur(30px) saturate(1.6) brightness(1.15); }
-html[data-theme="dark"] .th-content { filter: invert(.92) hue-rotate(180deg) saturate(1.75) brightness(1.12) contrast(.94); }
+html[data-theme="dark"] .sdnb { background: #171827; }
+html[data-theme="dark"] .th-bg { background: #171827 !important; }
+html[data-theme="dark"] .th-orb { opacity: 0; visibility: hidden; filter: none; }
+html[data-theme="dark"] .th-content { filter: none; }
 
 /* ============================================================================
    HOVER UTILITIES — one class per distinct `style-hover` value in the mockups.
@@ -176,4 +176,297 @@ html[data-theme="dark"] .th-content { filter: invert(.92) hue-rotate(180deg) sat
   .sdnb-stats > div { border-right: 0 !important; border-bottom: 1px solid rgba(255, 255, 255, .6); }
   .sdnb-bento { grid-template-rows: none !important; }
   .sdnb-bento > a { grid-column: span 1 !important; grid-row: span 1 !important; min-height: 190px; }
+}
+
+/* ============================================================================
+   EXPLICIT DARK THEME — public pages
+
+   The public mockups use inline visual values so their structure and content
+   stay faithful to the source. Dark mode is therefore applied here as a
+   theme-only layer: it remaps those light surfaces, text tones, dividers, and
+   controls without changing DOM structure, spacing, layout, or behavior.
+   The palette follows the approved admin dark shell while retaining the
+   public indigo–violet–rose accents for focal actions and active states.
+   ========================================================================== */
+
+html[data-theme="dark"] body:has(.sdnb) {
+  background: #171827 !important;
+  color: #f3f4fb;
+}
+
+html[data-theme="dark"] body:has(.sdnb) .bg-background {
+  background-color: #171827 !important;
+  background-image: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb {
+  --sdnb-dark-bg: #171827;
+  --sdnb-dark-surface: #252637;
+  --sdnb-dark-surface-raised: #2b2d45;
+  --sdnb-dark-surface-sunken: #1d1f33;
+  --sdnb-dark-border: #3b3e58;
+  --sdnb-dark-border-subtle: #32354d;
+  --sdnb-dark-text: #f3f4fb;
+  --sdnb-dark-text-secondary: #c1c4d5;
+  --sdnb-dark-text-muted: #9499b2;
+  --sdnb-dark-accent: #7c8aff;
+  --sdnb-dark-accent-soft: rgba(91, 108, 255, .16);
+  color: var(--sdnb-dark-text);
+  background: var(--sdnb-dark-bg) !important;
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .th-bg,
+html[data-theme="dark"] body .sdnb.sdnb .th-lite.th-lite,
+html[data-theme="dark"] body .sdnb.sdnb .th-il.th-il {
+  background: var(--sdnb-dark-bg) !important;
+  background-image: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .th-orb,
+html[data-theme="dark"] body .sdnb.sdnb .th-sky,
+html[data-theme="dark"] body .sdnb.sdnb .th-vig {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .th-content.th-content,
+html[data-theme="dark"] body .sdnb.sdnb .th-id.th-id {
+  filter: none !important;
+  color: var(--sdnb-dark-text);
+}
+
+/* Light glass surfaces become solid ink surfaces in the approved dark mode. */
+html[data-theme="dark"] body .sdnb.sdnb [style*="background: rgba(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="background: rgb(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="background-color: rgba(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="background-color: rgb(255"] {
+  background: var(--sdnb-dark-surface) !important;
+  background-image: none !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, .28) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* White highlight strips are decorative light-mode treatment, not content. */
+html[data-theme="dark"] body .sdnb.sdnb [style*="linear-gradient"][style*="rgba(255"] {
+  background: transparent !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb [style*="border: 1px solid rgba(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="border-top: 1px solid rgba(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="border-bottom: 1px solid rgba(255"] {
+  border-color: var(--sdnb-dark-border) !important;
+}
+
+/* Inline light text colors are normalized into three readable dark tones. */
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(20, 22, 40"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(23, 24, 39"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(25, 27, 44"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(26, 29, 63"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(27, 28, 40"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(27, 28, 44"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(29, 31, 51"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(33, 36, 63"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(28, 30, 48"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(30, 32, 53"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(30, 33, 64"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(34, 36, 60"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(43, 46, 72"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(43, 46, 74"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(43, 46, 77"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(44, 47, 69"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(44, 47, 77"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(51, 55, 90"] {
+  color: var(--sdnb-dark-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(74, 79, 208"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(79, 70, 229"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(59, 63, 122"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(59, 64, 168"] {
+  color: var(--sdnb-dark-accent) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(61, 65, 102"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(61, 65, 96"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(63, 68, 104"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(63, 69, 112"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(74, 79, 116"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(75, 79, 120"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(76, 81, 117"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(79, 84, 120"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(83, 88, 120"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(86, 91, 125"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(90, 95, 128"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(91, 96, 130"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(95, 100, 134"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(99, 104, 140"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(99, 103, 138"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(108, 113, 143"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(109, 113, 146"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(123, 127, 160"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(77, 82, 115"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(94, 99, 134"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(112, 117, 154"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(123, 128, 164"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(126, 133, 189"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(138, 142, 168"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(107, 112, 147"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(59, 63, 107"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(107, 81, 112"] {
+  color: var(--sdnb-dark-text-secondary) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgba(60, 50, 90"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(74, 62, 201"] {
+  color: var(--sdnb-dark-text-secondary) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb h1,
+html[data-theme="dark"] body .sdnb.sdnb h2,
+html[data-theme="dark"] body .sdnb.sdnb h3,
+html[data-theme="dark"] body .sdnb.sdnb h4 {
+  color: var(--sdnb-dark-text);
+}
+
+html[data-theme="dark"] body .sdnb.sdnb a {
+  color: var(--sdnb-dark-accent);
+}
+
+html[data-theme="dark"] body .sdnb.sdnb a:hover {
+  color: #a6b0ff;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .gtile {
+  color: var(--sdnb-dark-text);
+}
+
+/* Keep gradient display type and intentionally white-on-accent copy intact. */
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: transparent"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(255, 255, 255"] {
+  color: inherit !important;
+}
+
+/* Shared navigation, dropdown, footer links, and mobile sheet. */
+html[data-theme="dark"] body .sdnb.sdnb .nav-links .h-navlink,
+html[data-theme="dark"] body .sdnb.sdnb .nav-sub,
+html[data-theme="dark"] body .sdnb.sdnb .nav-links .h-navlink:hover {
+  color: var(--sdnb-dark-text-secondary) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .nav-links a:not(.h-navlink) {
+  color: #fff !important;
+  background: #5b6cff !important;
+  border-color: #5b6cff !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .nav-links .h-navlink:hover,
+html[data-theme="dark"] body .sdnb.sdnb .ddlink:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-login:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-glass82:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-glass85:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-read:hover,
+html[data-theme="dark"] body .sdnb.sdnb .th-toggle:hover {
+  background: var(--sdnb-dark-surface-raised) !important;
+  color: var(--sdnb-dark-text) !important;
+  border-color: #4b5070 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .ddpanel,
+html[data-theme="dark"] body .sdnb.sdnb .nav-sheet {
+  background: var(--sdnb-dark-surface-raised) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .36) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .ddlink,
+html[data-theme="dark"] body .sdnb.sdnb .h-flink {
+  color: var(--sdnb-dark-text-secondary) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .ddlink:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-flink:hover {
+  color: var(--sdnb-dark-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .h-white,
+html[data-theme="dark"] body .sdnb.sdnb .h-white30 {
+  background: var(--sdnb-dark-surface-raised) !important;
+  color: var(--sdnb-dark-text) !important;
+  border-color: var(--sdnb-dark-border) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .h-white30 {
+  background: rgba(255, 255, 255, .1) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .h-lift-shadow:hover,
+html[data-theme="dark"] body .sdnb.sdnb .gtile:hover {
+  box-shadow: 0 20px 42px rgba(0, 0, 0, .34) !important;
+}
+
+/* Inputs and focus states use the same sunken surface and indigo ring as admin. */
+html[data-theme="dark"] body .sdnb.sdnb input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] body .sdnb.sdnb textarea,
+html[data-theme="dark"] body .sdnb.sdnb select {
+  color: var(--sdnb-dark-text) !important;
+  background: var(--sdnb-dark-surface-sunken) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: none !important;
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb input::placeholder,
+html[data-theme="dark"] body .sdnb.sdnb textarea::placeholder {
+  color: var(--sdnb-dark-text-muted) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb input:focus,
+html[data-theme="dark"] body .sdnb.sdnb textarea:focus,
+html[data-theme="dark"] body .sdnb.sdnb select:focus {
+  border-color: var(--sdnb-dark-accent) !important;
+  box-shadow: 0 0 0 3px var(--sdnb-dark-accent-soft) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb a:focus-visible,
+html[data-theme="dark"] body .sdnb.sdnb button:focus-visible,
+html[data-theme="dark"] body .sdnb.sdnb input:focus-visible,
+html[data-theme="dark"] body .sdnb.sdnb textarea:focus-visible,
+html[data-theme="dark"] body .sdnb.sdnb select:focus-visible {
+  outline: 2px solid var(--sdnb-dark-accent) !important;
+  outline-offset: 3px;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb svg[stroke="#3d4166"],
+html[data-theme="dark"] body .sdnb.sdnb svg[stroke="#33375a"],
+html[data-theme="dark"] body .sdnb.sdnb svg[stroke="#1b1c2c"],
+html[data-theme="dark"] body .sdnb.sdnb svg[stroke="#565b7d"] {
+  stroke: var(--sdnb-dark-text-secondary) !important;
+}
+
+/* Standalone sign-in keeps its composition but uses the same dark surfaces. */
+html[data-theme="dark"] body .sdnb.sdnb-login .panel {
+  background: var(--sdnb-dark-surface) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .34) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .fld input {
+  background: var(--sdnb-dark-surface-sunken) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  color: var(--sdnb-dark-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .side:hover {
+  background: var(--sdnb-dark-surface-raised) !important;
+  color: var(--sdnb-dark-text) !important;
 }
