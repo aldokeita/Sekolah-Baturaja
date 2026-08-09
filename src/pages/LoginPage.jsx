@@ -2,12 +2,15 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoginBody from '@/components/sdnb/generated/LoginBody';
+import SiteNav from '@/components/sdnb/SiteNav';
 import { useAuth } from '@/contexts/AuthContext';
 import '@/styles/sdnb.css';
+import '@/styles/login-page.css';
 
 /**
  * Login — markup generated verbatim from `Login.dc.html` by
- * tools/dc-convert.mjs. Standalone full-screen page (no shared nav/footer).
+ * tools/dc-convert.mjs. The sign-in content stays standalone, while the
+ * public navbar remains available as the entry point around it.
  *
  * Scope decision: the mockup also contains a *simulated* post-login dashboard
  * for Tata Usaha / Guru / Wali built on invented data. This app already has the
@@ -83,6 +86,7 @@ const LoginPage = () => {
       const on = peran === label;
       return {
         label,
+        aktif: on,
         pick: () => { setPeran(label); setAkun(''); setSandi(''); },
         style: on
           ? 'border:0;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung));box-shadow:0 14px 30px -14px rgba(110,120,255,.95)'
@@ -92,6 +96,7 @@ const LoginPage = () => {
 
     labelAkun: cur[1],
     contohAkun: cur[2],
+    ingat,
     nilaiAkun: akun,
     nilaiSandi: sandi,
     setAkun: (e) => setAkun(e.target.value),
@@ -131,6 +136,7 @@ const LoginPage = () => {
         <title>Masuk — Sekolah Dasar Negeri Baturaja</title>
         <meta name="description" content="Masuk ke portal Sekolah Dasar Negeri Baturaja untuk orang tua, guru, dan tata usaha." />
       </Helmet>
+      <SiteNav />
       {LoginBody(vals)}
     </div>
   );

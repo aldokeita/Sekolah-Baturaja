@@ -173,11 +173,9 @@ function App() {
                   </>
                 )}
 
-                {/* Login and the dashboard sit outside the public shell: the
-                    mockup's Login page is a standalone full-screen design with no
-                    nav/footer, and the dashboard has its own chrome (the public
-                    wrapper's font + overflow rules would bleed into it). */}
-                {/* Standalone full-screen mockups: no shared nav/footer. */}
+                {/* Login and the dashboard sit outside the public content shell:
+                    login mounts the shared public navbar around its form, while
+                    the dashboard keeps its own chrome and permissions. */}
                 <Route path="/pendaftaran" element={<PpdbPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/dashboard" element={<ProtectedRoute allowedRoles={allDashboardRoles}><DashboardPage /></ProtectedRoute>} />
