@@ -963,13 +963,16 @@ const PaymentSystem = () => {
                       </div>
                   </div>
 
-                  <div className="relative mb-3 min-h-[72px] overflow-hidden">
-                      {isPaymentPaid(receiptData.status) && <PaymentReceiptWatermark />}
-                      <div className="relative z-10">
-                        <p className="text-[10px] font-semibold text-slate-500 mb-0.5">Diterima Dari:</p>
-                        <p className="text-xs font-bold text-slate-900">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
-                      </div>
+                  <div className="mb-2 relative z-10">
+                    <p className="text-[10px] font-semibold text-slate-500 mb-0.5">Diterima Dari:</p>
+                    <p className="text-xs font-bold text-slate-900">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
                   </div>
+
+                  {isPaymentPaid(receiptData.status) && (
+                    <div className="relative h-20 mb-2 overflow-hidden">
+                      <PaymentReceiptWatermark />
+                    </div>
+                  )}
 
                   <div className="space-y-2 mb-3 relative z-10">
                     <div className="border-t border-slate-200 pt-2"></div>

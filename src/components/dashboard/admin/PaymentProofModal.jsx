@@ -237,14 +237,17 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
                         </div>
 
                         {/* Student Info */}
-                        <div className="relative mb-4 min-h-[72px] overflow-hidden">
-                            {isPaid && <PaymentReceiptWatermark />}
-                            <div className="relative z-10">
-                                <p className="text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Diterima Dari:</p>
-                                <p className="text-sm font-bold text-slate-900">{studentName}</p>
-                                <p className="text-xs text-slate-500 font-mono">No. Induk: {studentId}</p>
-                            </div>
+                        <div className="relative z-10 mb-2">
+                            <p className="text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Diterima Dari:</p>
+                            <p className="text-sm font-bold text-slate-900">{studentName}</p>
+                            <p className="text-xs text-slate-500 font-mono">No. Induk: {studentId}</p>
                         </div>
+
+                        {isPaid && (
+                            <div className="relative h-20 mb-2 overflow-hidden">
+                                <PaymentReceiptWatermark />
+                            </div>
+                        )}
 
                         {/* Items */}
                         <div className="space-y-3 mb-6 relative z-10">
