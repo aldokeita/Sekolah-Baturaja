@@ -269,8 +269,8 @@ const HomePage = () => {
             { count: counts.guru, label: 'Guru & tenaga kependidikan' },
             { count: 98, suffix: '%', label: 'Lulusan diterima SMP negeri' },
             { count: 32, label: 'Prestasi tingkat kabupaten & provinsi' },
-          ].map((s, i) => (
-            <div key={s.label} style={{ position: 'relative', padding: '26px 28px', borderRight: i === 3 ? undefined : '1px solid rgba(255,255,255,.6)' }}>
+          ].map((s) => (
+            <div key={s.label} style={{ position: 'relative', padding: '26px 28px' }}>
               <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}><span data-count={s.count}>0</span>{s.suffix}</div>
               <div style={{ marginTop: 3, fontSize: 12.5, color: '#63678a' }}>{s.label}</div>
             </div>
