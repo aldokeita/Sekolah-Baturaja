@@ -102,15 +102,6 @@ html { scroll-behavior: smooth; }
   border: 1px solid rgba(255, 255, 255, .84);
   box-shadow: 0 24px 50px -20px rgba(55, 65, 120, .6), inset 0 1px 0 rgba(255, 255, 255, .94), inset 0 -1px 0 rgba(255, 255, 255, .18);
 }
-.sdnb-photo-glass-card::before {
-  content: '';
-  position: absolute;
-  z-index: 0;
-  inset: 0 0 auto;
-  height: 58%;
-  background: linear-gradient(166deg, rgba(255, 255, 255, .64), rgba(255, 255, 255, 0));
-  pointer-events: none;
-}
 .sdnb-photo-glass-card__content { position: relative; z-index: 1; }
 .sdnb-photo-glass-card__eyebrow,
 .sdnb-photo-glass-card__meta {
@@ -352,10 +343,6 @@ html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card {
   box-shadow: 0 18px 40px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .1) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
-}
-
-html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card::before {
-  background: linear-gradient(166deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0)) !important;
 }
 
 html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__eyebrow,
