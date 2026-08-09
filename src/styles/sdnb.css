@@ -54,6 +54,127 @@ html { scroll-behavior: smooth; }
 @keyframes sheen { from { transform: translateX(-170%) skewX(-18deg); } to { transform: translateX(360%) skewX(-18deg); } }
 @keyframes marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
 @keyframes driftbg { 0%, 100% { transform: scale(1.06) translate3d(0, 0, 0); } 50% { transform: scale(1.14) translate3d(-2%, -2%, 0); } }
+@keyframes sdnb-photo-sheen {
+  0%, 12% { transform: translate3d(-170%, 0, 0) rotate(17deg); opacity: 0; }
+  23% { opacity: .58; }
+  48% { opacity: .2; }
+  64%, 100% { transform: translate3d(330%, 0, 0) rotate(17deg); opacity: 0; }
+}
+
+/* ── homepage school photo glass treatment ──────────────────────────────── */
+.sdnb-photo-frame {
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, .78);
+  box-shadow: 0 40px 80px -30px rgba(70, 80, 150, .65), inset 0 1px 0 rgba(255, 255, 255, .86);
+}
+.sdnb-photo-frame__image { z-index: 0; filter: saturate(1.04) contrast(1.02); }
+.sdnb-photo-frame__sheen {
+  position: absolute;
+  z-index: 3;
+  top: -28%;
+  bottom: -28%;
+  left: 0;
+  width: 30%;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .08) 22%, rgba(255, 255, 255, .76) 50%, rgba(255, 255, 255, .08) 78%, rgba(255, 255, 255, 0));
+  filter: blur(1px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: sdnb-photo-sheen 7.2s cubic-bezier(.25, .7, .25, 1) infinite;
+}
+.sdnb-photo-frame__edge {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, .46);
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .76), inset 0 0 0 1px rgba(255, 255, 255, .12);
+  pointer-events: none;
+}
+.sdnb-photo-glass-card {
+  z-index: 5;
+  overflow: hidden;
+  isolation: isolate;
+  color: #1d1f33;
+  background: rgba(255, 255, 255, .3);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, .84);
+  box-shadow: 0 24px 50px -20px rgba(55, 65, 120, .6), inset 0 1px 0 rgba(255, 255, 255, .94), inset 0 -1px 0 rgba(255, 255, 255, .18);
+}
+.sdnb-photo-glass-card::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 auto;
+  height: 58%;
+  background: linear-gradient(166deg, rgba(255, 255, 255, .64), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.sdnb-photo-glass-card__content { position: relative; z-index: 1; }
+.sdnb-photo-glass-card__eyebrow,
+.sdnb-photo-glass-card__meta {
+  color: #6d7192;
+}
+.sdnb-photo-glass-card__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.sdnb-photo-glass-card__value {
+  margin-top: 4px;
+  color: #1d1f33;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1;
+}
+.sdnb-photo-glass-card__score {
+  color: var(--sekolah-aksen-pekat);
+  font-size: 13px;
+  font-weight: 700;
+}
+.sdnb-photo-glass-card__meta {
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+.sdnb-photo-glass-card__icon {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: #0f5f6b;
+  background: rgba(255, 255, 255, .28);
+  border: 1px solid rgba(255, 255, 255, .74);
+  border-radius: 11px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .84), 0 8px 18px -12px rgba(15, 95, 107, .48);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+}
+.sdnb-photo-glass-card__title {
+  color: #1d1f33;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+}
+
+@media (max-width: 640px) {
+  .sdnb-photo-frame { height: 410px !important; border-radius: 24px !important; }
+  .sdnb-photo-glass-card--accreditation { left: 12px !important; bottom: 18px !important; width: 196px !important; padding: 14px 16px !important; }
+  .sdnb-photo-glass-card--extracurricular { top: 18px !important; right: 12px !important; max-width: calc(100% - 24px); padding: 12px 13px !important; }
+  .sdnb-photo-glass-card__title { font-size: 13.5px; }
+  .sdnb-photo-glass-card__meta { font-size: 10.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sdnb-photo-frame__sheen { animation: none; opacity: .12; transform: translate3d(12%, 0, 0) rotate(17deg); }
+}
 
 /* ── verbatim: shine sweep ───────────────────────────────────────────────── */
 .shine { position: relative; overflow: hidden; }
@@ -217,6 +338,45 @@ html[data-theme="dark"] body .sdnb.sdnb {
   color: var(--sdnb-dark-text);
   background: var(--sdnb-dark-bg) !important;
   color-scheme: dark;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-frame {
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 28px 58px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card {
+  color: var(--sdnb-dark-text) !important;
+  background: rgba(43, 45, 69, .84) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .1) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card::before {
+  background: linear-gradient(166deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0)) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__eyebrow,
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__meta {
+  color: var(--sdnb-dark-text-muted) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__value,
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__title {
+  color: var(--sdnb-dark-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__score {
+  color: var(--sdnb-dark-accent) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__icon {
+  color: #9ee9e5 !important;
+  background: rgba(124, 138, 255, .16) !important;
+  border-color: rgba(124, 138, 255, .42) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12) !important;
 }
 
 html[data-theme="dark"] body .sdnb.sdnb .th-bg,
