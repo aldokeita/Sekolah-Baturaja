@@ -41,6 +41,7 @@ import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicConten
 import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
 import PaymentProofModal from './PaymentProofModal';
+import PaymentReceiptWatermark from './PaymentReceiptWatermark';
 import { fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
@@ -944,12 +945,12 @@ const PaymentSystem = () => {
             <DialogHeader className="pb-2 border-b"><DialogTitle className="text-center">Bukti Pembayaran</DialogTitle></DialogHeader>
             {receiptData && (<>
               <div ref={receiptRef} className="p-4 bg-white text-slate-800 rounded-xl shadow-lg border border-slate-100 relative overflow-hidden" id="receipt-content">
+                  {isPaymentPaid(receiptData.status) && <PaymentReceiptWatermark />}
                   <div className="text-center pb-2 mb-2 border-b border-dashed border-slate-300 relative z-10">
                        <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-12 h-12 mx-auto mb-2 object-contain"/>
                        <h3 className="font-bold text-lg text-primary tracking-tight font-poppins">{sekolah.name.toUpperCase()}</h3>
                        <p className="text-[10px] text-slate-500 mt-1">{sekolah.address}</p>
                        <p className="text-[10px] text-slate-500">{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>
-                       {isPaymentPaid(receiptData.status) && <span className="mt-2 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-emerald-700">LUNAS</span>}
                   </div>
 
                   <div className="flex justify-between text-[10px] mb-3 text-slate-600 bg-slate-50 p-2 rounded-lg relative z-10">

@@ -20,7 +20,6 @@ import {
   BookOpen
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { Badge } from '@/components/ui/badge';
 import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
 import { calculateAttendanceData, getHafalanProgressData, getPointsData } from '@/utils/reportUtils';
@@ -28,6 +27,7 @@ import { fetchAllPayments, fetchPaymentDetail } from '@/lib/paymentAdapters';
 import { fetchReceiptLogoDataUrl } from '@/lib/publicContentAdapters';
 import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
 import { isPaymentPaid } from '@/lib/paymentReceipt';
+import PaymentReceiptWatermark from '@/components/dashboard/admin/PaymentReceiptWatermark';
 
 const PaymentStatusPage = () => {
   const sekolah = useSchoolIdentity();
@@ -284,17 +284,14 @@ const PaymentStatusPage = () => {
                       </div>
 
                       <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden relative">
-                          <div className="flex justify-between items-center p-4 bg-slate-50 border-b">
+                          {paymentIsPaid && <PaymentReceiptWatermark />}
+                          <div className="flex justify-between items-center p-4 bg-slate-50 border-b relative z-10">
                               <div>
                                   <p className="text-xs text-slate-500 font-medium">Tanggal Transaksi</p>
                                   <p className="font-bold text-slate-900">{new Date(paymentData.tanggal_pembayaran).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                               </div>
                               <div className="text-right flex flex-col items-end gap-1">
-                                  {paymentIsPaid && (
-                                      <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-100">
-                                          LUNAS
-                                      </Badge>
-                                  )}
+                                  {paymentIsPaid && <p className="text-xs text-emerald-700 font-semibold">Status: LUNAS</p>}
                                   <p className="text-xs text-slate-500 font-medium">Metode Pembayaran</p>
                                   <p className="font-mono text-sm font-bold text-slate-900">{paymentData.metode_pembayaran?.toUpperCase() || 'MANUAL'}</p>
                               </div>
