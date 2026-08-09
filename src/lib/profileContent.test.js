@@ -47,6 +47,22 @@ describe('normalizeProfileContent', () => {
     expect(hasil.ticker).toEqual(['Terakreditasi A', 'Adiwiyata']);
   });
 
+  it('mempertahankan foto setiap kartu pembuka secara individual', () => {
+    const hasil = normalizeProfileContent({
+      photos: [
+        { id: 'profile-opening-1', label: 'Kelas pagi', image_url: 'https://cdn.example.test/kelas.webp' },
+        { id: 'profile-opening-2', label: 'Kebun sekolah' },
+        { id: 'profile-opening-3', label: 'Pentas seni', imageUrl: 'https://cdn.example.test/pentas.webp' },
+      ],
+    });
+
+    expect(hasil.photos).toEqual([
+      { id: 'profile-opening-1', label: 'Kelas pagi', image_url: 'https://cdn.example.test/kelas.webp' },
+      { id: 'profile-opening-2', label: 'Kebun sekolah', image_url: '' },
+      { id: 'profile-opening-3', label: 'Pentas seni', image_url: 'https://cdn.example.test/pentas.webp' },
+    ]);
+  });
+
   it('mengisi field hero yang kosong dari bawaannya masing-masing', () => {
     // Satu field diisi, sisanya tidak: yang lain tidak boleh ikut hilang.
     const hasil = normalizeProfileContent({ hero: { kicker: 'Sejak 1978' } });

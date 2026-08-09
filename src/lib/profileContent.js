@@ -31,11 +31,12 @@ export const DEFAULT_PROFILE_CONTENT = Object.freeze({
     badgeValue: '624',
     badgeLabel: 'murid hari ini',
   }),
-  // Label tiga kartu foto miring di hero. Gradasi dan sudut putarnya di kode.
+  // Tiga kartu foto miring di hero. Gradasi dan sudut putarnya di kode;
+  // gambar dapat diganti pembeli tanpa mengubah label atau komposisinya.
   photos: Object.freeze([
-    { label: 'Kelas pagi' },
-    { label: 'Kebun sekolah' },
-    { label: 'Pentas seni' },
+    { id: 'profile-opening-1', label: 'Kelas pagi', image_url: '' },
+    { id: 'profile-opening-2', label: 'Kebun sekolah', image_url: '' },
+    { id: 'profile-opening-3', label: 'Pentas seni', image_url: '' },
   ]),
   ticker: Object.freeze([
     'Terakreditasi A', 'Adiwiyata Nasional', 'Kurikulum Merdeka', '18 rombongan belajar',
@@ -117,9 +118,14 @@ export const normalizeProfileContent = (stored) => {
   return {
     hero: normalizeObjek(source.hero, bawaan.hero),
 
-    photos: normalizeDaftar(source.photos, bawaan.photos, (row) => {
+    photos: normalizeDaftar(source.photos, bawaan.photos, (row, index) => {
       const label = teks(row?.label);
-      return label ? { label } : null;
+      if (!label) return null;
+      return {
+        id: teks(row?.id) || `profile-opening-${index + 1}`,
+        label,
+        image_url: teks(row?.image_url || row?.imageUrl),
+      };
     }),
 
     // Tiker berupa daftar teks biasa, bukan objek.

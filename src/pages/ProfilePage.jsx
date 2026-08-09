@@ -132,10 +132,11 @@ const PersonSvg = ({ size, style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,.9)" style={style}><circle cx="12" cy="8.4" r="4" /><path d="M3.6 22c.6-4.6 4.2-7.2 8.4-7.2s7.8 2.6 8.4 7.2z" /></svg>
 );
 
-const TiltCard = ({ style, label }) => (
+const TiltCard = ({ style, label, imageUrl }) => (
   <div className="tilt" style={style}>
+    {imageUrl && <img src={imageUrl} alt={`${label} — foto kartu pembuka`} style={{ position: 'absolute', inset: 0, zIndex: 0, width: '100%', height: '100%', objectFit: 'cover' }} onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
     <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%)' }} />
-    <div style={{ position: 'absolute', left: 14, bottom: 14, padding: '7px 12px', borderRadius: 11, fontSize: 11.5, fontWeight: 700, color: '#2c2f4d', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>{label}</div>
+    <div style={{ position: 'absolute', left: 14, bottom: 14, zIndex: 1, padding: '7px 12px', borderRadius: 11, fontSize: 11.5, fontWeight: 700, color: '#2c2f4d', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>{label}</div>
   </div>
 );
 
@@ -258,7 +259,7 @@ const ProfilePage = () => {
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section id="profil" style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: '18px 28px 0' }}>
-        <div aria-hidden="true" style={{ position: 'absolute', left: 14, top: -16, fontFamily: HEADING_FONT, fontSize: 200, fontWeight: 800, letterSpacing: '-.06em', lineHeight: 1, color: 'transparent', WebkitTextStroke: '1.5px rgba(90,105,190,.16)', pointerEvents: 'none', userSelect: 'none' }}>PROFIL</div>
+        <div aria-hidden="true" className="sdnb-profil-mark" style={{ position: 'absolute', left: 14, top: -16, fontFamily: HEADING_FONT, fontSize: 200, fontWeight: 800, letterSpacing: '-.045em', lineHeight: 1, pointerEvents: 'none', userSelect: 'none' }}>PROFIL</div>
 
         <div className="sdnb-profil-hero" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1.06fr .94fr', gap: 40, alignItems: 'center', minHeight: 520 }}>
           <div data-reveal="0">
@@ -285,6 +286,7 @@ const ProfilePage = () => {
                 <TiltCard
                   key={`${f.label}-${i}`}
                   label={f.label}
+                  imageUrl={f.image_url}
                   style={{
                     position: 'absolute', left: g.left, right: g.right, top: g.top, bottom: g.bottom,
                     width: g.width, height: g.height, borderRadius: 26, overflow: 'hidden',
@@ -323,7 +325,7 @@ const ProfilePage = () => {
         <div className="sdnb-profil-stats" style={{ ...glass, position: 'relative', overflow: 'hidden', display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, isi.stats.length)},1fr)`, borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(168deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           {isi.stats.map((s, i) => (
-            <div key={`${s.label}-${i}`} style={{ position: 'relative', padding: '26px 28px', borderRight: i === isi.stats.length - 1 ? undefined : '1px solid rgba(255,255,255,.6)' }}>
+            <div key={`${s.label}-${i}`} style={{ position: 'relative', padding: '26px 28px' }}>
               <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}>
                 {angkaHitung(s.value, s.plain)}{s.suffix}
               </div>

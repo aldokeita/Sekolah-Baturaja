@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BookMarked, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
+import { BookMarked, Image as ImageIcon, Loader2, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -8,18 +8,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/use-toast';
 import { DEFAULT_PROFILE_CONTENT, fetchProfileContent, saveProfileContent } from '@/lib/profileContent';
 import { getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
+import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
 
 /**
  * Penyunting halaman Profil: pembuka, riwayat, fasilitas, dan data pokok sekolah.
  *
- * Hanya teks dan angka. Gradasi, sudut putar kartu foto, dan ukuran kotak
- * fasilitas tetap di kode dan dipasangkan ProfilePage berdasarkan posisi.
+ * Teks, angka, dan foto kartu pembuka disunting pembeli. Gradasi, sudut putar
+ * kartu foto, dan ukuran kotak fasilitas tetap di kode dan dipasangkan
+ * ProfilePage berdasarkan posisi.
  *
  * Visi, misi, dan tujuan TIDAK di sini — ketiganya bagian dari Identitas Sekolah
  * karena ikut dipakai di luar halaman Profil.
  */
 
 const salinBawaan = () => JSON.parse(JSON.stringify(DEFAULT_PROFILE_CONTENT));
+const buatIdFoto = () => `profile-opening-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const Baris = ({ nomor, onHapus, children }) => (
   <div className="admin-card space-y-3 bg-background p-4">
@@ -46,11 +49,28 @@ const Bagian = ({ judul, keterangan, tombol, children }) => (
   </div>
 );
 
+const ProfilePhotoPreview = ({ src, alt }) => {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => setHasError(false), [src]);
+
+  if (!src || hasError) {
+    return (
+      <div className="flex h-32 w-full items-center justify-center rounded-xl bg-muted text-muted-foreground sm:w-48" aria-label="Belum ada foto kartu pembuka">
+        <ImageIcon className="h-8 w-8" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  return <img src={src} alt={alt} className="h-32 w-full rounded-xl object-cover sm:w-48" onError={() => setHasError(true)} />;
+};
+
 const ProfileContentSettings = () => {
   const [isi, setIsi] = useState(salinBawaan);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [uploadingPhotoIndex, setUploadingPhotoIndex] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -89,6 +109,34 @@ const ProfileContentSettings = () => {
     ...prev,
     [blok]: prev[blok].filter((_, i) => i !== index),
   }));
+
+  const handlePhotoUpload = async (event, index) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPhotoIndex(index);
+    try {
+      const photo = isi.photos[index];
+      const result = await uploadWebsiteAsset({
+        folder: 'profile/opening-photos',
+        key: photo?.id || `profile-opening-${index + 1}`,
+        file,
+      });
+      const imageUrl = String(result?.publicUrl || '').trim();
+      if (!imageUrl) throw new Error('Upload berhasil, tetapi URL foto tidak tersedia.');
+
+      ubahBaris('photos', index, 'image_url', imageUrl);
+      toast({
+        title: 'Foto kartu siap disimpan',
+        description: `Foto untuk “${photo?.label || `kartu ${index + 1}`}” sudah diunggah. Tekan “Simpan Halaman Profil” untuk menerapkannya.`,
+      });
+    } catch (error) {
+      toast({ title: 'Upload foto gagal', description: getStorageErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setUploadingPhotoIndex(null);
+      event.target.value = '';
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -186,18 +234,41 @@ const ProfileContentSettings = () => {
 
       <Bagian
         judul="Kartu Foto Pembuka"
-        keterangan="Tiga kartu miring di samping judul. Hanya keterangannya yang diubah; warna dan sudutnya mengikuti desain."
+        keterangan="Tiga kartu miring di samping judul. Unggah atau ganti foto masing-masing kartu; warna, label, dan sudutnya tetap mengikuti desain."
         tombol={(
-          <Button type="button" size="sm" variant="outline" onClick={() => tambah('photos', { label: '' })}>
+          <Button type="button" size="sm" variant="outline" onClick={() => tambah('photos', { id: buatIdFoto(), label: '', image_url: '' })}>
             <Plus className="mr-1 h-4 w-4" /> Tambah kartu
           </Button>
         )}
       >
         {isi.photos.map((f, i) => (
           <Baris key={i} nomor={i + 1} onHapus={() => hapus('photos', i)}>
-            <div className="admin-edit-field">
-              <label htmlFor={`profil-foto-${i}`}>Keterangan</label>
-              <Input id={`profil-foto-${i}`} value={f.label} placeholder="Kelas pagi" onChange={(e) => ubahBaris('photos', i, 'label', e.target.value)} />
+            <div className="grid gap-4 md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] md:items-start">
+              <ProfilePhotoPreview src={f.image_url} alt={`Pratinjau ${f.label || `kartu foto ${i + 1}`}`} />
+              <div className="space-y-3">
+                <div className="admin-edit-field">
+                  <label htmlFor={`profil-foto-${i}`}>Keterangan</label>
+                  <Input id={`profil-foto-${i}`} value={f.label} placeholder="Kelas pagi" onChange={(e) => ubahBaris('photos', i, 'label', e.target.value)} />
+                </div>
+                <div className="admin-edit-field">
+                  <label htmlFor={`profil-foto-upload-${i}`}>Foto kartu</label>
+                  <Input
+                    id={`profil-foto-upload-${i}`}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={uploadingPhotoIndex === i}
+                    onChange={(e) => handlePhotoUpload(e, i)}
+                  />
+                  {uploadingPhotoIndex === i && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground" role="status">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Mengunggah foto…
+                    </p>
+                  )}
+                  {uploadingPhotoIndex !== i && f.image_url && (
+                    <p className="mt-1 text-xs text-muted-foreground">Foto tersimpan di storage website. Tekan Simpan untuk menerapkan URL ini.</p>
+                  )}
+                </div>
+              </div>
             </div>
           </Baris>
         ))}
