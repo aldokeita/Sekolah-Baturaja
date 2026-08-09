@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -28,6 +29,12 @@ func (h *PaymentHandler) Routes() http.Handler {
 
 	// Payment endpoints. Static segments are registered before "/{id}" so chi
 	// never reads "recap" or "expenses" as a payment id.
+	r.Route("/item-settings", func(r chi.Router) {
+		r.Use(middleware.RequireRole("admin", "tata_usaha"))
+		r.Get("/", h.GetPaymentItemSettings)
+		r.Put("/{key}", h.UpsertPaymentItemSetting)
+		r.Delete("/{key}", h.ResetPaymentItemSetting)
+	})
 	r.Get("/", h.ListPayments)
 	r.Get("/recap", h.PaymentRecap)
 	r.Get("/cashflow", h.Cashflow)
@@ -52,6 +59,151 @@ func (h *PaymentHandler) Routes() http.Handler {
 	})
 
 	return r
+}
+
+var validPaymentItemKeys = map[string]struct{}{
+	"sarpras":       {},
+	"seragam":       {},
+	"tas_murid":     {},
+	"id_card_murid": {},
+	"buku_paket":    {},
+	"lks":           {},
+}
+
+// paymentItemNominalPattern mirrors payments.jumlah numeric(12,2): at most 10 integer digits
+// and two fractional digits. Exponents and quoted numbers are deliberately
+// rejected so the API and PostgreSQL apply the same currency contract.
+var paymentItemNominalPattern = regexp.MustCompile(`^(?:0|[1-9][0-9]{0,9})(?:\.[0-9]{1,2})?$`)
+
+func isValidPaymentItemKey(key string) bool {
+	_, ok := validPaymentItemKeys[key]
+	return ok
+}
+
+func validatePaymentItemNominal(raw json.RawMessage) (string, bool) {
+	value := strings.TrimSpace(string(raw))
+	if !paymentItemNominalPattern.MatchString(value) {
+		return "", false
+	}
+
+	nominal, err := strconv.ParseFloat(value, 64)
+	if err != nil || math.IsNaN(nominal) || math.IsInf(nominal, 0) || nominal <= 0 {
+		return "", false
+	}
+	return value, true
+}
+
+type paymentItemSetting struct {
+	ItemKey   string          `json:"item_key"`
+	Amount    json.RawMessage `json:"amount"`
+	UpdatedAt string          `json:"updated_at"`
+}
+
+// GetPaymentItemSettings GET /api/payments/item-settings
+// Only configured non-SPP fixed items are returned, in stable display order.
+func (h *PaymentHandler) GetPaymentItemSettings(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.db.Query(r.Context(), `
+		SELECT item_key, nominal::text, updated_at::text
+		FROM payment_item_settings
+		ORDER BY array_position(
+			ARRAY['sarpras','seragam','tas_murid','id_card_murid','buku_paket','lks']::text[],
+			item_key
+		)
+	`)
+	if err != nil {
+		jsonError(w, "gagal memuat pengaturan nominal pembayaran", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	settings := []paymentItemSetting{}
+	for rows.Next() {
+		var setting paymentItemSetting
+		var nominal string
+		if err := rows.Scan(&setting.ItemKey, &nominal, &setting.UpdatedAt); err != nil {
+			jsonError(w, "gagal membaca pengaturan nominal pembayaran", http.StatusInternalServerError)
+			return
+		}
+		setting.Amount = json.RawMessage(nominal)
+		settings = append(settings, setting)
+	}
+	if err := rows.Err(); err != nil {
+		jsonError(w, "gagal membaca pengaturan nominal pembayaran", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, map[string]any{"data": settings})
+}
+
+// UpsertPaymentItemSetting PUT /api/payments/item-settings/{key}
+// Body: {"amount": 125000}. The conflict target is the requested stable key,
+// so changing one item can never overwrite another item's nominal.
+func (h *PaymentHandler) UpsertPaymentItemSetting(w http.ResponseWriter, r *http.Request) {
+	key := chi.URLParam(r, "key")
+	if !isValidPaymentItemKey(key) {
+		jsonError(w, "key item pembayaran tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	body, err := readBody(r)
+	if err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+	var input struct {
+		Amount json.RawMessage `json:"amount"`
+	}
+	if err := json.Unmarshal(body, &input); err != nil {
+		jsonError(w, "format body tidak valid", http.StatusBadRequest)
+		return
+	}
+	nominal, valid := validatePaymentItemNominal(input.Amount)
+	if !valid {
+		jsonError(w, "nominal harus lebih dari 0 dan maksimal dua angka desimal", http.StatusBadRequest)
+		return
+	}
+
+	callerID := middleware.UserIDFromCtx(r.Context())
+	var updatedBy *string
+	if callerID != "" {
+		updatedBy = &callerID
+	}
+
+	var setting paymentItemSetting
+	var storedNominal string
+	err = h.db.QueryRow(r.Context(), `
+		INSERT INTO payment_item_settings (item_key, nominal, created_by, updated_by)
+		VALUES ($1, $2::numeric, $3, $3)
+		ON CONFLICT (item_key) DO UPDATE
+		SET nominal = EXCLUDED.nominal,
+		    updated_by = EXCLUDED.updated_by
+		RETURNING item_key, nominal::text, updated_at::text
+	`, key, nominal, updatedBy).Scan(&setting.ItemKey, &storedNominal, &setting.UpdatedAt)
+	if err != nil {
+		jsonError(w, "gagal menyimpan pengaturan nominal pembayaran", http.StatusInternalServerError)
+		return
+	}
+	setting.Amount = json.RawMessage(storedNominal)
+
+	jsonOK(w, map[string]any{"data": setting})
+}
+
+// ResetPaymentItemSetting DELETE /api/payments/item-settings/{key}
+// Reset is idempotent: deleting a key that is already unset still succeeds.
+func (h *PaymentHandler) ResetPaymentItemSetting(w http.ResponseWriter, r *http.Request) {
+	key := chi.URLParam(r, "key")
+	if !isValidPaymentItemKey(key) {
+		jsonError(w, "key item pembayaran tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := h.db.Exec(r.Context(),
+		"DELETE FROM payment_item_settings WHERE item_key = $1", key); err != nil {
+		jsonError(w, "gagal mereset pengaturan nominal pembayaran", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, map[string]any{"data": map[string]any{"key": key, "reset": true}})
 }
 
 // paymentSelect is the shared projection for every payment read endpoint.

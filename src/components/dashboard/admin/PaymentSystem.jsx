@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import QRCode from 'qrcode';
-import { Search, Printer, Book, Wallet, Shirt, WalletCards as IdCard, BookOpen, X, Trash2, Briefcase, MessageSquare, ScanLine, Edit, Users, Check, Banknote, Loader2, AlertTriangle, Building, RotateCcw, Plus, Minus, ShoppingCart, Download, FileText } from 'lucide-react';
+import { Search, Printer, Book, Wallet, Shirt, WalletCards as IdCard, BookOpen, X, Trash2, Briefcase, MessageSquare, ScanLine, Edit, Users, Check, Banknote, Loader2, AlertTriangle, Building, RotateCcw, Plus, Minus, ShoppingCart, Download, FileText, Settings, Save } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,8 +27,14 @@ import {
   getSharedDefaultSppAmount,
   monthNameToNumber,
   monthNumberToName,
+  deletePaymentItemSetting,
+  fetchPaymentItemSettings,
+  parsePaymentItemAmount,
+  PAYMENT_ITEM_SETTING_KEYS,
+  savePaymentItemSetting,
   selectedMonthToNumber,
   validatePaymentAmount,
+  validatePaymentItemAmount,
 } from '@/lib/paymentAdapters';
 import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicContentAdapters';
 import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
@@ -39,14 +45,14 @@ import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 const paymentItems = [
-  { name: 'SPP Bulanan', amount: 0, monthly: true, icon: Wallet, custom: 'spp_dropdown' },
-  { name: 'Sarpras', amount: 0, monthly: false, icon: Building },
-  { name: 'Seragam', amount: 0, monthly: false, icon: Shirt },
-  { name: 'Tas Murid', amount: 0, monthly: false, icon: Briefcase },
-  { name: 'ID Card Murid', amount: 0, monthly: false, icon: IdCard },
-  { name: 'Buku Paket', amount: 0, monthly: false, icon: Book },
-  { name: 'LKS', amount: 0, monthly: false, icon: BookOpen },
-  { name: 'Custom', amount: 0, monthly: false, icon: Edit, custom: 'item' },
+  { key: 'spp', name: 'SPP Bulanan', amount: 0, monthly: true, icon: Wallet, custom: 'spp_dropdown' },
+  { key: 'sarpras', name: 'Sarpras', amount: 0, monthly: false, icon: Building },
+  { key: 'seragam', name: 'Seragam', amount: 0, monthly: false, icon: Shirt },
+  { key: 'tas_murid', name: 'Tas Murid', amount: 0, monthly: false, icon: Briefcase },
+  { key: 'id_card_murid', name: 'ID Card Murid', amount: 0, monthly: false, icon: IdCard },
+  { key: 'buku_paket', name: 'Buku Paket', amount: 0, monthly: false, icon: Book },
+  { key: 'lks', name: 'LKS', amount: 0, monthly: false, icon: BookOpen },
+  { key: 'custom', name: 'Custom', amount: 0, monthly: false, icon: Edit, custom: 'item' },
 ];
 const monthsList = MONTH_NAMES;
 const sppOptions = [50000, 70000, 100000, 120000, 150000];
@@ -165,6 +171,133 @@ const MonthSelectorDialog = ({ open, onOpenChange, item, onConfirm, initialYear,
     );
 };
 
+const PaymentItemAmountDialog = ({
+    open,
+    onOpenChange,
+    items,
+    amounts,
+    focusKey,
+    isLoading,
+    savingKey,
+    onSave,
+    onReset,
+}) => {
+    const [drafts, setDrafts] = useState({});
+    const wasOpenRef = useRef(false);
+    const configurableItems = useMemo(
+        () => items.filter((item) => PAYMENT_ITEM_SETTING_KEYS.includes(item.key)),
+        [items],
+    );
+
+    useEffect(() => {
+        if (open && !wasOpenRef.current) {
+            setDrafts(configurableItems.reduce((result, item) => {
+                result[item.key] = amounts[item.key] ?? '';
+                return result;
+            }, {}));
+        }
+        wasOpenRef.current = open;
+    }, [open, amounts, configurableItems]);
+
+    const handleDraftChange = (itemKey, value) => {
+        setDrafts((current) => ({ ...current, [itemKey]: value }));
+    };
+
+    const handleReset = async (itemKey) => {
+        const wasReset = await onReset(itemKey);
+        if (wasReset) {
+            setDrafts((current) => ({ ...current, [itemKey]: '' }));
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Atur Nominal Item Pembayaran</DialogTitle>
+                    <DialogDescription>
+                        Simpan nominal setiap item secara terpisah. Perubahan satu item tidak mengubah item lainnya.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-100">
+                    SPP Bulanan tidak diatur di sini. Nominal SPP tetap mengikuti pengaturan SPP khusus pada saat memilih periode tagihan, sedangkan item Custom tetap diisi langsung per transaksi.
+                </div>
+
+                {isLoading ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">Memuat nominal item...</div>
+                ) : (
+                    <div className="space-y-3 py-2">
+                        {configurableItems.map((item) => {
+                            const ItemIcon = item.icon;
+                            const savedAmount = amounts[item.key];
+                            const isSaving = savingKey === item.key;
+                            return (
+                                <div
+                                    key={item.key}
+                                    className={cn(
+                                        'rounded-lg border p-3 transition-colors',
+                                        focusKey === item.key && 'border-primary bg-primary/5 ring-1 ring-primary/30',
+                                    )}
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex min-w-0 items-center gap-2">
+                                            <ItemIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                            <div className="min-w-0">
+                                                <p className="font-medium">{item.name}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {savedAmount ? `Tersimpan: Rp${savedAmount.toLocaleString('id-ID')}` : 'Belum diatur'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <Input
+                                                type="number"
+                                                min="1"
+                                                step="1000"
+                                                value={drafts[item.key] ?? ''}
+                                                onChange={(event) => handleDraftChange(item.key, event.target.value)}
+                                                placeholder="Nominal"
+                                                className="h-9 w-32 text-right"
+                                                aria-label={`Nominal ${item.name}`}
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={() => onSave(item.key, drafts[item.key])}
+                                                disabled={isSaving}
+                                            >
+                                                {isSaving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+                                                Simpan
+                                            </Button>
+                                            {savedAmount && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleReset(item.key)}
+                                                    disabled={isSaving}
+                                                    className="text-muted-foreground"
+                                                >
+                                                    Reset
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Tutup</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 const DeleteConfirmationDialog = ({ open, onOpenChange, onConfirm, count }) => (
     <Dialog open={open} onOpenChange={onOpenChange}><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="w-5 h-5"/> Konfirmasi Hapus</DialogTitle><DialogDescription>Anda akan menghapus <strong>{count}</strong> riwayat pembayaran. Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin?</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Batal</Button><Button variant="destructive" onClick={() => { onConfirm(); onOpenChange(false); }}>Ya, Hapus Permanen</Button></DialogFooter></DialogContent></Dialog>
 );
@@ -201,6 +334,18 @@ const PaymentSystem = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [receiptLogoUrl, setReceiptLogoUrl] = useState(DEFAULT_LOGO_PATH);
   const [historyProofPayment, setHistoryProofPayment] = useState(null);
+  const [paymentItemAmounts, setPaymentItemAmounts] = useState({});
+  const [isAmountSettingsOpen, setIsAmountSettingsOpen] = useState(false);
+  const [amountSettingsFocusKey, setAmountSettingsFocusKey] = useState(null);
+  const [amountSettingsLoading, setAmountSettingsLoading] = useState(true);
+  const [amountSettingsSavingKey, setAmountSettingsSavingKey] = useState(null);
+
+  const paymentItemsWithAmounts = useMemo(() => paymentItems.map((item) => ({
+    ...item,
+    amount: item.key && !item.monthly && !item.custom
+      ? paymentItemAmounts[item.key] ?? 0
+      : item.amount,
+  })), [paymentItemAmounts]);
 
   const location = useLocation();
 
@@ -229,6 +374,26 @@ const PaymentSystem = () => {
     if (rfidInputRef.current) {
         rfidInputRef.current.focus();
     }
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setAmountSettingsLoading(true);
+    fetchPaymentItemSettings()
+      .then((settings) => {
+        if (active) setPaymentItemAmounts(settings);
+      })
+      .catch(() => {
+        if (active) {
+          toast({ title: 'Nominal item belum dimuat', description: 'Pengaturan nominal dapat dicoba lagi setelah koneksi tersedia.', variant: 'destructive' });
+        }
+      })
+      .finally(() => {
+        if (active) setAmountSettingsLoading(false);
+      });
     return () => {
       active = false;
     };
@@ -312,8 +477,61 @@ const PaymentSystem = () => {
     }
   };
 
+  const openAmountSettings = (itemKey = null) => {
+    setAmountSettingsFocusKey(itemKey);
+    setIsAmountSettingsOpen(true);
+  };
+
+  const handleSavePaymentItemAmount = async (itemKey, value) => {
+    if (!validatePaymentItemAmount(value)) {
+      toast({ title: 'Nominal tidak valid', description: 'Masukkan nominal item yang lebih besar dari nol.', variant: 'destructive' });
+      return;
+    }
+
+    setAmountSettingsSavingKey(itemKey);
+    try {
+      const saved = await savePaymentItemSetting(itemKey, parsePaymentItemAmount(value));
+      setPaymentItemAmounts((current) => ({ ...current, [itemKey]: saved.amount }));
+      toast({ title: 'Nominal tersimpan', description: 'Nominal item pembayaran berhasil disimpan.' });
+    } catch (error) {
+      toast({ title: 'Gagal menyimpan nominal', description: getPaymentErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setAmountSettingsSavingKey(null);
+    }
+  };
+
+  const handleResetPaymentItemAmount = async (itemKey) => {
+    setAmountSettingsSavingKey(itemKey);
+    try {
+      await deletePaymentItemSetting(itemKey);
+      setPaymentItemAmounts((current) => {
+        const next = { ...current };
+        delete next[itemKey];
+        return next;
+      });
+      toast({ title: 'Nominal direset', description: 'Item perlu diberi nominal lagi sebelum dapat ditambahkan ke pembayaran.' });
+      return true;
+    } catch (error) {
+      toast({ title: 'Gagal mereset nominal', description: getPaymentErrorMessage(error), variant: 'destructive' });
+      return false;
+    } finally {
+      setAmountSettingsSavingKey(null);
+    }
+  };
+
   const initiateAddToCart = (item) => {
-    if (item.monthly) { setConfigItem(item); setEditingCartId(null); setIsConfigOpen(true); } else { addToCart(item); }
+    if (item.monthly) {
+      setConfigItem(item);
+      setEditingCartId(null);
+      setIsConfigOpen(true);
+      return;
+    }
+    if (!item.custom && !validatePaymentItemAmount(item.amount)) {
+      openAmountSettings(item.key);
+      toast({ title: 'Nominal belum diatur', description: `Atur nominal ${item.name} terlebih dahulu.` });
+      return;
+    }
+    addToCart(item);
   };
 
   const checkDuplicates = async (config) => {
@@ -333,6 +551,10 @@ const PaymentSystem = () => {
   };
 
   const addToCart = async (item, config = null) => {
+    if (!config && !item.monthly && !item.custom && !validatePaymentItemAmount(item.amount)) {
+      openAmountSettings(item.key);
+      return;
+    }
     if (config) {
         const isDuplicate = await checkDuplicates(config);
         if (isDuplicate) {
@@ -541,7 +763,28 @@ const PaymentSystem = () => {
                             </div>
                         </div>
                     )}
-                    <div><h3 className="font-bold mb-2">Item Pembayaran</h3><div className="grid grid-cols-2 gap-2">{paymentItems.map(item => (<Button key={item.name} onClick={() => initiateAddToCart(item)} variant="outline" className="h-auto flex flex-col p-3 hover:border-primary hover:text-primary"><item.icon className="w-6 h-6 mb-1" /><span className="text-xs text-center">{item.name}</span></Button>))}</div></div>
+                    <div>
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                            <h3 className="font-bold">Item Pembayaran</h3>
+                            <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => openAmountSettings()}>
+                                <Settings className="mr-1.5 h-3.5 w-3.5" /> Atur nominal
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            {paymentItemsWithAmounts.map((item) => {
+                                const ItemIcon = item.icon;
+                                const isConfiguredItem = !item.monthly && !item.custom;
+                                return (
+                                    <Button key={item.key} onClick={() => initiateAddToCart(item)} variant="outline" className="h-auto flex flex-col p-3 hover:border-primary hover:text-primary">
+                                        <ItemIcon className="w-6 h-6 mb-1" />
+                                        <span className="text-center text-xs">{item.name}</span>
+                                        {item.monthly && <span className="mt-1 text-[10px] text-muted-foreground">Atur per periode</span>}
+                                        {isConfiguredItem && <span className="mt-1 text-[10px] text-muted-foreground">{item.amount ? `Rp${item.amount.toLocaleString('id-ID')}` : 'Nominal belum diatur'}</span>}
+                                    </Button>
+                                );
+                            })}
+                        </div>
+                    </div>
                  </div>
             </div>
 
@@ -582,6 +825,17 @@ const PaymentSystem = () => {
 
         <SantriSelectorModal santriList={santriList} open={isSantriSelectorOpen} onOpenChange={setIsSantriSelectorOpen} onSelect={handleSantriSelect} selectedSantriIds={new Set(selectedSantri.map(s => s.id))} />
         <MonthSelectorDialog open={isConfigOpen} onOpenChange={setIsConfigOpen} item={configItem} onConfirm={(config) => { addToCart(configItem, config); }} initialYear={configItem?.year} initialMonths={configItem?.months} resetKey={resetKey} selectedSantri={selectedSantri} />
+        <PaymentItemAmountDialog
+          open={isAmountSettingsOpen}
+          onOpenChange={setIsAmountSettingsOpen}
+          items={paymentItems}
+          amounts={paymentItemAmounts}
+          focusKey={amountSettingsFocusKey}
+          isLoading={amountSettingsLoading}
+          savingKey={amountSettingsSavingKey}
+          onSave={handleSavePaymentItemAmount}
+          onReset={handleResetPaymentItemAmount}
+        />
         <DuplicatePaymentDialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen} onResetMonth={() => { setResetKey(prev => prev + 1); setIsConfigOpen(true); }} />
 
         <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
