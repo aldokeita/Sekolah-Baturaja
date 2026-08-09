@@ -1,5 +1,6 @@
 import apiClient from '@/lib/apiClient';
 import { fetchSantriPage } from '@/lib/dataMasterAdapters';
+import { notifyFinanceDataChanged } from '@/lib/financeAdapters';
 
 export const MONTH_NAMES = [
     'Januari',
@@ -242,7 +243,9 @@ export const fetchPaymentDetail = async (id) => {
 };
 
 export const updatePayment = async (id, payload) => {
-    return apiClient.put(`/api/payments/${id}`, payload);
+    const data = await apiClient.put(`/api/payments/${id}`, payload);
+    notifyFinanceDataChanged({ type: 'payment', action: 'updated', id });
+    return data;
 };
 
 // Returns [{ santri_id, status: 'Lunas' | 'Belum Lunas' }] for one period.
@@ -270,20 +273,25 @@ export const checkPaymentDuplicates = async ({ santriIds = [], months = [], year
 };
 
 export const createPayment = async (payload) => {
-    return apiClient.post('/api/payments', payload);
+    const data = await apiClient.post('/api/payments', payload);
+    notifyFinanceDataChanged({ type: 'payment', action: 'created' });
+    return data;
 };
 
 export const createPaymentsBatch = async (payloads) => {
     const data = await apiClient.post('/api/payments/batch', payloads);
+    notifyFinanceDataChanged({ type: 'payment', action: 'created' });
     return data || [];
 };
 
 export const deletePayment = async (id) => {
     await apiClient.delete(`/api/payments/${id}`);
+    notifyFinanceDataChanged({ type: 'payment', action: 'deleted', id });
 };
 
 export const deletePaymentsBulk = async (ids) => {
     await apiClient.post('/api/payments/bulk-delete', { ids });
+    notifyFinanceDataChanged({ type: 'payment', action: 'deleted', ids });
 };
 
 // Expenses are mounted under the payments router, not at /api/expenses.

@@ -33,7 +33,7 @@ import AdminStatCard from './AdminStatCard';
 import AdminModuleNav from './AdminModuleNav';
 
 import { fetchSantriCount, fetchSantriDetail } from '@/lib/dataMasterAdapters';
-import { fetchCashflowSummary } from '@/lib/financeAdapters';
+import { FINANCE_DATA_CHANGED_EVENT, fetchCashflowSummary } from '@/lib/financeAdapters';
 import { resolveAvatarRecord } from '@/lib/storageAdapters';
 import { enableGameFeatures } from '@/lib/featureFlags';
 import { fetchAppConfig, APP_CONFIG_KEYS } from '@/lib/appConfigAdapters';
@@ -104,15 +104,22 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
   const hasSantriTab = tabs.some((t) => t.value === 'santri');
 
   useEffect(() => {
+    let active = true;
+    let latestRequest = 0;
+
     fetchAppConfig(APP_CONFIG_KEYS.TAHFIZH)
       .then((stored) => { if (stored) applyTahfizhConfig(stored); })
       .catch(() => { /* daftar tingkat bawaan tetap dipakai */ });
 
     const fetchStats = async () => {
+      const requestId = ++latestRequest;
       setIsLoading(true);
       setError(null);
 
       try {
+        // The dashboard period is a local calendar period. Payment dates are
+        // stored as SQL DATE values, so deriving year/month from local time
+        // keeps the card correct around midnight and at month boundaries.
         const today = new Date();
         const currentMonth = today.getMonth() + 1;
         const currentYear = today.getFullYear();
@@ -122,12 +129,14 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
           fetchCashflowSummary({ year: currentYear, month: currentMonth }),
         ]);
 
+        if (!active || requestId !== latestRequest) return;
         setStats({
           totalSantri: santriCount,
           totalPemasukanBulanIni: financeSummary.totalPemasukan,
           totalPengeluaranBulanIni: financeSummary.totalPengeluaran,
         });
       } catch (err) {
+        if (!active || requestId !== latestRequest) return;
         setError(err.message);
         toast({
           title: 'Gagal memuat data',
@@ -135,11 +144,19 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
           variant: 'destructive',
         });
       } finally {
-        setIsLoading(false);
+        if (active && requestId === latestRequest) setIsLoading(false);
       }
     };
 
     fetchStats();
+
+    const handleFinanceDataChanged = () => fetchStats();
+    window.addEventListener(FINANCE_DATA_CHANGED_EVENT, handleFinanceDataChanged);
+
+    return () => {
+      active = false;
+      window.removeEventListener(FINANCE_DATA_CHANGED_EVENT, handleFinanceDataChanged);
+    };
   }, []);
 
   const handleGlobalSearchNavigate = async (item, category) => {

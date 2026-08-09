@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -850,8 +851,9 @@ func (h *PaymentHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
-	if body.TanggalPengeluaran == "" || body.Jumlah <= 0 {
-		jsonError(w, "tanggal pengeluaran dan jumlah wajib diisi", http.StatusBadRequest)
+	body, err := normalizeExpenseInput(body)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -859,10 +861,10 @@ func (h *PaymentHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 
 	var id string
 	var createdAt string
-	err := h.db.QueryRow(r.Context(), `
+	err = h.db.QueryRow(r.Context(), `
 		INSERT INTO expenses (tanggal_pengeluaran, kategori, deskripsi, jumlah, created_by, updated_by)
 		VALUES ($1,$2,$3,$4,$5,$5)
-		RETURNING id, created_at
+		RETURNING id, created_at::text
 	`, body.TanggalPengeluaran, body.Kategori, body.Deskripsi, body.Jumlah, callerID).Scan(&id, &createdAt)
 	if err != nil {
 		jsonError(w, fmt.Sprintf("gagal menyimpan pengeluaran: %v", err), http.StatusInternalServerError)
@@ -890,6 +892,38 @@ type expenseInput struct {
 	Jumlah             float64 `json:"jumlah"`
 }
 
+const maxExpenseAmount = 9999999999.99
+
+// normalizeExpenseInput keeps the API contract aligned with the expenses
+// table before any SQL is executed. The UI already validates these fields, but
+// the backend must enforce the same contract for every client and return a
+// useful 400 instead of an opaque database error.
+func normalizeExpenseInput(body expenseInput) (expenseInput, error) {
+	body.TanggalPengeluaran = strings.TrimSpace(body.TanggalPengeluaran)
+	if body.TanggalPengeluaran == "" {
+		return expenseInput{}, fmt.Errorf("tanggal pengeluaran wajib diisi")
+	}
+	if _, err := time.Parse("2006-01-02", body.TanggalPengeluaran); err != nil {
+		return expenseInput{}, fmt.Errorf("tanggal pengeluaran harus berformat YYYY-MM-DD")
+	}
+	if math.IsNaN(body.Jumlah) || math.IsInf(body.Jumlah, 0) || body.Jumlah <= 0 || body.Jumlah > maxExpenseAmount {
+		return expenseInput{}, fmt.Errorf("jumlah pengeluaran harus lebih besar dari nol dan tidak melebihi batas nominal")
+	}
+	if body.Kategori == nil || strings.TrimSpace(*body.Kategori) == "" {
+		return expenseInput{}, fmt.Errorf("kategori pengeluaran wajib diisi")
+	}
+	if body.Deskripsi == nil || strings.TrimSpace(*body.Deskripsi) == "" {
+		return expenseInput{}, fmt.Errorf("keterangan pengeluaran wajib diisi")
+	}
+
+	kategori := strings.TrimSpace(*body.Kategori)
+	deskripsi := strings.TrimSpace(*body.Deskripsi)
+	body.Kategori = &kategori
+	body.Deskripsi = &deskripsi
+	body.Jumlah = math.Round(body.Jumlah*100) / 100
+	return body, nil
+}
+
 // UpdateExpense PUT /api/payments/expenses/:id (admin only)
 func (h *PaymentHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
@@ -908,8 +942,9 @@ func (h *PaymentHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
-	if body.TanggalPengeluaran == "" || body.Jumlah <= 0 {
-		jsonError(w, "tanggal pengeluaran dan jumlah wajib diisi", http.StatusBadRequest)
+	body, err := normalizeExpenseInput(body)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -1146,6 +1181,29 @@ func (h *PaymentHandler) PaymentStatusSummary(w http.ResponseWriter, r *http.Req
 	jsonData(w, result)
 }
 
+// cashflowDateRange returns a half-open [start, end) range for a local
+// calendar year or month. Keeping the end exclusive avoids month-length and
+// leap-year edge cases and works for SQL DATE columns without timezone shifts.
+func cashflowDateRange(year int, month *int) (string, string) {
+	startMonth := 1
+	if month != nil {
+		startMonth = *month
+	}
+
+	endYear := year
+	endMonth := startMonth + 1
+	if month == nil {
+		endYear = year + 1
+		endMonth = 1
+	} else if endMonth == 13 {
+		endYear++
+		endMonth = 1
+	}
+
+	return fmt.Sprintf("%04d-%02d-01", year, startMonth),
+		fmt.Sprintf("%04d-%02d-01", endYear, endMonth)
+}
+
 // Cashflow GET /api/payments/cashflow?year=&month=  (admin only)
 // month is omitted or "all" for a whole-year total. Sums are computed in
 // Postgres so the client never has to page through every row.
@@ -1171,27 +1229,25 @@ func (h *PaymentHandler) Cashflow(w http.ResponseWriter, r *http.Request) {
 		month = &m
 	}
 
-	// Income is keyed on the billing period (bulan/tahun); expenses are keyed on
-	// the calendar date, so the two use different filters for the same period.
+	// A cashflow period is based on the date money was received, not the
+	// billing period attached to an item. This includes non-monthly items
+	// (whose bulan/tahun are NULL) and prevents an SPP payment for a future
+	// billing month from appearing as current-month income. The DATE column has
+	// no timezone, so the browser's local year/month maps directly to these
+	// half-open calendar bounds without UTC conversion.
+	startDate, endDate := cashflowDateRange(year, month)
+
 	var totalIn float64
 	var countIn int
 	if err := h.db.QueryRow(r.Context(), `
 		SELECT COALESCE(SUM(jumlah), 0), COUNT(*)
 		FROM payments
-		WHERE tahun = $1 AND status = 'paid' AND deleted_at IS NULL
-		  AND ($2::int IS NULL OR bulan = $2::int)
-	`, year, month).Scan(&totalIn, &countIn); err != nil {
+		WHERE status = 'paid' AND deleted_at IS NULL
+		  AND tanggal_pembayaran >= $1::date
+		  AND tanggal_pembayaran < $2::date
+	`, startDate, endDate).Scan(&totalIn, &countIn); err != nil {
 		jsonError(w, "gagal menghitung pemasukan", http.StatusInternalServerError)
 		return
-	}
-
-	startDate := fmt.Sprintf("%04d-01-01", year)
-	endDate := fmt.Sprintf("%04d-12-31", year)
-	if month != nil {
-		startDate = fmt.Sprintf("%04d-%02d-01", year, *month)
-		// The first of the next month minus a day, computed by Postgres to avoid
-		// month-length and leap-year edge cases.
-		endDate = ""
 	}
 
 	var totalOut float64
@@ -1201,20 +1257,8 @@ func (h *PaymentHandler) Cashflow(w http.ResponseWriter, r *http.Request) {
 		FROM expenses
 		WHERE deleted_at IS NULL
 		  AND tanggal_pengeluaran >= $1::date
-		  AND tanggal_pengeluaran <= $2::date`
-	var expenseArgs []any
-	if endDate == "" {
-		expenseSQL = `
-			SELECT COALESCE(SUM(jumlah), 0), COUNT(*)
-			FROM expenses
-			WHERE deleted_at IS NULL
-			  AND tanggal_pengeluaran >= $1::date
-			  AND tanggal_pengeluaran < ($1::date + interval '1 month')`
-		expenseArgs = []any{startDate}
-	} else {
-		expenseArgs = []any{startDate, endDate}
-	}
-	if err := h.db.QueryRow(r.Context(), expenseSQL, expenseArgs...).Scan(&totalOut, &countOut); err != nil {
+		  AND tanggal_pengeluaran < $2::date`
+	if err := h.db.QueryRow(r.Context(), expenseSQL, startDate, endDate).Scan(&totalOut, &countOut); err != nil {
 		jsonError(w, "gagal menghitung pengeluaran", http.StatusInternalServerError)
 		return
 	}

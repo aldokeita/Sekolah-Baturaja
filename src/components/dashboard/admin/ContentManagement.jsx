@@ -247,7 +247,7 @@ const ContentManagement = () => {
    * Perubahan" akan menimpa isi tersimpan pembeli dengan kekosongan; dibiarkan,
    * data lama tetap utuh sampai ada keputusan memakainya lagi. */
   const [content, setContent] = useState({
-    ...defaultContent, brochures: [], pustaka: [], news: [], announcements: [], qiroatiVideos: [], hafalanVideos: [], waliDiscussions: [], santriOfTheMonth: [], guruOfTheMonth: null, leaderboard: [], parentingArticles: [], model3dSettings: { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 }
+    ...defaultContent, schoolBuildingPhoto: '', brochures: [], pustaka: [], news: [], announcements: [], qiroatiVideos: [], hafalanVideos: [], waliDiscussions: [], santriOfTheMonth: [], guruOfTheMonth: null, leaderboard: [], parentingArticles: [], model3dSettings: { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 }
   });
 
   const [feedbacks, setFeedbacks] = useState([]);
@@ -266,6 +266,8 @@ const ContentManagement = () => {
     komunikasi: 'pesan',
     akademik: 'hafalan',
   });
+  const [assetUploadType, setAssetUploadType] = useState(null);
+  const [buildingPhotoPreviewError, setBuildingPhotoPreviewError] = useState(false);
 
   useEffect(() => { fetchContent(); fetchSantriAndGuru(); fetchFeedbacks(); }, []);
 
@@ -311,6 +313,7 @@ const ContentManagement = () => {
     }
     const arrayKeys = ['heroSlides', 'brochures', 'pustaka', 'facilities', 'qiroatiVideos', 'hafalanVideos', 'waliDiscussions', 'santriOfTheMonth', 'leaderboard', 'parentingArticles', 'galleryPhotos', 'schedules', 'faqs'];
     arrayKeys.forEach(key => { if (!newContent[key] || !Array.isArray(newContent[key])) newContent[key] = []; });
+    if (typeof newContent.schoolBuildingPhoto !== 'string') newContent.schoolBuildingPhoto = '';
     if(!newContent.quotas) newContent.quotas = { pagi: 0, siang: 0, sore: 0, dewasaPagi: 0, dewasaSiang: 0, dewasaMalam: 0 };
     Object.assign(newContent, mergeHomepageContent(newContent));
     if(!newContent.model3dSettings || typeof newContent.model3dSettings !== 'object' || Array.isArray(newContent.model3dSettings)) {
@@ -341,6 +344,7 @@ const ContentManagement = () => {
   const handleFileUpload = async (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
+    setAssetUploadType(type);
     let folder = 'general';
     if (['news', 'announcements', 'parentingArticles'].includes(type)) folder = 'article-images';
     else if (type === 'facilities') folder = 'facilities-images';
@@ -349,8 +353,13 @@ const ContentManagement = () => {
     else if (type === 'ctaBackgroundUrl') folder = 'backgrounds';
     else if (type === 'heroSlides') folder = 'hero-slides';
     else if (type === 'galleryPhotos') folder = 'gallery';
+    else if (type === 'schoolBuildingPhoto') folder = 'homepage';
 
-    const assetKey = type === 'logoUrl' ? 'logo' : (type === 'ctaBackgroundUrl' ? 'cta-background' : null);
+    const assetKey = type === 'logoUrl'
+      ? 'logo'
+      : (type === 'ctaBackgroundUrl'
+        ? 'cta-background'
+        : (type === 'schoolBuildingPhoto' ? 'school-building' : null));
     let publicUrl = '';
     try {
       const result = await uploadWebsiteAsset({ folder, key: assetKey, file });
@@ -360,6 +369,7 @@ const ContentManagement = () => {
       }
     } catch (error) {
       toast({ title: "Upload Gagal!", description: getStorageErrorMessage(error), variant: "destructive" });
+      setAssetUploadType(null);
       return;
     }
 
@@ -372,6 +382,23 @@ const ContentManagement = () => {
       } catch (error) {
         toast({ title: "Logo Gagal Disimpan", description: getPublicContentErrorMessage(error), variant: "destructive" });
       }
+      setAssetUploadType(null);
+      return;
+    }
+    if (type === 'schoolBuildingPhoto') {
+      try {
+        const saved = await saveWebsiteContentItem({ key: 'schoolBuildingPhoto', content: publicUrl, isPublic: true });
+        const savedUrl = saved?.content || publicUrl;
+        setContent(prev => ({ ...prev, schoolBuildingPhoto: savedUrl }));
+        setBuildingPhotoPreviewError(false);
+        toast({ title: "Foto Header Disimpan!", description: "Foto gedung sekolah akan tampil di header beranda." });
+      } catch (error) {
+        // Keep the previous URL in state when the content write fails. The
+        // uploaded object is harmless, while the current public image remains
+        // usable until the database update succeeds.
+        toast({ title: "Foto Header Gagal Disimpan", description: getPublicContentErrorMessage(error), variant: "destructive" });
+      }
+      setAssetUploadType(null);
       return;
     }
     if (type === 'ctaBackgroundUrl') { setContent(prev => ({ ...prev, [type]: publicUrl })); }
@@ -379,6 +406,7 @@ const ContentManagement = () => {
     else if (type === 'galleryPhotos') { setFormState(prev => ({ ...prev, url: publicUrl })); }
     else { setFormState(prev => ({ ...prev, image_url: publicUrl })); }
     toast({ title: "Upload Berhasil!", description: `${file.name} berhasil diunggah.` });
+    setAssetUploadType(null);
   };
 
   const openModal = (type, item = null) => {
@@ -504,6 +532,44 @@ const ContentManagement = () => {
       case 'media':
         return (
           <>
+            <div className="admin-card p-4 space-y-4 md:col-span-2">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-xl flex items-center gap-2"><Building2 /> Foto Gedung Header Beranda</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Kelola foto yang tampil pada area utama header halaman beranda.</p>
+                </div>
+                <span className="rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">Opsional</span>
+              </div>
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-center">
+                <div className="aspect-video overflow-hidden rounded-xl border border-slate-200/80 bg-muted/30 dark:border-white/10">
+                  {content.schoolBuildingPhoto && !buildingPhotoPreviewError ? (
+                    <img
+                      src={content.schoolBuildingPhoto}
+                      alt="Pratinjau foto gedung sekolah"
+                      className="h-full w-full object-cover"
+                      onError={() => setBuildingPhotoPreviewError(true)}
+                    />
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted-foreground">
+                      <Building2 className="h-8 w-8" aria-hidden="true" />
+                      <span>{content.schoolBuildingPhoto ? 'Pratinjau tidak dapat dimuat.' : 'Belum ada foto. Header memakai fallback bawaan.'}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold" htmlFor="school-building-photo">Unggah atau ganti foto</label>
+                  <Input
+                    id="school-building-photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => handleFileUpload(e, 'schoolBuildingPhoto')}
+                    disabled={assetUploadType === 'schoolBuildingPhoto'}
+                  />
+                  <p className="text-xs text-muted-foreground">Format JPG, PNG, atau WebP. Foto lama tetap dipakai jika upload atau penyimpanan gagal.</p>
+                  {assetUploadType === 'schoolBuildingPhoto' && <p className="text-sm font-medium text-primary" role="status">Mengunggah dan menyimpan foto…</p>}
+                </div>
+              </div>
+            </div>
             <div className="col-span-full"><ContentSection title="Galeri Kegiatan" modalType="galleryPhotos" data={content.galleryPhotos} icon={<ImageIcon />} renderItem={item => <div className="flex items-center gap-2"><img src={item.url} alt="" className="w-12 h-12 object-cover rounded-md" /><p className="truncate">{item.caption}</p></div>} /></div>
             <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><FileText /> Brosur Pendaftaran</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'brochures')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.brochures.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('brochures', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>
             <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><Library /> Pustaka Digital</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'pustaka')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.pustaka.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('pustaka', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>

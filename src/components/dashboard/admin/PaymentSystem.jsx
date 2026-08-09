@@ -37,6 +37,7 @@ import {
   validatePaymentAmount,
   validatePaymentItemAmount,
 } from '@/lib/paymentAdapters';
+import { getLocalDateString } from '@/lib/financeAdapters';
 import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicContentAdapters';
 import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
@@ -620,7 +621,7 @@ const PaymentSystem = () => {
                             bulan: monthNumber,
                             tahun: item.year,
                             jumlah: Number(item.amount),
-                            tanggal_pembayaran: new Date().toLocaleDateString('en-CA'),
+                            tanggal_pembayaran: getLocalDateString(),
                             status: paymentStatus,
                             catatan: `${item.name} (${month} ${item.year})`,
                             metode_pembayaran: paymentMethod
@@ -637,7 +638,7 @@ const PaymentSystem = () => {
                       bulan: null,
                       tahun: null,
                       jumlah: Number(item.amount * item.quantity),
-                      tanggal_pembayaran: new Date().toLocaleDateString('en-CA'),
+                      tanggal_pembayaran: getLocalDateString(),
                       status: paymentStatus,
                       catatan: `${paymentType} (Qty: ${item.quantity})`,
                       metode_pembayaran: paymentMethod

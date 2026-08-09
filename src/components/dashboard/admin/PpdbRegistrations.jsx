@@ -414,7 +414,7 @@ const PpdbRegistrations = () => {
   }
 
   return (
-    <section className="space-y-6 rounded-lg border bg-muted/20 p-4 sm:p-6" aria-labelledby="ppdb-pendaftaran">
+    <section className="admin-ppdb-panel space-y-6 rounded-lg border bg-muted/20 p-4 sm:p-6" aria-labelledby="ppdb-pendaftaran">
       <div className="flex flex-col gap-4 border-b pb-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
           <div className="admin-panel-header-icon"><Inbox /></div>

@@ -102,3 +102,43 @@ func TestPaymentItemSettingsRejectsSPPAndCustomBeforeDatabase(t *testing.T) {
 		}
 	}
 }
+
+func TestCashflowDateRangeUsesExclusiveNextBoundary(t *testing.T) {
+	month := 2
+	start, end := cashflowDateRange(2028, &month)
+	if start != "2028-02-01" || end != "2028-03-01" {
+		t.Fatalf("cashflowDateRange(month) = %q, %q; want 2028-02-01, 2028-03-01", start, end)
+	}
+
+	month = 12
+	start, end = cashflowDateRange(2028, &month)
+	if start != "2028-12-01" || end != "2029-01-01" {
+		t.Fatalf("cashflowDateRange(December) = %q, %q; want 2028-12-01, 2029-01-01", start, end)
+	}
+
+	start, end = cashflowDateRange(2028, nil)
+	if start != "2028-01-01" || end != "2029-01-01" {
+		t.Fatalf("cashflowDateRange(year) = %q, %q; want 2028-01-01, 2029-01-01", start, end)
+	}
+}
+
+func TestNormalizeExpenseInput(t *testing.T) {
+	kategori := "  Operasional  "
+	deskripsi := "  Bayar listrik  "
+	got, err := normalizeExpenseInput(expenseInput{
+		TanggalPengeluaran: "2026-08-09",
+		Kategori:           &kategori,
+		Deskripsi:          &deskripsi,
+		Jumlah:             125000.125,
+	})
+	if err != nil {
+		t.Fatalf("normalizeExpenseInput returned error: %v", err)
+	}
+	if got.TanggalPengeluaran != "2026-08-09" || *got.Kategori != "Operasional" || *got.Deskripsi != "Bayar listrik" || got.Jumlah != 125000.13 {
+		t.Fatalf("normalized expense = %#v; want trimmed fields and rounded amount", got)
+	}
+
+	if _, err := normalizeExpenseInput(expenseInput{TanggalPengeluaran: "2026-02-31", Jumlah: 100}); err == nil {
+		t.Fatal("invalid calendar date should be rejected")
+	}
+}

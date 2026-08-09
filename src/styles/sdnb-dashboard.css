@@ -629,3 +629,191 @@ html[data-theme="dark"] body.school-admin-context [data-radix-dropdown-menu-item
   background: hsl(var(--admin-nav-hover-bg)) !important;
   color: hsl(var(--admin-text-primary)) !important;
 }
+
+/* Pendaftaran and Media settings retain the dashboard's solid hierarchy in
+   dark mode. The Media dialog is portalled beneath <body>, while PPDB uses
+   utility classes that otherwise keep the older global dark palette. */
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel {
+  background: hsl(var(--admin-surface-raised)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-primary));
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel .text-foreground {
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel .text-muted-foreground,
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel .admin-edit-field label {
+  color: hsl(var(--admin-text-muted)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel [class~="border-b"],
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel [class~="border-t"] {
+  border-color: hsl(var(--admin-border-subtle)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel table thead {
+  background: hsl(var(--admin-surface-sunken));
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel table tbody tr {
+  border-color: hsl(var(--admin-border-subtle)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel table tbody tr:hover {
+  background: hsl(var(--admin-accent-soft));
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel [class*="bg-background/"] {
+  background-color: hsl(var(--admin-surface-sunken)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button[class*="bg-background"] {
+  background-color: hsl(var(--admin-surface-raised)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-secondary)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button[class*="bg-background"]:hover:not(:disabled) {
+  background-color: hsl(var(--admin-nav-hover-bg)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button[class*="bg-primary"] {
+  background-color: hsl(var(--admin-accent)) !important;
+  border-color: hsl(var(--admin-accent)) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button[class*="bg-primary"]:hover:not(:disabled) {
+  background-color: hsl(var(--admin-accent-muted)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel .admin-card[aria-pressed="true"] {
+  border-color: hsl(var(--admin-accent)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--admin-accent) / 0.45) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button:focus-visible {
+  outline: 2px solid hsl(var(--admin-accent));
+  outline-offset: 2px;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass {
+  --background: var(--admin-surface);
+  --foreground: var(--admin-text-primary);
+  --card: var(--admin-surface-raised);
+  --card-foreground: var(--admin-text-primary);
+  --muted: var(--admin-surface-sunken);
+  --muted-foreground: var(--admin-text-muted);
+  --border: var(--admin-border);
+  --input: var(--admin-border);
+  --ring: var(--admin-accent);
+  background: hsl(var(--admin-surface)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: 0 14px 32px hsl(var(--admin-shadow-color) / 0.48) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tabs,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__panel,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__playlist,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track {
+  background: hsl(var(--admin-surface-raised)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track:hover {
+  background: hsl(var(--admin-nav-hover-bg)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass input {
+  background: hsl(var(--admin-surface-sunken)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass input::placeholder {
+  color: hsl(var(--admin-text-muted)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass label,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass .text-muted-foreground {
+  color: hsl(var(--admin-text-muted)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tab {
+  color: hsl(var(--admin-text-secondary)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tab:hover {
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tab:focus-visible,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass button:focus-visible,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass input:focus-visible {
+  outline: 2px solid hsl(var(--admin-accent));
+  outline-offset: 2px;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tab-pill {
+  background: hsl(var(--admin-accent)) !important;
+  border-color: hsl(var(--admin-accent)) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__panel [data-slot="card-content"] > div > button:not([role="switch"]),
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track button {
+  background-color: hsl(var(--admin-accent)) !important;
+  border-color: hsl(var(--admin-accent)) !important;
+  color: hsl(0 0% 100%) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__panel [data-slot="card-content"] > div > button:not([role="switch"]):hover:not(:disabled) {
+  background-color: hsl(var(--admin-accent-muted)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track button {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: hsl(0 84% 72%) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track button:hover:not(:disabled) {
+  background-color: hsl(0 72% 45% / 0.16) !important;
+  color: hsl(0 84% 82%) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass button[role="switch"][data-state="unchecked"] {
+  background-color: hsl(var(--admin-surface-sunken)) !important;
+  border: 1px solid hsl(var(--admin-border));
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass button[role="switch"][data-state="checked"] {
+  background-color: hsl(var(--admin-accent)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track-icon {
+  background: hsl(var(--admin-accent-soft)) !important;
+  border-color: hsl(var(--admin-accent) / 0.36) !important;
+  color: hsl(var(--admin-accent)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__note {
+  background: hsl(38 70% 16%) !important;
+  border-color: hsl(var(--admin-accent-amber) / 0.42) !important;
+  color: hsl(42 94% 82%) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
