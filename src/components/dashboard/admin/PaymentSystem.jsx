@@ -43,6 +43,7 @@ import PaymentProofModal from './PaymentProofModal';
 import { fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import { getPaymentReceiptReference, normalizeWhatsAppPhone } from '@/lib/paymentReceipt';
 
 const paymentItems = [
   { key: 'spp', name: 'SPP Bulanan', amount: 0, monthly: true, icon: Wallet, custom: 'spp_dropdown' },
@@ -332,6 +333,9 @@ const PaymentSystem = () => {
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isSendingReceiptWhatsApp, setIsSendingReceiptWhatsApp] = useState(false);
+  const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
   const [receiptLogoUrl, setReceiptLogoUrl] = useState(DEFAULT_LOGO_PATH);
   const [historyProofPayment, setHistoryProofPayment] = useState(null);
   const [paymentItemAmounts, setPaymentItemAmounts] = useState({});
@@ -577,9 +581,10 @@ const PaymentSystem = () => {
   const updateCartItem = (cartId, updates) => setCart(prev => prev.map(item => item.cartId === cartId ? { ...item, ...updates } : item));
 
   const handlePayment = async () => {
+    if (isProcessingPayment) return;
     if (selectedSantri.length === 0 || cart.length === 0) return toast({ title: "Error", description: "Pilih murid dan tambahkan item pembayaran.", variant: "destructive" });
+    setIsProcessingPayment(true);
     try {
-        const transactionId = crypto.randomUUID();
         let newPayments = [];
 
         for (const santri of selectedSantri) {
@@ -621,20 +626,37 @@ const PaymentSystem = () => {
                 }
             }
         }
+        if (newPayments.length === 0) throw new Error("Tidak ada pembayaran yang dapat diproses.");
         const data = await createPaymentsBatch(newPayments);
+        if (!Array.isArray(data) || data.length !== newPayments.length || data.some((payment) => String(payment?.status || '').toLowerCase() !== 'paid')) {
+          throw new Error("Konfirmasi pembayaran tidak lengkap. Tidak ada bukti yang dibuat.");
+        }
         if (selectedSantri.length === 1) loadPaymentHistory(selectedSantri[0].id);
-
-        toast({ title: "Pembayaran Berhasil!", description: `Pembayaran untuk ${selectedSantri.length} murid telah lunas.` });
 
         let totalAmount = 0;
         for (const item of cart) { if (item.monthly) { totalAmount += (item.amount * item.months.length); } else { totalAmount += (item.amount * item.quantity); } }
         totalAmount = totalAmount * selectedSantri.length;
         const qrCodeLoginUrl = `${window.location.origin}/login`;
-        setReceiptData({ items: cart, total: totalAmount, santri: selectedSantri, qrCodeUrl: qrCodeLoginUrl, timestamp: new Date(), method: paymentMethod, transactionId: transactionId, paymentId: data?.[0]?.id });
+        const transactionIds = data.map((payment) => getPaymentReceiptReference(payment)).filter((reference) => reference !== '-');
+        setReceiptData({
+          items: cart,
+          total: totalAmount,
+          santri: selectedSantri,
+          qrCodeUrl: qrCodeLoginUrl,
+          timestamp: new Date(),
+          method: paymentMethod,
+          status: 'paid',
+          transactionId: getPaymentReceiptReference(data[0]),
+          transactionIds,
+          paymentId: data[0]?.id,
+        });
+        toast({ title: "Pembayaran Berhasil!", description: `Pembayaran untuk ${selectedSantri.length} murid telah dikonfirmasi dan bukti siap digunakan.` });
         setIsReceiptOpen(true);
         setCart([]);
     } catch (error) {
         toast({ title: "Pembayaran Gagal!", description: getPaymentErrorMessage(error), variant: "destructive" });
+    } finally {
+        setIsProcessingPayment(false);
     }
   };
 
@@ -651,7 +673,23 @@ const PaymentSystem = () => {
 
   const confirmDelete = () => { if (selectedHistory.length === 0) return; setDeleteConfirmOpen(true); }
   const handleSelectHistory = (id) => { setSelectedHistory(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]); };
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    if (!receiptData || !receiptRef.current) {
+      toast({ title: 'Gagal Mencetak', description: 'Bukti pembayaran belum siap.', variant: 'destructive' });
+      return;
+    }
+    setIsPrintingReceipt(true);
+    window.setTimeout(() => {
+      try {
+        window.print();
+        toast({ title: 'Dialog Cetak Dibuka', description: 'Pilih printer atau simpan sebagai PDF dari dialog cetak.' });
+      } catch (error) {
+        toast({ title: 'Gagal Mencetak', description: error?.message || 'Dialog cetak tidak dapat dibuka.', variant: 'destructive' });
+      } finally {
+        setIsPrintingReceipt(false);
+      }
+    }, 0);
+  };
 
   const savePaymentProof = async () => {
     if (!receiptData || !receiptRef.current) return;
@@ -686,35 +724,49 @@ const PaymentSystem = () => {
     if (!receiptData || !receiptData.santri?.length) return;
     const santriWithPhone = receiptData.santri.find(s => String(s.no_hp_ortu || '').trim());
     if (!santriWithPhone) { toast({ title: "Gagal", description: "Tidak ada nomor HP wali murid yang ditemukan.", variant: "destructive" }); return; }
-    let phoneNumber = santriWithPhone.no_hp_ortu.replace(/\D/g, '');
-    if (phoneNumber.startsWith('0')) phoneNumber = '62' + phoneNumber.substring(1);
-    else if (!phoneNumber.startsWith('62')) phoneNumber = '62' + phoneNumber;
+    const phoneNumber = normalizeWhatsAppPhone(santriWithPhone.no_hp_ortu);
+    if (!phoneNumber) { toast({ title: "Gagal", description: "Format nomor HP wali murid tidak valid.", variant: "destructive" }); return; }
 
-    const itemsText = receiptData.items.map(item => {
-        let name = item.name;
-        let subTotal = 0;
-        if (item.monthly) { name += ` (${item.months.join(', ')} ${item.year})`; subTotal = item.amount * item.months.length; }
-        else { if(item.custom === 'item') name = item.name; else if (item.hasSubtypes) name = `${item.name} ${item.subtype}`; subTotal = item.amount * item.quantity; }
-        return `- ${name}: Rp${subTotal.toLocaleString('id-ID')}`;
-    }).join('\n');
+    const popup = window.open('about:blank', '_blank');
+    if (!popup) {
+      toast({ title: 'WhatsApp Tidak Dapat Dibuka', description: 'Izinkan pop-up pada browser, lalu coba lagi.', variant: 'destructive' });
+      return;
+    }
 
-    const santriNames = receiptData.santri.map(s => s.nama_lengkap).join(', ');
-    const totalAmount = receiptData.total;
-    const templates = await fetchWhatsAppTemplates();
-    const message = renderWhatsAppTemplate(templates.paymentReceipt, {
-      nama_santri: santriNames,
-      nomor_induk: santriWithPhone.nomor_induk_qiroati || '-',
-      rincian: itemsText,
-      nominal: `Rp ${totalAmount.toLocaleString('id-ID')}`,
-      tanggal: receiptData.timestamp.toLocaleDateString('id-ID'),
-      periode: receiptData.items.filter((item) => item.monthly).flatMap((item) => item.months || []).join(', ') || '-',
-      metode: receiptData.method,
-      transaction_id: receiptData.transactionId || '-',
-      status: 'LUNAS',
-      nama_lembaga: getSchoolIdentity().name,
-    });
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    setIsSendingReceiptWhatsApp(true);
+    try {
+      const itemsText = receiptData.items.map(item => {
+          let name = item.name;
+          let subTotal = 0;
+          if (item.monthly) { name += ` (${item.months.join(', ')} ${item.year})`; subTotal = item.amount * item.months.length; }
+          else { if(item.custom === 'item') name = item.name; else if (item.hasSubtypes) name = `${item.name} ${item.subtype}`; subTotal = item.amount * item.quantity; }
+          return `- ${name}: Rp${subTotal.toLocaleString('id-ID')}`;
+      }).join('\n');
+
+      const santriNames = receiptData.santri.map(s => s.nama_lengkap).join(', ');
+      const totalAmount = receiptData.total;
+      const templates = await fetchWhatsAppTemplates();
+      const message = renderWhatsAppTemplate(templates.paymentReceipt, {
+        nama_santri: santriNames,
+        nomor_induk: santriWithPhone.nomor_induk_qiroati || '-',
+        rincian: itemsText,
+        nominal: `Rp ${totalAmount.toLocaleString('id-ID')}`,
+        tanggal: receiptData.timestamp.toLocaleDateString('id-ID'),
+        periode: receiptData.items.filter((item) => item.monthly).flatMap((item) => item.months || []).join(', ') || '-',
+        metode: receiptData.method,
+        transaction_id: receiptData.transactionIds?.join(', ') || receiptData.transactionId || '-',
+        status: 'LUNAS',
+        nama_lembaga: getSchoolIdentity().name,
+      });
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      popup.location.href = whatsappUrl;
+      toast({ title: 'WhatsApp Siap Digunakan', description: 'Pesan bukti pembayaran telah disiapkan untuk wali murid.' });
+    } catch (error) {
+      popup.close();
+      toast({ title: 'Gagal Menyiapkan WhatsApp', description: error?.message || 'Pesan bukti pembayaran tidak dapat disiapkan.', variant: 'destructive' });
+    } finally {
+      setIsSendingReceiptWhatsApp(false);
+    }
   };
 
   const totalCart = cart.reduce((sum, item) => { if(item.monthly) return sum + (item.amount * item.months.length); return sum + ((item.amount || 0) * item.quantity); }, 0);
@@ -807,7 +859,10 @@ const PaymentSystem = () => {
                             <div className="flex items-center gap-3"><div className="p-2 bg-white dark:bg-slate-800 rounded-md shadow-sm"><Banknote className="w-5 h-5 text-green-600"/></div><div><p className="text-xs font-semibold text-muted-foreground uppercase">Total Tagihan</p><p className="text-xl font-black text-slate-800 dark:text-white">Rp {(totalCart * Math.max(1, selectedSantri.length)).toLocaleString('id-ID')}</p></div></div>
 <Select value={paymentMethod} onValueChange={setPaymentMethod}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tunai">Tunai</SelectItem><SelectItem value="Transfer">Transfer</SelectItem></SelectContent></Select>
                         </div>
-                        <Button onClick={handlePayment} className="w-full h-12 text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.99]" size="lg" disabled={cart.length === 0 || selectedSantri.length === 0}>Proses Pembayaran {selectedSantri.length > 1 && `(${selectedSantri.length} Murid)`}</Button>
+                        <Button onClick={handlePayment} className="w-full h-12 text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.99]" size="lg" disabled={cart.length === 0 || selectedSantri.length === 0 || isProcessingPayment}>
+                          {isProcessingPayment && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                          {isProcessingPayment ? 'Memproses...' : 'Proses Pembayaran'} {selectedSantri.length > 1 && `(${selectedSantri.length} Murid)`}
+                        </Button>
                     </CardFooter>
                 </Card>
 
@@ -839,7 +894,7 @@ const PaymentSystem = () => {
         <DuplicatePaymentDialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen} onResetMonth={() => { setResetKey(prev => prev + 1); setIsConfigOpen(true); }} />
 
         <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
-          <DialogContent className="max-w-[400px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[calc(100%-1rem)] max-w-[400px] max-h-[90vh] overflow-y-auto">
             <DialogHeader className="pb-2 border-b"><DialogTitle className="text-center">Bukti Pembayaran</DialogTitle></DialogHeader>
             {receiptData && (<>
               <div ref={receiptRef} className="p-4 bg-white text-slate-800 rounded-xl shadow-lg border border-slate-100 relative overflow-hidden" id="receipt-content">
@@ -862,9 +917,13 @@ const PaymentSystem = () => {
                          <p>Tgl: <span className="font-semibold text-slate-900">{receiptData.timestamp.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
                          <p>Jam: <span className="font-semibold text-slate-900">{receiptData.timestamp.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
                       </div>
-                      <div className="space-y-0.5 text-right">
+                      <div className="space-y-0.5 text-right max-w-[58%]">
                          <p>Metode: <span className="font-semibold text-slate-900 uppercase">{receiptData.method}</span></p>
-                         <p>ID: <span className="font-mono">{receiptData.paymentId ? receiptData.paymentId.substring(0,8) : '-'}</span></p>
+                         <p>Status: <span className="font-semibold text-green-700">LUNAS</span></p>
+                         <p>Ref:</p>
+                         <div className="font-mono text-[9px] leading-tight break-all text-slate-700">
+                           {(receiptData.transactionIds?.length ? receiptData.transactionIds : [receiptData.transactionId || '-']).map((reference) => <div key={reference}>{reference}</div>)}
+                         </div>
                       </div>
                   </div>
 
@@ -912,12 +971,18 @@ const PaymentSystem = () => {
               </div>
 
               <div className="flex justify-center flex-wrap gap-2 p-2">
-                <Button variant="outline" size="sm" onClick={handleSendWhatsApp} className="bg-green-600 text-white hover:bg-green-700 border-0 shadow-sm text-xs h-8"><MessageSquare className="mr-2 h-3 w-3"/> WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={handleSendWhatsApp} disabled={isSendingReceiptWhatsApp} className="bg-green-600 text-white hover:bg-green-700 border-0 shadow-sm text-xs h-8">
+                  {isSendingReceiptWhatsApp ? <Loader2 className="mr-2 h-3 w-3 animate-spin"/> : <MessageSquare className="mr-2 h-3 w-3"/>}
+                  {isSendingReceiptWhatsApp ? 'Menyiapkan...' : 'WhatsApp'}
+                </Button>
                 <Button variant="outline" size="sm" onClick={savePaymentProof} disabled={isSaving} className="shadow-sm text-xs h-8">
                   {isSaving ? <Loader2 className="mr-2 h-3 w-3 animate-spin"/> : <Download className="mr-2 h-3 w-3"/>}
                   {isSaving ? 'Menyimpan...' : 'Simpan Bukti'}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handlePrint} className="shadow-sm text-xs h-8"><Printer className="mr-2 h-3 w-3"/> Cetak</Button>
+                <Button variant="outline" size="sm" onClick={handlePrint} disabled={isPrintingReceipt} className="shadow-sm text-xs h-8">
+                  {isPrintingReceipt ? <Loader2 className="mr-2 h-3 w-3 animate-spin"/> : <Printer className="mr-2 h-3 w-3"/>}
+                  {isPrintingReceipt ? 'Membuka...' : 'Cetak'}
+                </Button>
               </div>
             </>)}
           </DialogContent>

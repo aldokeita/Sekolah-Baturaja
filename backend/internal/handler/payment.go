@@ -596,7 +596,7 @@ func (h *PaymentHandler) CreatePayments(w http.ResponseWriter, r *http.Request) 
 				(santri_id, bulan, tahun, jumlah, tanggal_pembayaran, metode_pembayaran,
 				 status, catatan, transaction_id, created_by, updated_by)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10)
-			RETURNING id, created_at
+			RETURNING id, created_at::text
 		`, item.SantriID, item.Bulan, item.Tahun, item.Jumlah,
 			item.TanggalPembayaran, item.MetodePembayaran, item.Status,
 			item.Catatan, item.TransactionID, createdBy,
