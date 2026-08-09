@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
     DEFAULT_SATURDAY_IS_HOLIDAY,
     getSaturdayHolidayForMonth,
+    getActiveCalendarDates,
+    getCalendarDateDayOfWeek,
+    groupCalendarEventsByDate,
     isAutomaticCalendarHoliday,
+    isCalendarDateActive,
     isEffectiveCalendarHoliday,
     normalizeCalendarMonthSettings,
+    normalizeCalendarMonthSettingsByYear,
 } from '@/lib/calendarUtils';
 
 describe('aturan Sabtu kalender akademik', () => {
@@ -56,6 +61,41 @@ describe('aturan Sabtu kalender akademik', () => {
             dayOfWeek: 0,
             dayEvents: manualSchoolDay,
             saturdayIsHoliday: false,
+        })).toBe(false);
+    });
+
+    it('menghasilkan hari aktif Sabtu dari konfigurasi tahun-bulan dan tetap melewati Minggu', () => {
+        const monthSettingsByYear = normalizeCalendarMonthSettingsByYear([
+            { year: 2026, month: 8, saturday_is_holiday: false },
+        ]);
+        const activeDates = getActiveCalendarDates({
+            startDate: '2026-08-01',
+            endDate: '2026-08-09',
+            monthSettingsByYear,
+        });
+
+        expect(getCalendarDateDayOfWeek('2026-08-01')).toBe(6);
+        expect(activeDates).toContain('2026-08-01');
+        expect(activeDates).not.toContain('2026-08-02');
+    });
+
+    it('mempertahankan libur manual dan memakai default saat konfigurasi bulan tidak ada', () => {
+        const eventsByDate = groupCalendarEventsByDate([
+            { date: '2026-08-08', is_holiday: true, title: 'Cuti bersama' },
+        ]);
+        const defaultSettings = normalizeCalendarMonthSettingsByYear([]);
+
+        expect(isCalendarDateActive({
+            dateString: '2026-08-08',
+            eventsByDate,
+            monthSettingsByYear: normalizeCalendarMonthSettingsByYear([
+                { year: 2026, month: 8, saturday_is_holiday: false },
+            ]),
+        })).toBe(false);
+        expect(isCalendarDateActive({
+            dateString: '2026-08-08',
+            eventsByDate: {},
+            monthSettingsByYear: defaultSettings,
         })).toBe(false);
     });
 });

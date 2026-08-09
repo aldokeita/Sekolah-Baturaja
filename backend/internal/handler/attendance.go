@@ -53,9 +53,9 @@ func (h *AttendanceHandler) Routes() chi.Router {
 	// Calendar. Reads are open to any authenticated user (the attendance recap and
 	// rapor generator both need the holiday list); writes are staff-only.
 	r.Get("/calendar", h.Calendar)
+	r.Get("/calendar-settings", h.CalendarMonthSettings)
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequireRole("admin", "tata_usaha"))
-		r.Get("/calendar-settings", h.CalendarMonthSettings)
 		r.Put("/calendar-settings/{year}/{month}", h.UpsertCalendarMonthSetting)
 		r.Delete("/calendar-settings/{year}/{month}", h.DeleteCalendarMonthSetting)
 		r.Post("/calendar", h.CreateCalendar)

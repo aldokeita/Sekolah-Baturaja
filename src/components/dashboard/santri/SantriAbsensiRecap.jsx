@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { fetchAttendance, fetchCalendarEvents } from '@/lib/attendanceAdapters';
+import { fetchAttendance, fetchCalendarContext } from '@/lib/attendanceAdapters';
 import { fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Percent, Calendar as 
 import { cn } from '@/lib/utils';
 import AttendanceDetailsModal from '../shared/AttendanceDetailsModal';
 import { DEFAULT_SESSION_TIMES, buildSessionStartTimestamp, resolveAttendanceRecordStatus, calculateTimeDifference } from '@/utils/AttendanceStatusLogic';
+import { getActiveCalendarDates, getCalendarDateDayOfWeek, isCalendarDateActive } from '@/lib/calendarUtils';
 
 const getSessionStartTimestamp = (dateStr, sesiName) => buildSessionStartTimestamp(dateStr, sesiName, DEFAULT_SESSION_TIMES);
 
@@ -36,7 +37,7 @@ const getComputedStatus = (record, sessionStart) => {
 const SantriAbsensiRecap = () => {
     const { user } = useAuth();
     const [attendance, setAttendance] = useState([]);
-    const [holidays, setHolidays] = useState(new Set());
+    const [calendarContext, setCalendarContext] = useState({ eventsByDate: {}, monthSettingsByYear: {} });
     const [santriData, setSantriData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -55,13 +56,16 @@ const SantriAbsensiRecap = () => {
         setIsLoading(true);
 
         try {
-            const [attendanceData, calendarData, santriData] = await Promise.all([
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+            const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(new Date(year, month + 1, 0).getDate()).padStart(2, '0')}`;
+            const [attendanceData, calendarContextData, santriData] = await Promise.all([
                 fetchAttendance({ user_id: user.id }),
-                fetchCalendarEvents({ startDate: '2020-01-01', endDate: '2099-12-31' }),
+                fetchCalendarContext(startDate, endDate),
                 fetchSantriDetail(user.id)
             ]);
             const attendanceRes = { data: attendanceData, error: null };
-            const calendarRes = { data: calendarData, error: null };
             const santriRes = { data: santriData, error: null };
 
             if (attendanceRes.error) {
@@ -70,7 +74,7 @@ const SantriAbsensiRecap = () => {
             }
 
             setAttendance(attendanceRes.data || []);
-            setHolidays(new Set((calendarRes.data || []).map(c => c.date)));
+            setCalendarContext(calendarContextData);
             setSantriData(santriRes.data);
         } catch (err) {
             setError(err.message);
@@ -78,7 +82,7 @@ const SantriAbsensiRecap = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [user?.id]);
+    }, [user?.id, currentDate]);
 
     useEffect(() => {
         fetchAllData();
@@ -95,37 +99,33 @@ const SantriAbsensiRecap = () => {
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+        const activeDates = getActiveCalendarDates({
+            startDate: monthStart,
+            endDate: monthEnd,
+            throughDate: today,
+            ...calendarContext,
+        });
 
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateToCompare = new Date(year, month, d);
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const dayOfWeek = dateToCompare.getDay();
+        activeDates.forEach((dateStr) => {
+            totalSessions++;
 
-            // Count only weekday dates in the month (Mon-Fri)
-            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                const isHoliday = holidays.has(dateStr);
-                const isPastOrToday = dateToCompare <= today;
+            const record = attendance.find(a => a.attendance_date === dateStr);
+            const sessionStart = getSessionStartTimestamp(
+                dateStr,
+                record?.attended_session || santriData?.sesi_mengaji || santriData?.class?.sesi,
+            );
+            const computedStatus = getComputedStatus(record, sessionStart);
 
-                if (!isHoliday && isPastOrToday) {
-                    totalSessions++;
-
-                    const record = attendance.find(a => a.attendance_date === dateStr);
-                    const sessionStart = getSessionStartTimestamp(
-                        dateStr,
-                        record?.attended_session || santriData?.sesi_mengaji || santriData?.class?.sesi,
-                    );
-                    const computedStatus = getComputedStatus(record, sessionStart);
-
-                    if (computedStatus === 'Hadir') {
-                        hadirCount++;
-                    } else if (computedStatus === 'Terlambat') {
-                        terlambatCount++;
-                    } else {
-                        tidakHadirCount++;
-                    }
-                }
+            if (computedStatus === 'Hadir') {
+                hadirCount++;
+            } else if (computedStatus === 'Terlambat') {
+                terlambatCount++;
+            } else {
+                tidakHadirCount++;
             }
-        }
+        });
 
         let hadirPerc = 0;
         let terlambatPerc = 0;
@@ -149,7 +149,7 @@ const SantriAbsensiRecap = () => {
             total_sessions: totalSessions,
             overall_percentage: overallPerc
         };
-    }, [attendance, currentDate, holidays, santriData]);
+    }, [attendance, currentDate, calendarContext, santriData]);
 
     const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
     const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -181,6 +181,19 @@ const SantriAbsensiRecap = () => {
         setIsModalOpen(true);
     };
 
+    const calendarMonthStart = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`;
+    const calendarMonthEnd = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()).padStart(2, '0')}`;
+    const activeMonthDates = getActiveCalendarDates({
+        startDate: calendarMonthStart,
+        endDate: calendarMonthEnd,
+        ...calendarContext,
+    });
+    const showSaturdayColumn = activeMonthDates.some((dateString) => getCalendarDateDayOfWeek(dateString) === 6)
+        || Object.keys(calendarContext.eventsByDate || {}).some((dateString) => (
+            dateString.startsWith(`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-`)
+            && getCalendarDateDayOfWeek(dateString) === 6
+        ));
+
     const renderCalendar = () => {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
@@ -196,12 +209,18 @@ const SantriAbsensiRecap = () => {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
             const dayOfWeek = dateToCompare.getDay();
 
-            if (dayOfWeek === 0 || dayOfWeek === 6) {
+            const isActiveDay = isCalendarDateActive({
+                dateString: dateStr,
+                ...calendarContext,
+            });
+            const hasCalendarEvent = (calendarContext.eventsByDate?.[dateStr] || []).length > 0;
+
+            if (dayOfWeek === 0 || (dayOfWeek === 6 && !showSaturdayColumn && !hasCalendarEvent)) {
                 continue;
             }
 
             if (!firstWeekdayFound) {
-                const emptyCellsCount = dayOfWeek - 1;
+                const emptyCellsCount = Math.max(dayOfWeek - 1, 0);
                 for (let e = 0; e < emptyCellsCount; e++) {
                     days.push(<div key={`empty-${e}`} className="p-2 border border-transparent"></div>);
                 }
@@ -218,7 +237,7 @@ const SantriAbsensiRecap = () => {
                 const sessionStart = getSessionStartTimestamp(dateStr, santriData?.sesi_mengaji || santriData?.class?.sesi);
                 let computedStatus = getComputedStatus(record, sessionStart);
 
-                if (holidays.has(dateStr)) {
+                if (!isActiveDay) {
                     bgColor = "border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-slate-900/65 dark:text-slate-500";
                     tooltip = "Libur Akademik";
                 } else if (computedStatus === 'Hadir') {
@@ -233,7 +252,7 @@ const SantriAbsensiRecap = () => {
                 }
             }
 
-            const canInspect = isPastOrToday && (!holidays.has(dateStr) || record);
+            const canInspect = isPastOrToday && (isActiveDay || record);
 
             days.push(
                 <button
@@ -303,7 +322,7 @@ const SantriAbsensiRecap = () => {
                 <div className="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h3 className="flex items-center gap-2 text-lg font-bold"><CalendarIcon className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />Kalender Kehadiran</h3>
-                        <p className="mt-1 text-xs text-muted-foreground">Hari belajar Senin sampai Jumat</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Hari belajar mengikuti kalender akademik</p>
                     </div>
                     <div className="flex items-center justify-between gap-2 sm:justify-end">
                         <Button variant="outline" size="icon" className="h-8 w-8" onClick={prevMonth} aria-label="Bulan sebelumnya"><ChevronLeft className="h-4 w-4" /></Button>
@@ -313,10 +332,10 @@ const SantriAbsensiRecap = () => {
                 </div>
                 <div className="p-3 sm:p-4">
                     <div className="w-full">
-                      <div className="mb-1 grid grid-cols-5 gap-1 sm:gap-1.5">
-                        {['Sen', 'Sel', 'Rab', 'Kam', 'Jum'].map(day => <div key={day} className="py-1.5 text-center text-[11px] font-bold uppercase text-muted-foreground">{day}</div>)}
+                      <div className={cn('mb-1 grid gap-1 sm:gap-1.5', showSaturdayColumn ? 'grid-cols-6' : 'grid-cols-5')}>
+                        {(showSaturdayColumn ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] : ['Sen', 'Sel', 'Rab', 'Kam', 'Jum']).map(day => <div key={day} className="py-1.5 text-center text-[11px] font-bold uppercase text-muted-foreground">{day}</div>)}
                       </div>
-                      <div className="grid grid-cols-5 gap-1 sm:gap-1.5">{renderCalendar()}</div>
+                      <div className={cn('grid gap-1 sm:gap-1.5', showSaturdayColumn ? 'grid-cols-6' : 'grid-cols-5')}>{renderCalendar()}</div>
                     </div>
                     <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 border-t border-slate-200 pt-3 text-xs font-medium text-muted-foreground dark:border-white/10 sm:justify-start">
                         <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Tepat waktu</span>

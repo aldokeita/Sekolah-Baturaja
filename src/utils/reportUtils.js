@@ -8,7 +8,8 @@ import {
     fetchSantriCharacterScores,
     fetchSantriCharacterStrengths
 } from '../lib/academicAdapters';
-import { fetchAttendance, fetchCalendarEvents } from '../lib/attendanceAdapters';
+import { fetchAttendance, fetchCalendarContext } from '../lib/attendanceAdapters';
+import { getActiveCalendarDates } from '../lib/calendarUtils';
 import { fetchSantriDetail } from '../lib/dataMasterAdapters';
 import { fetchReceiptLogoDataUrl } from '../lib/publicContentAdapters';
 import { getSchoolIdentity } from '../lib/schoolIdentity';
@@ -43,31 +44,24 @@ export const getLogoBase64 = async () => {
 
 export const calculateAttendanceData = async (santriId, startDate, endDate) => {
     try {
-        const [attRows, calRows] = await Promise.all([
+        const [attRows, calendarContext] = await Promise.all([
             fetchAttendance({ user_id: santriId, date_from: startDate, date_to: endDate, limit: 500 }),
-            // The calendar endpoint needs an explicit range; holidays outside the
-            // report window can never match a date inside it.
-            fetchCalendarEvents(startDate, endDate).catch(() => [])
+            fetchCalendarContext(startDate, endDate),
         ]);
 
         const safeData = attRows || [];
-        const holidays = new Set((calRows || []).map(c => c.date));
 
-        // Compute Total Effective Days (Mon-Fri, non-holiday up to min(endDate, today))
-        let totalEffectiveDays = 0;
-        const start = new Date(startDate);
+        // Kalender akademik adalah sumber hari belajar, termasuk aturan Sabtu.
         const end = new Date(endDate);
         const today = new Date();
         today.setHours(23, 59, 59, 999);
         const limitDate = end < today ? end : today;
-
-        for (let d = new Date(start); d <= limitDate; d.setDate(d.getDate() + 1)) {
-            const dayOfWeek = d.getDay();
-            const dateStr = d.toISOString().split('T')[0];
-            if (dayOfWeek >= 1 && dayOfWeek <= 5 && !holidays.has(dateStr)) {
-                totalEffectiveDays++;
-            }
-        }
+        const totalEffectiveDays = getActiveCalendarDates({
+            startDate,
+            endDate,
+            throughDate: limitDate,
+            ...calendarContext,
+        }).length;
 
         const totalPresent = safeData.filter(d => d?.status && ['hadir', 'present'].includes(String(d.status).toLowerCase())).length;
         const totalLate = safeData.filter(d => d?.status && ['terlambat', 'late'].includes(String(d.status).toLowerCase())).length;

@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
-import { createAttendance, fetchAttendance, fetchCalendarEvents, updateAttendance } from '@/lib/attendanceAdapters';
+import { createAttendance, fetchAttendance, fetchCalendarContext, updateAttendance } from '@/lib/attendanceAdapters';
 import { fetchClassList, fetchGuruDetail, fetchGuruList } from '@/lib/dataMasterAdapters';
 import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ import {
     resolveAttendanceRecordStatus,
 } from '@/utils/AttendanceStatusLogic';
 import { resolveAvatarRecords } from '@/lib/storageAdapters';
+import { getActiveCalendarDates } from '@/lib/calendarUtils';
 
 const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -51,7 +52,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
     const [availableYears, setAvailableYears] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedGuruDetail, setSelectedGuruDetail] = useState(null);
-    const [holidays, setHolidays] = useState(new Set());
+    const [calendarContext, setCalendarContext] = useState({ eventsByDate: {}, monthSettingsByYear: {} });
 
     // Admin Edit Session State
     const [isSessionEditOpen, setIsSessionEditOpen] = useState(false);
@@ -74,7 +75,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
         const endDate = `${selectedYear}-12-31`;
         const isOwnRecap = role === 'guru' && Boolean(user);
 
-        const [att, guruList, classList, contentMap, calendarData] = await Promise.all([
+        const [att, guruList, classList, contentMap, calendarContextData] = await Promise.all([
             fetchAttendance({
                 role: 'guru',
                 ...(isOwnRecap ? { user_id: user.id } : {}),
@@ -88,7 +89,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
             ).catch(() => null),
             fetchClassList().catch(() => null),
             fetchWebsiteContentMap({ keys: ['guru_session_overrides'], publicOnly: false }).catch(() => ({})),
-            fetchCalendarEvents(startDate, endDate).catch(() => []),
+            fetchCalendarContext(startDate, endDate),
         ]);
         const overrides = { content: contentMap?.guru_session_overrides };
 
@@ -97,6 +98,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
             setAttendanceData(att);
             setGurus(resolvedGuruList);
             setClasses(classList);
+            setCalendarContext(calendarContextData);
 
             if (overrides?.content) {
                 setOverriddenSessions(overrides.content);
@@ -107,9 +109,6 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
             if (!years.includes(currentYear)) years.unshift(currentYear);
             setAvailableYears(years);
 
-            if (calendarData) {
-                setHolidays(new Set(calendarData.map(c => c.date)));
-            }
         }
         setIsLoading(false);
     };
@@ -200,22 +199,18 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
 
     const recapData = useMemo(() => {
         const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-        const activeDays = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
-        for(let d=1; d<=daysInMonth; d++) {
-            const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const date = new Date(selectedYear, selectedMonth, d);
-            const dayOfWeek = date.getDay();
-
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-            const isHoliday = holidays.has(dateStr);
-
-            if (!isWeekend && !isHoliday) {
-                activeDays.push({ day: d, isPast: date <= today });
-            }
-        }
+        const monthStart = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+        const monthEnd = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+        const activeDays = getActiveCalendarDates({
+            startDate: monthStart,
+            endDate: monthEnd,
+            ...calendarContext,
+        }).map((dateString) => {
+            const day = Number(dateString.slice(8, 10));
+            return { day, isPast: new Date(selectedYear, selectedMonth, day) <= today };
+        });
 
         let filteredGurus = gurus;
         if (searchTerm) filteredGurus = gurus.filter(g => g.nama.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -296,7 +291,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
         }
 
         return processedData;
-    }, [attendanceData, gurus, classes, selectedYear, selectedMonth, searchTerm, selectedGuruDetail, holidays, overriddenSessions]);
+    }, [attendanceData, gurus, classes, selectedYear, selectedMonth, searchTerm, selectedGuruDetail, calendarContext, overriddenSessions]);
 
     const handleExport = () => {
         const exportData = [];

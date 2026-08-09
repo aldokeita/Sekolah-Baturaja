@@ -1,4 +1,9 @@
 import apiClient from '@/lib/apiClient';
+import { fetchCalendarMonthSettings } from '@/lib/academicAdapters';
+import {
+    groupCalendarEventsByDate,
+    normalizeCalendarMonthSettingsByYear,
+} from '@/lib/calendarUtils';
 import {
     evaluateAttendanceWindow,
     getJakartaDateString,
@@ -165,6 +170,54 @@ export const fetchCalendarEvents = async (dateFrom, dateTo) => {
     return (data || []).map((row) => (
         typeof row === 'string' ? { date: row, is_holiday: true } : row
     ));
+};
+
+export const fetchCalendarEventsFull = async (dateFrom, dateTo) => {
+    const from = typeof dateFrom === 'object' && dateFrom !== null
+        ? (dateFrom.startDate || dateFrom.date_from)
+        : dateFrom;
+    const to = typeof dateFrom === 'object' && dateFrom !== null
+        ? (dateFrom.endDate || dateFrom.date_to)
+        : dateTo;
+
+    const params = new URLSearchParams();
+    if (from) params.set('date_from', from);
+    if (to) params.set('date_to', to);
+    params.set('view', 'full');
+    const data = await apiClient.get(`/api/attendance/calendar?${params}`);
+    return Array.isArray(data) ? data : [];
+};
+
+const getCalendarYearsInRange = (startDate, endDate) => {
+    const startYear = Number(String(startDate || '').slice(0, 4));
+    const endYear = Number(String(endDate || '').slice(0, 4));
+    if (!Number.isInteger(startYear) || !Number.isInteger(endYear) || startYear > endYear) return [];
+    return Array.from({ length: endYear - startYear + 1 }, (_, index) => startYear + index);
+};
+
+// Shared source of truth for attendance reports. Full agenda rows are needed
+// so a manual "Hari Masuk" can override an automatic weekend rule; monthly
+// settings supply the Saturday policy for each year in the requested range.
+export const fetchCalendarContext = async (dateFrom, dateTo) => {
+    const from = typeof dateFrom === 'object' && dateFrom !== null
+        ? (dateFrom.startDate || dateFrom.date_from)
+        : dateFrom;
+    const to = typeof dateFrom === 'object' && dateFrom !== null
+        ? (dateFrom.endDate || dateFrom.date_to)
+        : dateTo;
+    const years = getCalendarYearsInRange(from, to);
+
+    const [events, settingRows] = await Promise.all([
+        fetchCalendarEventsFull(from, to).catch(() => []),
+        Promise.all(years.map((year) => fetchCalendarMonthSettings(year).catch(() => [])))
+            .then((rows) => rows.flat()),
+    ]);
+
+    return {
+        events,
+        eventsByDate: groupCalendarEventsByDate(events),
+        monthSettingsByYear: normalizeCalendarMonthSettingsByYear(settingRows),
+    };
 };
 
 export const selfCheckIn = async (payload) => {

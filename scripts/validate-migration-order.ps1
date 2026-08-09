@@ -66,7 +66,8 @@ $expectedNames = @(
   "20260807000100_pendaftaran_ppdb.sql",
   "20260807000200_ppdb_terima_jadi_murid.sql",
   "20260808000100_ppdb_wilayah_domisili.sql",
-  "20260809000100_academic_calendar_month_settings.sql"
+  "20260809000100_academic_calendar_month_settings.sql",
+  "20260809000200_academic_calendar_month_settings_read_access.sql"
 )
 
 $actualNames = $files | ForEach-Object { $_.Name }

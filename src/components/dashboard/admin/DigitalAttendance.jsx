@@ -11,6 +11,7 @@ import {
     buildSantriAttendancePayload,
     createAttendance,
     fetchAttendance,
+    fetchCalendarContext,
     getAttendanceErrorMessage,
     getLocalDateString,
     getSantriAttendanceSuccessMessage,
@@ -28,6 +29,7 @@ import {
     resolveSantriAttendanceSession,
 } from '@/utils/AttendanceStatusLogic';
 import { useAttendanceSessionConfiguration } from '@/hooks/useAttendanceSessionConfiguration';
+import { isCalendarDateActive } from '@/lib/calendarUtils';
 
 const DigitalClock = () => {
     const [time, setTime] = useState(new Date());
@@ -112,11 +114,15 @@ const DigitalAttendance = () => {
         }
     };
 
-    const canCheckIn = (sesi, role, timestamp = new Date()) => {
-        const today = timestamp;
-        const dayOfWeek = today.getDay();
-        if (role === 'guru' && (dayOfWeek === 0 || dayOfWeek === 6)) {
-            return { can: false, message: 'Absensi libur pada hari Sabtu dan Minggu.' };
+    const canCheckIn = (sesi, role, timestamp = new Date(), calendarContext = null) => {
+        if (role === 'guru') {
+            const dateString = getLocalDateString(timestamp);
+            const isActiveDay = calendarContext
+                ? isCalendarDateActive({ dateString, ...calendarContext })
+                : timestamp.getDay() >= 1 && timestamp.getDay() <= 5;
+            if (!isActiveDay) {
+                return { can: false, message: 'Absensi tidak tersedia pada hari libur kalender akademik.' };
+            }
         }
 
         const windowState = evaluateAttendanceWindow({ timestamp, sesi, sessionTimes });
@@ -260,6 +266,9 @@ const DigitalAttendance = () => {
             }
 
             const now = new Date();
+            const calendarContext = userRole === 'guru'
+                ? await fetchCalendarContext(today, today)
+                : null;
             const checkInStatus = userRole === 'santri'
                 ? resolveSantriAttendanceSession({
                     timestamp: now,
@@ -267,7 +276,7 @@ const DigitalAttendance = () => {
                     assignedSession: sesiUser,
                     sessionTimes,
                 })
-                : canCheckIn(sesiUser, userRole, now);
+                : canCheckIn(sesiUser, userRole, now, calendarContext);
             if (!checkInStatus.can) { setLastScan({ type: 'warning', message: checkInStatus.message, name: user.nama || user.nama_lengkap, photo: user.foto_url }); return; }
 
             const timestamp = now;
