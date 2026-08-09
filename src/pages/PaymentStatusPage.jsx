@@ -27,6 +27,7 @@ import { calculateAttendanceData, getHafalanProgressData, getPointsData } from '
 import { fetchAllPayments, fetchPaymentDetail } from '@/lib/paymentAdapters';
 import { fetchReceiptLogoDataUrl } from '@/lib/publicContentAdapters';
 import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
+import { isPaymentPaid } from '@/lib/paymentReceipt';
 
 const PaymentStatusPage = () => {
   const sekolah = useSchoolIdentity();
@@ -163,6 +164,7 @@ const PaymentStatusPage = () => {
 
   const totalAmount = relatedPayments.reduce((sum, p) => sum + p.jumlah, 0);
   const teacherName = paymentData.santri?.class?.guru?.nama || 'Guru Pengampu';
+  const paymentIsPaid = isPaymentPaid(paymentData.status);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 flex justify-center relative overflow-hidden">
@@ -282,20 +284,19 @@ const PaymentStatusPage = () => {
                       </div>
 
                       <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden relative">
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none">
-                              <div className="border-8 border-green-500 text-green-500 rounded-xl px-8 py-3 text-5xl font-black -rotate-12 opacity-10 whitespace-nowrap">
-                                  L U N A S
-                              </div>
-                          </div>
-
                           <div className="flex justify-between items-center p-4 bg-slate-50 border-b">
                               <div>
                                   <p className="text-xs text-slate-500 font-medium">Tanggal Transaksi</p>
                                   <p className="font-bold text-slate-900">{new Date(paymentData.tanggal_pembayaran).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                               </div>
-                              <div className="text-right">
-                                  <p className="text-xs text-slate-500 font-medium">Metode & No. Transaksi</p>
-                                  <p className="font-mono text-sm font-bold text-slate-900">{paymentData.metode_pembayaran?.toUpperCase()} - {paymentData.transaction_id ? paymentData.transaction_id.substring(0,8) : 'MANUAL'}</p>
+                              <div className="text-right flex flex-col items-end gap-1">
+                                  {paymentIsPaid && (
+                                      <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-100">
+                                          LUNAS
+                                      </Badge>
+                                  )}
+                                  <p className="text-xs text-slate-500 font-medium">Metode Pembayaran</p>
+                                  <p className="font-mono text-sm font-bold text-slate-900">{paymentData.metode_pembayaran?.toUpperCase() || 'MANUAL'}</p>
                               </div>
                           </div>
 

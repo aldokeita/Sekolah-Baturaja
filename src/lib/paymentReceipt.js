@@ -1,3 +1,19 @@
+export const PAYMENT_STATUS_LABELS = Object.freeze({
+  paid: 'LUNAS',
+  unpaid: 'BELUM LUNAS',
+  void: 'DIBATALKAN',
+  refunded: 'DIKEMBALIKAN',
+});
+
+export const normalizePaymentStatus = (value) => String(value || '').trim().toLowerCase();
+
+export const formatPaymentStatus = (value) => {
+  const normalized = normalizePaymentStatus(value);
+  return PAYMENT_STATUS_LABELS[normalized] || '-';
+};
+
+export const isPaymentPaid = (value) => normalizePaymentStatus(value) === 'paid';
+
 export const normalizeWhatsAppPhone = (value) => {
   const digits = String(value || '').replace(/\D/g, '');
   if (!digits) return null;

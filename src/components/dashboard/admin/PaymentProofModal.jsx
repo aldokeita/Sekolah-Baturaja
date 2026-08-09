@@ -11,7 +11,7 @@ import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicConten
 import { DEFAULT_WHATSAPP_TEMPLATES, fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
-import { getPaymentReceiptReference, normalizeWhatsAppPhone } from '@/lib/paymentReceipt';
+import { formatPaymentStatus, getPaymentReceiptReference, isPaymentPaid, normalizeWhatsAppPhone } from '@/lib/paymentReceipt';
 
 const PaymentProofModal = ({ isOpen, onClose, payment }) => {
     const sekolah = useSchoolIdentity();
@@ -96,14 +96,8 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
     const paymentDate = receiptPayment?.created_at || receiptPayment?.tanggal_pembayaran || new Date().toISOString();
     const paymentMethod = receiptPayment?.metode_pembayaran || '-';
     const transactionRef = getPaymentReceiptReference(receiptPayment);
-    const paymentStatus = String(receiptPayment?.status || '').toLowerCase();
-    const paymentStatusLabel = {
-        paid: 'LUNAS',
-        pending: 'MENUNGGU',
-        cancelled: 'DIBATALKAN',
-        failed: 'GAGAL',
-    }[paymentStatus] || (paymentStatus ? paymentStatus.toUpperCase() : 'TERKONFIRMASI');
-    const isPaid = paymentStatus === 'paid';
+    const paymentStatusLabel = formatPaymentStatus(receiptPayment?.status);
+    const isPaid = isPaymentPaid(receiptPayment?.status);
     const studentName = receiptPayment?.santri?.nama_lengkap || 'Murid';
     const studentId = receiptPayment?.santri?.nomor_induk_qiroati || '-';
     const period = formatPaymentPeriod(receiptPayment?.bulan, receiptPayment?.tahun);
@@ -229,13 +223,6 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
                             <p className="text-xs text-slate-500">{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>
                         </div>
 
-                        {/* Watermark LUNAS */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none select-none">
-                            <div className={`${isPaid ? 'border-red-500 text-red-500' : 'border-slate-400 text-slate-500'} border-4 rounded-lg px-8 py-3 text-5xl font-bold -rotate-12 opacity-15 whitespace-nowrap`}>
-                                {paymentStatusLabel}
-                            </div>
-                        </div>
-
                         {/* Meta Info */}
                         <div className="flex justify-between gap-4 text-xs mb-4 text-slate-600 bg-slate-50 p-3 rounded-lg relative z-10">
                             <div className="space-y-1">
@@ -244,9 +231,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
                             </div>
                             <div className="space-y-1 text-right min-w-0">
                                 <p>Metode: <span className="font-semibold text-slate-900 uppercase">{paymentMethod}</span></p>
-                                <p>Status: <span className={`font-semibold ${isPaid ? 'text-green-700' : 'text-slate-900'}`}>{paymentStatusLabel}</span></p>
-                                <p>Ref:</p>
-                                <p className="font-mono text-[9px] leading-tight break-all text-slate-700">{String(transactionRef)}</p>
+                                {isPaid && <p>Status: <span className="font-semibold text-green-700">LUNAS</span></p>}
                             </div>
                         </div>
 

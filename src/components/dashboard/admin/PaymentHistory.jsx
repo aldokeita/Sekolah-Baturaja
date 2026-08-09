@@ -6,6 +6,7 @@ import { Trash2, Search, AlertTriangle, Edit, FileText, Download, Loader2 } from
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import EditPaymentModal from './EditPaymentModal';
 import PaymentProofModal from './PaymentProofModal';
@@ -17,6 +18,7 @@ import {
     getPaymentErrorMessage,
     monthNumberToName,
 } from '@/lib/paymentAdapters';
+import { formatPaymentStatus, isPaymentPaid } from '@/lib/paymentReceipt';
 import DataPagination from '@/components/dashboard/shared/DataPagination';
 import * as XLSX from 'xlsx';
 
@@ -52,7 +54,7 @@ const PaymentHistory = () => {
     const [totalPayments, setTotalPayments] = useState(0);
     const [selectedPayments, setSelectedPayments] = useState(new Set());
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [filter, setFilter] = useState({ year: 'all', month: 'all' });
+    const [filter, setFilter] = useState({ year: 'all', month: 'all', status: 'all' });
 
     // Edit Modal State
     const [editModalOpen, setEditModalOpen] = useState(false);
@@ -75,6 +77,7 @@ const PaymentHistory = () => {
             if (normalizedSearch) filters.search = normalizedSearch;
             if (filter.year !== 'all') filters.tahun = filter.year;
             if (filter.month !== 'all') filters.bulan = filter.month + 1;
+            if (filter.status !== 'all') filters.status = filter.status;
 
             const { data, total } = await fetchPaymentsPage(filters);
 
@@ -92,7 +95,7 @@ const PaymentHistory = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentPage, debouncedSearch, filter.month, filter.year]);
+    }, [currentPage, debouncedSearch, filter.month, filter.status, filter.year]);
 
     useEffect(() => {
         fetchPayments();
@@ -106,7 +109,7 @@ const PaymentHistory = () => {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedPayments(new Set());
-    }, [debouncedSearch, filter.month, filter.year]);
+    }, [debouncedSearch, filter.month, filter.status, filter.year]);
 
     const handleEditClick = (payment) => {
         setEditingPayment(payment);
@@ -259,7 +262,7 @@ const PaymentHistory = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input placeholder="Cari nama murid..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                 </div>
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-wrap gap-2 items-center">
                     <span className="text-sm font-medium whitespace-nowrap hidden md:inline">Filter Tagihan:</span>
                     <Select value={filter.year.toString()} onValueChange={(val) => setFilter(f => ({ ...f, year: val === 'all' ? 'all' : Number(val) }))}>
                         <SelectTrigger className="w-full md:w-[130px]"><SelectValue /></SelectTrigger>
@@ -273,6 +276,14 @@ const PaymentHistory = () => {
                         <SelectContent>
                             <SelectItem value="all">Semua Bulan</SelectItem>
                             {months.map((m, i) => <SelectItem key={i} value={i.toString()}>{m}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Select value={filter.status} onValueChange={(status) => setFilter(f => ({ ...f, status }))}>
+                        <SelectTrigger className="w-full md:w-[150px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua Status</SelectItem>
+                            <SelectItem value="paid">Lunas</SelectItem>
+                            <SelectItem value="unpaid">Belum Lunas</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -295,16 +306,17 @@ const PaymentHistory = () => {
                             <th className="p-3 text-left">Jumlah</th>
                             <th className="p-3 text-left">Tanggal Bayar</th>
                             <th className="p-3 text-left">Metode</th>
+                            <th className="p-3 text-left">Status</th>
                             <th className="p-3 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y">
                         <AnimatePresence>
                             {isLoading ? (
-                                <tr><td colSpan="9" className="text-center p-4 text-muted-foreground">Memuat data...</td></tr>
+                                <tr><td colSpan="10" className="text-center p-4 text-muted-foreground">Memuat data...</td></tr>
                             ) : payments.length === 0 ? (
                                 <tr>
-                                    <td colSpan="9" className="text-center p-8 text-muted-foreground bg-gray-50/50">
+                                    <td colSpan="10" className="text-center p-8 text-muted-foreground bg-gray-50/50">
                                         <p className="text-gray-600">Tidak ada riwayat pembayaran yang ditemukan.</p>
                                     </td>
                                 </tr>
@@ -338,6 +350,11 @@ const PaymentHistory = () => {
                                         <td className="p-3 font-semibold">Rp {(p.jumlah || 0).toLocaleString('id-ID')}</td>
                                         <td className="p-3">{p.tanggal_pembayaran ? new Date(p.tanggal_pembayaran).toLocaleDateString('id-ID') : '-'}</td>
                                         <td className="p-3">{p.metode_pembayaran || '-'}</td>
+                                        <td className="p-3">
+                                            <Badge variant={isPaymentPaid(p.status) ? 'secondary' : 'outline'} className={isPaymentPaid(p.status) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}>
+                                                {formatPaymentStatus(p.status)}
+                                            </Badge>
+                                        </td>
                                         <td className="p-3">
                                             <div className="flex items-center justify-center gap-2">
                                                 <Button

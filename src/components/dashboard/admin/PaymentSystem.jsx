@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toPng } from 'html-to-image';
@@ -43,7 +44,7 @@ import PaymentProofModal from './PaymentProofModal';
 import { fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
-import { getPaymentReceiptReference, normalizeWhatsAppPhone } from '@/lib/paymentReceipt';
+import { formatPaymentStatus, getPaymentReceiptReference, isPaymentPaid, normalizePaymentStatus, normalizeWhatsAppPhone } from '@/lib/paymentReceipt';
 
 const paymentItems = [
   { key: 'spp', name: 'SPP Bulanan', amount: 0, monthly: true, icon: Wallet, custom: 'spp_dropdown' },
@@ -321,7 +322,7 @@ const PaymentSystem = () => {
   const rfidInputRef = useRef(null);
   const receiptRef = useRef(null);
   const [qrCodeDataURL, setQrCodeDataURL] = useState('');
-  const [historyFilter, setHistoryFilter] = useState({ year: 'all', month: 'all' });
+  const [historyFilter, setHistoryFilter] = useState({ year: 'all', month: 'all', status: 'all' });
   const [selectedHistory, setSelectedHistory] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState('Tunai');
   const availableYears = [2027, 2026, 2025, 2024, 2023];
@@ -333,6 +334,7 @@ const PaymentSystem = () => {
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPaymentMarkedPaid, setIsPaymentMarkedPaid] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isSendingReceiptWhatsApp, setIsSendingReceiptWhatsApp] = useState(false);
   const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
@@ -409,7 +411,7 @@ const PaymentSystem = () => {
        if (santriToSelect && !selectedSantri.some(s => s.id === santriToSelect.id)) {
            setSelectedSantri([santriToSelect]);
            loadPaymentHistory(santriToSelect.id);
-           setHistoryFilter({ year: 'all', month: 'all' });
+           setHistoryFilter({ year: 'all', month: 'all', status: 'all' });
        }
     }
   }, [santriList, location.state]);
@@ -418,7 +420,9 @@ const PaymentSystem = () => {
     const filtered = paymentHistory.filter(p => {
         const billingYear = p.tahun || new Date(p.tanggal_pembayaran).getFullYear();
         const billingMonthIndex = p.bulan ? Number(p.bulan) - 1 : new Date(p.tanggal_pembayaran).getMonth();
-        return (historyFilter.year === 'all' || billingYear === historyFilter.year) && (historyFilter.month === 'all' || billingMonthIndex === historyFilter.month);
+        return (historyFilter.year === 'all' || billingYear === historyFilter.year)
+          && (historyFilter.month === 'all' || billingMonthIndex === historyFilter.month)
+          && (historyFilter.status === 'all' || normalizePaymentStatus(p.status) === historyFilter.status);
     });
     setFilteredHistory(filtered);
   }, [paymentHistory, historyFilter]);
@@ -465,7 +469,7 @@ const PaymentSystem = () => {
     });
     if (selectedSantri.length === 0 || !selectedSantri.some(s => s.id === santri.id)) {
         loadPaymentHistory(santri.id);
-        setHistoryFilter({ year: 'all', month: 'all' });
+        setHistoryFilter({ year: 'all', month: 'all', status: 'all' });
     }
   };
 
@@ -583,6 +587,7 @@ const PaymentSystem = () => {
   const handlePayment = async () => {
     if (isProcessingPayment) return;
     if (selectedSantri.length === 0 || cart.length === 0) return toast({ title: "Error", description: "Pilih murid dan tambahkan item pembayaran.", variant: "destructive" });
+    const paymentStatus = isPaymentMarkedPaid ? 'paid' : 'unpaid';
     setIsProcessingPayment(true);
     try {
         let newPayments = [];
@@ -602,7 +607,7 @@ const PaymentSystem = () => {
                             tahun: item.year,
                             jumlah: Number(item.amount),
                             tanggal_pembayaran: new Date().toLocaleDateString('en-CA'),
-                            status: 'paid',
+                            status: paymentStatus,
                             catatan: `${item.name} (${month} ${item.year})`,
                             metode_pembayaran: paymentMethod
                          });
@@ -619,7 +624,7 @@ const PaymentSystem = () => {
                       tahun: null,
                       jumlah: Number(item.amount * item.quantity),
                       tanggal_pembayaran: new Date().toLocaleDateString('en-CA'),
-                      status: 'paid',
+                      status: paymentStatus,
                       catatan: `${paymentType} (Qty: ${item.quantity})`,
                       metode_pembayaran: paymentMethod
                     });
@@ -628,7 +633,7 @@ const PaymentSystem = () => {
         }
         if (newPayments.length === 0) throw new Error("Tidak ada pembayaran yang dapat diproses.");
         const data = await createPaymentsBatch(newPayments);
-        if (!Array.isArray(data) || data.length !== newPayments.length || data.some((payment) => String(payment?.status || '').toLowerCase() !== 'paid')) {
+        if (!Array.isArray(data) || data.length !== newPayments.length || data.some((payment) => normalizePaymentStatus(payment?.status) !== paymentStatus)) {
           throw new Error("Konfirmasi pembayaran tidak lengkap. Tidak ada bukti yang dibuat.");
         }
         if (selectedSantri.length === 1) loadPaymentHistory(selectedSantri[0].id);
@@ -645,12 +650,17 @@ const PaymentSystem = () => {
           qrCodeUrl: qrCodeLoginUrl,
           timestamp: new Date(),
           method: paymentMethod,
-          status: 'paid',
+          status: paymentStatus,
           transactionId: getPaymentReceiptReference(data[0]),
           transactionIds,
           paymentId: data[0]?.id,
         });
-        toast({ title: "Pembayaran Berhasil!", description: `Pembayaran untuk ${selectedSantri.length} murid telah dikonfirmasi dan bukti siap digunakan.` });
+        toast({
+          title: isPaymentMarkedPaid ? "Pembayaran Berhasil!" : "Transaksi Tersimpan",
+          description: isPaymentMarkedPaid
+            ? `Pembayaran untuk ${selectedSantri.length} murid telah dikonfirmasi dan bukti siap digunakan.`
+            : `Transaksi untuk ${selectedSantri.length} murid tersimpan dengan status Belum Lunas.`,
+        });
         setIsReceiptOpen(true);
         setCart([]);
     } catch (error) {
@@ -755,7 +765,7 @@ const PaymentSystem = () => {
         periode: receiptData.items.filter((item) => item.monthly).flatMap((item) => item.months || []).join(', ') || '-',
         metode: receiptData.method,
         transaction_id: receiptData.transactionIds?.join(', ') || receiptData.transactionId || '-',
-        status: 'LUNAS',
+        status: formatPaymentStatus(receiptData.status),
         nama_lembaga: getSchoolIdentity().name,
       });
       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
@@ -855,6 +865,20 @@ const PaymentSystem = () => {
                         {cart.length === 0 && (<div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed border-slate-200 rounded-xl"><ShoppingCart className="w-12 h-12 mb-2 opacity-20"/><p>Keranjang kosong</p><p className="text-xs">Pilih item pembayaran di sebelah kiri</p></div>)}
                     </CardContent>
                     <CardFooter className="flex-col gap-4 pt-6 pb-6 bg-white dark:bg-slate-950 border-t rounded-b-xl">
+                        <div className="w-full flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+                            <label htmlFor="payment-status-toggle" className="min-w-0 cursor-pointer">
+                                <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">Tandai transaksi sebagai lunas</span>
+                                <span className={`mt-0.5 block text-xs ${isPaymentMarkedPaid ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
+                                    {isPaymentMarkedPaid ? 'Bukti akan berstatus LUNAS.' : 'Bukti tidak menampilkan status LUNAS dan riwayat menandainya Belum Lunas.'}
+                                </span>
+                            </label>
+                            <Switch
+                              id="payment-status-toggle"
+                              checked={isPaymentMarkedPaid}
+                              onCheckedChange={setIsPaymentMarkedPaid}
+                              aria-label="Tandai transaksi sebagai lunas"
+                            />
+                        </div>
                         <div className="w-full flex justify-between items-center px-4 py-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
                             <div className="flex items-center gap-3"><div className="p-2 bg-white dark:bg-slate-800 rounded-md shadow-sm"><Banknote className="w-5 h-5 text-green-600"/></div><div><p className="text-xs font-semibold text-muted-foreground uppercase">Total Tagihan</p><p className="text-xl font-black text-slate-800 dark:text-white">Rp {(totalCart * Math.max(1, selectedSantri.length)).toLocaleString('id-ID')}</p></div></div>
 <Select value={paymentMethod} onValueChange={setPaymentMethod}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tunai">Tunai</SelectItem><SelectItem value="Transfer">Transfer</SelectItem></SelectContent></Select>
@@ -868,10 +892,32 @@ const PaymentSystem = () => {
 
                 {selectedSantri.length === 1 && (
                 <div className="mt-4">
-                    <div className="flex justify-between items-center mb-2"><h3 className="font-bold text-xl">Riwayat Bayar Murid</h3><div className="flex gap-2 items-center"><span className="text-xs font-medium mr-1">Filter Tagihan:</span><Select value={historyFilter.year.toString()} onValueChange={val => setHistoryFilter(f => ({...f, year: val === 'all' ? 'all' : Number(val)}))}><SelectTrigger className="w-[100px] h-8"><SelectValue placeholder="Tahun" /></SelectTrigger><SelectContent><SelectItem value="all">Semua</SelectItem>{availableYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select><Select value={historyFilter.month.toString()} onValueChange={val => setHistoryFilter(f => ({...f, month: val === 'all' ? 'all' : Number(val)}))}><SelectTrigger className="w-[120px] h-8"><SelectValue placeholder="Bulan" /></SelectTrigger><SelectContent><SelectItem value="all">Semua</SelectItem>{monthsList.map((m, i) => <SelectItem key={i} value={i.toString()}>{m}</SelectItem>)}</SelectContent></Select>{selectedHistory.length > 0 && <Button onClick={confirmDelete} variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/> Hapus ({selectedHistory.length})</Button>}</div></div>
+                    <div className="flex flex-col gap-3 mb-2 lg:flex-row lg:items-center lg:justify-between">
+                      <h3 className="font-bold text-xl">Riwayat Bayar Murid</h3>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <span className="text-xs font-medium mr-1">Filter:</span>
+                        <Select value={historyFilter.year.toString()} onValueChange={val => setHistoryFilter(f => ({...f, year: val === 'all' ? 'all' : Number(val)}))}>
+                          <SelectTrigger className="w-[100px] h-8"><SelectValue placeholder="Tahun" /></SelectTrigger>
+                          <SelectContent><SelectItem value="all">Semua Tahun</SelectItem>{availableYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={historyFilter.month.toString()} onValueChange={val => setHistoryFilter(f => ({...f, month: val === 'all' ? 'all' : Number(val)}))}>
+                          <SelectTrigger className="w-[120px] h-8"><SelectValue placeholder="Bulan" /></SelectTrigger>
+                          <SelectContent><SelectItem value="all">Semua Bulan</SelectItem>{monthsList.map((m, i) => <SelectItem key={i} value={i.toString()}>{m}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={historyFilter.status} onValueChange={(status) => setHistoryFilter(f => ({ ...f, status }))}>
+                          <SelectTrigger className="w-[140px] h-8"><SelectValue placeholder="Status" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Semua Status</SelectItem>
+                            <SelectItem value="paid">Lunas</SelectItem>
+                            <SelectItem value="unpaid">Belum Lunas</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {selectedHistory.length > 0 && <Button onClick={confirmDelete} variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/> Hapus ({selectedHistory.length})</Button>}
+                      </div>
+                    </div>
                     <div className="max-h-48 overflow-y-auto space-y-2 border rounded-lg p-2">
                     {filteredHistory.length > 0 && (<div className="flex items-center px-2"><Checkbox id="selectAllHistory" checked={selectedHistory.length === filteredHistory.length && filteredHistory.length > 0} onCheckedChange={checked => checked ? setSelectedHistory(filteredHistory.map(p => p.id)) : setSelectedHistory([])} /><label htmlFor="selectAllHistory" className="ml-2 text-sm font-medium">Pilih Semua</label></div>)}
-                    {filteredHistory.map(p => (<div key={p.id} className="flex items-center justify-between gap-2 p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"><div className="flex items-center gap-3 min-w-0 flex-1"><Checkbox id={`history-${p.id}`} checked={selectedHistory.includes(p.id)} onCheckedChange={() => handleSelectHistory(p.id)} className="flex-shrink-0" /><div className="flex-grow min-w-0"><p className="font-semibold truncate text-sm">{p.catatan}</p><div className="flex flex-wrap items-center gap-2 text-xs text-gray-500"><span>{new Date(p.tanggal_pembayaran).toLocaleString('id-ID')}</span>{p.bulan && <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px]">Tagihan: {monthNumberToName(p.bulan)} {p.tahun}</span>}</div></div><p className="font-bold whitespace-nowrap text-sm text-primary">Rp{Number(p.jumlah || 0).toLocaleString('id-ID')}</p></div><Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40" onClick={() => setHistoryProofPayment(p)} title="Buka bukti pembayaran" aria-label="Buka bukti pembayaran"><FileText className="h-4 w-4" /></Button></div>))}
+                    {filteredHistory.map(p => (<div key={p.id} className="flex items-center justify-between gap-2 p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"><div className="flex items-center gap-3 min-w-0 flex-1"><Checkbox id={`history-${p.id}`} checked={selectedHistory.includes(p.id)} onCheckedChange={() => handleSelectHistory(p.id)} className="flex-shrink-0" /><div className="flex-grow min-w-0"><p className="font-semibold truncate text-sm">{p.catatan}</p><div className="flex flex-wrap items-center gap-2 text-xs text-gray-500"><span>{new Date(p.tanggal_pembayaran).toLocaleString('id-ID')}</span>{p.bulan && <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px]">Tagihan: {monthNumberToName(p.bulan)} {p.tahun}</span>}<Badge variant={isPaymentPaid(p.status) ? 'secondary' : 'outline'} className={isPaymentPaid(p.status) ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]' : 'bg-amber-50 text-amber-700 border-amber-200 text-[10px]'}>{formatPaymentStatus(p.status)}</Badge></div></div><p className="font-bold whitespace-nowrap text-sm text-primary">Rp{Number(p.jumlah || 0).toLocaleString('id-ID')}</p></div><Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40" onClick={() => setHistoryProofPayment(p)} title="Buka bukti pembayaran" aria-label="Buka bukti pembayaran"><FileText className="h-4 w-4" /></Button></div>))}
                     {filteredHistory.length === 0 && <p className="text-center text-gray-500 py-4">Tidak ada riwayat untuk periode ini.</p>}</div>
                 </div>
                 )}
@@ -903,13 +949,7 @@ const PaymentSystem = () => {
                        <h3 className="font-bold text-lg text-primary tracking-tight font-poppins">{sekolah.name.toUpperCase()}</h3>
                        <p className="text-[10px] text-slate-500 mt-1">{sekolah.address}</p>
                        <p className="text-[10px] text-slate-500">{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>
-                  </div>
-
-                  {/* Lunas Stamp - Centered */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none select-none">
-                       <div className="border-4 border-red-500 text-red-500 rounded-lg px-6 py-2 text-3xl font-bold -rotate-12 opacity-15 whitespace-nowrap">
-                           LUNAS
-                       </div>
+                       {isPaymentPaid(receiptData.status) && <span className="mt-2 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-emerald-700">LUNAS</span>}
                   </div>
 
                   <div className="flex justify-between text-[10px] mb-3 text-slate-600 bg-slate-50 p-2 rounded-lg relative z-10">
@@ -919,11 +959,7 @@ const PaymentSystem = () => {
                       </div>
                       <div className="space-y-0.5 text-right max-w-[58%]">
                          <p>Metode: <span className="font-semibold text-slate-900 uppercase">{receiptData.method}</span></p>
-                         <p>Status: <span className="font-semibold text-green-700">LUNAS</span></p>
-                         <p>Ref:</p>
-                         <div className="font-mono text-[9px] leading-tight break-all text-slate-700">
-                           {(receiptData.transactionIds?.length ? receiptData.transactionIds : [receiptData.transactionId || '-']).map((reference) => <div key={reference}>{reference}</div>)}
-                         </div>
+                         {isPaymentPaid(receiptData.status) && <p>Status: <span className="font-semibold text-green-700">LUNAS</span></p>}
                       </div>
                   </div>
 
