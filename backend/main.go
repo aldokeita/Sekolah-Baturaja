@@ -45,7 +45,7 @@ func main() {
 	classesHandler := handler.NewClassesHandler(pool)
 	attendanceHandler := handler.NewAttendanceHandler(pool)
 	paymentHandler := handler.NewPaymentHandler(pool)
-	contentHandler := handler.NewContentHandler(pool)
+	contentHandler := handler.NewContentHandler(pool, store)
 	configHandler := handler.NewAppConfigHandler(pool)
 	academicHandler := handler.NewAcademicHandler(pool)
 	scheduleHandler := handler.NewScheduleHandler(pool)

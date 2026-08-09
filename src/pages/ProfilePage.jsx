@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import { fetchSantriCount } from '@/lib/dataMasterAdapters';
 import { fetchPublicTeachers } from '@/lib/publicContentAdapters';
 import { DEFAULT_PROFILE_CONTENT, fetchProfileContent } from '@/lib/profileContent';
 import { inisialNama, sebutanStaf } from '@/lib/staf';
@@ -132,6 +133,27 @@ const PersonSvg = ({ size, style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,.9)" style={style}><circle cx="12" cy="8.4" r="4" /><path d="M3.6 22c.6-4.6 4.2-7.2 8.4-7.2s7.8 2.6 8.4 7.2z" /></svg>
 );
 
+const FotoDenganFallback = ({ src, alt, imageStyle, loading = 'lazy', children }) => {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => setHasError(false), [src]);
+
+  return (
+    <>
+      {children}
+      {src && !hasError && (
+        <img
+          src={src}
+          alt={alt}
+          loading={loading}
+          style={imageStyle}
+          onError={() => setHasError(true)}
+        />
+      )}
+    </>
+  );
+};
+
 const TiltCard = ({ style, label, imageUrl }) => (
   <div className="tilt" style={style}>
     {imageUrl && <img src={imageUrl} alt={`${label} — foto kartu pembuka`} style={{ position: 'absolute', inset: 0, zIndex: 0, width: '100%', height: '100%', objectFit: 'cover' }} onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
@@ -148,21 +170,97 @@ const ProfilePage = () => {
   const [light, setLight] = useState(-1);
   const [perView, setPerView] = useState(4);
   const [staf, setStaf] = useState([]);
+  const [stafStatus, setStafStatus] = useState('loading');
+  const [stafError, setStafError] = useState(null);
+  const [jumlahMurid, setJumlahMurid] = useState({ status: 'loading', total: null, error: null });
   // Bawaan dipakai lebih dulu supaya halaman tidak kosong selagi menunggu server.
   const [isi, setIsi] = useState(DEFAULT_PROFILE_CONTENT);
   const vpRef = useRef(null);
   const pausedRef = useRef(false);
+  const stafRequestRef = useRef(0);
+  const muridRequestRef = useRef(0);
 
   useEffect(() => {
     let aktif = true;
-    fetchPublicTeachers()
-      .then((rows) => { if (aktif && Array.isArray(rows)) setStaf(rows); })
-      .catch(() => { /* bagian lain halaman ini tetap tampil tanpa daftar guru */ });
     fetchProfileContent()
       .then((tersimpan) => { if (aktif && tersimpan) setIsi(tersimpan); })
       .catch(() => { /* bawaan tetap tampil */ });
     return () => { aktif = false; };
   }, []);
+
+  const loadJumlahMurid = useCallback(async ({ initial = false } = {}) => {
+    const requestId = ++muridRequestRef.current;
+    setJumlahMurid((prev) => ({
+      ...prev,
+      status: initial || prev.total === null ? 'loading' : prev.status,
+      error: null,
+    }));
+
+    try {
+      const result = await fetchSantriCount();
+      const total = Number(result?.total);
+      if (!Number.isInteger(total) || total < 0) throw new Error('Jumlah murid tidak valid.');
+      if (requestId !== muridRequestRef.current) return;
+      setJumlahMurid({ status: total === 0 ? 'empty' : 'ready', total, error: null });
+    } catch {
+      if (requestId !== muridRequestRef.current) return;
+      setJumlahMurid((prev) => ({
+        ...prev,
+        status: prev.total === null ? 'error' : prev.status,
+        error: 'Jumlah murid aktif belum dapat dimuat.',
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    loadJumlahMurid({ initial: true });
+    const refresh = () => {
+      if (document.visibilityState !== 'hidden') loadJumlahMurid();
+    };
+    const interval = window.setInterval(refresh, 60_000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      muridRequestRef.current += 1;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [loadJumlahMurid]);
+
+  const loadStaf = useCallback(async ({ initial = false } = {}) => {
+    const requestId = ++stafRequestRef.current;
+    if (initial) setStafStatus('loading');
+    setStafError(null);
+
+    try {
+      const rows = await fetchPublicTeachers();
+      if (!Array.isArray(rows)) throw new Error('Format daftar guru tidak valid.');
+      if (requestId !== stafRequestRef.current) return;
+      setStaf(rows);
+      setStafStatus(rows.length > 0 ? 'ready' : 'empty');
+    } catch {
+      if (requestId !== stafRequestRef.current) return;
+      setStafStatus((prev) => (prev === 'loading' ? 'error' : prev));
+      setStafError('Daftar guru dan staf belum dapat dimuat.');
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStaf({ initial: true });
+    const refresh = () => {
+      if (document.visibilityState !== 'hidden') loadStaf();
+    };
+    const interval = window.setInterval(refresh, 60_000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      stafRequestRef.current += 1;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [loadStaf]);
 
   // Data guru dipasangkan dengan gradasi berdasarkan posisi, sama seperti kartu
   // program di halaman depan.
@@ -173,7 +271,7 @@ const ProfilePage = () => {
       nama,
       peran: sebutanStaf(g),
       inisial: inisialNama(nama),
-      foto: g.foto_url || '',
+      foto: String(g.foto_url || '').trim(),
       gradasi: `linear-gradient(150deg,${dari},${ke})`,
       // Hanya fakta yang benar-benar ada di basis data. Kolom "pendidikan",
       // "masa kerja", dan "sertifikasi" pada versi lama semuanya karangan.
@@ -236,7 +334,7 @@ const ProfilePage = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [light]);
+  }, [light, isi.facilities.length]);
 
   const movePerson = (dir) => setPerson((p) => (p + dir + tim.length) % tim.length);
   const moveLight = (dir) => setLight((p) => (p + dir + isi.facilities.length) % isi.facilities.length);
@@ -249,6 +347,17 @@ const ProfilePage = () => {
   const p = person >= 0 ? tim[person] : null;
   const l = light >= 0 ? isi.facilities[light] : null;
   const dotCount = Math.max(1, tim.length - perView + 1);
+  const badgeValue = jumlahMurid.status === 'loading'
+    ? '…'
+    : jumlahMurid.total === null ? '—' : String(jumlahMurid.total);
+  const badgeLabel = jumlahMurid.status === 'loading'
+    ? 'memuat jumlah murid'
+    : jumlahMurid.status === 'empty'
+      ? 'belum ada murid aktif'
+      : jumlahMurid.status === 'error' && jumlahMurid.total === null
+        ? 'jumlah murid tidak tersedia'
+        : isi.hero.badgeLabel;
+  const kepalaAvatarUrl = String(isi.quoteAvatarUrl || kepalaSekolah?.foto || '').trim();
 
   return (
     <div className="sdnb-profil">
@@ -297,11 +406,17 @@ const ProfilePage = () => {
                 />
               );
             })}
-            <div style={{ position: 'absolute', left: 0, bottom: 70, padding: '14px 18px', borderRadius: 18, background: 'rgba(255,255,255,.58)', backdropFilter: 'blur(24px) saturate(185%)', WebkitBackdropFilter: 'blur(24px) saturate(185%)', border: '1px solid rgba(255,255,255,.85)', boxShadow: '0 24px 50px -20px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.95)', animation: 'floaty 9s ease-in-out infinite' }}>
+            <div aria-live="polite" aria-busy={jumlahMurid.status === 'loading'} data-student-count-state={jumlahMurid.status} style={{ position: 'absolute', left: 0, bottom: 70, padding: '14px 18px', borderRadius: 18, background: 'rgba(255,255,255,.58)', backdropFilter: 'blur(24px) saturate(185%)', WebkitBackdropFilter: 'blur(24px) saturate(185%)', border: '1px solid rgba(255,255,255,.85)', boxShadow: '0 24px 50px -20px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.95)', animation: 'floaty 9s ease-in-out infinite' }}>
               <div style={{ fontFamily: HEADING_FONT, fontSize: 28, fontWeight: 800, letterSpacing: '-.03em', color: '#1d1f33' }}>
-                {angkaHitung(isi.hero.badgeValue)}
+                {angkaHitung(badgeValue)}
               </div>
-              <div style={{ fontSize: 11.5, color: '#6d7192' }}>{isi.hero.badgeLabel}</div>
+              <div style={{ fontSize: 11.5, color: '#6d7192' }}>{badgeLabel}</div>
+              {jumlahMurid.error && (
+                <div role="alert" style={{ marginTop: 6, maxWidth: 150, fontSize: 10.5, lineHeight: 1.35, color: '#9b435b' }}>
+                  {jumlahMurid.error}
+                  <button type="button" onClick={() => loadJumlahMurid()} style={{ display: 'block', marginTop: 3, padding: 0, border: 0, background: 'none', color: 'var(--sekolah-aksen-pekat)', font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>Coba lagi</button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -352,7 +467,14 @@ const ProfilePage = () => {
 
         <div style={{ marginTop: 36, marginLeft: 64, display: 'flex', alignItems: 'center', gap: 20 }}>
           <div style={{ position: 'relative', flex: 'none', width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(140deg,#c6b6f6,#9fc4f8 60%,#a9eede)', boxShadow: '0 20px 40px -16px rgba(60,70,140,.55)' }}>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}><PersonSvg size={66} /></div>
+            <FotoDenganFallback
+              src={kepalaAvatarUrl}
+              alt={`Avatar ${kepalaSekolah ? kepalaSekolah.nama : sekolah.name}`}
+              loading="eager"
+              imageStyle={{ position: 'absolute', inset: 0, zIndex: 1, width: '100%', height: '100%', objectFit: 'cover' }}
+            >
+              <div style={{ position: 'absolute', inset: 0, zIndex: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}><PersonSvg size={66} /></div>
+            </FotoDenganFallback>
           </div>
           {/* Penanda tangan kutipan diambil dari Data Guru: baris yang jabatannya
               memuat "Kepala Sekolah". Kalau sekolah belum mengisinya, yang tampil
@@ -443,10 +565,18 @@ const ProfilePage = () => {
             <h2 style={h2}>Guru dan staf</h2>
             {/* Jumlahnya dihitung dari data guru, bukan angka tetap. Versi lama
                 menuliskan "tiga puluh empat orang" walau datanya berapa pun. */}
-            <p style={{ margin: '12px 0 0', maxWidth: 440, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>
-              {tim.length > 0
-                ? `${tim.length} guru dan tenaga kependidikan. Klik kartu untuk melihat rinciannya.`
-                : 'Daftar guru dan staf belum diisi.'}
+            <p
+              role={stafStatus === 'error' ? 'alert' : undefined}
+              aria-live="polite"
+              style={{ margin: '12px 0 0', maxWidth: 440, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}
+            >
+              {stafStatus === 'loading'
+                ? 'Memuat daftar guru dan staf…'
+                : stafStatus === 'error'
+                  ? stafError
+                  : tim.length > 0
+                    ? `${tim.length} guru dan tenaga kependidikan. Klik kartu untuk melihat rinciannya.`
+                    : 'Daftar guru dan staf belum diisi.'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -471,11 +601,15 @@ const ProfilePage = () => {
               <div key={`${t.nama}-${i}`} onClick={() => setPerson(i)} className="lift" style={{ flex: 'none', width: 288, cursor: 'pointer', position: 'relative', overflow: 'hidden', borderRadius: 26, background: 'rgba(255,255,255,.52)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
                 <div style={{ position: 'relative', height: 210, overflow: 'hidden', background: t.gradasi }}>
                   <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
-                  {/* Foto asli bila guru sudah mengunggahnya; kalau belum, siluet
-                      seperti sebelumnya supaya tinggi kartu tidak berubah. */}
-                  {t.foto
-                    ? <img src={t.foto} alt={t.nama} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <PersonSvg size={120} style={{ position: 'absolute', left: '50%', bottom: -6, transform: 'translateX(-50%)' }} />}
+                  {/* Foto asli berasal dari profil guru; fallback menjaga komposisi
+                      kartu tetap utuh bila foto belum tersedia atau gagal dimuat. */}
+                  <FotoDenganFallback
+                    src={t.foto}
+                    alt={t.nama}
+                    imageStyle={{ position: 'absolute', inset: 0, zIndex: 1, width: '100%', height: '100%', objectFit: 'cover' }}
+                  >
+                    <PersonSvg size={120} style={{ position: 'absolute', zIndex: 0, left: '50%', bottom: -6, transform: 'translateX(-50%)' }} />
+                  </FotoDenganFallback>
                   <div style={{ position: 'absolute', left: 14, top: 14, padding: '6px 11px', borderRadius: 10, fontSize: 11, fontWeight: 800, letterSpacing: '.04em', color: '#2c2f4d', background: 'rgba(255,255,255,.62)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>{t.inisial}</div>
                 </div>
                 <div style={{ position: 'relative', padding: '20px 22px 22px' }}>

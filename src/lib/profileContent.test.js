@@ -119,4 +119,11 @@ describe('normalizeProfileContent', () => {
     expect(normalizeProfileContent({ quoteLead: '   ' }).quoteLead).toBe(DEFAULT_PROFILE_CONTENT.quoteLead);
     expect(normalizeProfileContent({ quoteLead: 'Kalimat *khas* kami.' }).quoteLead).toBe('Kalimat *khas* kami.');
   });
+
+  it('menyimpan avatar kutipan dari aset website dan menerima nama field lama', () => {
+    expect(normalizeProfileContent({ quoteAvatarUrl: ' https://cdn.example.test/kepala.webp ' }).quoteAvatarUrl)
+      .toBe('https://cdn.example.test/kepala.webp');
+    expect(normalizeProfileContent({ quote_avatar_url: 'https://cdn.example.test/lama.webp' }).quoteAvatarUrl)
+      .toBe('https://cdn.example.test/lama.webp');
+  });
 });

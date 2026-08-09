@@ -49,20 +49,20 @@ const Bagian = ({ judul, keterangan, tombol, children }) => (
   </div>
 );
 
-const ProfilePhotoPreview = ({ src, alt }) => {
+const ProfilePhotoPreview = ({ src, alt, emptyLabel = 'Belum ada foto kartu pembuka', className = 'h-32 w-full rounded-xl sm:w-48' }) => {
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => setHasError(false), [src]);
 
   if (!src || hasError) {
     return (
-      <div className="flex h-32 w-full items-center justify-center rounded-xl bg-muted text-muted-foreground sm:w-48" aria-label="Belum ada foto kartu pembuka">
+      <div className={`flex items-center justify-center bg-muted text-muted-foreground ${className}`} aria-label={emptyLabel}>
         <ImageIcon className="h-8 w-8" aria-hidden="true" />
       </div>
     );
   }
 
-  return <img src={src} alt={alt} className="h-32 w-full rounded-xl object-cover sm:w-48" onError={() => setHasError(true)} />;
+  return <img src={src} alt={alt} className={`${className} object-cover`} onError={() => setHasError(true)} />;
 };
 
 const ProfileContentSettings = () => {
@@ -71,6 +71,7 @@ const ProfileContentSettings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [uploadingPhotoIndex, setUploadingPhotoIndex] = useState(null);
+  const [isUploadingQuoteAvatar, setIsUploadingQuoteAvatar] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -134,6 +135,33 @@ const ProfileContentSettings = () => {
       toast({ title: 'Upload foto gagal', description: getStorageErrorMessage(error), variant: 'destructive' });
     } finally {
       setUploadingPhotoIndex(null);
+      event.target.value = '';
+    }
+  };
+
+  const handleQuoteAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingQuoteAvatar(true);
+    try {
+      const result = await uploadWebsiteAsset({
+        folder: 'profile/headmaster',
+        key: 'quote-avatar',
+        file,
+      });
+      const imageUrl = String(result?.publicUrl || '').trim();
+      if (!imageUrl) throw new Error('Upload berhasil, tetapi URL avatar tidak tersedia.');
+
+      ubahAkar('quoteAvatarUrl', imageUrl);
+      toast({
+        title: 'Avatar kutipan siap disimpan',
+        description: 'Avatar Kepala Sekolah sudah diunggah. Tekan “Simpan Halaman Profil” untuk menerapkannya.',
+      });
+    } catch (error) {
+      toast({ title: 'Upload avatar gagal', description: getStorageErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setIsUploadingQuoteAvatar(false);
       event.target.value = '';
     }
   };
@@ -222,8 +250,9 @@ const ProfileContentSettings = () => {
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div className="admin-edit-field">
-            <label htmlFor="profil-badge-nilai">Angka pada kartu mengapung</label>
-            <Input id="profil-badge-nilai" value={isi.hero.badgeValue} placeholder="624" onChange={(e) => ubahHero('badgeValue', e.target.value)} />
+            <label htmlFor="profil-badge-nilai">Jumlah murid pada kartu</label>
+            <Input id="profil-badge-nilai" value="Diambil otomatis dari murid aktif" readOnly aria-describedby="profil-badge-nilai-hint" />
+            <p id="profil-badge-nilai-hint" className="mt-1 text-xs text-muted-foreground">Nilai mengikuti data murid aktif di sistem dan tidak diubah manual dari konten halaman.</p>
           </div>
           <div className="admin-edit-field">
             <label htmlFor="profil-badge-label">Keterangan kartu mengapung</label>
@@ -336,13 +365,42 @@ const ProfileContentSettings = () => {
 
       <Bagian
         judul="Kutipan Kepala Sekolah"
-        keterangan="Nama penanda tangannya diambil dari Data Guru, dari baris yang jabatannya memuat “Kepala Sekolah”."
+        keterangan="Nama penanda tangannya diambil dari Data Guru, dari baris yang jabatannya memuat “Kepala Sekolah”. Avatar dapat diatur di sini."
         tombol={(
           <Button type="button" size="sm" variant="outline" onClick={() => tambah('quote', '')}>
             <Plus className="mr-1 h-4 w-4" /> Tambah paragraf
           </Button>
         )}
       >
+        <div className="grid gap-4 rounded-xl border bg-background p-4 md:grid-cols-[6rem_minmax(0,1fr)] md:items-start">
+          <ProfilePhotoPreview
+            src={isi.quoteAvatarUrl}
+            alt="Pratinjau avatar kutipan Kepala Sekolah"
+            emptyLabel="Belum ada avatar kutipan Kepala Sekolah"
+            className="h-24 w-24 rounded-full"
+          />
+          <div className="admin-edit-field">
+            <label htmlFor="profil-kutipan-avatar-upload">Avatar kutipan Kepala Sekolah</label>
+            <Input
+              id="profil-kutipan-avatar-upload"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={isUploadingQuoteAvatar}
+              onChange={handleQuoteAvatarUpload}
+            />
+            {isUploadingQuoteAvatar && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground" role="status">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Mengunggah avatar…
+              </p>
+            )}
+            {!isUploadingQuoteAvatar && isi.quoteAvatarUrl && (
+              <p className="mt-1 text-xs text-muted-foreground">Avatar tersimpan di storage website. Tekan Simpan untuk menerapkannya pada halaman Profil.</p>
+            )}
+            {!isi.quoteAvatarUrl && !isUploadingQuoteAvatar && (
+              <p className="mt-1 text-xs text-muted-foreground">Jika belum ada foto, halaman publik memakai fallback avatar.</p>
+            )}
+          </div>
+        </div>
         <div className="admin-edit-field">
           <label htmlFor="profil-kutipan-utama">Kalimat besar</label>
           <Textarea id="profil-kutipan-utama" rows={3} value={isi.quoteLead} onChange={(e) => ubahAkar('quoteLead', e.target.value)} />

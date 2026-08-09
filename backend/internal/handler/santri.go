@@ -406,7 +406,10 @@ func (h *SantriHandler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *SantriHandler) Count(w http.ResponseWriter, r *http.Request) {
 	var total int
 	err := h.db.QueryRow(r.Context(),
-		`SELECT COUNT(*) FROM santri WHERE status = 'Aktif'`).Scan(&total)
+		`SELECT COUNT(*)
+		 FROM santri
+		 WHERE deleted_at IS NULL
+		   AND lower(trim(COALESCE(status, ''))) IN ('aktif', 'active')`).Scan(&total)
 	if err != nil {
 		jsonError(w, "gagal menghitung santri", http.StatusInternalServerError)
 		return
