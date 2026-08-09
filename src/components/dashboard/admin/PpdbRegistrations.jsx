@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Check, ChevronDown, Download, FileText, GraduationCap, Inbox, MessageCircle, Printer,
-  RefreshCw, Search, Trash2, UserCheck, UserX,
+  Check, ChevronDown, ChevronLeft, ChevronRight, Download, FileText, GraduationCap,
+  Inbox, MessageCircle, Printer, RefreshCw, Search, Trash2, UserCheck, UserX,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,9 +14,9 @@ import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import {
-  URUTAN_STATUS, fetchPendaftaran, fetchRekapPpdb, fetchStatistikPpdb, getPpdbErrorMessage,
-  hapusPendaftaran, imporPendaftaranLama, jadikanMurid, labelStatus, ubahPendaftaran,
-  unduhCsvPendaftaran, usulanNomorInduk,
+  URUTAN_STATUS, fetchAllPendaftaran, fetchPendaftaranPage, fetchRekapPpdb,
+  fetchStatistikPpdb, getPpdbErrorMessage, hapusPendaftaran, imporPendaftaranLama,
+  jadikanMurid, labelStatus, ubahPendaftaran, unduhCsvPendaftaran, usulanNomorInduk,
 } from '@/lib/ppdbAdapters';
 import { fetchPpdbContent } from '@/lib/ppdbContent';
 import { fetchClassList } from '@/lib/dataMasterAdapters';
@@ -87,6 +87,8 @@ const TEMPLATE_STATUS = {
   ditolak: 'ppdbDitolak',
 };
 
+const PAGE_SIZE = 50;
+
 const PpdbRegistrations = () => {
   const { role } = useAuth();
   const sekolah = useSchoolIdentity();
@@ -99,6 +101,10 @@ const PpdbRegistrations = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [sedangSimpan, setSedangSimpan] = useState(null);
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [sedangUnduh, setSedangUnduh] = useState(false);
+  const [unduhError, setUnduhError] = useState(null);
 
   const [tahun, setTahun] = useState('');
   const [status, setStatus] = useState('');
@@ -213,7 +219,10 @@ const PpdbRegistrations = () => {
 
   // Pencarian ditunda supaya tiap ketukan tidak memanggil server.
   useEffect(() => {
-    const id = setTimeout(() => setCari(cariTertunda), 400);
+    const id = setTimeout(() => {
+      setPage(0);
+      setCari(cariTertunda);
+    }, 400);
     return () => clearTimeout(id);
   }, [cariTertunda]);
 
@@ -222,17 +231,23 @@ const PpdbRegistrations = () => {
     setLoadError(null);
     try {
       const [daftar, stat] = await Promise.all([
-        fetchPendaftaran({ tahun, status, q: cari, wilayah }),
+        fetchPendaftaranPage({ tahun, status, q: cari, wilayah, page, limit: PAGE_SIZE }),
         fetchStatistikPpdb(tahun),
       ]);
-      setRows(daftar);
+      const halamanTerakhir = Math.max(0, Math.ceil(daftar.total / PAGE_SIZE) - 1);
+      if (page > halamanTerakhir) {
+        setPage(halamanTerakhir);
+        return;
+      }
+      setRows(daftar.data);
+      setTotal(daftar.total);
       setStatistik(stat);
     } catch (error) {
       setLoadError(getPpdbErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
-  }, [tahun, status, cari, wilayah]);
+  }, [tahun, status, cari, wilayah, page]);
 
   useEffect(() => { muat(); }, [muat]);
 
@@ -365,6 +380,25 @@ const PpdbRegistrations = () => {
     return `${bagian.join('-')}.csv`;
   }, [tahun, status]);
 
+  const unduhSemua = async () => {
+    setSedangUnduh(true);
+    setUnduhError(null);
+    try {
+      const semua = await fetchAllPendaftaran({ tahun, status, q: cari, wilayah });
+      unduhCsvPendaftaran(semua, namaBerkas);
+    } catch (error) {
+      const pesan = getPpdbErrorMessage(error);
+      setUnduhError(pesan);
+      toast({ title: 'Gagal mengunduh CSV', description: pesan, variant: 'destructive' });
+    } finally {
+      setSedangUnduh(false);
+    }
+  };
+
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const awalBaris = total === 0 ? 0 : page * PAGE_SIZE + 1;
+  const akhirBaris = Math.min((page + 1) * PAGE_SIZE, total);
+
   const kartu = URUTAN_STATUS.map((s) => ({ s, jumlah: statistik.cacah?.[s] ?? 0 }));
 
   if (isLoading && rows.length === 0) {
@@ -414,11 +448,12 @@ const PpdbRegistrations = () => {
           </Button>
           <Button
             type="button"
-            onClick={() => unduhCsvPendaftaran(rows, namaBerkas)}
-            disabled={rows.length === 0}
-            title={rows.length === 0 ? 'Belum ada pendaftaran untuk diunduh' : `Unduh ${rows.length} baris`}
+            onClick={unduhSemua}
+            disabled={total === 0 || sedangUnduh}
+            title={total === 0 ? 'Belum ada pendaftaran untuk diunduh' : `Unduh seluruh ${total} hasil yang cocok`}
           >
-            <Download className="mr-2 h-4 w-4" /> Unduh CSV
+            <Download className={`mr-2 h-4 w-4 ${sedangUnduh ? 'animate-pulse' : ''}`} />
+            {sedangUnduh ? 'Menyiapkan CSV…' : 'Unduh CSV'}
           </Button>
         </div>
       </div>
@@ -426,6 +461,12 @@ const PpdbRegistrations = () => {
       {loadError && (
         <div className="admin-error-state" role="alert">
           <p className="text-sm font-medium">Gagal memuat pendaftaran: {loadError}</p>
+        </div>
+      )}
+
+      {unduhError && (
+        <div className="admin-error-state" role="alert">
+          <p className="text-sm font-medium">Gagal mengunduh seluruh hasil: {unduhError}</p>
         </div>
       )}
 
@@ -437,7 +478,7 @@ const PpdbRegistrations = () => {
             <button
               key={s}
               type="button"
-              onClick={() => setStatus(aktif ? '' : s)}
+              onClick={() => { setPage(0); setStatus(aktif ? '' : s); }}
               aria-pressed={aktif}
               className={`admin-card p-4 text-left transition ${aktif ? 'ring-2 ring-primary' : 'hover:bg-muted/40'}`}
             >
@@ -516,7 +557,7 @@ const PpdbRegistrations = () => {
             id="ppdb-tahun"
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             value={tahun}
-            onChange={(e) => setTahun(e.target.value)}
+            onChange={(e) => { setPage(0); setTahun(e.target.value); }}
           >
             <option value="">Semua tahun</option>
             {(statistik.tahun_ajaran || []).map((t) => <option key={t} value={t}>{t}</option>)}
@@ -530,7 +571,7 @@ const PpdbRegistrations = () => {
               id="ppdb-wilayah-saring"
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={wilayah}
-              onChange={(e) => setWilayah(e.target.value)}
+              onChange={(e) => { setPage(0); setWilayah(e.target.value); }}
             >
               <option value="">Semua wilayah</option>
               {wilayahPpdb.map((w) => <option key={w} value={w}>{w}</option>)}
@@ -543,7 +584,7 @@ const PpdbRegistrations = () => {
             id="ppdb-status"
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e) => { setPage(0); setStatus(e.target.value); }}
           >
             <option value="">Semua status</option>
             {URUTAN_STATUS.map((s) => <option key={s} value={s}>{labelStatus(s)}</option>)}
@@ -555,10 +596,10 @@ const PpdbRegistrations = () => {
         <div className="admin-card p-8 text-center">
           <Inbox className="mx-auto h-10 w-10 text-muted-foreground" />
           <p className="mt-3 font-bold text-foreground">
-            {cari || status || tahun ? 'Tidak ada pendaftaran yang cocok' : 'Belum ada pendaftaran masuk'}
+            {cari || status || tahun || wilayah ? 'Tidak ada pendaftaran yang cocok' : 'Belum ada pendaftaran masuk'}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {cari || status || tahun
+            {cari || status || tahun || wilayah
               ? 'Ubah atau kosongkan penyaring di atas.'
               : 'Pendaftaran akan muncul di sini begitu orang tua mengirim formulir di halaman pendaftaran.'}
           </p>
@@ -714,10 +755,38 @@ const PpdbRegistrations = () => {
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground">
-        Menampilkan {rows.length} pendaftaran{statistik.total ? ` dari ${statistik.total} total` : ''}.
-        Daftar dibatasi 500 baris terbaru; gunakan penyaring bila lebih dari itu.
-      </p>
+      <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          Menampilkan {awalBaris}–{akhirBaris} dari {total} pendaftaran yang cocok.
+        </p>
+        <nav className="flex items-center gap-2" aria-label="Halaman daftar pendaftaran">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0 || isLoading}
+            aria-label="Halaman sebelumnya"
+          >
+            <ChevronLeft className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Sebelumnya</span>
+          </Button>
+          <span className="min-w-24 text-center text-xs font-semibold text-foreground">
+            Halaman {page + 1} dari {pageCount}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            disabled={page >= pageCount - 1 || isLoading}
+            aria-label="Halaman berikutnya"
+          >
+            <span className="hidden sm:inline">Berikutnya</span>
+            <ChevronRight className="h-4 w-4 sm:ml-1" />
+          </Button>
+        </nav>
+      </div>
 
       {/* Lembar rekap. `bukti-cetak` menyalakan aturan @media print di sdnb.css,
           jadi yang keluar hanya lembarnya — bukan seluruh dashboard. */}

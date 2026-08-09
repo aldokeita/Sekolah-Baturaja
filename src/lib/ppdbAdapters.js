@@ -54,25 +54,64 @@ export const kirimPendaftaran = async (isian) => {
   return body.data || {};
 };
 
-/** Daftar pendaftaran untuk panel. Penyaring yang kosong tidak dikirim. */
-export const fetchPendaftaran = async ({ tahun, status, q, wilayah } = {}) => {
+export const PPDB_PAGE_LIMIT = 200;
+
+export const hitungJumlahHalamanPendaftaran = (total, limit = PPDB_PAGE_LIMIT) => {
+  const jumlah = Number(total);
+  const ukuran = Number(limit);
+  if (!Number.isFinite(jumlah) || jumlah <= 0 || !Number.isFinite(ukuran) || ukuran <= 0) return 0;
+  return Math.ceil(jumlah / Math.min(Math.trunc(ukuran), PPDB_PAGE_LIMIT));
+};
+
+/** Menyusun query daftar. Diekspor agar filter dan pagination bisa diuji tanpa server. */
+export const susunQueryPendaftaran = ({ tahun, status, q, wilayah, page, limit } = {}) => {
   const params = new URLSearchParams();
   if (tahun) params.set('tahun', tahun);
   if (status) params.set('status', status);
   if (q) params.set('q', q);
   if (wilayah) params.set('wilayah', wilayah);
-  const query = params.toString();
-  const data = await apiClient.get(query ? `${BASE}?${query}` : BASE);
-  return data || [];
+  if (Number.isInteger(page) && page >= 0) params.set('page', String(page));
+  if (Number.isFinite(limit) && limit > 0) {
+    params.set('limit', String(Math.min(Math.trunc(limit), PPDB_PAGE_LIMIT)));
+  }
+  return params.toString();
+};
+
+/** Satu halaman pendaftaran beserta total setelah filter. page bersifat 0-based. */
+export const fetchPendaftaranPage = async (filters = {}) => {
+  const query = susunQueryPendaftaran(filters);
+  const { data, total } = await apiClient.get(
+    query ? `${BASE}?${query}` : BASE,
+    { withMeta: true },
+  );
+  return { data: data || [], total: Number(total) || 0 };
+};
+
+/** Mengambil seluruh hasil cocok secara bertahap, terutama untuk ekspor CSV. */
+export const fetchAllPendaftaran = async (filters = {}) => {
+  const first = await fetchPendaftaranPage({ ...filters, page: 0, limit: PPDB_PAGE_LIMIT });
+  const rows = [...first.data];
+  if (rows.length >= first.total || rows.length < PPDB_PAGE_LIMIT) return rows;
+  const pageCount = hitungJumlahHalamanPendaftaran(first.total);
+  for (let page = 1; page < pageCount; page += 1) {
+    const next = await fetchPendaftaranPage({ ...filters, page, limit: PPDB_PAGE_LIMIT });
+    if (next.data.length === 0) break;
+    rows.push(...next.data);
+    if (rows.length >= first.total || next.data.length < PPDB_PAGE_LIMIT) break;
+  }
+  return rows;
+};
+
+/** Kontrak lama tetap berupa array; kini tidak terpotong pada satu halaman. */
+export const fetchPendaftaran = async (filters = {}) => {
+  return fetchAllPendaftaran(filters);
 };
 
 /**
  * Angka ringkasan untuk lembar rekap yang dicetak.
  *
- * Dihitung di server, bukan dari daftar yang sudah diunduh: daftar itu dibatasi
- * 500 baris, jadi menghitung di browser akan diam-diam salah begitu pendaftarnya
- * lebih banyak — dan lembar rekap yang salah dikirim ke dinas lebih buruk daripada
- * tidak ada lembar rekap.
+ * Dihitung di server, bukan dari daftar halaman aktif. Lembar rekap yang salah
+ * dikirim ke dinas lebih buruk daripada tidak ada lembar rekap.
  */
 export const fetchRekapPpdb = async (tahun) => {
   const query = tahun ? `?tahun=${encodeURIComponent(tahun)}` : '';
