@@ -56,8 +56,8 @@ html { scroll-behavior: smooth; }
 @keyframes driftbg { 0%, 100% { transform: scale(1.06) translate3d(0, 0, 0); } 50% { transform: scale(1.14) translate3d(-2%, -2%, 0); } }
 @keyframes sdnb-photo-sheen {
   0%, 12% { transform: translate3d(-170%, 0, 0) rotate(17deg); opacity: 0; }
-  23% { opacity: .58; }
-  48% { opacity: .2; }
+  23% { opacity: .32; }
+  48% { opacity: .08; }
   64%, 100% { transform: translate3d(330%, 0, 0) rotate(17deg); opacity: 0; }
 }
 
@@ -74,13 +74,13 @@ html { scroll-behavior: smooth; }
   top: -28%;
   bottom: -28%;
   left: 0;
-  width: 30%;
-  background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .08) 22%, rgba(255, 255, 255, .76) 50%, rgba(255, 255, 255, .08) 78%, rgba(255, 255, 255, 0));
+  width: 14%;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .03) 24%, rgba(255, 255, 255, .38) 50%, rgba(255, 255, 255, .03) 76%, rgba(255, 255, 255, 0));
   filter: blur(1px);
   mix-blend-mode: screen;
   pointer-events: none;
   will-change: transform, opacity;
-  animation: sdnb-photo-sheen 7.2s cubic-bezier(.25, .7, .25, 1) infinite;
+  animation: sdnb-photo-sheen 8.6s cubic-bezier(.25, .7, .25, 1) infinite;
 }
 .sdnb-photo-frame__edge {
   position: absolute;
@@ -173,7 +173,7 @@ html { scroll-behavior: smooth; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sdnb-photo-frame__sheen { animation: none; opacity: .12; transform: translate3d(12%, 0, 0) rotate(17deg); }
+  .sdnb-photo-frame__sheen { animation: none; opacity: .06; transform: translate3d(12%, 0, 0) rotate(17deg); }
 }
 
 /* ── verbatim: shine sweep ───────────────────────────────────────────────── */
