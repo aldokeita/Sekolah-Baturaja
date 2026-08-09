@@ -1,9 +1,10 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-08 · **Branch:** `feat/sederhanakan-tab-konten` · **HEAD:** `abb1c00`
+**Diperbarui:** 2026-08-09 · **Branch:** `feat/sederhanakan-tab-konten` · **HEAD:** `01f0228` + perubahan lokal belum di-commit
 
-HEAD saat ini sudah tersinkron ke `origin/feat/sederhanakan-tab-konten`. Branch ini belum di-merge
-ke `master`; `master` tetap berada di commit `8c80e39` pada checkout lokal.
+HEAD saat ini berada di `01f0228`, lima commit di atas `origin/feat/sederhanakan-tab-konten`
+(`60a0fd7`). Branch ini belum di-merge ke `master`; `master` tetap berada di commit `8c80e39`
+pada checkout lokal.
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -237,8 +238,10 @@ lapisan frontend saja dan manfaatkan seam yang sudah ada (`mapSantriForLegacyUi`
 tabel: 554 kemunculan di migrasi, dan migrasi lama tidak boleh diedit.
 
 Prasyarat sebelum rename apa pun: jaring test harus menutupi area yang disentuh, karena rename tanpa
-test persis melahirkan kelas bug "penghapusan meninggalkan lubang". Vitest **sudah terpasang** (40
-test), tapi baru menutupi logika murni di `src/lib/` — belum cukup untuk rename lintas komponen.
+test persis melahirkan kelas bug "penghapusan meninggalkan lubang". Vitest **sudah terpasang** (183
+test pada 10 berkas), tapi baru menutupi logika murni di `src/lib/` — belum cukup untuk rename lintas
+komponen. Test Go langsung baru ada untuk utilitas berkas (`backend/internal/handler/file_test.go`),
+bukan untuk jadwal.
 Lihat bagian 7 nomor 3.
 
 **Koreksi catatan lama:** dokumen ini pernah menulis absensi sebagai "pengecualian yang layak
@@ -253,13 +256,14 @@ Jangan mengikuti kalimat lama itu.
 |---|---|
 | `npm run build` | Hijau, exit 0 |
 | `npm run lint` | Bersih, exit 0 |
-| `npm test` | **160 test hijau** (Vitest 3, 9 berkas) |
+| `npm test` | **183 test hijau** (Vitest 3, 10 berkas) |
 | Guard `scripts/validate-*.ps1` | **7 dari 8 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
 | Login 6 akun | **Terbukti jalan** lewat API |
 | `resolveUser` tahan kegagalan | **Terbukti lewat uji suntik kerusakan** (rename kolom `nisn`) |
 | 18 tab dashboard admin | **Semua merender**, nol crash — disapu satu per satu di browser |
 | **Navigasi Manajemen Konten Website** | **Tuntas di browser**: 11 tab datar disusun menjadi 6 kelompok untuk superadmin dan 5 kelompok untuk admin; semua sub-tab dan panel lama tetap tersedia |
+| **Editor konten & layar operasional** | **Tuntas di smoke test browser 2026-08-09**: Program, Prestasi, Ekstrakurikuler, Media/Galeri/Fasilitas, Informasi Pendaftaran, TV Display, serta formulir SPMB merender tanpa crash; tidak ada penyimpanan atau pengiriman data dilakukan |
 | Panel Metode Mengaji | **Tuntas di browser**: pilih Iqro → simpan → DB → bertahan setelah muat ulang |
 | Tab Rapat Guru | **Tuntas**, tab merender bersih |
 | Dashboard guru — 4 tombol hafalan | **Tuntas di browser** (Doa/Sholat/Surat/Tahfizh, Tahfizh terbuka berisi) |
@@ -271,20 +275,21 @@ Jangan mengikuti kalimat lama itu.
 | `GET /api/content/feedback` | **200 OK** (sebelumnya 405) |
 | `ErrorBoundary` | **Sudah diuji** dengan crash sengaja di kedua lapisan — lihat bagian 4 |
 | **Identitas sekolah tersambung** | **Tuntas lewat DB + browser**: menulis identitas berbeda ke `website_content` membuat judul tab, nama di nav, inisial logo, nama & alamat footer, serta telepon & surel halaman Kontak ikut berubah; nilai lama hilang; setelah baris uji dihapus semuanya kembali ke bawaan |
-| Panel Identitas Sekolah (klik-tayang) | **Belum** — menuntut login admin, dan agen tidak boleh mengisi kata sandi. Jalur simpannya memakai `saveWebsiteContentItem` yang sudah dipakai panel Konten lain |
+| Panel Identitas Sekolah (klik-tayang) | **Tuntas** — verifikasi klik tercatat pada 2026-08-08; jalur simpan memakai `saveSchoolBrand`/`saveWebsiteContentItem` dan hak ubah tetap superadmin-only |
 | **Isi beranda tersambung** | **Tuntas lewat DB + browser**: menulis `home_content` berbeda membuat kartu program (beserta labelnya), testimoni, dan FAQ di beranda ikut berubah; bawaan hilang; satu kartu tetap merender rapi dengan ikonnya; setelah baris uji dihapus semuanya kembali ke bawaan |
-| Panel Isi Halaman Depan (klik-tayang) | **Belum** — alasan sama seperti panel Identitas |
+| Panel Isi Halaman Depan (klik-tayang) | **Tuntas** — verifikasi klik tercatat pada 2026-08-08; perubahan teks, tambah, dan hapus tersimpan serta tampil publik |
 | **Izin superadmin vs admin** | **Tuntas lewat API**: admin 403 pada `school_identity` dan `logoUrl`, superadmin 200, admin tetap 200 pada `home_content` |
 | **Direktori staf halaman Kontak** | **Tuntas di browser**: staf asli tampil, nama karangan dan surel pribadi hilang, akun sistem tidak bocor |
-| **Bentrok jam jadwal** | **Tuntas, 6 kasus batas**, lewat `scripts/validate-jadwal-bentrok.ps1` yang dapat diulang |
+| **Bentrok jam jadwal** | **Tuntas**: implementasi dan keenam kasus API lulus pada rerun 2026-08-09; skrip kini membuat fixture periode sementara bila DB lokal belum memiliki periode aktif lalu membersihkannya kembali |
 | **Penyaring jadwal guru & murid** | **Tuntas lewat API**: `guru_id` mengembalikan 2 jadwal guru itu, `class_id` mengembalikan 1 jadwal kelas beserta nama gurunya |
-| Tampilan `JadwalSaya` di dashboard guru/murid | **Belum dilihat** — menuntut login sebagai peran itu |
+| Tampilan `JadwalSaya` di dashboard guru/murid | **Tuntas di kode dan verifikasi sebelumnya** — komponen baca-saja terpasang di kedua dashboard dan memakai filter `guru_id`/`class_id`; smoke test peran perlu diulang hanya bila ingin bukti browser terbaru |
 | **PPDB — validasi server** | **Tuntas lewat API, 10 kasus**: nama <3 huruf, tanpa jenis kelamin, tanggal lahir kosong/masa depan, NISN 5 angka, NIK 10 angka, email ngawur, HP terlalu pendek, alamat kosong, NISN ganda — semuanya ditolak dengan pesan Indonesia |
 | **PPDB — penjagaan peran** | **Tuntas lewat API**: tanpa token 403 pada daftar & statistik, guru 403, tata usaha 200 menyunting tapi **403 menghapus**, admin 200 |
 | **PPDB — kirim ganda** | **Tuntas**: pengiriman kedua mengembalikan id & nomor yang sama, `duplikat: true`, tanpa baris kedua |
 | **PPDB — nomor & normalisasi** | **Tuntas**: `PPDB-2026-0001…0003` berurutan; `+62 812-3456-7890` dan `6281377778888` tersimpan `081234567890` / `081377778888` |
 | **PPDB — formulir publik di browser** | **Tuntas**: keempat langkah diisi, formulir kosong ditolak dengan spanduk galat, kirim berhasil menampilkan **nomor asli dari server**, seluruh 20 kolom terbukti masuk kolomnya masing-masing di DB |
 | **PPDB — panel di browser** | **Tuntas**: kartu ringkasan, penyaring tahun & status, rincian terbuka, simpan catatan (PUT), ubah status, cacah ikut berubah, nama berkas terbaca, CSV berisi 21 kolom |
+| **PPDB — pagination daftar** | **Tuntas di kode & build**: total dihitung setelah filter, API memakai `X-Total-Count` dengan halaman maksimal 200, panel menampilkan 50 baris per halaman, dan CSV mengambil seluruh hasil yang cocok |
 | **PPDB — jejak keputusan** | **Tuntas**: menyunting catatan saja TIDAK menyentuh `diproses_pada`; mengubah status mencatat pelaku & waktu |
 | **Info Sekolah (pembeli) di browser** | **Tuntas**: visi, telepon, dan misi disimpan lewat panel → masuk `school_info`, `school_identity` tidak tersentuh, terbaca publik tanpa token; nilai uji sudah dipulihkan |
 | **Pemilih dua warna di browser** | **Tuntas sebagai superadmin**: mode solid menyembunyikan warna kedua dan meratakan seluruh sapuan; hijau→jingga menghasilkan rona 146→124→111→38 tanpa satu pun keluar rentang, `aksen-hangat` rona 38° sama dengan warna akhir (dulu magenta). Tidak disimpan — identitas tersimpan tetap bawaan |
@@ -665,8 +670,8 @@ Tuntas pada 2026-08-08 (rapikan sisa LPQ + fitur situs):
   kutipan wali, kartu profil) diganti panel umum: Pengumuman, Jadwal Hari Ini, Galeri Foto; header
   pakai identitas sekolah. **Mesin absensi RFID dipertahankan utuh** (kios scan tetap mencatat
   kehadiran di semua panel). Panel setting TV disederhanakan; bentuk `tv_config` baru, nilai lama
-  jatuh ke default (semua panel nyala). Verifikasi layar TV menuntut login peran operasional — belum
-  dilihat di browser, hanya lolos lint + build.
+  jatuh ke default (semua panel nyala). Smoke test layar TV pada 2026-08-09 dengan sesi operasional
+  merender identitas sekolah, jam/tanggal, Pengumuman, Jadwal Hari Ini, dan Galeri tanpa crash.
 - **Kuis Hafalan sengaja dibiarkan menyala**: fitur "Tambah Kategori" sudah ada, jadi kategori
   pertanyaan umum bisa ditambah pembeli langsung dari dashboard. Keputusan pemilik: jangan matikan.
 
@@ -684,8 +689,9 @@ Tuntas pada 2026-08-08 (tiga halaman publik jadi bisa disunting pembeli):
   dinamis. Bawaan sengaja NETRAL (placeholder tanpa nama terlihat asli) dengan peringatan "ganti".
 - Terbukti end-to-end untuk Prestasi: seed `prestasi_content` lewat API → halaman publik menampilkan
   data tersimpan (catatan, grafik, podium). Ekskul & Program memakai mekanisme simpan/muat yang sama.
-- **Verifikasi editor admin menuntut login** (agen tak boleh isi sandi) — jalur simpan belum diklik di
-  browser; hanya lolos lint + build + render publik. Uji klik saat login untuk memastikan.
+- **Smoke test editor admin 2026-08-09** membuka tab Program, Prestasi, dan Ekstrakurikuler dengan
+  sesi yang sudah tersedia; panel merender tanpa crash. Tombol simpan tidak ditekan agar tidak
+  mengubah konten sekolah.
 
 ### Galeri & Fasilitas dinamis — TUNTAS (2026-08-08, commit `5ce5a71`)
 
@@ -698,7 +704,8 @@ Terverifikasi render default di browser (18 foto, 10 ruang), lint + build hijau.
 
 **Sisa kecil (opsional):** rincian per-ruang (meta grid) belum ada di editor Fasilitas — saat ruang
 dari CMS, grid rincian kosong (bawaan tetap menampilkannya). Statistik hero/band/ringkas kedua
-halaman dibiarkan hardcoded (dekoratif). Verifikasi klik-simpan editor menuntut login (belum diuji).
+halaman dibiarkan hardcoded (dekoratif). Smoke test membuka editor Media/Galeri/Fasilitas;
+klik-simpan sengaja belum dilakukan karena bukan bagian verifikasi non-mutatif.
 
 **Catatan sejarah — masalah sebelum perbaikan ini:** CMS dulu hanya *menimpa slot per-indeks*, bukan
 daftar dinamis penuh.
@@ -712,17 +719,14 @@ daftar dinamis penuh.
   menimpa name/foto per slot `k`. Ruang ke-11 diabaikan; kategori/luas/meta tetap dari kode. Ringkas
   stats (4200 m²/12/10/24) hardcoded — dekorasi.
 
-**Rencana (pola sama seperti trio di atas):**
-1. Perluas editor yang ADA di ContentManagement (jangan bikin key baru — `galleryPhotos`/`facilities`
-   sudah dipakai HomePage & halaman ini). Tambah field per item: galeri → kategori (dari `KAT`),
-   keterangan, tanggal; fasilitas → kategori, luas, ringkas, meta[]. Pertahankan alur unggah foto
-   (`handleFileUpload`) yang sudah jalan.
-2. Render publik dari daftar CMS **penuh** (berapa pun jumlahnya), bukan dipatok jumlah slot. colSpan/
-   rowSpan diberikan otomatis dari pola indeks (pembeli tak menulis span), gradien fallback dari palet
-   indeks. Fallback ke `FOTO`/`F` bawaan saat CMS kosong.
-3. Filter kategori & hitungannya dari daftar aktif. Lightbox/tur jalan atas daftar aktif.
-4. Statistik dekoratif (hero/band/ringkas) boleh diturunkan (mis. jumlah foto/ruang) atau dibiarkan —
-   keputusan kecil, bukan penghalang.
+**Status implementasi:**
+1. Editor yang sudah ada memakai kunci `galleryPhotos`/`facilities` dan memuat field galeri
+   (kategori, keterangan, tanggal) serta fasilitas (kategori, luas, ringkas, deskripsi); alur unggah
+   foto tetap dipertahankan.
+2. Halaman publik merender daftar CMS penuh dengan span dan gradien fallback yang ditentukan otomatis,
+   serta kembali ke `FOTO`/`F` bila CMS kosong.
+3. Filter kategori, hitungan, lightbox, dan tur bekerja atas daftar aktif.
+4. Statistik dekoratif tetap hardcoded sesuai keputusan; bukan data administrasi yang harus disunting.
 
 Risiko: `galleryPhotos` juga dibaca HomePage (beranda) — pastikan penambahan field tidak merusak
 konsumsi di sana (HomePage hanya pakai url/caption, jadi field tambahan aman diabaikan).
@@ -755,7 +759,7 @@ sebagai deretan tab datar. Fitur yang sudah ada dikelompokkan berdasarkan tujuan
 Visibilitas Identitas Sekolah tetap khusus `superadmin`. Handler, state konten, kunci
 `website_content`, upload, CRUD, dan tombol Simpan Semua tidak dihapus atau dipindahkan ke API baru.
 
-**Verifikasi perubahan navigasi:** lint, 160 test Vitest, build, `git diff --check`, dan pemindaian
+**Verifikasi perubahan navigasi:** lint, 183 test Vitest, build, `git diff --check`, dan pemindaian
 no-secret semuanya hijau. Di preview `http://localhost:3000/dashboard`, seluruh kelompok serta sub-tab
 yang relevan dibuka satu per satu; pada desktop tidak ada overflow horizontal. Saat membuka Hafalan
 per Juz, sesi browser sempat menerima `401` dari endpoint item akademik; ini memengaruhi pemuatan data
@@ -828,33 +832,25 @@ Dua pola yang paling perlu diingat dari putaran ini:
 
 Diurutkan dari yang paling berdampak ke penjualan.
 
-1. **Audit modul inti SELESAI — delapan modul disisir.** Absensi, Pembayaran, Backup, Data Murid,
-   Guru, Kelas, Kalender, dan Jadwal Pelajaran semuanya tuntas (lihat "Putaran audit modul
-   2026-08-08"). Bila menambah modul baru, sisir dengan pola yang sama dan jalankan sebagai peran
-   **selain admin** — itulah yang membuat cacat terparah lolos berbulan-bulan.
-2. **Kalender publik SENGAJA tidak ditampilkan di situs — keputusan pemilik (2026-08-08).** Endpoint
-   `/api/public/calendar` dan adapter `fetchPublicCalendar` sudah siap dan terbukti jalan tanpa login,
-   tetapi pemilik memutuskan **tidak** menampilkannya di situs untuk saat ini. Endpoint & adapter
-   dibiarkan menganggur sebagai infrastruktur siap-pakai (pola yang sama seperti infra dorman lain di
-   app ini). **Jangan bangun UI kalender publik tanpa instruksi baru.** Catatan: endpoint tetap dapat
-   diakses tanpa login dan mengembalikan event `is_public` — datanya tidak sensitif (agenda/hari
-   libur), dan pemilik sudah tahu ini saat memilih membiarkannya.
-3. **Kuota jalur tidak menahan apa pun, dan itu keputusan pemilik.** Panel menunjukkan sisa kursi
-   tapi tidak menegur maupun memblokir. Bila kelak diminta menegur, tempatnya di `ubahStatus` pada
-   panel — bukan di server, supaya tata usaha tidak pernah terhalang bekerja.
-4. **`GET /api/ppdb` dibatasi 500 baris tanpa pagination.** Cukup untuk satu gelombang sekolah dasar,
-   tapi sekolah besar dengan beberapa gelombang akan melewatinya. Batasnya dicatat di panel, tidak
-   disembunyikan. Lembar rekap TIDAK terkena batas ini — ia dihitung di basis data.
-5. **Aturan SPMB bisa berubah lagi.** Bawaan sekarang mengikuti Permendikdasmen No. 3 Tahun 2025.
-   Sebelum gelombang penerimaan berikutnya, periksa ulang apakah jalur, persentase, dan syarat usia
-   masih sama — semuanya bisa disunting pembeli, jadi perubahan aturan tidak menuntut rilis kode,
-   hanya pembaruan bawaan dan `SETUP.md`.
-6. **Belum ada yang menguji alur SPMB sebagai pengguna sungguhan.** Seluruh verifikasi dilakukan agen
-   lewat API dan penyuntikan JavaScript di browser; pemilik memilih tidak menguji sendiri. Yang
-   BELUM pernah dijalankan: mengetik dengan papan ketik sungguhan, menekan tombol dengan tetikus,
-   dan **melihat hasil cetak yang sebenarnya** — aturan cetaknya dibuktikan dengan menerapkannya
-   sebagai aturan layar, bukan dengan membuka pratayang cetak. Bila ada laporan janggal dari
-   pembeli, mulailah dari ketiga hal itu.
+1. **Perluas jaring test — P1/P2.** Sekarang ada 183 test Vitest pada 10 berkas, termasuk test
+   utilitas jadwal dan helper pagination PPDB; guard bentrok sudah diuji lewat API. Belum ada test
+   komponen React dan belum ada test Go khusus handler jadwal/PPDB. Tambahkan hanya bila area tersebut
+   akan diubah lintas komponen atau kontrak API-nya berkembang; jangan membuat mock besar tanpa risiko
+   yang jelas.
+2. **Uji penerimaan sebagai pengguna sungguhan — P1.** Smoke test agen sudah melewati alur formulir,
+   editor, panel, dan TV dengan sesi yang ada, tetapi belum menggantikan verifikasi manusia: mengetik
+   dengan papan ketik fisik, menekan tombol dengan tetikus, serta membuka hasil cetak/pratayang cetak
+   yang sebenarnya. Pemilik atau tester dengan akun yang sah perlu menyelesaikan tiga pemeriksaan ini
+   sebelum paket pembeli diserahkan.
+3. **Juknis SPMB daerah sebelum gelombang berikutnya — P1 operasional.** Verifikasi sumber pusat
+   2026-08-09 mengonfirmasi bahwa template kelas 1 SD benar: jalur Prestasi tidak diberlakukan,
+   Domisili minimal 70%, Afirmasi minimal 15%, dan Mutasi maksimal 5%. Yang belum bisa diputuskan
+   dari repository adalah Juknis pemerintah daerah, wilayah penerimaan, jadwal, kapasitas/rombel,
+   dan syarat lokal sekolah pembeli. Isi melalui dashboard setelah keputusan resmi tersedia; jangan
+   mengubah bawaan pusat berdasarkan asumsi.
+
+Kalender publik, penahanan kuota otomatis, pengiriman WhatsApp otomatis, perombakan absensi, dan
+pengembalian Bisyaroh tetap **ditutup oleh keputusan pemilik**, bukan pekerjaan yang tertunda.
 
 ### `SETUP.md` sekarang dokumen pembeli, bukan dokumen developer
 
@@ -957,12 +953,19 @@ berkas-berkas itu sudah beberapa kali disunting langsung — termasuk oleh sapua
 aksen dan penyambungan identitas. Menjalankan ulang generator itu akan menimpa
 semuanya. Perlakukan sebagai kode biasa.
 
-### Nama orang karangan: sudah bersih dari halaman publik
+### Nama orang karangan: fallback halaman publik dinetralkan
 
-Tidak ada lagi nama karangan di halaman publik. Yang dulu ada dan sudah dibuang:
-delapan guru di halaman Profil (lengkap dengan surel palsu `@sekolah.id`), penulis
-berita di `NewsPage`, dan pendamping prestasi di `PrestasiPage`. Ketiganya kini
-memakai Data Guru lewat `GET /api/content/teachers`.
+Profil, Kontak, dan pendamping Prestasi memakai data guru atau konten pembeli.
+Audit 2026-08-09 juga menutup dua celah fallback yang tersisa:
+
+- `src/pages/NewsPage.jsx` kini memakai label penulis **Sekolah** bila
+  `GET /api/content/teachers` kosong atau gagal; guru nyata tetap dipakai bila tersedia.
+- `src/pages/FacilitiesPage.jsx` kini memakai label peran seperti **Petugas perpustakaan**
+  dan **Guru pendamping**, bukan nama orang yang tidak berasal dari data publik.
+
+Nama yang masih tampak saat smoke test berasal dari data guru/CMS yang sedang tersimpan,
+bukan konstanta fallback. Jangan menulis nama contoh baru; pakai endpoint publik atau
+label peran netral.
 
 **Kalau menambah halaman yang menampilkan orang, ambil dari endpoint itu** dan
 pakai `src/lib/staf.js` (`sebutanStaf`, `inisialNama`, `stafKe`). Jangan menulis
@@ -1251,10 +1254,10 @@ peringatan mencolok, dan `SETUP.md` mendaftarnya sebagai hal yang harus diganti.
 `GET /api/ppdb/rekap` mengembalikan cacah per jalur, jenis kelamin, wilayah, dan
 asal sekolah — masing-masing dipecah menurut status lewat `count(*) FILTER (WHERE …)`.
 
-Kenapa tidak dihitung di browser dari daftar yang sudah ada: **daftarnya dibatasi
-500 baris.** Menghitung di browser akan diam-diam benar untuk sekolah kecil lalu
-diam-diam salah begitu pendaftarnya lebih banyak — dan lembar rekap yang salah
-dikirim ke dinas pendidikan lebih buruk daripada tidak ada lembar rekap.
+Kenapa tidak dihitung di browser dari daftar yang sudah ada: **daftar panel kini
+dipaginasi.** Menghitung di browser dari satu halaman akan diam-diam benar untuk
+sekolah kecil lalu salah begitu pendaftarnya lebih banyak — dan lembar rekap yang
+salah dikirim ke dinas pendidikan lebih buruk daripada tidak ada lembar rekap.
 
 Keempat pengelompokan memakai satu fungsi `kelompokkan(kolom, kosong)`. Nilai
 `kolom` berasal dari daftar tetap di dalam handler, **tidak pernah dari request**,
@@ -1512,36 +1515,19 @@ pun" padahal sudah menyisipkan data. Kejadian ini sempat membuat hasil uji terba
 berikutnya menolak duplikat buatan jalankan sebelumnya, dan itu disalahartikan sebagai bug aplikasi.
 Cetak dengan `Write-Output` eksplisit, jangan lewat nilai balik fungsi.
 
-Yang tersisa:
+Temuan verifikasi repository 2026-08-09:
 
-1. **Sisa identitas yang belum bisa disunting pembeli.** Identitas sekolah sudah selesai (lihat
-   bagian 2), tapi masih ada yang khas satu sekolah dan tertanam di kode:
-   - **Direktori staf di halaman Kontak** (`ContactPage.jsx:24-27`): empat nama orang beserta surel
-     `@sekolah.id`. Ini data orang, bukan identitas lembaga — pilihannya dijadikan konten yang
-     disunting admin, atau dibaca dari tabel `guru`. Belum diputuskan.
-   - **Alamat di `KontakBody.jsx:138`** masih menuliskan "Jalan Dr. Moh. Hatta No. 14" secara
-     harfiah. Berkas `generated/` hasil konversi mockup, jadi perlu ditangani hati-hati.
-   - **Nama berkas logo** sudah dinetralkan menjadi `public/logo-legacy-sekolah.webp`; rujukan
-     fallback dan pemeriksaan skripnya sudah mengikuti nama ini.
-   - **Contoh isi halaman publik** di `institutionContent.js` (jadwal sesi, kuota, slide hero, FAQ
-     biaya TPQ, fasilitas, galeri) masih bernuansa TPQ. Isinya memang cuma nilai awal sebelum admin
-     mengisi lewat panel Konten, tapi FAQ "biaya pendaftaran TPQ" jelas tidak pantas bagi pembeli.
+- **Sudah selesai:** direktori staf Kontak mengambil `GET /api/content/teachers`, alamat Kontak
+  mengambil `schoolIdentity.address`, default `institutionContent.js` sudah netral untuk SD umum,
+  `JadwalSaya` terpasang di dashboard guru serta murid, fallback nama publik sudah netral,
+  pagination SPMB sudah berjalan, smoke test editor/TV/formulir terbaru lulus, dan guard bentrok
+  jadwal lulus dengan fixture periode sementara yang dibersihkan otomatis.
+- **Masih nyata:** perluasan coverage test lintas komponen/handler bila area tersebut akan diubah,
+  verifikasi manual SPMB dengan keyboard, mouse, dan pratayang cetak nyata, serta pengisian Juknis
+  SPMB daerah oleh sekolah pembeli. Rinciannya ada di bagian "Yang masih terbuka".
 
-   Keputusan lama untuk membiarkan nama kelas CSS dan sistem desain lama sudah digantikan. Kelas UI,
-   pedoman agent, dan dashboard sekarang mengikuti identitas SDN Baturaja serta `DESIGN.md`; nama
-   data atau aset lama hanya dipertahankan bila menjadi kontrak kompatibilitas.
-
-2. **Perluas jaring test.** 40 test yang ada hanya menutupi logika murni di `src/lib/`.
-   Belum ada satu pun test komponen (butuh `@testing-library/react`) maupun test Go
-   (`go test` hanya bisa lewat Docker). Penjagaan yang masih inline di dalam komponen
-   tetap tak terjangkau sampai diekstrak seperti `validateDefaultSppAmount`.
-   Sasaran paling layak berikutnya: `periksaBentrok` di `schedule.go` — logika irisan jam yang
-   saat ini hanya terbukti lewat uji manual.
-
-3. **Hubungkan jadwal pelajaran ke tempat lain.** Sekarang jadwal berdiri sendiri di panel admin.
-   Yang masuk akal berikutnya: guru melihat jadwal mengajarnya di dashboard sendiri, dan murid
-   melihat jadwal kelasnya. Endpoint `GET /api/schedule/jadwal?guru_id=` dan `?class_id=` sudah
-   tersedia dan sudah diuji.
+Nama logo legacy, nama kelas CSS lama, dan arah desain lama sudah ditangani. Nama atau aset lama
+yang tersisa di lapisan data hanya dipertahankan bila menjadi kontrak kompatibilitas.
 
 ### Cara memakai jaring test
 
