@@ -945,7 +945,6 @@ const PaymentSystem = () => {
             <DialogHeader className="pb-2 border-b"><DialogTitle className="text-center">Bukti Pembayaran</DialogTitle></DialogHeader>
             {receiptData && (<>
               <div ref={receiptRef} className="p-4 bg-white text-slate-800 rounded-xl shadow-lg border border-slate-100 relative overflow-hidden" id="receipt-content">
-                  {isPaymentPaid(receiptData.status) && <PaymentReceiptWatermark />}
                   <div className="text-center pb-2 mb-2 border-b border-dashed border-slate-300 relative z-10">
                        <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-12 h-12 mx-auto mb-2 object-contain"/>
                        <h3 className="font-bold text-lg text-primary tracking-tight font-poppins">{sekolah.name.toUpperCase()}</h3>
@@ -964,9 +963,12 @@ const PaymentSystem = () => {
                       </div>
                   </div>
 
-                  <div className="mb-3 relative z-10">
-                      <p className="text-[10px] font-semibold text-slate-500 mb-0.5">Diterima Dari:</p>
-                      <p className="text-xs font-bold text-slate-900">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
+                  <div className="relative mb-3 min-h-[72px] overflow-hidden">
+                      {isPaymentPaid(receiptData.status) && <PaymentReceiptWatermark />}
+                      <div className="relative z-10">
+                        <p className="text-[10px] font-semibold text-slate-500 mb-0.5">Diterima Dari:</p>
+                        <p className="text-xs font-bold text-slate-900">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
+                      </div>
                   </div>
 
                   <div className="space-y-2 mb-3 relative z-10">

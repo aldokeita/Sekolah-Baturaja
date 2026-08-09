@@ -284,7 +284,6 @@ const PaymentStatusPage = () => {
                       </div>
 
                       <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden relative">
-                          {paymentIsPaid && <PaymentReceiptWatermark />}
                           <div className="flex justify-between items-center p-4 bg-slate-50 border-b relative z-10">
                               <div>
                                   <p className="text-xs text-slate-500 font-medium">Tanggal Transaksi</p>
@@ -296,6 +295,12 @@ const PaymentStatusPage = () => {
                                   <p className="font-mono text-sm font-bold text-slate-900">{paymentData.metode_pembayaran?.toUpperCase() || 'MANUAL'}</p>
                               </div>
                           </div>
+
+                          {paymentIsPaid && (
+                              <div className="relative h-20 overflow-hidden border-b border-slate-100">
+                                  <PaymentReceiptWatermark />
+                              </div>
+                          )}
 
                           <div className="p-4 relative z-10">
                               <table className="w-full text-sm">

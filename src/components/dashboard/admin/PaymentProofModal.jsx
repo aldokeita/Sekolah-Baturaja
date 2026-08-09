@@ -216,7 +216,6 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
                 )}
                 <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
                     <div ref={receiptRef} id="payment-proof-content" className="p-4 sm:p-6 bg-white text-slate-800 relative font-sans">
-                        {isPaid && <PaymentReceiptWatermark />}
                         {/* Header */}
                         <div className="text-center pb-4 mb-4 border-b border-dashed border-slate-300 relative z-10">
                             <img src={receiptLogoUrl} alt="Logo" className="w-16 h-16 mx-auto mb-2 object-contain"/>
@@ -238,10 +237,13 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
                         </div>
 
                         {/* Student Info */}
-                        <div className="mb-4 relative z-10">
-                            <p className="text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Diterima Dari:</p>
-                            <p className="text-sm font-bold text-slate-900">{studentName}</p>
-                            <p className="text-xs text-slate-500 font-mono">No. Induk: {studentId}</p>
+                        <div className="relative mb-4 min-h-[72px] overflow-hidden">
+                            {isPaid && <PaymentReceiptWatermark />}
+                            <div className="relative z-10">
+                                <p className="text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Diterima Dari:</p>
+                                <p className="text-sm font-bold text-slate-900">{studentName}</p>
+                                <p className="text-xs text-slate-500 font-mono">No. Induk: {studentId}</p>
+                            </div>
                         </div>
 
                         {/* Items */}
