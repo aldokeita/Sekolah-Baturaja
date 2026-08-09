@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LayoutTemplate, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
+import { Image as ImageIcon, LayoutTemplate, Loader2, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -7,19 +7,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/use-toast';
 import { DEFAULT_HOME_CONTENT, fetchHomeContent, saveHomeContent } from '@/lib/homeContent';
 import { getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
+import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
 
 /**
  * Penyunting blok halaman depan: kartu program, testimoni, dan FAQ.
  *
- * Hanya teks. Gradasi warna, ikon, dan urutan animasi tetap di kode dan
- * dipasangkan HomePage berdasarkan posisi — pembeli sekolah tidak perlu memilih
- * warna, dan tampilannya tetap konsisten berapa pun jumlah itemnya.
+ * Teks dan foto avatar testimoni disunting pembeli. Gradasi warna, ikon, dan
+ * urutan animasi tetap di kode dan dipasangkan HomePage berdasarkan posisi —
+ * pembeli sekolah tidak perlu memilih warna, dan tampilannya tetap konsisten.
  *
  * Blok lain di halaman depan tidak di sini karena sudah punya tempatnya sendiri:
  * foto galeri di tab Media & Galeri, berita di panel Berita.
  */
 
 const salinBawaan = () => JSON.parse(JSON.stringify(DEFAULT_HOME_CONTENT));
+const buatIdTestimoni = () => `testimonial-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const Baris = ({ nomor, onHapus, bolehHapus, children }) => (
   <div className="admin-card space-y-3 bg-background p-4">
@@ -33,11 +35,28 @@ const Baris = ({ nomor, onHapus, bolehHapus, children }) => (
   </div>
 );
 
+const TestimonialAvatarPreview = ({ src, alt }) => {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => setHasError(false), [src]);
+
+  if (!src || hasError) {
+    return (
+      <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted text-muted-foreground" aria-label="Belum ada foto avatar">
+        <ImageIcon className="h-7 w-7" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  return <img src={src} alt={alt} className="h-20 w-20 rounded-2xl object-cover" onError={() => setHasError(true)} />;
+};
+
 const HomeContentSettings = () => {
   const [isi, setIsi] = useState(salinBawaan);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [uploadingTestimonialIndex, setUploadingTestimonialIndex] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -65,6 +84,34 @@ const HomeContentSettings = () => {
     ...prev,
     [blok]: prev[blok].filter((_, i) => i !== index),
   }));
+
+  const handleTestimonialAvatarUpload = async (event, index) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingTestimonialIndex(index);
+    try {
+      const testimonial = isi.testimonials[index];
+      const result = await uploadWebsiteAsset({
+        folder: 'homepage/testimonials',
+        key: testimonial?.id || `testimonial-${index + 1}`,
+        file,
+      });
+      const avatarUrl = String(result?.publicUrl || '').trim();
+      if (!avatarUrl) throw new Error('Upload berhasil, tetapi URL foto tidak tersedia.');
+
+      ubahBaris('testimonials', index, 'avatar_url', avatarUrl);
+      toast({
+        title: 'Foto testimoni siap disimpan',
+        description: `Foto untuk testimoni #${index + 1} sudah diunggah. Tekan “Simpan Halaman Depan” untuk menerapkannya.`,
+      });
+    } catch (error) {
+      toast({ title: 'Upload foto gagal', description: getStorageErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setUploadingTestimonialIndex(null);
+      event.target.value = '';
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -158,7 +205,7 @@ const HomeContentSettings = () => {
       <div className="space-y-4 border-t pt-6">
         <div className="flex items-center justify-between">
           <h5 className="font-bold text-foreground">Testimoni</h5>
-          <Button type="button" size="sm" variant="outline" onClick={() => tambahBaris('testimonials', { quote: '', name: '', role: '' })}>
+          <Button type="button" size="sm" variant="outline" onClick={() => tambahBaris('testimonials', { id: buatIdTestimoni(), quote: '', name: '', role: '', avatar_url: '' })}>
             <Plus className="mr-1 h-4 w-4" /> Tambah testimoni
           </Button>
         </div>
@@ -176,6 +223,25 @@ const HomeContentSettings = () => {
               <div className="admin-edit-field">
                 <label htmlFor={`testi-peran-${i}`}>Keterangan orang</label>
                 <Input id={`testi-peran-${i}`} value={t.role} placeholder="Murid kelas VI A" onChange={(e) => ubahBaris('testimonials', i, 'role', e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 items-center gap-4 border-t pt-3 sm:grid-cols-[auto_minmax(0,1fr)]">
+              <TestimonialAvatarPreview src={t.avatar_url} alt={`Pratinjau foto ${t.name || `testimoni ${i + 1}`}`} />
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold" htmlFor={`testi-avatar-${i}`}>Avatar / foto testimoni</label>
+                <Input
+                  id={`testi-avatar-${i}`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => handleTestimonialAvatarUpload(event, i)}
+                  disabled={uploadingTestimonialIndex === i}
+                />
+                <p className="text-xs text-muted-foreground">JPG, PNG, atau WebP. Foto ini hanya terkait dengan testimoni #{i + 1}.</p>
+                {uploadingTestimonialIndex === i && (
+                  <p className="flex items-center gap-2 text-sm font-medium text-primary" role="status">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Mengunggah foto…
+                  </p>
+                )}
               </div>
             </div>
           </Baris>

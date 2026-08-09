@@ -3,10 +3,10 @@ import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicCont
 /**
  * Konten blok halaman depan yang dapat disunting admin.
  *
- * Prinsipnya: **teks disunting pembeli, tampilan tetap di kode.** Gradasi warna,
- * ikon, dan urutan animasi bukan urusan pembeli sekolah — HomePage memasangkan
- * teks di bawah ini dengan gaya visualnya berdasarkan posisi (indeks). Jadi
- * jumlah item boleh berubah dan gayanya tetap berputar mengikuti daftar gaya.
+ * Prinsipnya: **teks dan avatar testimoni disunting pembeli, tampilan tetap di
+ * kode.** Gradasi warna, ikon, dan urutan animasi bukan urusan pembeli sekolah
+ * — HomePage memasangkan data di bawah ini dengan gaya visualnya berdasarkan
+ * posisi (indeks). Jadi jumlah item boleh berubah dan gayanya tetap berputar.
  *
  * Disimpan di `website_content` kunci `home_content` supaya halaman publik bisa
  * membacanya tanpa token, sama seperti identitas sekolah.
@@ -37,12 +37,12 @@ export const DEFAULT_HOME_CONTENT = Object.freeze({
     },
   ]),
   testimonials: Object.freeze([
-    { quote: 'Bu guru hafal nama semua teman di kelas. Waktu saya belum bisa perkalian, saya diajari lagi sepulang sekolah.', name: 'Naila Rahmadani', role: 'Murid kelas VI A' },
-    { quote: 'Kebiasaan membaca setiap pagi terbawa sampai SMP. Waktu masuk sekolah baru saya sudah tidak canggung bertanya.', name: 'Bayu Prasetyo', role: 'Alumni 2023, kini di SMP Negeri 1' },
-    { quote: 'Laporan perkembangan anak dikirim tiap bulan lewat grup wali murid. Sebagai orang tua saya tidak perlu menebak-nebak.', name: 'Ibu Sri Wahyuni', role: 'Orang tua murid kelas II' },
-    { quote: 'Perpustakaan buka sampai sore. Saya dan teman regu pramuka sering latihan di halaman sebelum lomba.', name: 'Rangga Aditya', role: 'Murid kelas V B' },
-    { quote: 'Kelas mendongeng membuat anak berani bicara. Yang dulu diam sekarang jadi pembawa acara pentas seni.', name: 'Ibu Marlina', role: 'Guru Bahasa Indonesia' },
-    { quote: 'Kebun sekolah bikin saya suka pelajaran IPA. Sekarang saya ikut kelompok ilmiah remaja di SMP.', name: 'Dimas Saputra', role: 'Alumni 2021, kini di SMP Negeri 3' },
+    { id: 'naila-rahmadani', quote: 'Bu guru hafal nama semua teman di kelas. Waktu saya belum bisa perkalian, saya diajari lagi sepulang sekolah.', name: 'Naila Rahmadani', role: 'Murid kelas VI A', avatar_url: '' },
+    { id: 'bayu-prasetyo', quote: 'Kebiasaan membaca setiap pagi terbawa sampai SMP. Waktu masuk sekolah baru saya sudah tidak canggung bertanya.', name: 'Bayu Prasetyo', role: 'Alumni 2023, kini di SMP Negeri 1', avatar_url: '' },
+    { id: 'ibu-sri-wahyuni', quote: 'Laporan perkembangan anak dikirim tiap bulan lewat grup wali murid. Sebagai orang tua saya tidak perlu menebak-nebak.', name: 'Ibu Sri Wahyuni', role: 'Orang tua murid kelas II', avatar_url: '' },
+    { id: 'rangga-aditya', quote: 'Perpustakaan buka sampai sore. Saya dan teman regu pramuka sering latihan di halaman sebelum lomba.', name: 'Rangga Aditya', role: 'Murid kelas V B', avatar_url: '' },
+    { id: 'ibu-marlina', quote: 'Kelas mendongeng membuat anak berani bicara. Yang dulu diam sekarang jadi pembawa acara pentas seni.', name: 'Ibu Marlina', role: 'Guru Bahasa Indonesia', avatar_url: '' },
+    { id: 'dimas-saputra', quote: 'Kebun sekolah bikin saya suka pelajaran IPA. Sekarang saya ikut kelompok ilmiah remaja di SMP.', name: 'Dimas Saputra', role: 'Alumni 2021, kini di SMP Negeri 3', avatar_url: '' },
   ]),
   faq: Object.freeze([
     { question: 'Berapa usia minimal untuk masuk kelas satu?', answer: 'Anak berusia enam tahun pada 1 Juli tahun pelajaran berjalan. Usia lima tahun enam bulan dapat diterima bila ada rekomendasi tertulis dari psikolog atau dewan guru.' },
@@ -55,6 +55,15 @@ export const DEFAULT_HOME_CONTENT = Object.freeze({
 });
 
 const teks = (value) => String(value ?? '').trim();
+
+const testimonialId = (value, index) => {
+  const normalized = teks(value)
+    .replace(/[^a-zA-Z0-9_-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80);
+  return normalized || `testimonial-${index + 1}`;
+};
 
 const bersihkanTags = (value) => {
   const list = Array.isArray(value) ? value : teks(value).split(',');
@@ -77,10 +86,16 @@ export const normalizeHomeContent = (stored) => {
       if (!title) return null;
       return { title, desc: teks(row?.desc), tags: bersihkanTags(row?.tags) };
     }),
-    testimonials: normalizeBlok(source.testimonials, DEFAULT_HOME_CONTENT.testimonials, (row) => {
+    testimonials: normalizeBlok(source.testimonials, DEFAULT_HOME_CONTENT.testimonials, (row, index) => {
       const quote = teks(row?.quote);
       if (!quote) return null;
-      return { quote, name: teks(row?.name), role: teks(row?.role) };
+      return {
+        id: testimonialId(row?.id, index),
+        quote,
+        name: teks(row?.name),
+        role: teks(row?.role),
+        avatar_url: teks(row?.avatar_url || row?.avatarUrl),
+      };
     }),
     faq: normalizeBlok(source.faq, DEFAULT_HOME_CONTENT.faq, (row) => {
       const question = teks(row?.question);

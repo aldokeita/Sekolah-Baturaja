@@ -99,6 +99,7 @@ const TestiCard = ({ t }) => (
     <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
     <div style={{ position: 'relative', flex: 'none', width: 104, height: 104, borderRadius: 32, background: t.avatar, boxShadow: '0 18px 36px -14px rgba(60,70,140,.55),inset 0 2px 0 rgba(255,255,255,.85)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
       <AvatarSvg />
+      {t.avatar_url && <img src={t.avatar_url} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ position: 'absolute', zIndex: 1, inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
     </div>
     <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
       <div style={{ position: 'relative', padding: '16px 18px', borderRadius: '18px 18px 18px 6px', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>
