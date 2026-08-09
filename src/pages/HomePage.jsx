@@ -232,7 +232,6 @@ const HomePage = () => {
           <div className="sdnb-photo-frame" style={{ position: 'relative', overflow: 'hidden', borderRadius: 30, height: 470, background: 'linear-gradient(150deg,#ffc3d8 0%,#c7b4f5 34%,#9fc4f8 62%,#a7ecdf 100%)' }}>
             {buildingPhoto && <img className="sdnb-photo-frame__image" src={buildingPhoto} alt="Gedung sekolah" onError={() => setBuildingPhoto('')} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
             <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 20% 10%,rgba(255,255,255,.6),rgba(255,255,255,0) 55%)' }} />
-            <div aria-hidden="true" style={{ position: 'absolute', left: '-10%', right: '-10%', bottom: '-18%', height: '62%', borderRadius: '50% 50% 0 0', background: 'linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.05))' }} />
             {!buildingPhoto && <div style={{ position: 'absolute', inset: '0 0 130px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'rgba(60,50,90,.5)', fontSize: 12.5, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' }}>
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="8.5" cy="9.5" r="1.8" /><path d="m4 17 5-5 4.5 4.5L17 13l3 3" /></svg>
               Foto gedung sekolah
