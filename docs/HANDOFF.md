@@ -1,8 +1,8 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-09 · **Branch:** `feat/sederhanakan-tab-konten` · **HEAD:** `01f0228` + perubahan lokal belum di-commit
+**Diperbarui:** 2026-08-09 · **Branch:** `feat/sederhanakan-tab-konten` · **HEAD:** `6a87a5d`
 
-HEAD saat ini berada di `01f0228`, lima commit di atas `origin/feat/sederhanakan-tab-konten`
+HEAD saat ini berada di `6a87a5d`, dua belas commit di atas `origin/feat/sederhanakan-tab-konten`
 (`60a0fd7`). Branch ini belum di-merge ke `master`; `master` tetap berada di commit `8c80e39`
 pada checkout lokal.
 
@@ -182,6 +182,13 @@ Yang membuat absensi *terasa* ngaji adalah lima sesi (Pagi/Pagi 2/Siang/Sore/Mal
 pemanggil** (`getSessionName` 16, `buildSessionStartTimestamp` 11) yang tersebar di seluruh layar
 absensi — risiko besar, manfaat kecil, dan tidak diminta.
 
+Model data absensi tetap harian dan tidak diubah. Sejak 2026-08-09, perhitungan rekap murid/guru,
+matriks detail, ringkasan performa, laporan rapor, statistik absensi, dan validasi kios membaca
+`academic_calendar_month_settings` serta agenda manual sebagai sumber hari aktif. Konfigurasi
+Sabtu aktif memasukkan Sabtu ke total hari belajar dan persentase; konfigurasi yang tidak tersedia
+tetap memakai bawaan lama (Sabtu dan Minggu libur otomatis). Agenda manual `Libur` tetap menang,
+dan `Hari Masuk` tetap dapat mengesampingkan libur otomatis. Tidak ada baris absensi yang diubah.
+
 Bila suatu saat benar-benar dirombak: jangan hapus kolom `sesi`. Sekolah bisa saja punya kelas
 pagi dan siang, dan data historis di staging memakainya.
 
@@ -256,7 +263,7 @@ Jangan mengikuti kalimat lama itu.
 |---|---|
 | Build produksi (`node tools/build.js`) | Hijau, exit 0 |
 | Lint langsung (`node node_modules/eslint/bin/eslint.js . --quiet`) | Bersih, exit 0 |
-| Vitest langsung (`node node_modules/vitest/vitest.mjs run`) | **183 test hijau** (10 berkas) |
+| Vitest langsung (`node node_modules/vitest/vitest.mjs run`) | **189 test hijau** (11 berkas) |
 | Guard `scripts/validate-*.ps1` | **7 dari 8 hijau** — lihat catatan di bawah |
 | Kompilasi backend Go | Hijau (lewat Docker; Go tidak terpasang di mesin dev) |
 | Login 6 akun | **Terbukti jalan** lewat API |
@@ -317,6 +324,7 @@ Jangan mengikuti kalimat lama itu.
 | **Data Guru — hash sandi tak lagi bocor** | **Tuntas lewat API**: `GET /api/guru` sebagai admin tidak lagi memuat field `password`; sebelumnya `SELECT *` mengembalikan hash bcrypt tiap guru ke klien mana pun |
 | **Manajemen Kelas — pindah sinkron membership** | **Tuntas lewat API**: memindahkan murid membuat `Detail` kelas tujuan (yang baca `class_memberships`) langsung memuatnya, kelas lama tidak lagi; pindah ke kelas sama ditolak 400 |
 | **Kalender publik tanpa login** | **Tuntas lewat API**: `GET /api/public/calendar` menjawab tanpa token dan hanya event `is_public`; buat event → muncul di endpoint publik → hapus, semuanya jalan; tanggal ngawur ditolak 400 |
+| **Hari aktif kalender ↔ rekap absensi** | **Tuntas pada 2026-08-09**: rekap murid/guru, detail kelas/murid, ringkasan guru, rapor, statistik bulanan, dan kios memakai agenda lengkap + konfigurasi Sabtu per bulan; API guru dapat membaca konfigurasi, browser Agustus 2026 menunjukkan **7 hari aktif** (termasuk Sabtu 1 dan 8); konfigurasi uji dihapus kembali |
 
 ### Guard kelima tidak bisa jalan di mesin dev, dan itu wajar
 
@@ -627,7 +635,8 @@ prop `dismiss` pada toast, perbaiki alamat foto, perbaiki form tambah murid, hap
 `SantriDewasaManagement.jsx`, verifikasi hafalan sisi guru dan murid, pasang jaring test, perbaiki
 `resolveUser`, **ganti email admin**, dan **bangun jadwal pelajaran beserta CRUD-nya**.
 
-Absensi **sengaja tidak dirombak** — alasannya di bagian 2, jangan diajukan ulang tanpa alasan baru.
+Model data absensi **sengaja tidak dirombak** — sinkronisasi hari aktif kalender sudah selesai tanpa
+mengubah data absensi; jangan mengusulkan perubahan skema harian tanpa alasan baru.
 
 Sudah tuntas juga: peran superadmin, direktori staf dari data guru, jadwal pelajaran di dashboard
 guru dan murid, guard bentrok jadwal, penyembunyian akun superadmin dari pembeli,
