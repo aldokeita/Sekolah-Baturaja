@@ -58,7 +58,7 @@ html { scroll-behavior: smooth; }
   0%, 12% { transform: translate3d(-170%, 0, 0) rotate(17deg); opacity: 0; }
   23% { opacity: .32; }
   48% { opacity: .08; }
-  64%, 100% { transform: translate3d(330%, 0, 0) rotate(17deg); opacity: 0; }
+  64%, 100% { transform: translate3d(1050%, 0, 0) rotate(17deg); opacity: 0; }
 }
 
 /* ── homepage school photo glass treatment ──────────────────────────────── */
