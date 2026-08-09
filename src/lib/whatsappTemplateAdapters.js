@@ -33,15 +33,17 @@ Wassalamualaikum Warahmatullahi Wabarakatuh,
 
 Ayah/Bunda dari *{{nama_santri}}*, terima kasih. Pembayaran berikut telah kami terima:
 
-📋 *Rincian:* {{rincian}}
-💰 *Nominal:* {{nominal}}
-📅 *Tanggal:* {{tanggal}}
-🗓️ *Periode:* {{periode}}
-💳 *Metode:* {{metode}}
-🧾 *ID Transaksi:* {{transaction_id}}
-✅ *Status:* {{status}}
+*{{judul_bukti}}*
 
-Terima kasih atas kepercayaannya. Semoga menjadi amal jariyah dan keberkahan bagi keluarga.
+📋 *{{label_item}}:* {{rincian}}
+💰 *{{label_nominal}}:* {{nominal}}
+📅 *{{label_tanggal}}:* {{tanggal}}
+🗓️ *{{label_periode}}:* {{periode}}
+💳 *{{label_metode}}:* {{metode}}
+🧾 *ID Transaksi:* {{transaction_id}}
+✅ *{{label_status}}:* {{status}}
+
+{{footer_text}}
 
 Wassalamualaikum Warahmatullahi Wabarakatuh,
 *Admin {{nama_lembaga}}*`,

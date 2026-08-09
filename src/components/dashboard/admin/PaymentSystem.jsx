@@ -45,6 +45,7 @@ import PaymentReceiptWatermark from './PaymentReceiptWatermark';
 import { fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import usePaymentReceiptConfiguration from '@/hooks/usePaymentReceiptConfiguration';
 import { formatPaymentStatus, getPaymentReceiptReference, isPaymentPaid, normalizePaymentStatus, normalizeWhatsAppPhone } from '@/lib/paymentReceipt';
 
 const paymentItems = [
@@ -311,6 +312,18 @@ const DuplicatePaymentDialog = ({ open, onOpenChange, onResetMonth }) => (
 
 const PaymentSystem = () => {
   const sekolah = useSchoolIdentity();
+  const { config: receiptConfig } = usePaymentReceiptConfiguration();
+  const receiptContent = receiptConfig.content;
+  const receiptVisibility = receiptConfig.visibility;
+  const receiptVisual = receiptConfig.visual;
+  const receiptFontFamily = {
+    system: 'inherit',
+    sans: 'Archivo, ui-sans-serif, system-ui, sans-serif',
+    serif: 'Georgia, Cambria, serif',
+    mono: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  }[receiptVisual.fontFamily] || 'inherit';
+  const receiptRadius = { sm: '0.75rem', md: '1rem', lg: '1.5rem' }[receiptVisual.radius] || '1rem';
+  const receiptDensityClass = receiptVisual.density === 'compact' ? 'p-3' : 'p-4';
   const [santriList, setSantriList] = useState([]);
   const [selectedSantri, setSelectedSantri] = useState([]);
   const [cart, setCart] = useState([]);
@@ -711,7 +724,7 @@ const PaymentSystem = () => {
 
       const dataUrl = await toPng(receiptRef.current, {
         cacheBust: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: receiptVisual.backgroundColor,
         pixelRatio: 2,
         imagePlaceholder: DEFAULT_LOGO_PATH,
       });
@@ -766,7 +779,18 @@ const PaymentSystem = () => {
         periode: receiptData.items.filter((item) => item.monthly).flatMap((item) => item.months || []).join(', ') || '-',
         metode: receiptData.method,
         transaction_id: receiptData.transactionIds?.join(', ') || receiptData.transactionId || '-',
-        status: formatPaymentStatus(receiptData.status),
+        status: isPaymentPaid(receiptData.status) ? receiptContent.paidStatusText : receiptContent.unpaidStatusText,
+        label_tanggal: receiptContent.dateLabel,
+        label_jam: receiptContent.timeLabel,
+        label_metode: receiptContent.methodLabel,
+        label_status: receiptContent.statusLabel,
+        label_penerima: receiptContent.recipientLabel,
+        label_item: receiptContent.itemLabel,
+        label_nominal: receiptContent.amountLabel,
+        label_periode: receiptContent.periodLabel,
+        label_total: receiptContent.totalLabel,
+        judul_bukti: receiptContent.receiptTitle,
+        footer_text: receiptContent.footerText,
         nama_lembaga: getSchoolIdentity().name,
       });
       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
@@ -942,74 +966,85 @@ const PaymentSystem = () => {
 
         <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
           <DialogContent className="w-[calc(100%-1rem)] max-w-[400px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-2 border-b"><DialogTitle className="text-center">Bukti Pembayaran</DialogTitle></DialogHeader>
+            <DialogHeader className="pb-2 border-b" style={{ borderColor: receiptVisual.borderColor }}><DialogTitle className="text-center" style={{ color: receiptVisual.textColor }}>{receiptContent.receiptTitle}</DialogTitle></DialogHeader>
             {receiptData && (<>
-              <div ref={receiptRef} className="p-4 bg-white text-slate-800 rounded-xl shadow-lg border border-slate-100 relative overflow-hidden" id="receipt-content">
-                  <div className="text-center pb-2 mb-2 border-b border-dashed border-slate-300 relative z-10">
-                       <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-12 h-12 mx-auto mb-2 object-contain"/>
-                       <h3 className="font-bold text-lg text-primary tracking-tight font-poppins">{sekolah.name.toUpperCase()}</h3>
-                       <p className="text-[10px] text-slate-500 mt-1">{sekolah.address}</p>
-                       <p className="text-[10px] text-slate-500">{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>
+              <div ref={receiptRef} className={`${receiptDensityClass} text-slate-800 rounded-xl shadow-lg border relative overflow-hidden`} id="receipt-content" style={{ backgroundColor: receiptVisual.backgroundColor, color: receiptVisual.textColor, borderColor: receiptVisual.borderColor, borderRadius: receiptRadius, fontFamily: receiptFontFamily }}>
+                  <div className="text-center pb-2 mb-2 border-b border-dashed relative z-10" style={{ borderColor: receiptVisual.borderColor }}>
+                       {receiptVisibility.logo !== false && <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-12 h-12 mx-auto mb-2 object-contain"/>}
+                       {receiptContent.receiptTitle && <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: receiptVisual.accentColor }}>{receiptContent.receiptTitle}</p>}
+                       {receiptVisibility.schoolName !== false && <h3 className="font-bold text-lg tracking-tight font-poppins" style={{ color: receiptVisual.accentColor }}>{sekolah.name.toUpperCase()}</h3>}
+                       {receiptVisibility.address !== false && <p className="text-[10px] mt-1" style={{ color: receiptVisual.mutedTextColor }}>{sekolah.address}</p>}
+                       {receiptVisibility.contact !== false && <p className="text-[10px]" style={{ color: receiptVisual.mutedTextColor }}>{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>}
                   </div>
 
-                  <div className="flex justify-between text-[10px] mb-3 text-slate-600 bg-slate-50 p-2 rounded-lg relative z-10">
+                  <div className="flex justify-between text-[10px] mb-3 p-2 rounded-lg relative z-10" style={{ color: receiptVisual.mutedTextColor, backgroundColor: receiptVisual.surfaceColor, border: `1px solid ${receiptVisual.borderColor}` }}>
                       <div className="space-y-0.5">
-                         <p>Tgl: <span className="font-semibold text-slate-900">{receiptData.timestamp.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
-                         <p>Jam: <span className="font-semibold text-slate-900">{receiptData.timestamp.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
+                         <p>{receiptContent.dateLabel}: <span className="font-semibold" style={{ color: receiptVisual.textColor }}>{receiptData.timestamp.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
+                         <p>{receiptContent.timeLabel}: <span className="font-semibold" style={{ color: receiptVisual.textColor }}>{receiptData.timestamp.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
                       </div>
                       <div className="space-y-0.5 text-right max-w-[58%]">
-                         <p>Metode: <span className="font-semibold text-slate-900 uppercase">{receiptData.method}</span></p>
-                         {isPaymentPaid(receiptData.status) && <p>Status: <span className="font-semibold text-green-700">LUNAS</span></p>}
+                         <p>{receiptContent.methodLabel}: <span className="font-semibold uppercase" style={{ color: receiptVisual.textColor }}>{receiptData.method}</span></p>
+                         {receiptVisibility.status !== false && isPaymentPaid(receiptData.status) && <p>{receiptContent.statusLabel}: <span className="font-semibold" style={{ color: receiptVisual.accentColor }}>{receiptContent.paidStatusText}</span></p>}
                       </div>
                   </div>
 
-                  <div className="mb-2 relative z-10">
-                    <p className="text-[10px] font-semibold text-slate-500 mb-0.5">Diterima Dari:</p>
-                    <p className="text-xs font-bold text-slate-900">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
+                  <div className="mb-2 relative z-10" style={{ color: receiptVisual.textColor }}>
+                    {receiptVisibility.recipient !== false && <>
+                      <p className="text-[10px] font-semibold mb-0.5" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.recipientLabel}</p>
+                      <p className="text-xs font-bold">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
+                    </>}
+                    {receiptVisibility.studentId !== false && <p className="text-[10px] font-mono mt-1" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.studentIdLabel} {receiptData.santri.map(s => s.nomor_induk_qiroati || s.nis || s.nisn).filter(Boolean).join(', ') || '-'}</p>}
                   </div>
 
-                  {isPaymentPaid(receiptData.status) && (
+                  {isPaymentPaid(receiptData.status) && receiptVisibility.watermark !== false && (
                     <div className="relative h-20 mb-2 overflow-hidden">
-                      <PaymentReceiptWatermark />
+                      <PaymentReceiptWatermark config={receiptConfig.watermark} />
                     </div>
                   )}
 
-                  <div className="space-y-2 mb-3 relative z-10">
-                    <div className="border-t border-slate-200 pt-2"></div>
+                  {receiptVisibility.items !== false && <div className="space-y-2 mb-3 relative z-10" style={{ color: receiptVisual.textColor }}>
+                    <div className="border-t pt-2" style={{ borderColor: receiptVisual.borderColor }}></div>
+                    <div className="flex justify-between text-[9px] font-semibold uppercase tracking-wide" style={{ color: receiptVisual.mutedTextColor }}>
+                      <span>{receiptContent.itemLabel}</span><span>{receiptContent.amountLabel}</span>
+                    </div>
                       {receiptData.items.map(item => {
                           if (item.monthly) {
                              return item.months.map(m => (
                                 <div key={`${item.cartId}-${m}`} className="flex justify-between text-xs py-0.5">
-                                    <span className="text-slate-700 flex-1">{item.name} <span className="text-[9px] text-slate-400">({m} {item.year})</span></span>
-                                    <span className="font-semibold text-slate-900">Rp{item.amount.toLocaleString('id-ID')}</span>
+                                    <span className="flex-1">{item.name} <span className="text-[9px]" style={{ color: receiptVisual.mutedTextColor }}>({m} {item.year})</span></span>
+                                    <span className="font-semibold">Rp{item.amount.toLocaleString('id-ID')}</span>
                                 </div>
                              ));
                           } else {
                              return (
                                 <div key={item.cartId} className="flex justify-between text-xs py-0.5">
-                                    <span className="text-slate-700 flex-1">
+                                    <span className="flex-1">
                                         {item.custom === 'item' ? item.name : (item.hasSubtypes ? `${item.name} ${item.subtype}` : item.name)}
-                                        {item.quantity > 1 && <span className="text-[9px] text-slate-400 ml-1">x{item.quantity}</span>}
+                                        {item.quantity > 1 && <span className="text-[9px] ml-1" style={{ color: receiptVisual.mutedTextColor }}>x{item.quantity}</span>}
                                     </span>
-                                    <span className="font-semibold text-slate-900">Rp{(item.amount * item.quantity).toLocaleString('id-ID')}</span>
+                                    <span className="font-semibold">Rp{(item.amount * item.quantity).toLocaleString('id-ID')}</span>
                                 </div>
                              );
                           }
                       })}
-                     <div className="border-t border-slate-200 pt-2"></div>
-                  </div>
+                     <div className="border-t pt-2" style={{ borderColor: receiptVisual.borderColor }}></div>
+                  </div>}
 
-                  <div className="flex justify-between items-center bg-green-50 p-2 rounded-lg border border-green-100 mb-4 relative z-10">
-                      <span className="text-xs font-bold text-green-800">TOTAL BAYAR</span>
-                      <span className="text-base font-black text-green-900">Rp{receiptData.total.toLocaleString('id-ID')}</span>
-                  </div>
+                  {receiptVisibility.total !== false && <div className="flex justify-between items-center p-2 rounded-lg border mb-4 relative z-10" style={{ backgroundColor: `${receiptVisual.accentColor}14`, borderColor: `${receiptVisual.accentColor}35`, color: receiptVisual.accentColor }}>
+                      <span className="text-xs font-bold">{receiptContent.totalLabel}</span>
+                      <span className="text-base font-black">Rp{receiptData.total.toLocaleString('id-ID')}</span>
+                  </div>}
 
-                  <div className="text-center relative z-10">
-                      <div className="bg-white p-1 inline-block rounded-lg shadow-sm border border-slate-100 mb-2">
-                        {qrCodeDataURL && <img src={qrCodeDataURL} alt="QR Code Status" className="w-16 h-16"/>}
-                      </div>
-                      <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">Terima Kasih</p>
-                  </div>
+                  {((receiptVisibility.qr !== false && receiptConfig.qr.visible !== false) || receiptVisibility.footer !== false) && <div className="relative z-10">
+                      {receiptVisibility.qr !== false && receiptConfig.qr.visible !== false && <div className={`flex flex-col ${({ left: 'items-start', center: 'items-center', right: 'items-end' }[receiptConfig.qr.position] || 'items-center')}`}>
+                        <div className="p-1 inline-block rounded-lg shadow-sm border mb-2" style={{ backgroundColor: receiptVisual.backgroundColor, borderColor: receiptVisual.borderColor }}>
+                        {qrCodeDataURL && (
+                          <img src={qrCodeDataURL} alt={receiptContent.qrLabel} style={{ width: `${receiptConfig.qr.size}px`, height: `${receiptConfig.qr.size}px` }}/>
+                        )}
+                        </div>
+                      </div>}
+                      {receiptVisibility.footer !== false && <p className="text-center text-[9px] font-bold tracking-widest uppercase" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.footerText}</p>}
+                  </div>}
               </div>
 
               <div className="flex justify-center flex-wrap gap-2 p-2">
