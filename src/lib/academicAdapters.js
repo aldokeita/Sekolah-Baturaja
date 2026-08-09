@@ -78,6 +78,22 @@ export const fetchCalendarEvents = async ({ startDate, endDate }) => {
     return Array.isArray(data) ? data : [];
 };
 
+export const fetchCalendarMonthSettings = async (year) => {
+    const params = new URLSearchParams({ year: String(year) });
+    const data = await apiClient.get(`/api/attendance/calendar-settings?${params}`);
+    return Array.isArray(data) ? data : [];
+};
+
+export const saveCalendarMonthSetting = async ({ year, month, saturdayIsHoliday }) => (
+    apiClient.put(`/api/attendance/calendar-settings/${year}/${month}`, {
+        saturday_is_holiday: Boolean(saturdayIsHoliday),
+    })
+);
+
+export const deleteCalendarMonthSetting = async ({ year, month }) => {
+    await apiClient.delete(`/api/attendance/calendar-settings/${year}/${month}`);
+};
+
 export const saveCalendarEvent = async ({ existingId, selectedDate, title, description, isHoliday, userId }) => {
     const cleanTitle = String(title || '').trim();
     const cleanDescription = String(description || '').trim();

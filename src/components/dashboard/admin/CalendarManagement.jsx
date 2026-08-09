@@ -6,9 +6,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Save, Trash2, CalendarOff, CalendarCheck } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Save, Trash2, CalendarOff, CalendarCheck, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { deleteCalendarEvent, fetchCalendarEvents, getAcademicErrorMessage, saveCalendarEvent } from '@/lib/academicAdapters';
+import {
+  deleteCalendarEvent,
+  deleteCalendarMonthSetting,
+  fetchCalendarEvents,
+  fetchCalendarMonthSettings,
+  getAcademicErrorMessage,
+  saveCalendarEvent,
+  saveCalendarMonthSetting,
+} from '@/lib/academicAdapters';
+import {
+  DEFAULT_SATURDAY_IS_HOLIDAY,
+  getSaturdayHolidayForMonth,
+  isAutomaticCalendarHoliday,
+  isEffectiveCalendarHoliday,
+  normalizeCalendarMonthSettings,
+} from '@/lib/calendarUtils';
 import { useAuth } from '@/contexts/AuthContext';
 
 const months = [
@@ -25,7 +40,10 @@ const CalendarManagement = () => {
   // date string -> array of agenda entries. A date may carry several entries
   // since the one-row-per-date constraint was lifted.
   const [eventsByDate, setEventsByDate] = useState({});
+  const [monthSettings, setMonthSettings] = useState({});
+  const [saturdayHolidayDraft, setSaturdayHolidayDraft] = useState(DEFAULT_SATURDAY_IS_HOLIDAY);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSavingSetting, setIsSavingSetting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [editingId, setEditingId] = useState(null);
@@ -33,33 +51,61 @@ const CalendarManagement = () => {
 
   const fetchHolidays = useCallback(async () => {
     setIsLoading(true);
+    setMonthSettings({});
     const startDate = `${selectedYear}-01-01`;
     const endDate = `${selectedYear}-12-31`;
 
     try {
-      const data = await fetchCalendarEvents({ startDate, endDate });
+      const [calendarResult, settingsResult] = await Promise.allSettled([
+        fetchCalendarEvents({ startDate, endDate }),
+        fetchCalendarMonthSettings(selectedYear),
+      ]);
+      if (calendarResult.status === 'rejected') throw calendarResult.reason;
+
+      const data = calendarResult.value;
       const grouped = {};
       data.forEach(item => {
         if (!item?.date) return;
         (grouped[item.date] ||= []).push(item);
       });
       setEventsByDate(grouped);
+      if (settingsResult.status === 'fulfilled') {
+        setMonthSettings(normalizeCalendarMonthSettings(settingsResult.value));
+      } else {
+        // Bila konfigurasi belum tersedia (mis. migration belum diterapkan),
+        // kalender tetap memakai perilaku bawaan dan agenda tetap tampil.
+        setMonthSettings({});
+        toast({
+          title: 'Memakai aturan kalender bawaan',
+          description: 'Pengaturan Sabtu belum tersedia untuk tahun ini.',
+        });
+      }
     } catch (error) {
       toast({ title: 'Gagal memuat kalender', description: getAcademicErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [selectedYear]);
 
   useEffect(() => {
     fetchHolidays();
   }, [fetchHolidays]);
 
+  const selectedMonthNumber = selectedMonth + 1;
+  const savedMonthSetting = monthSettings[selectedMonthNumber];
+  const savedSaturdayHoliday = getSaturdayHolidayForMonth(monthSettings, selectedMonthNumber);
+  const hasSavedMonthSetting = Boolean(savedMonthSetting);
+
+  useEffect(() => {
+    setSaturdayHolidayDraft(savedSaturdayHoliday);
+  }, [selectedYear, selectedMonth, savedSaturdayHoliday]);
+
   const selectedEvents = selectedDate ? (eventsByDate[selectedDate] || []) : [];
 
   const handleDateClick = (day) => {
     const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const d = new Date(selectedYear, selectedMonth, day);
-    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    const isAutomaticHoliday = isAutomaticCalendarHoliday(d.getDay(), savedSaturdayHoliday);
 
     setSelectedDate(dateStr);
     setEditingId(null);
@@ -67,7 +113,7 @@ const CalendarManagement = () => {
     // listed above it and loaded into the form only when one is clicked.
     setHolidayForm({
       ...emptyForm,
-      title: (eventsByDate[dateStr]?.length || !isWeekend) ? '' : 'Libur Akhir Pekan',
+      title: (eventsByDate[dateStr]?.length || !isAutomaticHoliday) ? '' : 'Libur Akhir Pekan',
     });
     setDialogOpen(true);
   };
@@ -106,6 +152,47 @@ const CalendarManagement = () => {
     }
   };
 
+  const handleSaveMonthSetting = async () => {
+    setIsSavingSetting(true);
+    try {
+      const saved = await saveCalendarMonthSetting({
+        year: selectedYear,
+        month: selectedMonthNumber,
+        saturdayIsHoliday: saturdayHolidayDraft,
+      });
+      setMonthSettings((previous) => ({
+        ...previous,
+        [selectedMonthNumber]: saved || {
+          year: selectedYear,
+          month: selectedMonthNumber,
+          saturday_is_holiday: saturdayHolidayDraft,
+        },
+      }));
+      toast({ title: 'Berhasil', description: 'Aturan hari Sabtu bulan ini tersimpan.' });
+    } catch (error) {
+      toast({ title: 'Gagal menyimpan aturan', description: getAcademicErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setIsSavingSetting(false);
+    }
+  };
+
+  const handleResetMonthSetting = async () => {
+    setIsSavingSetting(true);
+    try {
+      await deleteCalendarMonthSetting({ year: selectedYear, month: selectedMonthNumber });
+      setMonthSettings((previous) => {
+        const next = { ...previous };
+        delete next[selectedMonthNumber];
+        return next;
+      });
+      toast({ title: 'Berhasil', description: 'Bulan ini kembali ke aturan kalender bawaan.' });
+    } catch (error) {
+      toast({ title: 'Gagal mengembalikan aturan', description: getAcademicErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setIsSavingSetting(false);
+    }
+  };
+
   const handleDeleteEvent = async (id) => {
     try {
       await deleteCalendarEvent(id);
@@ -133,21 +220,23 @@ const CalendarManagement = () => {
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayDate = new Date(selectedYear, selectedMonth, d);
-      const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
+      const isAutomaticHoliday = isAutomaticCalendarHoliday(dayDate.getDay(), savedSaturdayHoliday);
       const dayEvents = eventsByDate[dateStr] || [];
 
       // A date is off if ANY of its entries marks it a holiday. An explicit
       // "masuk" entry is what overrides the automatic weekend rule.
-      const isDbHoliday = dayEvents.some(e => e.is_holiday === true);
-      const isDbActive = dayEvents.some(e => e.is_holiday === false);
-      const isEffectiveHoliday = isDbHoliday || (isWeekend && !isDbActive);
+      const isEffectiveHoliday = isEffectiveCalendarHoliday({
+        dayOfWeek: dayDate.getDay(),
+        dayEvents,
+        saturdayIsHoliday: savedSaturdayHoliday,
+      });
 
       let bgClass = "bg-white dark:bg-slate-800 hover:border-blue-500";
       let statusIcon = null;
       let statusText = "";
 
       if (isEffectiveHoliday) {
-        if (isWeekend && dayEvents.length === 0) {
+        if (isAutomaticHoliday && dayEvents.length === 0) {
              // Implicit Weekend
              bgClass = "bg-slate-100 dark:bg-slate-900/50 text-slate-500 hover:border-slate-400";
              statusText = "Akhir Pekan";
@@ -205,7 +294,10 @@ const CalendarManagement = () => {
       <CardHeader className="flex flex-col md:flex-row items-center justify-between pb-4 border-b gap-4">
         <div>
             <CardTitle className="text-xl flex items-center gap-2"><CalendarIcon className="w-6 h-6 text-primary"/> Kalender Akademik</CardTitle>
-            <CardDescription>Atur hari libur dan agenda kegiatan. Satu tanggal boleh memuat beberapa agenda. Sabtu &amp; Minggu otomatis dianggap libur kecuali diubah.</CardDescription>
+            <CardDescription>
+              Atur hari libur dan agenda kegiatan. Satu tanggal boleh memuat beberapa agenda.
+              {savedSaturdayHoliday ? ' Sabtu dan Minggu otomatis dianggap libur.' : ' Minggu otomatis dianggap libur; Sabtu tetap menjadi hari sekolah.'}
+            </CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-4 justify-center">
             {/* Button removed as requested */}
@@ -220,9 +312,63 @@ const CalendarManagement = () => {
         </div>
       </CardHeader>
       <CardContent className="p-6">
+        <div className="mb-6 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50 md:flex-row md:items-end md:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary">
+              <CalendarCheck className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div>
+              <div className="font-semibold">Aturan hari Sabtu · {months[selectedMonth]}</div>
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                Tentukan apakah Sabtu pada bulan ini libur otomatis. Hari Minggu tetap libur otomatis dan agenda manual tidak berubah.
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {hasSavedMonthSetting ? 'Pengaturan khusus bulan ini tersimpan.' : 'Belum ada pengaturan khusus; memakai aturan bawaan: Sabtu dan Minggu libur.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="min-w-0 sm:min-w-[17rem]">
+              <Label htmlFor="calendar-saturday-policy" className="text-xs text-muted-foreground">Kebijakan bulan ini</Label>
+              <Select
+                value={saturdayHolidayDraft ? 'saturday-holiday' : 'saturday-school'}
+                onValueChange={(value) => setSaturdayHolidayDraft(value === 'saturday-holiday')}
+                disabled={isLoading || isSavingSetting}
+              >
+                <SelectTrigger id="calendar-saturday-policy" className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="saturday-holiday">Senin–Jumat (Sabtu libur otomatis)</SelectItem>
+                  <SelectItem value="saturday-school">Senin–Sabtu (Sabtu hari sekolah)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleSaveMonthSetting}
+                disabled={isLoading || isSavingSetting || (hasSavedMonthSetting && saturdayHolidayDraft === savedSaturdayHoliday)}
+              >
+                {isSavingSetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Simpan
+              </Button>
+              {hasSavedMonthSetting && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetMonthSetting}
+                  disabled={isLoading || isSavingSetting}
+                >
+                  Gunakan default
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
         <div className="grid grid-cols-7 gap-4 mb-4 text-center">
             {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(day => (
-                <div key={day} className={`font-semibold text-sm uppercase ${day === 'Sab' || day === 'Min' ? 'text-red-400' : 'text-muted-foreground'}`}>{day}</div>
+                <div key={day} className={`font-semibold text-sm uppercase ${day === 'Min' || (day === 'Sab' && savedSaturdayHoliday) ? 'text-red-400' : 'text-muted-foreground'}`}>{day}</div>
             ))}
         </div>
         <div className={`grid grid-cols-7 gap-2 md:gap-4 transition-opacity ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -231,7 +377,7 @@ const CalendarManagement = () => {
 
         <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground justify-center">
             <div className="flex items-center gap-2"><div className="w-4 h-4 bg-white border rounded"></div> Hari Efektif</div>
-            <div className="flex items-center gap-2"><div className="w-4 h-4 bg-slate-100 border rounded"></div> Akhir Pekan (Libur)</div>
+            <div className="flex items-center gap-2"><div className="w-4 h-4 bg-slate-100 border rounded"></div> {savedSaturdayHoliday ? 'Sabtu & Minggu otomatis libur' : 'Minggu otomatis libur'}</div>
             <div className="flex items-center gap-2"><div className="w-4 h-4 bg-red-50 border border-red-200 rounded"></div> Hari Libur Nasional / Cuti</div>
             <div className="flex items-center gap-2"><div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded"></div> Ada Agenda (Tetap KBM)</div>
         </div>
