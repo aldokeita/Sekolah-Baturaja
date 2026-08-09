@@ -32,18 +32,70 @@ $token = (Invoke-RestMethod -Uri "$baseUrl/api/auth/login" -Method Post -Body $b
 if (-not $token) { Write-Error 'Gagal login dengan akun dummy.'; exit 1 }
 $headers = @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' }
 
-$periode = (Invoke-RestMethod -Uri "$baseUrl/api/schedule/periode" -Headers $headers).data |
-  Where-Object { $_.is_active } | Select-Object -First 1
-if (-not $periode) { Write-Error 'Tidak ada periode ajaran aktif.'; exit 1 }
+$semuaPeriode = @((Invoke-RestMethod -Uri "$baseUrl/api/schedule/periode" -Headers $headers).data)
+$periode = $semuaPeriode | Where-Object { $_.is_active } | Select-Object -First 1
+$periodeDibuat = $null
+
+function BersihkanPeriodeUji {
+  if ($script:periodeDibuat -and $script:periodeDibuat.id) {
+    try {
+      Invoke-RestMethod -Uri "$baseUrl/api/schedule/periode/$($script:periodeDibuat.id)" -Method Delete -Headers $headers | Out-Null
+      Write-Host "  (bersih: periode uji $($script:periodeDibuat.tahun_ajaran) dihapus)"
+    } catch {
+      Write-Warning "Periode uji $($script:periodeDibuat.id) tidak dapat dihapus otomatis: $($_.Exception.Message)"
+    }
+    $script:periodeDibuat = $null
+  }
+}
+
+if (-not $periode) {
+  # Fixture lokal yang baru di-bootstrap belum tentu punya periode aktif. Buat
+  # satu periode sementara agar guard bentrok tetap bisa diuji, lalu hapus lagi
+  # pada cleanup. Tahun ajaran dipilih dari slot yang belum ada supaya skrip
+  # dapat diulang tanpa menabrak data periode yang sudah tersimpan.
+  $tahunUjiDasar = (Get-Date).Year + 10
+  do {
+    $tahunUji = '{0}/{1}' -f $tahunUjiDasar, ($tahunUjiDasar + 1)
+    $sudahAda = $semuaPeriode | Where-Object {
+      $_.tahun_ajaran -eq $tahunUji -and $_.semester -eq 'Ganjil'
+    }
+    $tahunUjiDasar++
+  } while ($sudahAda)
+
+  $namaPeriodeUji = "Uji bentrok jadwal $([guid]::NewGuid().ToString('N').Substring(0, 8))"
+  $periodePayload = @{
+    nama            = $namaPeriodeUji
+    tahun_ajaran   = $tahunUji
+    semester       = 'Ganjil'
+    tanggal_mulai  = $null
+    tanggal_selesai = $null
+    is_active      = $true
+  } | ConvertTo-Json
+  $periodeDibuat = (Invoke-RestMethod -Uri "$baseUrl/api/schedule/periode" -Method Post -Body $periodePayload -Headers $headers).data
+  if (-not $periodeDibuat) {
+    Write-Error 'Periode uji tidak berhasil dibuat.'
+    exit 1
+  }
+  $periode = $periodeDibuat
+  Write-Host "  (fixture: periode uji $($periode.tahun_ajaran) dibuat karena belum ada periode aktif)"
+}
 
 $mapel  = (Invoke-RestMethod -Uri "$baseUrl/api/schedule/mapel" -Headers $headers).data
-$kelas  = (Invoke-RestMethod -Uri "$baseUrl/api/classes" -Headers $headers).data | Where-Object { $_.is_active }
-if ($mapel.Count -lt 6 -or $kelas.Count -lt 2) { Write-Error 'Butuh minimal 6 mata pelajaran dan 2 kelas aktif.'; exit 1 }
+$kelas  = @((Invoke-RestMethod -Uri "$baseUrl/api/classes" -Headers $headers).data | Where-Object { $_.is_active })
+if (@($mapel).Count -lt 6 -or $kelas.Count -lt 2) {
+  BersihkanPeriodeUji
+  Write-Error 'Butuh minimal 6 mata pelajaran dan 2 kelas aktif.'
+  exit 1
+}
 
 $kelasA = $kelas[0].id
 $kelasB = $kelas[1].id
 $guru   = ($kelas | Where-Object { $_.id_guru } | Select-Object -First 1).id_guru
-if (-not $guru) { Write-Error 'Tidak ada kelas dengan guru pengampu.'; exit 1 }
+if (-not $guru) {
+  BersihkanPeriodeUji
+  Write-Error 'Tidak ada kelas dengan guru pengampu.'
+  exit 1
+}
 $guruLain = ($kelas | Where-Object { $_.id_guru -and $_.id_guru -ne $guru } | Select-Object -First 1).id_guru
 
 # Hari 6 (Sabtu) dipakai supaya tidak menabrak jadwal sungguhan pada hari kerja.
@@ -81,6 +133,7 @@ finally {
     try { Invoke-RestMethod -Uri "$baseUrl/api/schedule/jadwal/$id" -Method Delete -Headers $headers | Out-Null } catch { }
   }
   Write-Host "  (bersih: $($dibuat.Count) jadwal uji dihapus)"
+  BersihkanPeriodeUji
 }
 
 if ($gagal -gt 0) { Write-Error "$gagal pemeriksaan bentrok jadwal gagal."; exit 1 }
