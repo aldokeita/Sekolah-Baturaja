@@ -46,6 +46,7 @@ const PrestasiPage = () => {
   const [content, setContent] = useState(() => normalizePrestasiContent(undefined));
   const [tingkat, setTingkat] = useState('Semua');
   const [idx, setIdx] = useState(-1);
+  const [fotoAsliTerbuka, setFotoAsliTerbuka] = useState(false);
 
   useSdnbMotion([]);
 
@@ -105,13 +106,21 @@ const PrestasiPage = () => {
   useEffect(() => {
     const onKey = (e) => {
       if (idx < 0) return;
-      if (e.key === 'Escape') setIdx(-1);
+      if (fotoAsliTerbuka) {
+        if (e.key === 'Escape') setFotoAsliTerbuka(false);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setIdx(-1);
+        setFotoAsliTerbuka(false);
+        return;
+      }
       if (e.key === 'ArrowRight') geser(1);
       if (e.key === 'ArrowLeft') geser(-1);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [idx, geser]);
+  }, [idx, geser, fotoAsliTerbuka]);
 
   const tahunUnik = useMemo(() => Array.from(new Set(P.map((p) => p[0]))).sort(), [P]);
   const perTahun = tahunUnik.map((th) => ({ th, n: P.filter((p) => p[0] === th).length }));
@@ -183,7 +192,13 @@ const PrestasiPage = () => {
     } : { tahun: '', judul: '', tingkat: '', peringkat: '', cerita: '', meta: [], fotoUrl: '', top: '' },
     sebelum: () => geser(-1),
     sesudah: () => geser(1),
-    tutup: () => setIdx(-1),
+    fotoAsliTerbuka: fotoAsliTerbuka && Boolean(d?.[8]),
+    fotoBuka: () => setFotoAsliTerbuka(true),
+    fotoTutup: () => setFotoAsliTerbuka(false),
+    tutup: () => {
+      setIdx(-1);
+      setFotoAsliTerbuka(false);
+    },
     stop: (e) => e.stopPropagation(),
   };
 

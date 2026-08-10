@@ -19,7 +19,7 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-prestasi.css';
 
 const PrestasiBody = (vals = {}) => {
-  const { bidang, daftar, detil, detilAda, grafik, grafikTampil, jumlah, podium, sebelum, sesudah, stat, stop, tingkatOpsi, total, tutup } = vals;
+  const { bidang, daftar, detil, detilAda, fotoAsliTerbuka, fotoBuka, fotoTutup, grafik, grafikTampil, jumlah, podium, sebelum, sesudah, stat, stop, tingkatOpsi, total, tutup } = vals;
   return (
     <>
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "22px 28px 0" }}>
@@ -197,6 +197,12 @@ const PrestasiBody = (vals = {}) => {
         </div>
         <div style={{ padding: "clamp(24px,4vw,38px)" }}>
           <p style={{ margin: "0", fontSize: "15px", lineHeight: "1.75", color: "rgba(214,218,255,.85)", textWrap: "pretty" }}>{detil.cerita}</p>
+          {detil.fotoUrl && (
+            <button type="button" onClick={fotoBuka} aria-haspopup="dialog" aria-controls="prestasi-foto-asli" style={{ marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 14px", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "12px", fontWeight: "800", color: "#fff", border: "1px solid rgba(255,255,255,.24)", background: "rgba(255,255,255,.1)" }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-4.5-4.5L7 20"></path></svg>
+              Lihat Foto Asli
+            </button>
+          )}
           <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "12px" }}>
             {(detil.meta || []).map((m, $index) => (<React.Fragment key={$index}>
               <div style={{ padding: "14px 16px", borderRadius: "16px", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.14)" }}>
@@ -212,6 +218,19 @@ const PrestasiBody = (vals = {}) => {
         </div>
       </div>
     </div>
+    {fotoAsliTerbuka && detil.fotoUrl && (
+      <div onClick={fotoTutup} style={{ position: "fixed", inset: "0", zIndex: "120", display: "flex", alignItems: "center", justifyContent: "center", overflow: "auto", boxSizing: "border-box", padding: "clamp(12px,3vw,36px)", background: "rgba(7,10,27,.94)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", animation: "fadeup .2s ease both" }}>
+        <div id="prestasi-foto-asli" onClick={stop} role="dialog" aria-modal="true" aria-labelledby="prestasi-foto-asli-title" style={{ position: "relative", display: "flex", flexDirection: "column", gap: "12px", width: "min(1200px,100%)", maxHeight: "94vh", padding: "clamp(10px,1.5vw,18px)", borderRadius: "clamp(18px,2.5vw,26px)", background: "rgba(31,35,63,.92)", border: "1px solid rgba(255,255,255,.2)", boxShadow: "0 44px 100px -30px rgba(0,0,0,.9)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", color: "#fff" }}>
+            <div id="prestasi-foto-asli-title" style={{ minWidth: "0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "12px", fontWeight: "800", letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(214,218,255,.82)" }}>Foto asli · {detil.judul}</div>
+            <button type="button" onClick={fotoTutup} aria-label="Tutup foto asli" style={{ flex: "0 0 auto", width: "40px", height: "40px", display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "12px", cursor: "pointer", color: "#fff", border: "1px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.12)" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+            </button>
+          </div>
+          <img src={detil.fotoUrl} alt={`Foto asli perlombaan ${detil.judul}`} loading="eager" decoding="async" style={{ display: "block", width: "auto", height: "auto", maxWidth: "100%", maxHeight: "calc(94vh - 86px)", margin: "0 auto", objectFit: "contain", borderRadius: "clamp(12px,2vw,20px)" }} />
+        </div>
+      </div>
+    )}
   </>)}
     </>
   );
