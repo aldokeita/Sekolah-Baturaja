@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   deriveGalleryAlbums,
+  getGalleryHeroAspectRatio,
   selectGalleryHeroPhotos,
   normalizeGalleryAlbums,
   normalizeGalleryPhotos,
@@ -64,5 +65,11 @@ describe('gallery content model', () => {
     expect(photos).toHaveLength(10);
     expect(photos[0]).toEqual(expect.objectContaining({ id: 'webp-1' }));
     expect(photos.some((photo) => photo.id === 'invalid')).toBe(false);
+  });
+
+  it('derives responsive tile ratios from natural image dimensions', () => {
+    expect(getGalleryHeroAspectRatio({ naturalWidth: 1600, naturalHeight: 800 })).toBe(1.75);
+    expect(getGalleryHeroAspectRatio({ naturalWidth: 800, naturalHeight: 1600 }, 1.2)).toBe(0.62);
+    expect(getGalleryHeroAspectRatio({ naturalWidth: 1200, naturalHeight: 800 }, 1.2)).toBe(1.25);
   });
 });

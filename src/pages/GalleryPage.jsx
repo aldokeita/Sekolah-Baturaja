@@ -5,7 +5,7 @@ import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { fetchClassCount, fetchSantriCount } from '@/lib/dataMasterAdapters';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
-import { deriveGalleryAlbums, normalizeGalleryAlbums, normalizeGalleryPhotos, resolveGalleryAlbumPhotos, selectGalleryHeroPhotos } from '@/lib/galleryContent';
+import { deriveGalleryAlbums, getGalleryHeroAspectRatio, normalizeGalleryAlbums, normalizeGalleryPhotos, resolveGalleryAlbumPhotos, selectGalleryHeroPhotos } from '@/lib/galleryContent';
 import '@/styles/sdnb.css';
 
 /**
@@ -60,6 +60,7 @@ const HERO_GRADS = [
   'linear-gradient(150deg,#ffd8ea,#e8b6f0)', 'linear-gradient(150deg,#c9e8ff,#a5c8f5)',
 ];
 const HEIGHTS = [104, 138, 92, 124, 110, 150, 118, 132];
+const HERO_TILE_HEIGHT_SCALES = [1, 0.82, 1.14, 0.9, 1.18, 0.76, 1.06, 0.88, 1.2];
 const COLS = 4;
 
 const escapeCssUrl = (value) => String(value).replace(/[\\"]/g, '\\$&');
@@ -129,16 +130,25 @@ const GalleryPage = () => {
       return () => { active = false; };
     }
 
-    const loaded = new Set();
+    const settled = new Set();
+    const loadedPhotos = new Map();
     heroPhotoCandidates.forEach((photo, index) => {
       const image = new window.Image();
       image.decoding = 'async';
       if ('fetchPriority' in image) image.fetchPriority = 'low';
       const settle = (isValid) => {
-        if (!active || !isValid || loaded.has(index)) return;
-        loaded.add(index);
+        if (!active || settled.has(index)) return;
+        settled.add(index);
+        if (!isValid) return;
+        loadedPhotos.set(index, {
+          ...photo,
+          naturalWidth: Number(image.naturalWidth),
+          naturalHeight: Number(image.naturalHeight),
+        });
         setHeroPhotos((current) => {
-          const next = heroPhotoCandidates.filter((_, candidateIndex) => loaded.has(candidateIndex));
+          const next = heroPhotoCandidates
+            .map((_, candidateIndex) => loadedPhotos.get(candidateIndex))
+            .filter(Boolean);
           return next.length === current.length ? current : next;
         });
       };
@@ -234,10 +244,14 @@ const GalleryPage = () => {
     const base = Array.from({ length: 9 }).map((__, t) => {
       const g = (c * 7 + t * 3) % 8;
       const photo = heroPhotos.length > 0 ? heroPhotos[(c * 7 + t * 3) % heroPhotos.length] : null;
+      const heightScale = HERO_TILE_HEIGHT_SCALES[(c * 3 + t * 2) % HERO_TILE_HEIGHT_SCALES.length];
       const background = photo
         ? `background-image:url("${escapeCssUrl(photo.url)}"),${HERO_GRADS[g]};background-size:cover,cover;background-position:center,center;background-repeat:no-repeat,no-repeat`
         : `background:${HERO_GRADS[g]}`;
-      return { style: `flex:none;height:${HEIGHTS[(c + t) % HEIGHTS.length]}px;border-radius:16px;${background};border:1px solid rgba(255,255,255,.75);box-shadow:0 16px 34px -18px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.85)` };
+      const dimensions = photo
+        ? `width:100%;height:auto;min-height:78px;max-height:220px;aspect-ratio:${getGalleryHeroAspectRatio(photo, heightScale)}`
+        : `width:100%;height:${HEIGHTS[(c + t) % HEIGHTS.length]}px`;
+      return { style: `flex:none;${dimensions};border-radius:16px;${background};border:1px solid rgba(255,255,255,.75);box-shadow:0 16px 34px -18px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.85)` };
     });
     return { tiles: base.concat(base), cls: c % 2 ? 'dcol rev' : 'dcol', style: `animation-duration:${38 + c * 7}s` };
   }), [heroPhotos]);

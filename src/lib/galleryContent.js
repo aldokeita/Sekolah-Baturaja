@@ -27,6 +27,8 @@ export const normalizeGalleryPhotos = (rows) => (
 );
 
 export const GALLERY_HERO_POOL_LIMIT = 10;
+const GALLERY_HERO_ASPECT_MIN = 0.62;
+const GALLERY_HERO_ASPECT_MAX = 1.75;
 
 const isUsableImageUrl = (value) => {
   const url = asText(value);
@@ -70,6 +72,25 @@ export const selectGalleryHeroPhotos = (rows, limit = GALLERY_HERO_POOL_LIMIT) =
   const webp = photos.filter(isWebpPhoto);
   const other = photos.filter((photo) => !isWebpPhoto(photo));
   return [...webp, ...other].slice(0, max);
+};
+
+/**
+ * Converts the natural image ratio into a responsive tile ratio. The natural
+ * ratio remains the source of truth, while the bounds keep unusually narrow
+ * or panoramic uploads from creating an unstable scrolling column.
+ */
+export const getGalleryHeroAspectRatio = (photo, heightScale = 1) => {
+  const naturalWidth = Number(photo?.naturalWidth);
+  const naturalHeight = Number(photo?.naturalHeight);
+  const nativeRatio = naturalWidth > 0 && naturalHeight > 0
+    ? naturalWidth / naturalHeight
+    : 1.12;
+  const safeScale = Number.isFinite(heightScale) && heightScale > 0 ? heightScale : 1;
+  const ratio = Math.min(
+    GALLERY_HERO_ASPECT_MAX,
+    Math.max(GALLERY_HERO_ASPECT_MIN, nativeRatio / safeScale),
+  );
+  return Number(ratio.toFixed(3));
 };
 
 export const normalizeGalleryAlbums = (rows) => (
