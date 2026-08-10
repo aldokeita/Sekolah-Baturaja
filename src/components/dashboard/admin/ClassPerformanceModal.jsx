@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { fetchAttendance, fetchCalendarEvents } from '@/lib/attendanceAdapters';
+import { fetchAttendance, fetchCalendarContext } from '@/lib/attendanceAdapters';
 import { fetchSantriList } from '@/lib/dataMasterAdapters';
 import { fetchJilidHistoryForSantriList } from '@/lib/academicAdapters';
 import { Users, TrendingUp, Activity, History, Clock, ArrowUpCircle, CalendarDays, Check, X, Search, FileText } from 'lucide-react';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { resolveAvatarRecord, resolveAvatarRecords } from '@/lib/storageAdapters';
+import { getActiveCalendarDates } from '@/lib/calendarUtils';
 
 const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -185,23 +186,13 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
         const endDate = `${historyYear}-${String(historyMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
         try {
-            // 1. Fetch Calendar Data for Holidays only. The endpoint returns
-            // holidays exclusively, and the adapter normalizes each row to
-            // { date, is_holiday }.
-            const calendarData = await fetchCalendarEvents(startDate, endDate);
-
-            const holidaySet = new Set((calendarData || []).map(c => c.date));
-
-            // 2. Filter active days (Mon-Fri and not holiday)
-            const activeDays = [];
-            for (let d = 1; d <= lastDay; d++) {
-                const dateStr = `${historyYear}-${String(historyMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const dateObj = new Date(historyYear, historyMonth, d);
-                const dayOfWeek = dateObj.getDay(); // 0 is Sun, 6 is Sat
-                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !holidaySet.has(dateStr)) {
-                    activeDays.push(d);
-                }
-            }
+            // 1. Kalender lengkap + kebijakan Sabtu menjadi sumber hari aktif.
+            const calendarContext = await fetchCalendarContext(startDate, endDate);
+            const activeDays = getActiveCalendarDates({
+                startDate,
+                endDate,
+                ...calendarContext,
+            }).map((dateString) => Number(dateString.slice(8, 10)));
 
             const uniqueActiveDays = activeDays;
 

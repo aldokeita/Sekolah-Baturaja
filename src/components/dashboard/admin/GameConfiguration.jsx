@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
-import { Save, Plus, Trash2, Percent, Gamepad2, Trophy, X, RefreshCw, BarChart2, User, UserCheck, Sparkles, Clock3, Settings2, MessageSquare, Link2, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Save, Plus, Trash2, Percent, Gamepad2, Trophy, X, RefreshCw, BarChart2, User, UserCheck, Sparkles, Clock3, Settings2, MessageSquare, Link2, ExternalLink, ShieldCheck, Receipt } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { doaHarian, bacaanShalat, suratPendek } from '@/data/islamicContent';
 import { motion } from 'framer-motion';
@@ -16,6 +16,7 @@ import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicCont
 import { createDefaultSantriLevelConfig, normalizeLevelConfigShape } from '@/lib/santriLevel';
 import { DEFAULT_WHATSAPP_TEMPLATES, fetchWhatsAppTemplates, saveWhatsAppTemplates } from '@/lib/whatsappTemplateAdapters';
 import { fetchWhatsAppGroupLinks, isValidWhatsAppGroupLink, saveWhatsAppGroupLinks, validateWhatsAppGroupLinks, WHATSAPP_JILID_OPTIONS } from '@/lib/whatsappGroupLinksAdapters';
+import PaymentReceiptEditor from './PaymentReceiptEditor';
 
 const GameConfiguration = () => {
     const [activeTab, setActiveTab] = useState('attendance');
@@ -23,6 +24,7 @@ const GameConfiguration = () => {
         { id: 'attendance', label: 'Waktu Absensi', icon: Clock3 },
         { id: 'levels', label: 'Konfigurasi Level', icon: BarChart2 },
         { id: 'whatsapp', label: 'Pesan WhatsApp', icon: MessageSquare },
+        { id: 'payment-receipt', label: 'Bukti Pembayaran', icon: Receipt },
         ...(enableGameFeatures ? [
             { id: 'gatcha', label: 'Gatcha Game', icon: Gamepad2 },
             { id: 'quiz', label: 'Quiz Hafalan', icon: Trophy },
@@ -85,6 +87,10 @@ const GameConfiguration = () => {
 
                 <TabsContent value="whatsapp" className="animate-in fade-in slide-in-from-bottom-2">
                     <WhatsAppTemplateSettings />
+                </TabsContent>
+
+                <TabsContent value="payment-receipt" className="animate-in fade-in slide-in-from-bottom-2">
+                    <PaymentReceiptEditor />
                 </TabsContent>
             </Tabs>
         </div>
@@ -336,7 +342,7 @@ const QuizSettings = () => {
         <div className="game-config-panel game-config-panel--quiz space-y-6">
             <div className="game-config-section-heading">
                 <div>
-                    <h3 className="text-lg font-black flex items-center gap-2"><Sparkles className="w-5 h-5 text-cyan-500" /> Bank Soal Quiz Hafalan</h3>
+                    <h3 className="text-lg font-black flex items-center gap-2"><Sparkles className="w-5 h-5 text-indigo-500" /> Bank Soal Quiz Hafalan</h3>
                     <p className="text-sm text-muted-foreground">Kategori dan soal di sini langsung digunakan roda quiz; guru memilih serta menilai murid tanpa RFID.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -606,7 +612,7 @@ const LevelSettings = () => {
             <div className="game-config-section-heading">
                 <div>
                     <h3 className="text-lg font-black">Level & Visual Profile Card</h3>
-                    <p className="text-sm text-muted-foreground">Atur rentang poin, nama level, warna aksen, serta depth neumorphic untuk murid putra dan putri.</p>
+                    <p className="text-sm text-muted-foreground">Atur rentang poin, nama level, warna aksen, serta kedalaman permukaan untuk murid putra dan putri.</p>
                 </div>
                 <Button type="button" onClick={saveLevelConfig} disabled={isLoading || isSaving} className="game-config-save">
                     <Save className="w-4 h-4 mr-2"/> {isSaving ? 'Menyimpan...' : 'Simpan Konfigurasi Level'}

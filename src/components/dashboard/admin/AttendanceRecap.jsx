@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchClassList, fetchSantriPage } from '@/lib/dataMasterAdapters';
-import { fetchAttendance, fetchAttendanceDates, fetchCalendarEvents } from '@/lib/attendanceAdapters';
+import { fetchAttendance, fetchAttendanceDates, fetchCalendarContext } from '@/lib/attendanceAdapters';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { resolveAvatarRecords } from '@/lib/storageAdapters';
 import DataPagination from '@/components/dashboard/shared/DataPagination';
 import { getAllSessions, getSessionNumber } from '@/utils/sessionMapping';
+import { getActiveCalendarDates } from '@/lib/calendarUtils';
 
 const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 const PAGE_SIZE = 10;
@@ -113,7 +114,7 @@ const AttendanceRecap = () => {
     const [sortOrder, setSortOrder] = useState('asc');
     const [detailSantri, setDetailSantri] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
-    const [holidays, setHolidays] = useState(new Set());
+    const [calendarContext, setCalendarContext] = useState({ eventsByDate: {}, monthSettingsByYear: {} });
     const [currentPage, setCurrentPage] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -140,11 +141,10 @@ const AttendanceRecap = () => {
         try {
             const calendarStartDate = `${selectedYear}-01-01`;
             const calendarEndDate = `${selectedYear}-12-31`;
-            const [classData, calendarEvents] = await Promise.all([
+            const [classData, calendarContextData] = await Promise.all([
                 fetchClassList({ is_active: true }),
-                fetchCalendarEvents(calendarStartDate, calendarEndDate),
+                fetchCalendarContext(calendarStartDate, calendarEndDate),
             ]);
-            const calendarData = (calendarEvents || []).filter((c) => c.is_holiday);
             const scopedClasses = role === 'guru'
                 ? (classData || []).filter((item) => item.id_guru === user?.id)
                 : (classData || []);
@@ -167,7 +167,7 @@ const AttendanceRecap = () => {
                     setAllUsers([]);
                     setTotalUsers(0);
                     setClasses(scopedClasses);
-                    setHolidays(new Set(calendarData.map(c => c.date)));
+                    setCalendarContext(calendarContextData);
                     return;
                 }
                 santriFilters.classIds = classIds;
@@ -197,6 +197,7 @@ const AttendanceRecap = () => {
             setAllUsers(resolvedSantri.map(s => ({ ...s, id_kelas: s.current_class_id, name: s.nama_lengkap, role: 'santri', kategori: s.kategori })));
             setTotalUsers(count || 0);
             setClasses(scopedClasses);
+            setCalendarContext(calendarContextData);
 
             const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
             if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -205,9 +206,6 @@ const AttendanceRecap = () => {
             if (role === 'guru' && scopedClasses.length > 0 && selectedClass === 'all') {
                 setSelectedClass(scopedClasses[0].id);
             }
-
-            const holidaySet = new Set(calendarData.map(c => c.date));
-            setHolidays(holidaySet);
 
             const years = [selectedYear, new Date().getFullYear()];
             const uniqueYears = [...new Set(years)].sort((a,b) => b-a);
@@ -276,23 +274,16 @@ const AttendanceRecap = () => {
     };
 
     const recapData = useMemo(() => {
-        const weekdaysInMonth = [];
         const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const utcDate = new Date(Date.UTC(selectedYear, selectedMonth, d));
-            const dayOfWeek = utcDate.getUTCDay();
-
-            const isHoliday = holidays.has(dateStr);
-            const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
-
-            if (isWeekday && !isHoliday) {
-                weekdaysInMonth.push(d);
-            }
-        }
+        const monthStart = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+        const monthEnd = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+        const weekdaysInMonth = getActiveCalendarDates({
+            startDate: monthStart,
+            endDate: monthEnd,
+            ...calendarContext,
+        }).map((dateString) => Number(dateString.slice(8, 10)));
 
         const pastSessionDaysCount = weekdaysInMonth.filter(d => new Date(selectedYear, selectedMonth, d) <= today).length;
 
@@ -374,7 +365,7 @@ const AttendanceRecap = () => {
         });
 
         return { userRecap, weekdaysInMonth };
-    }, [attendanceData, allUsers, selectedYear, selectedMonth, selectedClass, searchTerm, sortKey, sortOrder, holidays, getSessionStartTimestamp]);
+    }, [attendanceData, allUsers, selectedYear, selectedMonth, selectedClass, searchTerm, sortKey, sortOrder, calendarContext, getSessionStartTimestamp]);
 
     const chartData = useMemo(() => {
         return recapData.weekdaysInMonth.map(day => {

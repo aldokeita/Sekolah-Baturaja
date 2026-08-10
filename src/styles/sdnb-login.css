@@ -6,7 +6,7 @@
    dropped. Do not hand-edit: re-run the converter instead.
    ========================================================================== */
 
-@keyframes aurora{0%{transform:translate3d(-5%,-3%,0) scale(1) rotate(0deg)}50%{transform:translate3d(6%,5%,0) scale(1.16) rotate(8deg)}100%{transform:translate3d(-5%,-3%,0) scale(1) rotate(0deg)}}
+@keyframes floaty{0%{transform:translate3d(-5%,-3%,0) scale(1) rotate(0deg)}50%{transform:translate3d(6%,5%,0) scale(1.16) rotate(8deg)}100%{transform:translate3d(-5%,-3%,0) scale(1) rotate(0deg)}}
 @keyframes beam{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @keyframes fadeup{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes ping{0%{transform:scale(.6);opacity:.85}70%{transform:scale(2.6);opacity:0}100%{opacity:0}}

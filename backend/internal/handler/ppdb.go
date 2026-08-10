@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -581,7 +582,7 @@ func (h *PpdbHandler) CekStatus(w http.ResponseWriter, r *http.Request) {
 // Back-office
 // ---------------------------------------------------------------------------
 
-// List GET /api/ppdb?tahun=&status=&q=
+// List GET /api/ppdb?tahun=&status=&q=&wilayah=&page=&limit=
 func (h *PpdbHandler) List(w http.ResponseWriter, r *http.Request) {
 	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)
@@ -599,6 +600,24 @@ func (h *PpdbHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	cari := strings.TrimSpace(q.Get("q"))
 	wilayah := strings.TrimSpace(q.Get("wilayah"))
+	limit, offset := paginate(r)
+
+	var total int
+	err := h.db.QueryRow(r.Context(), `
+		SELECT count(*)
+		FROM pendaftaran_ppdb
+		WHERE ($1 = '' OR tahun_ajaran = $1)
+		  AND ($2 = '' OR status = $2)
+		  AND ($4 = '' OR wilayah = $4)
+		  AND ($3 = '' OR nama_lengkap ILIKE '%' || $3 || '%'
+		                OR nomor_pendaftaran ILIKE '%' || $3 || '%'
+		                OR coalesce(nisn, '') ILIKE '%' || $3 || '%'
+		                OR no_hp ILIKE '%' || $3 || '%')
+	`, tahun, status, cari, wilayah).Scan(&total)
+	if err != nil {
+		jsonError(w, "gagal menghitung daftar pendaftaran", http.StatusInternalServerError)
+		return
+	}
 
 	rows, err := h.db.Query(r.Context(), `
 		SELECT `+pendaftaranKolom+`
@@ -611,8 +630,8 @@ func (h *PpdbHandler) List(w http.ResponseWriter, r *http.Request) {
 		                OR coalesce(nisn, '') ILIKE '%' || $3 || '%'
 		                OR no_hp ILIKE '%' || $3 || '%')
 		ORDER BY created_at DESC
-		LIMIT 500
-	`, tahun, status, cari, wilayah)
+		LIMIT $5 OFFSET $6
+	`, tahun, status, cari, wilayah, limit, offset)
 	if err != nil {
 		jsonError(w, "gagal mengambil daftar pendaftaran", http.StatusInternalServerError)
 		return
@@ -629,7 +648,12 @@ func (h *PpdbHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		result = append(result, p)
 	}
+	if err := rows.Err(); err != nil {
+		jsonError(w, "gagal membaca daftar pendaftaran", http.StatusInternalServerError)
+		return
+	}
 
+	w.Header().Set("X-Total-Count", strconv.Itoa(total))
 	jsonOK(w, map[string]any{"data": result})
 }
 
@@ -746,10 +770,8 @@ func (h *PpdbHandler) Stats(w http.ResponseWriter, r *http.Request) {
 // cacah per jalur, per jenis kelamin, per wilayah, dan per asal sekolah — masing-masing
 // dipecah menurut status supaya "mendaftar" dan "diterima" bisa dibedakan.
 //
-// Dihitung di basis data, bukan di browser dari daftar yang sudah diunduh. Daftarnya
-// dibatasi 500 baris, jadi menghitung di browser akan diam-diam salah begitu
-// pendaftarnya lebih banyak dari itu — dan lembar rekap yang salah dikirim ke dinas
-// lebih buruk daripada tidak ada lembar rekap.
+// Dihitung di basis data, bukan di browser dari satu halaman daftar. Lembar rekap
+// yang salah dikirim ke dinas lebih buruk daripada tidak ada lembar rekap.
 func (h *PpdbHandler) Rekap(w http.ResponseWriter, r *http.Request) {
 	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
 		jsonError(w, "forbidden", http.StatusForbidden)

@@ -28,14 +28,17 @@ export const DEFAULT_PROFILE_CONTENT = Object.freeze({
     titleMain: 'mengajar anak',
     titleAccent: 'Baturaja.',
     story: 'Tiga ruang kelas kayu, empat guru, delapan puluh tujuh murid. Begitu sekolah ini dimulai. Hari ini 624 anak belajar di halaman yang sama, di bawah pohon yang ditanam angkatan pertama.',
-    badgeValue: '624',
+    // Nilai kartu murid diambil dari data master; field ini dipertahankan untuk
+    // kompatibilitas dengan konten lama, tetapi tidak menjadi sumber angka publik.
+    badgeValue: '',
     badgeLabel: 'murid hari ini',
   }),
-  // Label tiga kartu foto miring di hero. Gradasi dan sudut putarnya di kode.
+  // Tiga kartu foto miring di hero. Gradasi dan sudut putarnya di kode;
+  // gambar dapat diganti pembeli tanpa mengubah label atau komposisinya.
   photos: Object.freeze([
-    { label: 'Kelas pagi' },
-    { label: 'Kebun sekolah' },
-    { label: 'Pentas seni' },
+    { id: 'profile-opening-1', label: 'Kelas pagi', image_url: '' },
+    { id: 'profile-opening-2', label: 'Kebun sekolah', image_url: '' },
+    { id: 'profile-opening-3', label: 'Pentas seni', image_url: '' },
   ]),
   ticker: Object.freeze([
     'Terakreditasi A', 'Adiwiyata Nasional', 'Kurikulum Merdeka', '18 rombongan belajar',
@@ -51,6 +54,7 @@ export const DEFAULT_PROFILE_CONTENT = Object.freeze({
    * warna aksen sekolah — cara pembeli menyorot satu frasa tanpa perlu menyentuh
    * kode. Lihat teksBeraksen di ProfilePage. */
   quoteLead: 'Setiap anak yang masuk ke halaman sekolah ini membawa *kecepatan belajarnya sendiri*. Tugas kami bukan menyamakan mereka, melainkan memastikan tidak ada yang tertinggal di belakang.',
+  quoteAvatarUrl: '',
   quote: Object.freeze([
     'Kami menjaga jumlah murid per kelas tetap kecil supaya guru wali dapat mengenal karakter setiap anak. Orang tua kami libatkan lewat pertemuan bulanan dan laporan perkembangan yang tidak hanya berisi angka, tetapi juga catatan tentang keberanian, kemandirian, dan cara anak bergaul.',
     'Pintu ruang kepala sekolah selalu terbuka bagi siapa pun yang ingin berbicara.',
@@ -117,9 +121,14 @@ export const normalizeProfileContent = (stored) => {
   return {
     hero: normalizeObjek(source.hero, bawaan.hero),
 
-    photos: normalizeDaftar(source.photos, bawaan.photos, (row) => {
+    photos: normalizeDaftar(source.photos, bawaan.photos, (row, index) => {
       const label = teks(row?.label);
-      return label ? { label } : null;
+      if (!label) return null;
+      return {
+        id: teks(row?.id) || `profile-opening-${index + 1}`,
+        label,
+        image_url: teks(row?.image_url || row?.imageUrl),
+      };
     }),
 
     // Tiker berupa daftar teks biasa, bukan objek.
@@ -137,6 +146,9 @@ export const normalizeProfileContent = (stored) => {
     }),
 
     quoteLead: teks(source.quoteLead) || bawaan.quoteLead,
+
+    // Avatar kutipan adalah aset website publik, bukan URL avatar akun privat.
+    quoteAvatarUrl: teks(source.quoteAvatarUrl || source.quote_avatar_url),
 
     quote: normalizeDaftar(source.quote, bawaan.quote, (row) => teks(row) || null),
 

@@ -1,5 +1,6 @@
 import apiClient from '@/lib/apiClient';
 import { fetchSantriPage } from '@/lib/dataMasterAdapters';
+import { notifyFinanceDataChanged } from '@/lib/financeAdapters';
 
 export const MONTH_NAMES = [
     'Januari',
@@ -15,6 +16,22 @@ export const MONTH_NAMES = [
     'November',
     'Desember',
 ];
+
+// Nominal item pembayaran non-SPP disimpan dengan kunci stabil agar perubahan
+// label tampilan tidak membuat nominal item lain ikut tertukar. SPP sengaja
+// tidak masuk daftar ini karena nominalnya mengikuti mekanisme SPP bulanan.
+export const PAYMENT_ITEM_SETTING_KEYS = Object.freeze([
+    'sarpras',
+    'seragam',
+    'tas_murid',
+    'id_card_murid',
+    'buku_paket',
+    'lks',
+]);
+
+// Keep configurable item nominal within the same range as payments.jumlah
+// (numeric(12,2)), so a saved value remains insertable during checkout.
+export const PAYMENT_ITEM_AMOUNT_MAX = 9999999999.99;
 
 export const PAYMENT_DETAIL_SELECT = `
     id,
@@ -81,6 +98,61 @@ export const formatSantriCategory = (value) => {
 };
 
 export const validatePaymentAmount = (amount) => Number.isFinite(Number(amount)) && Number(amount) >= 0;
+
+export const parsePaymentItemAmount = (value) => {
+    if (value === null || value === undefined || String(value).trim() === '') return null;
+    const amount = Number(value);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > PAYMENT_ITEM_AMOUNT_MAX) return null;
+    return Math.round(amount * 100) / 100;
+};
+
+export const validatePaymentItemAmount = (amount) => parsePaymentItemAmount(amount) !== null;
+
+export const normalizePaymentItemSettings = (payload) => {
+    const rows = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+    return rows.reduce((settings, row) => {
+        const itemKey = String(row?.item_key || row?.key || '').trim();
+        if (!PAYMENT_ITEM_SETTING_KEYS.includes(itemKey)) return settings;
+        const amount = parsePaymentItemAmount(row?.amount);
+        if (amount !== null) settings[itemKey] = amount;
+        return settings;
+    }, {});
+};
+
+export const fetchPaymentItemSettings = async () => {
+    const data = await apiClient.get('/api/payments/item-settings');
+    return normalizePaymentItemSettings(data);
+};
+
+export const savePaymentItemSetting = async (itemKey, amount) => {
+    const normalizedKey = String(itemKey || '').trim();
+    if (!PAYMENT_ITEM_SETTING_KEYS.includes(normalizedKey)) {
+        throw new Error('Item pembayaran tidak dapat dikonfigurasi.');
+    }
+    const normalizedAmount = parsePaymentItemAmount(amount);
+    if (normalizedAmount === null) {
+        throw new Error('Nominal item harus lebih besar dari nol.');
+    }
+    const data = await apiClient.put(
+        `/api/payments/item-settings/${encodeURIComponent(normalizedKey)}`,
+        { amount: normalizedAmount },
+    );
+    const savedAmount = parsePaymentItemAmount(data?.amount) ?? normalizedAmount;
+    return { item_key: normalizedKey, amount: savedAmount };
+};
+
+export const deletePaymentItemSetting = async (itemKey) => {
+    const normalizedKey = String(itemKey || '').trim();
+    if (!PAYMENT_ITEM_SETTING_KEYS.includes(normalizedKey)) {
+        throw new Error('Item pembayaran tidak dapat dikonfigurasi.');
+    }
+    await apiClient.delete(`/api/payments/item-settings/${encodeURIComponent(normalizedKey)}`);
+};
 
 export const getSharedDefaultSppAmount = (santriList = []) => {
     if (!Array.isArray(santriList) || santriList.length === 0) return null;
@@ -171,7 +243,9 @@ export const fetchPaymentDetail = async (id) => {
 };
 
 export const updatePayment = async (id, payload) => {
-    return apiClient.put(`/api/payments/${id}`, payload);
+    const data = await apiClient.put(`/api/payments/${id}`, payload);
+    notifyFinanceDataChanged({ type: 'payment', action: 'updated', id });
+    return data;
 };
 
 // Returns [{ santri_id, status: 'Lunas' | 'Belum Lunas' }] for one period.
@@ -199,20 +273,25 @@ export const checkPaymentDuplicates = async ({ santriIds = [], months = [], year
 };
 
 export const createPayment = async (payload) => {
-    return apiClient.post('/api/payments', payload);
+    const data = await apiClient.post('/api/payments', payload);
+    notifyFinanceDataChanged({ type: 'payment', action: 'created' });
+    return data;
 };
 
 export const createPaymentsBatch = async (payloads) => {
     const data = await apiClient.post('/api/payments/batch', payloads);
+    notifyFinanceDataChanged({ type: 'payment', action: 'created' });
     return data || [];
 };
 
 export const deletePayment = async (id) => {
     await apiClient.delete(`/api/payments/${id}`);
+    notifyFinanceDataChanged({ type: 'payment', action: 'deleted', id });
 };
 
 export const deletePaymentsBulk = async (ids) => {
     await apiClient.post('/api/payments/bulk-delete', { ids });
+    notifyFinanceDataChanged({ type: 'payment', action: 'deleted', ids });
 };
 
 // Expenses are mounted under the payments router, not at /api/expenses.

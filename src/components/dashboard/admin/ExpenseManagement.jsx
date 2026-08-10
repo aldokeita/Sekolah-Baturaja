@@ -15,6 +15,7 @@ import {
     fetchCashflowSummary,
     fetchExpensesByPeriod,
     formatRupiah,
+    getLocalDateString,
     getFinanceErrorMessage,
     getMonthOptions,
     monthNames,
@@ -27,7 +28,7 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 const monthOptions = getMonthOptions();
 
 const emptyForm = () => ({
-    tanggal_pengeluaran: new Date().toISOString().slice(0, 10),
+    tanggal_pengeluaran: getLocalDateString(),
     kategori: expenseCategories[0],
     deskripsi: '',
     jumlah: ''
@@ -44,14 +45,17 @@ const ExpenseManagement = () => {
         expenseCount: 0
     });
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
     const [formData, setFormData] = useState(emptyForm);
+    const [formError, setFormError] = useState('');
     const [filter, setFilter] = useState({ year: currentYear, month: new Date().getMonth() + 1 });
 
     const fetchFinanceData = useCallback(async () => {
         setIsLoading(true);
+        setLoadError('');
         try {
             const [expenseRows, summary] = await Promise.all([
                 fetchExpensesByPeriod(filter),
@@ -60,9 +64,11 @@ const ExpenseManagement = () => {
             setExpenses(expenseRows);
             setCashflow(summary);
         } catch (error) {
+            const message = getFinanceErrorMessage(error);
+            setLoadError(message);
             toast({
                 title: 'Gagal memuat data keuangan',
-                description: getFinanceErrorMessage(error),
+                description: message,
                 variant: 'destructive'
             });
         } finally {
@@ -77,6 +83,7 @@ const ExpenseManagement = () => {
     const resetForm = () => {
         setFormData(emptyForm());
         setEditingExpense(null);
+        setFormError('');
     };
 
     const handleAdd = () => {
@@ -92,6 +99,7 @@ const ExpenseManagement = () => {
             deskripsi: expense.deskripsi || '',
             jumlah: String(expense.jumlah || '')
         });
+        setFormError('');
         setIsFormOpen(true);
     };
 
@@ -118,6 +126,7 @@ const ExpenseManagement = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setFormError('');
         setIsSaving(true);
 
         try {
@@ -127,14 +136,16 @@ const ExpenseManagement = () => {
                 await createExpense(formData, user?.id);
             }
 
+            await fetchFinanceData();
             toast({ title: 'Berhasil', description: 'Data pengeluaran berhasil disimpan.' });
             setIsFormOpen(false);
             resetForm();
-            fetchFinanceData();
         } catch (error) {
+            const message = getFinanceErrorMessage(error);
+            setFormError(message);
             toast({
                 title: 'Gagal menyimpan',
-                description: getFinanceErrorMessage(error),
+                description: message,
                 variant: 'destructive'
             });
         } finally {
@@ -210,6 +221,13 @@ const ExpenseManagement = () => {
                     </SelectContent>
                 </Select>
             </div>
+
+            {loadError && (
+                <div className="admin-error-state" role="alert">
+                    <p className="text-sm font-medium">{loadError}</p>
+                    <Button variant="outline" size="sm" onClick={fetchFinanceData} disabled={isLoading}>Coba Lagi</Button>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="admin-stat-card admin-stat-card--accent">
@@ -294,6 +312,7 @@ const ExpenseManagement = () => {
                         <DialogDescription>Isi detail pengeluaran. Semua nominal hanya dapat diakses admin.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        {formError && <div className="admin-error-state" role="alert"><p className="text-sm">{formError}</p></div>}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1" htmlFor="tanggal_pengeluaran">Tanggal</label>
@@ -313,7 +332,7 @@ const ExpenseManagement = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1" htmlFor="jumlah">Jumlah (Rp)</label>
-                            <Input id="jumlah" type="number" min="1" step="1" value={formData.jumlah} onChange={handleInputChange} required />
+                            <Input id="jumlah" type="number" min="1" max="9999999999.99" step="0.01" value={formData.jumlah} onChange={handleInputChange} required />
                         </div>
                         <DialogFooter><Button type="submit" disabled={isSaving}>{isSaving ? 'Menyimpan...' : 'Simpan'}</Button></DialogFooter>
                     </form>

@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import EkskulBody from '@/components/sdnb/generated/EkskulBody';
-import { fetchEkskulContent, normalizeEkskulContent } from '@/lib/ekskulContent';
+import { EKSKUL_CONTENT_KEY, fetchEkskulContent, normalizeEkskulContent } from '@/lib/ekskulContent';
+import {
+  fetchPublicTeachers,
+  getPublicContentErrorMessage,
+  WEBSITE_CONTENT_UPDATED_EVENT,
+  WEBSITE_CONTENT_UPDATED_STORAGE_KEY,
+} from '@/lib/publicContentAdapters';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
 
@@ -9,15 +15,11 @@ import '@/styles/sdnb.css';
  * Ekstrakurikuler — markup dari mockup (EkskulBody), datanya kini bersumber dari
  * Konten → Ekstrakurikuler (`website_content` kunci `ekskul_content`). Nama
  * pembina karangan yang dulu ditanam di kode sudah dihapus. Warna kartu dipilih
- * otomatis dari GRADIEN berdasarkan urutan, jadi pembeli hanya mengurus teks.
+ * otomatis dari GRADIEN berdasarkan urutan; peserta dan pembina berasal dari master.
  */
 
 const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
-const ROT = [-7, 5, -3, 8, -5, 4, -8, 6];
-const POS = [
-  [2, 6, null, null], [40, null, 0, null], [null, 4, 22, null], [6, null, null, 24],
-  [null, 0, 46, null], [30, null, null, 6], [null, 22, 68, null], [0, null, 92, null],
-];
+const ROT = [-2, 3, -2, 3, -3, 2, -2, 3];
 // Palet warna kartu, dipilih berdasarkan urutan kegiatan. Pembeli tidak
 // menyunting warna — hanya teks. (Pola sama seperti PROGRAM_STYLE/FASILITAS_GAYA.)
 const GRADIEN = [
@@ -35,25 +37,74 @@ const GRADIEN = [
 
 const EkstrakurikulerPage = () => {
   const [content, setContent] = useState(() => normalizeEkskulContent(undefined));
+  const [publicTeachers, setPublicTeachers] = useState([]);
   const [aktif, setAktif] = useState(0);
   const [tick, setTick] = useState(0);
+  const [contentStatus, setContentStatus] = useState('loading');
+  const [contentError, setContentError] = useState('');
+  const [reloadToken, setReloadToken] = useState(0);
 
-  useSdnbMotion([]);
+  useSdnbMotion([contentStatus]);
 
   useEffect(() => {
     let hidup = true;
+    setContentStatus((previous) => (previous === 'ready' || previous === 'empty' ? 'refreshing' : 'loading'));
     fetchEkskulContent()
-      .then((data) => { if (hidup && data) setContent(data); })
-      .catch(() => { /* biarkan bawaan; halaman tetap tampil */ });
+      .then((data) => {
+        if (!hidup || !data) return;
+        setContent(data);
+        setContentError('');
+        setContentStatus(data.records?.length ? 'ready' : 'empty');
+      })
+      .catch((error) => {
+        if (!hidup) return;
+        setContentError(getPublicContentErrorMessage(error));
+        setContentStatus('error');
+      });
+    fetchPublicTeachers()
+      .then((teachers) => {
+        if (hidup && Array.isArray(teachers)) setPublicTeachers(teachers);
+      })
+      .catch(() => { /* snapshot nama pembina tetap menjadi fallback */ });
     return () => { hidup = false; };
+  }, [reloadToken]);
+
+  useEffect(() => {
+    const shouldRefresh = (keys) => !keys.length || keys.includes(EKSKUL_CONTENT_KEY);
+    const onContentUpdate = (event) => {
+      const keys = Array.isArray(event.detail?.keys) ? event.detail.keys : [];
+      if (shouldRefresh(keys)) setReloadToken((token) => token + 1);
+    };
+    const onStorage = (event) => {
+      if (event.key !== WEBSITE_CONTENT_UPDATED_STORAGE_KEY || !event.newValue) return;
+      try {
+        const payload = JSON.parse(event.newValue);
+        const keys = Array.isArray(payload?.keys) ? payload.keys : [];
+        if (shouldRefresh(keys)) setReloadToken((token) => token + 1);
+      } catch {
+        setReloadToken((token) => token + 1);
+      }
+    };
+    window.addEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdate);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdate);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
+  const teacherNameById = useMemo(() => new Map(
+    publicTeachers
+      .filter((teacher) => teacher?.id && teacher?.nama)
+      .map((teacher) => [String(teacher.id), teacher.nama]),
+  ), [publicTeachers]);
+
   // Bentuk tuple yang diharapkan EkskulBody: [nama, bidang, hari, jam, pembina,
-  // tempat, terisi, kuota, kelas, cerita, gradien]. Gradien dari palet by index.
+  // tempat, terisi, kuota, kelas, cerita, gradien, foto, pembinaId].
   const E = useMemo(() => (content.records || []).map((r, i) => [
-    r.nama, r.bidang, r.hari, r.jam, r.pembina, r.tempat, r.terisi, r.kuota, r.kelas, r.cerita,
-    GRADIEN[i % GRADIEN.length],
-  ]), [content.records]);
+    r.nama, r.bidang, r.hari, r.jam, teacherNameById.get(String(r.pembina_id)) || r.pembina, r.tempat, r.terisi, r.kuota, r.kelas, r.cerita,
+    GRADIEN[i % GRADIEN.length], r.foto_url, r.pembina_id,
+  ]), [content.records, teacherNameById]);
 
   const pilih = (i) => { setAktif(i); setTick((t) => t + 1); };
 
@@ -62,24 +113,36 @@ const EkstrakurikulerPage = () => {
   const no = String(idxAktif + 1).padStart(2, '0');
 
   const muridTerdaftar = E.reduce((t, e) => t + (Number(e[6]) || 0), 0);
-  const pembinaUnik = new Set(E.map((e) => String(e[4] || '').trim()).filter(Boolean)).size;
+  const pembinaUnik = new Set(E.map((e) => String(e[12] || e[4] || '').trim()).filter(Boolean)).size;
 
   const vals = {
+    heroKicker: content.hero?.kicker || '',
+    heroYear: content.hero?.yearLabel || '',
+    heroTitle: content.hero?.title || '',
+    heroSuffix: content.hero?.suffix || '',
+    heroDescription: content.hero?.description || '',
+    headerStatus: {
+      state: contentStatus,
+      message: contentStatus === 'loading'
+        ? 'Memuat statistik…'
+        : contentStatus === 'refreshing'
+          ? 'Memperbarui statistik…'
+          : contentStatus === 'empty'
+            ? 'Belum ada kegiatan tersimpan.'
+            : contentStatus === 'error'
+              ? `Statistik belum dapat dimuat${contentError ? `: ${contentError}` : '.'}`
+              : '',
+    },
     angka: [
-      { n: E.length, suf: '', label: 'kegiatan aktif' },
-      { n: muridTerdaftar, suf: '', label: 'murid terdaftar' },
-      { n: pembinaUnik, suf: '', label: 'guru pembina' },
-    ],
+      { n: E.length, suf: '', label: content.hero?.stats?.activities || 'kegiatan aktif' },
+      { n: muridTerdaftar, suf: '', label: content.hero?.stats?.students || 'murid terdaftar' },
+      { n: pembinaUnik, suf: '', label: content.hero?.stats?.mentors || 'guru pembina' },
+    ].map((a) => ({ ...a, state: contentStatus })),
 
     stiker: E.slice(0, 8).map((e, i) => {
-      const [l, t, r, b] = POS[i];
       return {
         nama: e[0].split(' ')[0],
-        style: 'position:absolute;'
-          + (l !== null ? `left:${l}%;` : '') + (t !== null ? `top:${t}%;` : '')
-          + (r !== null ? `right:${r}%;` : '') + (b !== null ? `bottom:${b}%;` : '')
-          + `--rot:${ROT[i]}deg;transform:rotate(${ROT[i]}deg);animation-delay:${(i * 0.55).toFixed(2)}s;`
-          + `padding:14px 20px;border-radius:18px;font-family:'Plus Jakarta Sans','Archivo',system-ui,sans-serif;font-size:${15 + (i % 3) * 3}px;font-weight:800;letter-spacing:-.02em;color:#fff;background:linear-gradient(135deg,${e[10]});box-shadow:0 22px 44px -18px rgba(70,80,170,.75),inset 0 1px 0 rgba(255,255,255,.5)`,
+        style: `--stiker-index:${i};--stiker-rot:${ROT[i]}deg;--stiker-delay:${(i * 0.06).toFixed(2)}s;`,
       };
     }),
 
@@ -95,6 +158,7 @@ const EkstrakurikulerPage = () => {
         hari: `${e[2]}, ${e[3]}`,
         on: on ? '1' : '0',
         foto: `background-image:radial-gradient(58% 120% at 80% 16%,${c[1]} 0%,rgba(255,255,255,0) 62%),radial-gradient(48% 104% at 20% 90%,${c[0]} 0%,rgba(255,255,255,0) 58%),linear-gradient(118deg,${c[0]} 0%,${c[1]} 100%)`,
+        fotoUrl: e[11],
         pick: () => pilih(i),
         no: `font-family:'Plus Jakarta Sans','Archivo',system-ui,sans-serif;font-size:22px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;transition:color .3s ease;color:${on ? 'var(--sekolah-aksen-pekat)' : '#c2c6dd'}`,
         nama: `display:block;font-size:15.5px;font-weight:${on ? '800' : '600'};letter-spacing:-.015em;transition:color .3s ease;color:${on ? '#191b2c' : '#3f4468'}`,
@@ -106,12 +170,13 @@ const EkstrakurikulerPage = () => {
     poster: a ? {
       nomor: no, judul: a[0], bidang: a[1], hari: a[2], jam: a[3], pembina: a[4], tempat: a[5],
       cerita: a[9], kelas: a[8],
+      foto: a[11],
       kuotaTeks: `${a[6]} / ${a[7]} murid`,
       kuotaBar: `height:100%;width:${a[7] > 0 ? Math.round((a[6] / a[7]) * 100) : 0}%;border-radius:99px;background:linear-gradient(90deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung));transition:width .7s cubic-bezier(.22,.9,.28,1)`,
       wrap: `position:relative;overflow:hidden;min-height:340px;border-radius:32px;background:linear-gradient(140deg,${a[10]});border:1px solid rgba(255,255,255,.4);box-shadow:0 40px 86px -30px rgba(60,70,160,.72)`,
     } : {
       nomor: '00', judul: 'Belum ada kegiatan', bidang: '', hari: '', jam: '', pembina: '', tempat: '',
-      cerita: 'Tambahkan kegiatan ekstrakurikuler dari menu Konten → Ekstrakurikuler.', kelas: '',
+      cerita: 'Tambahkan kegiatan ekstrakurikuler dari menu Konten → Ekstrakurikuler.', kelas: '', foto: '',
       kuotaTeks: '', kuotaBar: 'height:100%;width:0%', wrap: 'position:relative;min-height:340px;border-radius:32px;background:rgba(120,132,200,.12)',
     },
 

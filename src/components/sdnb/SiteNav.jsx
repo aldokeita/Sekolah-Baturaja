@@ -54,8 +54,9 @@ const MENU_PONSEL = [
   ...PROFILE_LINKS.filter((l) => l.to !== '/profil'),
   { label: 'Berita', to: '/berita' },
   { label: 'Kontak', to: '/kontak' },
-  // Hanya di menu ponsel dan footer, bukan di baris menu utama: yang membutuhkannya
-  // sudah mendaftar, jadi tidak perlu bersaing tempat dengan tombol Daftar SPMB.
+  // Tautan layanan publik tetap tersedia di menu ponsel saat tombol desktop
+  // disederhanakan agar header tidak terpotong di layar sempit.
+  { label: 'Daftar SPMB', to: '/pendaftaran' },
   { label: 'Cek pendaftaran', to: '/cek-pendaftaran' },
 ];
 
@@ -68,6 +69,7 @@ const SiteNav = () => {
   const [menuTerbuka, setMenuTerbuka] = useState(false);
 
   const isHome = location.pathname === '/';
+  const isLogin = location.pathname === '/login';
   const isProfileGroup = PROFILE_LINKS.some((l) => location.pathname.startsWith(l.to));
   const at = (p) => location.pathname.startsWith(p);
 
@@ -86,7 +88,7 @@ const SiteNav = () => {
   }, [menuTerbuka]);
 
   return (
-    <div style={{ position: 'sticky', top: 0, zIndex: 40, padding: '14px 28px' }}>
+    <div className="site-nav" style={{ position: 'sticky', top: 0, zIndex: 40, padding: '14px 28px' }}>
       <div style={{ maxWidth: 1240, margin: '0 auto', position: 'relative', display: 'flex', alignItems: 'center', gap: 28, padding: '12px 14px 12px 20px', borderRadius: 22, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.75)', boxShadow: '0 20px 46px -20px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)' }}>
         {/* style-before */}
         <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '60%', background: 'linear-gradient(165deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none', borderRadius: '22px 22px 0 0' }} />
@@ -124,7 +126,7 @@ const SiteNav = () => {
           <Link to="/kontak" className={at('/kontak') ? undefined : 'h-navlink'} style={at('/kontak') ? activeLink : passiveLink}>Kontak</Link>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+        <div className="site-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
           {/* Hanya tampil di bawah 940px, tepat ketika baris tautan disembunyikan. */}
           <button
             type="button"
@@ -164,7 +166,7 @@ const SiteNav = () => {
               </button>
             </>
           ) : (
-            <Link to="/login" className="shine nav-loginbtn nav-login h-login" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 17px', flex: 'none', borderRadius: 14, fontSize: 13.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 10px 24px -12px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+            <Link to="/login" aria-current={isLogin ? 'page' : undefined} className={`shine nav-loginbtn nav-login ${isLogin ? '' : 'h-login'}`} style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 17px', flex: 'none', borderRadius: 14, fontSize: 13.5, fontWeight: 700, ...(isLogin ? activeLink : { color: '#33375a', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 10px 24px -12px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }) }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5" /><path d="M15 12H3" /></svg>
               Login
             </Link>
@@ -206,7 +208,7 @@ const SiteNav = () => {
                   <button type="button" onClick={handleLogout} style={{ padding: '12px 14px', borderRadius: 12, fontFamily: 'inherit', fontSize: 14.5, fontWeight: 700, textAlign: 'left', cursor: 'pointer', color: '#b04a5a', background: 'rgba(255,255,255,.72)', border: '1px solid rgba(255,255,255,.95)' }}>Keluar</button>
                 </>
               ) : (
-                <Link to="/login" style={{ padding: '12px 14px', borderRadius: 12, fontSize: 14.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.72)', border: '1px solid rgba(255,255,255,.95)' }}>Login</Link>
+                <Link to="/login" aria-current={isLogin ? 'page' : undefined} style={{ padding: '12px 14px', borderRadius: 12, fontSize: 14.5, fontWeight: isLogin ? 700 : 600, color: isLogin ? '#4a4fd0' : '#33375a', background: isLogin ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.72)', border: '1px solid rgba(255,255,255,.95)' }}>Login</Link>
               )}
             </div>
           </div>

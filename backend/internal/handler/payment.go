@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -28,6 +30,12 @@ func (h *PaymentHandler) Routes() http.Handler {
 
 	// Payment endpoints. Static segments are registered before "/{id}" so chi
 	// never reads "recap" or "expenses" as a payment id.
+	r.Route("/item-settings", func(r chi.Router) {
+		r.Use(middleware.RequireRole("admin", "tata_usaha"))
+		r.Get("/", h.GetPaymentItemSettings)
+		r.Put("/{key}", h.UpsertPaymentItemSetting)
+		r.Delete("/{key}", h.ResetPaymentItemSetting)
+	})
 	r.Get("/", h.ListPayments)
 	r.Get("/recap", h.PaymentRecap)
 	r.Get("/cashflow", h.Cashflow)
@@ -52,6 +60,151 @@ func (h *PaymentHandler) Routes() http.Handler {
 	})
 
 	return r
+}
+
+var validPaymentItemKeys = map[string]struct{}{
+	"sarpras":       {},
+	"seragam":       {},
+	"tas_murid":     {},
+	"id_card_murid": {},
+	"buku_paket":    {},
+	"lks":           {},
+}
+
+// paymentItemNominalPattern mirrors payments.jumlah numeric(12,2): at most 10 integer digits
+// and two fractional digits. Exponents and quoted numbers are deliberately
+// rejected so the API and PostgreSQL apply the same currency contract.
+var paymentItemNominalPattern = regexp.MustCompile(`^(?:0|[1-9][0-9]{0,9})(?:\.[0-9]{1,2})?$`)
+
+func isValidPaymentItemKey(key string) bool {
+	_, ok := validPaymentItemKeys[key]
+	return ok
+}
+
+func validatePaymentItemNominal(raw json.RawMessage) (string, bool) {
+	value := strings.TrimSpace(string(raw))
+	if !paymentItemNominalPattern.MatchString(value) {
+		return "", false
+	}
+
+	nominal, err := strconv.ParseFloat(value, 64)
+	if err != nil || math.IsNaN(nominal) || math.IsInf(nominal, 0) || nominal <= 0 {
+		return "", false
+	}
+	return value, true
+}
+
+type paymentItemSetting struct {
+	ItemKey   string          `json:"item_key"`
+	Amount    json.RawMessage `json:"amount"`
+	UpdatedAt string          `json:"updated_at"`
+}
+
+// GetPaymentItemSettings GET /api/payments/item-settings
+// Only configured non-SPP fixed items are returned, in stable display order.
+func (h *PaymentHandler) GetPaymentItemSettings(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.db.Query(r.Context(), `
+		SELECT item_key, nominal::text, updated_at::text
+		FROM payment_item_settings
+		ORDER BY array_position(
+			ARRAY['sarpras','seragam','tas_murid','id_card_murid','buku_paket','lks']::text[],
+			item_key
+		)
+	`)
+	if err != nil {
+		jsonError(w, "gagal memuat pengaturan nominal pembayaran", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	settings := []paymentItemSetting{}
+	for rows.Next() {
+		var setting paymentItemSetting
+		var nominal string
+		if err := rows.Scan(&setting.ItemKey, &nominal, &setting.UpdatedAt); err != nil {
+			jsonError(w, "gagal membaca pengaturan nominal pembayaran", http.StatusInternalServerError)
+			return
+		}
+		setting.Amount = json.RawMessage(nominal)
+		settings = append(settings, setting)
+	}
+	if err := rows.Err(); err != nil {
+		jsonError(w, "gagal membaca pengaturan nominal pembayaran", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, map[string]any{"data": settings})
+}
+
+// UpsertPaymentItemSetting PUT /api/payments/item-settings/{key}
+// Body: {"amount": 125000}. The conflict target is the requested stable key,
+// so changing one item can never overwrite another item's nominal.
+func (h *PaymentHandler) UpsertPaymentItemSetting(w http.ResponseWriter, r *http.Request) {
+	key := chi.URLParam(r, "key")
+	if !isValidPaymentItemKey(key) {
+		jsonError(w, "key item pembayaran tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	body, err := readBody(r)
+	if err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+	var input struct {
+		Amount json.RawMessage `json:"amount"`
+	}
+	if err := json.Unmarshal(body, &input); err != nil {
+		jsonError(w, "format body tidak valid", http.StatusBadRequest)
+		return
+	}
+	nominal, valid := validatePaymentItemNominal(input.Amount)
+	if !valid {
+		jsonError(w, "nominal harus lebih dari 0 dan maksimal dua angka desimal", http.StatusBadRequest)
+		return
+	}
+
+	callerID := middleware.UserIDFromCtx(r.Context())
+	var updatedBy *string
+	if callerID != "" {
+		updatedBy = &callerID
+	}
+
+	var setting paymentItemSetting
+	var storedNominal string
+	err = h.db.QueryRow(r.Context(), `
+		INSERT INTO payment_item_settings (item_key, nominal, created_by, updated_by)
+		VALUES ($1, $2::numeric, $3, $3)
+		ON CONFLICT (item_key) DO UPDATE
+		SET nominal = EXCLUDED.nominal,
+		    updated_by = EXCLUDED.updated_by
+		RETURNING item_key, nominal::text, updated_at::text
+	`, key, nominal, updatedBy).Scan(&setting.ItemKey, &storedNominal, &setting.UpdatedAt)
+	if err != nil {
+		jsonError(w, "gagal menyimpan pengaturan nominal pembayaran", http.StatusInternalServerError)
+		return
+	}
+	setting.Amount = json.RawMessage(storedNominal)
+
+	jsonOK(w, map[string]any{"data": setting})
+}
+
+// ResetPaymentItemSetting DELETE /api/payments/item-settings/{key}
+// Reset is idempotent: deleting a key that is already unset still succeeds.
+func (h *PaymentHandler) ResetPaymentItemSetting(w http.ResponseWriter, r *http.Request) {
+	key := chi.URLParam(r, "key")
+	if !isValidPaymentItemKey(key) {
+		jsonError(w, "key item pembayaran tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := h.db.Exec(r.Context(),
+		"DELETE FROM payment_item_settings WHERE item_key = $1", key); err != nil {
+		jsonError(w, "gagal mereset pengaturan nominal pembayaran", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, map[string]any{"data": map[string]any{"key": key, "reset": true}})
 }
 
 // paymentSelect is the shared projection for every payment read endpoint.
@@ -444,7 +597,7 @@ func (h *PaymentHandler) CreatePayments(w http.ResponseWriter, r *http.Request) 
 				(santri_id, bulan, tahun, jumlah, tanggal_pembayaran, metode_pembayaran,
 				 status, catatan, transaction_id, created_by, updated_by)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10)
-			RETURNING id, created_at
+			RETURNING id, created_at::text
 		`, item.SantriID, item.Bulan, item.Tahun, item.Jumlah,
 			item.TanggalPembayaran, item.MetodePembayaran, item.Status,
 			item.Catatan, item.TransactionID, createdBy,
@@ -698,8 +851,9 @@ func (h *PaymentHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
-	if body.TanggalPengeluaran == "" || body.Jumlah <= 0 {
-		jsonError(w, "tanggal pengeluaran dan jumlah wajib diisi", http.StatusBadRequest)
+	body, err := normalizeExpenseInput(body)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -707,10 +861,10 @@ func (h *PaymentHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 
 	var id string
 	var createdAt string
-	err := h.db.QueryRow(r.Context(), `
+	err = h.db.QueryRow(r.Context(), `
 		INSERT INTO expenses (tanggal_pengeluaran, kategori, deskripsi, jumlah, created_by, updated_by)
 		VALUES ($1,$2,$3,$4,$5,$5)
-		RETURNING id, created_at
+		RETURNING id, created_at::text
 	`, body.TanggalPengeluaran, body.Kategori, body.Deskripsi, body.Jumlah, callerID).Scan(&id, &createdAt)
 	if err != nil {
 		jsonError(w, fmt.Sprintf("gagal menyimpan pengeluaran: %v", err), http.StatusInternalServerError)
@@ -738,6 +892,38 @@ type expenseInput struct {
 	Jumlah             float64 `json:"jumlah"`
 }
 
+const maxExpenseAmount = 9999999999.99
+
+// normalizeExpenseInput keeps the API contract aligned with the expenses
+// table before any SQL is executed. The UI already validates these fields, but
+// the backend must enforce the same contract for every client and return a
+// useful 400 instead of an opaque database error.
+func normalizeExpenseInput(body expenseInput) (expenseInput, error) {
+	body.TanggalPengeluaran = strings.TrimSpace(body.TanggalPengeluaran)
+	if body.TanggalPengeluaran == "" {
+		return expenseInput{}, fmt.Errorf("tanggal pengeluaran wajib diisi")
+	}
+	if _, err := time.Parse("2006-01-02", body.TanggalPengeluaran); err != nil {
+		return expenseInput{}, fmt.Errorf("tanggal pengeluaran harus berformat YYYY-MM-DD")
+	}
+	if math.IsNaN(body.Jumlah) || math.IsInf(body.Jumlah, 0) || body.Jumlah <= 0 || body.Jumlah > maxExpenseAmount {
+		return expenseInput{}, fmt.Errorf("jumlah pengeluaran harus lebih besar dari nol dan tidak melebihi batas nominal")
+	}
+	if body.Kategori == nil || strings.TrimSpace(*body.Kategori) == "" {
+		return expenseInput{}, fmt.Errorf("kategori pengeluaran wajib diisi")
+	}
+	if body.Deskripsi == nil || strings.TrimSpace(*body.Deskripsi) == "" {
+		return expenseInput{}, fmt.Errorf("keterangan pengeluaran wajib diisi")
+	}
+
+	kategori := strings.TrimSpace(*body.Kategori)
+	deskripsi := strings.TrimSpace(*body.Deskripsi)
+	body.Kategori = &kategori
+	body.Deskripsi = &deskripsi
+	body.Jumlah = math.Round(body.Jumlah*100) / 100
+	return body, nil
+}
+
 // UpdateExpense PUT /api/payments/expenses/:id (admin only)
 func (h *PaymentHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
@@ -756,8 +942,9 @@ func (h *PaymentHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
-	if body.TanggalPengeluaran == "" || body.Jumlah <= 0 {
-		jsonError(w, "tanggal pengeluaran dan jumlah wajib diisi", http.StatusBadRequest)
+	body, err := normalizeExpenseInput(body)
+	if err != nil {
+		jsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -994,6 +1181,29 @@ func (h *PaymentHandler) PaymentStatusSummary(w http.ResponseWriter, r *http.Req
 	jsonData(w, result)
 }
 
+// cashflowDateRange returns a half-open [start, end) range for a local
+// calendar year or month. Keeping the end exclusive avoids month-length and
+// leap-year edge cases and works for SQL DATE columns without timezone shifts.
+func cashflowDateRange(year int, month *int) (string, string) {
+	startMonth := 1
+	if month != nil {
+		startMonth = *month
+	}
+
+	endYear := year
+	endMonth := startMonth + 1
+	if month == nil {
+		endYear = year + 1
+		endMonth = 1
+	} else if endMonth == 13 {
+		endYear++
+		endMonth = 1
+	}
+
+	return fmt.Sprintf("%04d-%02d-01", year, startMonth),
+		fmt.Sprintf("%04d-%02d-01", endYear, endMonth)
+}
+
 // Cashflow GET /api/payments/cashflow?year=&month=  (admin only)
 // month is omitted or "all" for a whole-year total. Sums are computed in
 // Postgres so the client never has to page through every row.
@@ -1019,27 +1229,25 @@ func (h *PaymentHandler) Cashflow(w http.ResponseWriter, r *http.Request) {
 		month = &m
 	}
 
-	// Income is keyed on the billing period (bulan/tahun); expenses are keyed on
-	// the calendar date, so the two use different filters for the same period.
+	// A cashflow period is based on the date money was received, not the
+	// billing period attached to an item. This includes non-monthly items
+	// (whose bulan/tahun are NULL) and prevents an SPP payment for a future
+	// billing month from appearing as current-month income. The DATE column has
+	// no timezone, so the browser's local year/month maps directly to these
+	// half-open calendar bounds without UTC conversion.
+	startDate, endDate := cashflowDateRange(year, month)
+
 	var totalIn float64
 	var countIn int
 	if err := h.db.QueryRow(r.Context(), `
 		SELECT COALESCE(SUM(jumlah), 0), COUNT(*)
 		FROM payments
-		WHERE tahun = $1 AND status = 'paid' AND deleted_at IS NULL
-		  AND ($2::int IS NULL OR bulan = $2::int)
-	`, year, month).Scan(&totalIn, &countIn); err != nil {
+		WHERE status = 'paid' AND deleted_at IS NULL
+		  AND tanggal_pembayaran >= $1::date
+		  AND tanggal_pembayaran < $2::date
+	`, startDate, endDate).Scan(&totalIn, &countIn); err != nil {
 		jsonError(w, "gagal menghitung pemasukan", http.StatusInternalServerError)
 		return
-	}
-
-	startDate := fmt.Sprintf("%04d-01-01", year)
-	endDate := fmt.Sprintf("%04d-12-31", year)
-	if month != nil {
-		startDate = fmt.Sprintf("%04d-%02d-01", year, *month)
-		// The first of the next month minus a day, computed by Postgres to avoid
-		// month-length and leap-year edge cases.
-		endDate = ""
 	}
 
 	var totalOut float64
@@ -1049,20 +1257,8 @@ func (h *PaymentHandler) Cashflow(w http.ResponseWriter, r *http.Request) {
 		FROM expenses
 		WHERE deleted_at IS NULL
 		  AND tanggal_pengeluaran >= $1::date
-		  AND tanggal_pengeluaran <= $2::date`
-	var expenseArgs []any
-	if endDate == "" {
-		expenseSQL = `
-			SELECT COALESCE(SUM(jumlah), 0), COUNT(*)
-			FROM expenses
-			WHERE deleted_at IS NULL
-			  AND tanggal_pengeluaran >= $1::date
-			  AND tanggal_pengeluaran < ($1::date + interval '1 month')`
-		expenseArgs = []any{startDate}
-	} else {
-		expenseArgs = []any{startDate, endDate}
-	}
-	if err := h.db.QueryRow(r.Context(), expenseSQL, expenseArgs...).Scan(&totalOut, &countOut); err != nil {
+		  AND tanggal_pengeluaran < $2::date`
+	if err := h.db.QueryRow(r.Context(), expenseSQL, startDate, endDate).Scan(&totalOut, &countOut); err != nil {
 		jsonError(w, "gagal menghitung pengeluaran", http.StatusInternalServerError)
 		return
 	}

@@ -54,6 +54,138 @@ html { scroll-behavior: smooth; }
 @keyframes sheen { from { transform: translateX(-170%) skewX(-18deg); } to { transform: translateX(360%) skewX(-18deg); } }
 @keyframes marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
 @keyframes driftbg { 0%, 100% { transform: scale(1.06) translate3d(0, 0, 0); } 50% { transform: scale(1.14) translate3d(-2%, -2%, 0); } }
+@keyframes sdnb-photo-sheen {
+  0%, 12% { transform: translate3d(-170%, 0, 0) rotate(17deg); opacity: 0; }
+  23% { opacity: .32; }
+  48% { opacity: .08; }
+  64%, 100% { transform: translate3d(1050%, 0, 0) rotate(17deg); opacity: 0; }
+}
+@keyframes sdnb-card-reflection {
+  0%, 14% { transform: translate3d(-240%, 0, 0) skewX(-17deg); opacity: 0; }
+  28% { opacity: .72; }
+  52% { opacity: .2; }
+  68%, 100% { transform: translate3d(480%, 0, 0) skewX(-17deg); opacity: 0; }
+}
+
+/* ── homepage school photo glass treatment ──────────────────────────────── */
+.sdnb-photo-frame {
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, .78);
+  box-shadow: 0 40px 80px -30px rgba(70, 80, 150, .65), inset 0 1px 0 rgba(255, 255, 255, .86);
+}
+.sdnb-photo-frame__image { z-index: 0; filter: saturate(1.04) contrast(1.02); }
+.sdnb-photo-frame__sheen {
+  position: absolute;
+  z-index: 3;
+  top: -28%;
+  bottom: -28%;
+  left: 0;
+  width: 14%;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .03) 24%, rgba(255, 255, 255, .38) 50%, rgba(255, 255, 255, .03) 76%, rgba(255, 255, 255, 0));
+  filter: blur(1px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: sdnb-photo-sheen 8.6s cubic-bezier(.25, .7, .25, 1) infinite;
+}
+.sdnb-photo-frame__edge {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, .46);
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .76), inset 0 0 0 1px rgba(255, 255, 255, .12);
+  pointer-events: none;
+}
+.sdnb-photo-glass-card {
+  z-index: 5;
+  overflow: hidden;
+  isolation: isolate;
+  color: #1d1f33;
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, .84);
+  box-shadow: 0 24px 50px -20px rgba(55, 65, 120, .6), inset 0 1px 0 rgba(255, 255, 255, .94);
+}
+.sdnb-photo-glass-card::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: -55%;
+  bottom: -55%;
+  left: -70%;
+  width: 28%;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(211, 222, 255, .2) 35%, rgba(255, 255, 255, .92) 50%, rgba(211, 222, 255, .2) 65%, rgba(255, 255, 255, 0));
+  filter: blur(1.2px);
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: sdnb-card-reflection 8.2s cubic-bezier(.25, .7, .25, 1) infinite;
+}
+.sdnb-photo-glass-card__content { position: relative; z-index: 1; }
+.sdnb-photo-glass-card__eyebrow,
+.sdnb-photo-glass-card__meta {
+  color: #6d7192;
+}
+.sdnb-photo-glass-card__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.sdnb-photo-glass-card__value {
+  margin-top: 4px;
+  color: #1d1f33;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1;
+}
+.sdnb-photo-glass-card__score {
+  color: var(--sekolah-aksen-pekat);
+  font-size: 13px;
+  font-weight: 700;
+}
+.sdnb-photo-glass-card__meta {
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+.sdnb-photo-glass-card__icon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: #0f5f6b;
+  background: rgba(255, 255, 255, .28);
+  border: 1px solid rgba(255, 255, 255, .74);
+  border-radius: 11px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .84), 0 8px 18px -12px rgba(15, 95, 107, .48);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+}
+.sdnb-photo-glass-card__title {
+  color: #1d1f33;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+}
+
+@media (max-width: 640px) {
+  .sdnb-photo-frame { height: 410px !important; border-radius: 24px !important; }
+  .sdnb-photo-glass-card--accreditation { left: 12px !important; bottom: 18px !important; width: 196px !important; padding: 14px 16px !important; }
+  .sdnb-photo-glass-card--extracurricular { top: 18px !important; right: 12px !important; max-width: calc(100% - 24px); padding: 12px 13px !important; }
+  .sdnb-photo-glass-card__title { font-size: 13.5px; }
+  .sdnb-photo-glass-card__meta { font-size: 10.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sdnb-photo-frame__sheen { animation: none; opacity: .06; transform: translate3d(12%, 0, 0) rotate(17deg); }
+  .sdnb-photo-glass-card::before { animation: none; opacity: .18; transform: translate3d(20%, 0, 0) skewX(-17deg); }
+}
 
 /* ── verbatim: shine sweep ───────────────────────────────────────────────── */
 .shine { position: relative; overflow: hidden; }
@@ -100,10 +232,10 @@ html { scroll-behavior: smooth; }
 .th-toggle:hover { transform: translateY(-2px); }
 html[data-theme="dark"] .th-i-sun { display: none; }
 html[data-theme="light"] .th-i-moon { display: none; }
-html[data-theme="dark"] .sdnb { background: #141338; }
-html[data-theme="dark"] .th-bg { background: linear-gradient(155deg, #141338 0%, #181a44 38%, #241a4a 70%, #2c1b3f 100%) !important; }
-html[data-theme="dark"] .th-orb { opacity: .78; filter: blur(30px) saturate(1.6) brightness(1.15); }
-html[data-theme="dark"] .th-content { filter: invert(.92) hue-rotate(180deg) saturate(1.75) brightness(1.12) contrast(.94); }
+html[data-theme="dark"] .sdnb { background: #171827; }
+html[data-theme="dark"] .th-bg { background: #171827 !important; }
+html[data-theme="dark"] .th-orb { opacity: 0; visibility: hidden; filter: none; }
+html[data-theme="dark"] .th-content { filter: none; }
 
 /* ============================================================================
    HOVER UTILITIES — one class per distinct `style-hover` value in the mockups.
@@ -176,4 +308,520 @@ html[data-theme="dark"] .th-content { filter: invert(.92) hue-rotate(180deg) sat
   .sdnb-stats > div { border-right: 0 !important; border-bottom: 1px solid rgba(255, 255, 255, .6); }
   .sdnb-bento { grid-template-rows: none !important; }
   .sdnb-bento > a { grid-column: span 1 !important; grid-row: span 1 !important; min-height: 190px; }
+}
+
+/* ============================================================================
+   EXPLICIT DARK THEME — public pages
+
+   The public mockups use inline visual values so their structure and content
+   stay faithful to the source. Dark mode is therefore applied here as a
+   theme-only layer: it remaps those light surfaces, text tones, dividers, and
+   controls without changing DOM structure, spacing, layout, or behavior.
+   The palette follows the approved admin dark shell while retaining the
+   public indigo–violet–rose accents for focal actions and active states.
+   ========================================================================== */
+
+html[data-theme="dark"] body:has(.sdnb) {
+  background: #171827 !important;
+  color: #f3f4fb;
+}
+
+html[data-theme="dark"] body:has(.sdnb) .bg-background {
+  background-color: #171827 !important;
+  background-image: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb {
+  --sdnb-dark-bg: #171827;
+  --sdnb-dark-surface: #252637;
+  --sdnb-dark-surface-raised: #2b2d45;
+  --sdnb-dark-surface-sunken: #1d1f33;
+  --sdnb-dark-border: #3b3e58;
+  --sdnb-dark-border-subtle: #32354d;
+  --sdnb-dark-text: #f3f4fb;
+  --sdnb-dark-text-secondary: #c1c4d5;
+  --sdnb-dark-text-muted: #9499b2;
+  --sdnb-dark-accent: #7c8aff;
+  --sdnb-dark-accent-soft: rgba(91, 108, 255, .16);
+  --sdnb-dark-nav-active-bg: #3d456c;
+  --sdnb-dark-nav-active-border: #596397;
+  --sdnb-dark-nav-active-text: #e9ecff;
+  color: var(--sdnb-dark-text);
+  background: var(--sdnb-dark-bg) !important;
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-frame {
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 28px 58px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card {
+  color: var(--sdnb-dark-text) !important;
+  background: var(--sdnb-dark-surface-raised) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .1) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card::before {
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .04) 35%, rgba(255, 255, 255, .24) 50%, rgba(255, 255, 255, .04) 65%, rgba(255, 255, 255, 0)) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__eyebrow,
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__meta {
+  color: var(--sdnb-dark-text-muted) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__value,
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__title {
+  color: var(--sdnb-dark-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__score {
+  color: var(--sdnb-dark-accent) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-photo-glass-card__icon {
+  color: #9ee9e5 !important;
+  background: rgba(124, 138, 255, .16) !important;
+  border-color: rgba(124, 138, 255, .42) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .th-bg,
+html[data-theme="dark"] body .sdnb.sdnb .th-lite.th-lite,
+html[data-theme="dark"] body .sdnb.sdnb .th-il.th-il {
+  background: var(--sdnb-dark-bg) !important;
+  background-image: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .th-orb,
+html[data-theme="dark"] body .sdnb.sdnb .th-sky,
+html[data-theme="dark"] body .sdnb.sdnb .th-vig {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .th-content.th-content,
+html[data-theme="dark"] body .sdnb.sdnb .th-id.th-id {
+  filter: none !important;
+  color: var(--sdnb-dark-text);
+}
+
+/* Light glass surfaces become solid ink surfaces in the approved dark mode. */
+html[data-theme="dark"] body .sdnb.sdnb [style*="background: rgba(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="background: rgb(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="background-color: rgba(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="background-color: rgb(255"] {
+  background: var(--sdnb-dark-surface) !important;
+  background-image: none !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, .28) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* White highlight strips are decorative light-mode treatment, not content. */
+html[data-theme="dark"] body .sdnb.sdnb [style*="linear-gradient"][style*="rgba(255"]:not(.gallery-hero-mosaic-tile) {
+  background: transparent !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb [style*="border: 1px solid rgba(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="border-top: 1px solid rgba(255"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="border-bottom: 1px solid rgba(255"] {
+  border-color: var(--sdnb-dark-border) !important;
+}
+
+/* Inline light text colors are normalized into three readable dark tones. */
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(20, 22, 40"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(23, 24, 39"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(25, 27, 44"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(26, 29, 63"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(27, 28, 40"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(27, 28, 44"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(29, 31, 51"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(33, 36, 63"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(28, 30, 48"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(30, 32, 53"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(30, 33, 64"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(34, 36, 60"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(43, 46, 72"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(43, 46, 74"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(43, 46, 77"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(44, 47, 69"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(44, 47, 77"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(51, 55, 90"] {
+  color: var(--sdnb-dark-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(74, 79, 208"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(79, 70, 229"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(59, 63, 122"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(59, 64, 168"] {
+  color: var(--sdnb-dark-accent) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(61, 65, 102"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(61, 65, 96"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(63, 68, 104"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(63, 69, 112"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(74, 79, 116"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(75, 79, 120"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(76, 81, 117"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(79, 84, 120"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(83, 88, 120"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(86, 91, 125"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(90, 95, 128"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(91, 96, 130"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(95, 100, 134"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(99, 104, 140"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(99, 103, 138"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(108, 113, 143"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(109, 113, 146"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(123, 127, 160"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(77, 82, 115"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(94, 99, 134"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(112, 117, 154"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(123, 128, 164"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(126, 133, 189"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(138, 142, 168"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(107, 112, 147"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(59, 63, 107"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(107, 81, 112"] {
+  color: var(--sdnb-dark-text-secondary) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgba(60, 50, 90"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(74, 62, 201"] {
+  color: var(--sdnb-dark-text-secondary) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb h1,
+html[data-theme="dark"] body .sdnb.sdnb h2,
+html[data-theme="dark"] body .sdnb.sdnb h3,
+html[data-theme="dark"] body .sdnb.sdnb h4 {
+  color: var(--sdnb-dark-text);
+}
+
+html[data-theme="dark"] body .sdnb.sdnb a {
+  color: var(--sdnb-dark-accent);
+}
+
+html[data-theme="dark"] body .sdnb.sdnb a:hover {
+  color: #a6b0ff;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .gtile {
+  color: var(--sdnb-dark-text);
+}
+
+/* Keep gradient display type and intentionally white-on-accent copy intact. */
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: transparent"],
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(255, 255, 255"] {
+  color: inherit !important;
+}
+
+/* Shared navigation, dropdown, footer links, and mobile sheet. */
+html[data-theme="dark"] body .sdnb.sdnb .nav-links .h-navlink,
+html[data-theme="dark"] body .sdnb.sdnb .nav-sub,
+html[data-theme="dark"] body .sdnb.sdnb .nav-links .h-navlink:hover {
+  color: var(--sdnb-dark-text-secondary) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .nav-links > a:not(.h-navlink),
+html[data-theme="dark"] body .sdnb.sdnb .nav-links > .navdd > a:not(.h-navlink) {
+  color: var(--sdnb-dark-nav-active-text) !important;
+  background: var(--sdnb-dark-nav-active-bg) !important;
+  border-color: var(--sdnb-dark-nav-active-border) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .2) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .nav-links .h-navlink:hover,
+html[data-theme="dark"] body .sdnb.sdnb .ddlink:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-login:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-glass82:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-glass85:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-read:hover,
+html[data-theme="dark"] body .sdnb.sdnb .th-toggle:hover {
+  background: var(--sdnb-dark-surface-raised) !important;
+  color: var(--sdnb-dark-text) !important;
+  border-color: #4b5070 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .ddpanel,
+html[data-theme="dark"] body .sdnb.sdnb .nav-sheet {
+  background: var(--sdnb-dark-surface-raised) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .36) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .ddlink,
+html[data-theme="dark"] body .sdnb.sdnb .h-flink {
+  color: var(--sdnb-dark-text-secondary) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .ddlink:hover,
+html[data-theme="dark"] body .sdnb.sdnb .h-flink:hover {
+  color: var(--sdnb-dark-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .h-white,
+html[data-theme="dark"] body .sdnb.sdnb .h-white30 {
+  background: var(--sdnb-dark-surface-raised) !important;
+  color: var(--sdnb-dark-text) !important;
+  border-color: var(--sdnb-dark-border) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .h-white30 {
+  background: rgba(255, 255, 255, .1) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .h-lift-shadow:hover,
+html[data-theme="dark"] body .sdnb.sdnb .gtile:hover {
+  box-shadow: 0 20px 42px rgba(0, 0, 0, .34) !important;
+}
+
+/* Inputs and focus states use the same sunken surface and indigo ring as admin. */
+html[data-theme="dark"] body .sdnb.sdnb input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] body .sdnb.sdnb textarea,
+html[data-theme="dark"] body .sdnb.sdnb select {
+  color: var(--sdnb-dark-text) !important;
+  background: var(--sdnb-dark-surface-sunken) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: none !important;
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb input::placeholder,
+html[data-theme="dark"] body .sdnb.sdnb textarea::placeholder {
+  color: var(--sdnb-dark-text-muted) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb input:focus,
+html[data-theme="dark"] body .sdnb.sdnb textarea:focus,
+html[data-theme="dark"] body .sdnb.sdnb select:focus {
+  border-color: var(--sdnb-dark-accent) !important;
+  box-shadow: 0 0 0 3px var(--sdnb-dark-accent-soft) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb a:focus-visible,
+html[data-theme="dark"] body .sdnb.sdnb button:focus-visible,
+html[data-theme="dark"] body .sdnb.sdnb input:focus-visible,
+html[data-theme="dark"] body .sdnb.sdnb textarea:focus-visible,
+html[data-theme="dark"] body .sdnb.sdnb select:focus-visible {
+  outline: 2px solid var(--sdnb-dark-accent) !important;
+  outline-offset: 3px;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb svg[stroke="#3d4166"],
+html[data-theme="dark"] body .sdnb.sdnb svg[stroke="#33375a"],
+html[data-theme="dark"] body .sdnb.sdnb svg[stroke="#1b1c2c"],
+html[data-theme="dark"] body .sdnb.sdnb svg[stroke="#565b7d"] {
+  stroke: var(--sdnb-dark-text-secondary) !important;
+}
+
+/* Standalone sign-in keeps its composition but uses the same dark surfaces. */
+html[data-theme="dark"] body .sdnb.sdnb-login .panel {
+  background: var(--sdnb-dark-surface) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .34) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .fld input {
+  background: var(--sdnb-dark-surface-sunken) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  color: var(--sdnb-dark-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .side:hover {
+  background: var(--sdnb-dark-surface-raised) !important;
+  color: var(--sdnb-dark-text) !important;
+}
+
+/* ==========================================================================
+   DARK DETAIL STATES — SPMB, extracurricular index, and achievements
+
+   These pages retain their existing markup and content, but their generated
+   mockup styles include page-local light veils and bright list treatments.
+   Remap those visual layers here so the public dark theme remains coherent.
+   ========================================================================== */
+
+/* SPMB has its own fixed light wash and three decorative color fields. */
+html[data-theme="dark"] body .sdnb.sdnb-ppdb > div > div[style*="linear-gradient(160deg"] {
+  background: var(--sdnb-dark-bg) !important;
+  background-image: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-ppdb > div > div[style*="radial-gradient"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-ppdb .ppdb-bar,
+html[data-theme="dark"] body .sdnb.sdnb-ppdb .ppdb-kartu {
+  background: var(--sdnb-dark-surface) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .3) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-ppdb .ppdb-kartu button:not(.hx-yf6msz):not(:disabled):hover,
+html[data-theme="dark"] body .sdnb.sdnb-ppdb .ppdb-bar a:hover,
+html[data-theme="dark"] body .sdnb.sdnb-ppdb .bukti-cetak button:hover {
+  background: var(--sdnb-dark-surface-raised) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  color: var(--sdnb-dark-text) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .24) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-ppdb [role="alert"] {
+  background: #3b2834 !important;
+  border-color: #7a4d63 !important;
+  color: #ffd6dc !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-ppdb [role="alert"] svg {
+  stroke: #ff9da8 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-ppdb [role="alert"] > div > div:first-child {
+  color: #ffb3bc !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-ppdb [role="alert"] > div > div:last-child {
+  color: #ffd6dc !important;
+}
+
+/* The extracurricular index is a dark list with a restrained image peek. */
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .idx {
+  background: var(--sdnb-dark-surface) !important;
+  border-bottom-color: var(--sdnb-dark-border-subtle) !important;
+  color: var(--sdnb-dark-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .idx:hover {
+  background: var(--sdnb-dark-surface-raised) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .idx:focus-visible {
+  outline: 2px solid var(--sdnb-dark-accent) !important;
+  outline-offset: 3px;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .idx .iveil {
+  background: linear-gradient(90deg, rgba(37, 38, 55, .97) 40%, rgba(37, 38, 55, .84) 76%, rgba(37, 38, 55, .68)) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .idx .ibg {
+  opacity: .1 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .idx[data-on="1"] .ibg {
+  opacity: .28 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .idx:hover .ibg {
+  opacity: .38 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .jdwl {
+  background: var(--sdnb-dark-surface-raised) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .28) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .jdwl:hover {
+  background: #343753 !important;
+  border-color: var(--sdnb-dark-nav-active-border) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, .34) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .panA > div:first-child,
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul .panB > div:first-child {
+  background: linear-gradient(140deg, #303765, #3b315b) !important;
+  border-color: #535d8d !important;
+  box-shadow: 0 28px 62px rgba(0, 0, 0, .36) !important;
+}
+
+/* Achievement rows use a dark veil so their labels remain legible over images. */
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi .ledger {
+  background: var(--sdnb-dark-surface) !important;
+  border-bottom-color: var(--sdnb-dark-border-subtle) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi .ledger:hover {
+  background: var(--sdnb-dark-surface-raised) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi .ledger .lveil {
+  background: linear-gradient(90deg, rgba(37, 38, 55, .97) 34%, rgba(37, 38, 55, .84) 68%, rgba(37, 38, 55, .68)) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi .ledger .lbg {
+  opacity: .1 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi .ledger:hover .lbg {
+  opacity: .3 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi .ledger:hover .lyear {
+  color: var(--sdnb-dark-accent) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi .ledger .lcol3 {
+  background: #4b456b !important;
+  border: 1px solid rgba(196, 164, 240, .42) !important;
+  color: #f0edff !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi #daftar {
+  border-top-color: var(--sdnb-dark-border-subtle) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi button:hover {
+  color: var(--sdnb-dark-accent) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi button:focus-visible {
+  outline: 2px solid var(--sdnb-dark-accent) !important;
+  outline-offset: 3px;
+}
+
+/* Quiet section dividers replace the old near-black light-mode rules. */
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-ekskul [style*="border-bottom: 2px solid rgb(33, 36, 63"],
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-prestasi [style*="border-bottom: 2px solid rgb(33, 36, 63"] {
+  border-bottom-color: var(--sdnb-dark-border) !important;
+}
+
+/* Mobile submenu buttons use the same subdued active treatment as desktop. */
+html[data-theme="dark"] body .sdnb.sdnb .nav-sheet nav a[style*="background: rgba(255"] {
+  background: var(--sdnb-dark-nav-active-bg) !important;
+  border: 1px solid var(--sdnb-dark-nav-active-border) !important;
+  color: var(--sdnb-dark-nav-active-text) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .nav-sheet nav a[style*="background: transparent"] {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--sdnb-dark-text-secondary) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .nav-sheet nav a:hover,
+html[data-theme="dark"] body .sdnb.sdnb .nav-sheet nav a:focus-visible {
+  background: var(--sdnb-dark-surface-raised) !important;
+  border-color: var(--sdnb-dark-border) !important;
+  color: var(--sdnb-dark-text) !important;
 }

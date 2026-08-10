@@ -9,7 +9,8 @@
 // sama. localStorage hanya singgahan, karena beberapa pemanggil membaca daftar
 // ini saat modul dimuat — sebelum permintaan jaringan sempat selesai.
 
-const CACHE_KEY = 'lpq_tahfizh_config';
+const CACHE_KEY = 'school_tahfizh_config';
+const LEGACY_CACHE_KEY = 'lpq_tahfizh_config';
 
 export const TAHFIZH_METHODS = {
   qiroati: {
@@ -70,12 +71,15 @@ const sanitizeLevels = (levels) =>
 
 const readCache = () => {
   try {
-    const parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    const stored = localStorage.getItem(CACHE_KEY) || localStorage.getItem(LEGACY_CACHE_KEY);
+    const parsed = JSON.parse(stored || 'null');
     if (!parsed || typeof parsed !== 'object') return DEFAULT_TAHFIZH_CONFIG;
-    return {
+    const config = {
       method: TAHFIZH_METHODS[parsed.method] ? parsed.method : DEFAULT_TAHFIZH_CONFIG.method,
       customLevels: sanitizeLevels(parsed.customLevels),
     };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(config));
+    return config;
   } catch {
     return DEFAULT_TAHFIZH_CONFIG;
   }

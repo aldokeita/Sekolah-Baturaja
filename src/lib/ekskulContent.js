@@ -1,4 +1,8 @@
-import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
+import {
+  announceWebsiteContentUpdate,
+  fetchWebsiteContentMap,
+  saveWebsiteContentItem,
+} from '@/lib/publicContentAdapters';
 
 /**
  * Isi halaman Ekstrakurikuler yang dapat disunting pembeli.
@@ -9,23 +13,55 @@ import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicCont
  * kunci `ekskul_content` dan disunting di Konten → Ekstrakurikuler.
  *
  * Statistik halaman (kegiatan aktif, murid terdaftar, guru pembina) TIDAK
- * disimpan: ketiganya dihitung otomatis dari daftar, jadi tidak pernah berbeda
- * dari isinya. Warna kartu juga tidak disunting pembeli — dipilih otomatis di
- * halaman berdasarkan urutan (lihat GRADIEN di EkstrakurikulerPage).
+ * disimpan sebagai angka terpisah: ketiganya dihitung otomatis dari daftar.
+ * Peserta disimpan sebagai ID murid master (`santri_ids`), dan pembina sebagai
+ * ID guru master (`pembina_id`). Nama/angka lama tetap dinormalisasi sebagai
+ * fallback agar konten yang sudah tersimpan tidak hilang saat migrasi bertahap.
+ * Warna kartu tidak disunting pembeli — dipilih otomatis di halaman berdasarkan
+ * urutan (lihat GRADIEN di EkstrakurikulerPage).
  *
- * Bawaan di bawah sengaja mengosongkan nama pembina: kegiatannya jadi contoh yang
- * bagus, tapi nama pembina wajib diisi pembeli.
+ * Bawaan di bawah sengaja mengosongkan nama dan peserta: pengelola memilih guru
+ * pembina serta murid terdaftar dari data master ketika siap menerbitkannya.
  */
 
 export const EKSKUL_CONTENT_KEY = 'ekskul_content';
 
 export const HARI_OPTIONS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
-const R = (nama, bidang, hari, jam, tempat, terisi, kuota, kelas, cerita) => ({
-  nama, bidang, hari, jam, pembina: '', tempat, terisi, kuota, kelas, cerita,
+const DEFAULT_EKSKUL_HERO = Object.freeze({
+  kicker: 'Sepulang sekolah',
+  yearLabel: 'Tahun ajaran 2025/2026',
+  title: 'kegiatan',
+  suffix: 'satu halaman.',
+  description: 'Setiap murid mengikuti sedikitnya satu kegiatan setiap tahun ajaran. Latihan berlangsung sore hari di lingkungan sekolah, gratis, dan dibimbing guru pembina.',
+  stats: Object.freeze({
+    activities: 'kegiatan aktif',
+    students: 'murid terdaftar',
+    mentors: 'guru pembina',
+  }),
+});
+
+const R = (nama, bidang, hari, jam, tempat, _legacyTerisi, kuota, kelas, cerita) => ({
+  nama,
+  bidang,
+  hari,
+  jam,
+  pembina: '',
+  pembina_id: '',
+  tempat,
+  // Angka contoh lama tidak boleh menjadi statistik aktual. Kegiatan bawaan
+  // dimulai tanpa peserta master sampai pengelola memilih muridnya.
+  terisi: 0,
+  participant_source: 'master',
+  santri_ids: [],
+  kuota,
+  kelas,
+  cerita,
+  foto_url: '',
 });
 
 export const DEFAULT_EKSKUL_CONTENT = Object.freeze({
+  hero: DEFAULT_EKSKUL_HERO,
   records: Object.freeze([
     R('Pramuka Siaga & Penggalang', 'Kepramukaan', 'Jumat', '15.00–16.30', 'Halaman belakang', 68, 80, 'Kelas III–VI', 'Regu berlatih tali-temali, sandi morse, dan pertolongan pertama. Setiap semester diadakan perkemahan satu malam di halaman sekolah.'),
     R('Atletik', 'Olahraga', 'Selasa', '15.30–16.30', 'Lapangan sekolah', 24, 30, 'Kelas IV–VI', 'Latihan lari jarak pendek, lompat jauh, dan lempar bola. Murid menonjol disiapkan untuk seleksi O2SN tingkat kecamatan.'),
@@ -49,22 +85,55 @@ const angka = (nilai) => {
 
 const salinBawaan = () => JSON.parse(JSON.stringify(DEFAULT_EKSKUL_CONTENT.records));
 
+const uniqueIds = (value) => {
+  const values = Array.isArray(value)
+    ? value
+    : (typeof value === 'string' ? value.split(',') : []);
+  return Array.from(new Set(values.map((item) => teks(item)).filter(Boolean)));
+};
+
+const normalizeHero = (stored) => {
+  const source = stored && typeof stored === 'object' ? stored : {};
+  const stats = source.stats && typeof source.stats === 'object' ? source.stats : {};
+  return {
+    kicker: teks(source.kicker) || DEFAULT_EKSKUL_HERO.kicker,
+    yearLabel: teks(source.yearLabel || source.year_label) || DEFAULT_EKSKUL_HERO.yearLabel,
+    title: teks(source.title) || DEFAULT_EKSKUL_HERO.title,
+    suffix: teks(source.suffix || source.titleSuffix || source.title_suffix) || DEFAULT_EKSKUL_HERO.suffix,
+    description: teks(source.description) || DEFAULT_EKSKUL_HERO.description,
+    stats: {
+      activities: teks(stats.activities || stats.kegiatan) || DEFAULT_EKSKUL_HERO.stats.activities,
+      students: teks(stats.students || stats.murid) || DEFAULT_EKSKUL_HERO.stats.students,
+      mentors: teks(stats.mentors || stats.pembina) || DEFAULT_EKSKUL_HERO.stats.mentors,
+    },
+  };
+};
+
 const normalizeRecords = (rows) => {
   if (!Array.isArray(rows)) return salinBawaan();
   return rows.map((row) => {
     const nama = teks(row?.nama);
     if (!nama) return null;
+    const rawStudentIds = row?.santri_ids ?? row?.santriIds ?? row?.student_ids ?? row?.studentIds;
+    const hasMasterStudentList = Array.isArray(rawStudentIds) || typeof rawStudentIds === 'string'
+      || row?.participant_source === 'master';
+    const santriIds = uniqueIds(rawStudentIds);
+    const participantSource = hasMasterStudentList ? 'master' : 'legacy';
     return {
       nama,
       bidang: teks(row?.bidang) || 'Umum',
       hari: HARI_OPTIONS.includes(teks(row?.hari)) ? teks(row.hari) : 'Senin',
       jam: teks(row?.jam),
       pembina: teks(row?.pembina),
+      pembina_id: teks(row?.pembina_id || row?.pembinaId),
       tempat: teks(row?.tempat),
-      terisi: angka(row?.terisi),
-      kuota: Math.max(angka(row?.kuota), angka(row?.terisi)),
+      terisi: participantSource === 'master' ? santriIds.length : angka(row?.terisi),
+      participant_source: participantSource,
+      santri_ids: santriIds,
+      kuota: Math.max(angka(row?.kuota), participantSource === 'master' ? santriIds.length : angka(row?.terisi)),
       kelas: teks(row?.kelas),
       cerita: teks(row?.cerita),
+      foto_url: teks(row?.foto_url || row?.fotoUrl || row?.image_url || row?.imageUrl),
     };
   }).filter(Boolean);
 };
@@ -72,16 +141,17 @@ const normalizeRecords = (rows) => {
 export const normalizeEkskulContent = (stored) => {
   const source = stored && typeof stored === 'object' ? stored : {};
   const records = source.records === undefined ? salinBawaan() : normalizeRecords(source.records);
-  return { records };
+  return { hero: normalizeHero(source.hero), records };
 };
 
-export const fetchEkskulContent = async () => {
-  const map = await fetchWebsiteContentMap({ keys: [EKSKUL_CONTENT_KEY] });
+export const fetchEkskulContent = async ({ publicOnly = true } = {}) => {
+  const map = await fetchWebsiteContentMap({ keys: [EKSKUL_CONTENT_KEY], publicOnly });
   return normalizeEkskulContent(map?.[EKSKUL_CONTENT_KEY]);
 };
 
 export const saveEkskulContent = async (content) => {
   const normalized = normalizeEkskulContent(content);
   await saveWebsiteContentItem({ key: EKSKUL_CONTENT_KEY, content: normalized, isPublic: true });
+  announceWebsiteContentUpdate([EKSKUL_CONTENT_KEY]);
   return normalized;
 };

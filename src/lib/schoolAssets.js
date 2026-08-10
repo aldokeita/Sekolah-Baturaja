@@ -6,7 +6,7 @@
  * tidak dapat memuat logo tersimpan.
  */
 export const DEFAULT_LOGO_PATH = '/logo-sekolah.svg';
-export const LEGACY_LOGO_PATH = '/logo-lpq-al-fath-maulana.webp';
+export const LEGACY_LOGO_PATH = '/logo-legacy-sekolah.webp';
 
 export const isLegacyLogoPath = (value) => {
   const normalized = String(value || '').trim();

@@ -1,6 +1,47 @@
 import { describe, expect, it } from 'vitest';
 
-import { URUTAN_STATUS, labelStatus, susunCsvPendaftaran } from '@/lib/ppdbAdapters';
+import {
+  PPDB_PAGE_LIMIT, URUTAN_STATUS, hitungJumlahHalamanPendaftaran, labelStatus,
+  susunCsvPendaftaran, susunQueryPendaftaran,
+} from '@/lib/ppdbAdapters';
+
+describe('hitungJumlahHalamanPendaftaran', () => {
+  it.each([
+    [0, 50, 0],
+    [1, 50, 1],
+    [50, 50, 1],
+    [51, 50, 2],
+    [401, 200, 3],
+  ])('menghitung %i baris dengan limit %i menjadi %i halaman', (total, limit, expected) => {
+    expect(hitungJumlahHalamanPendaftaran(total, limit)).toBe(expected);
+  });
+
+  it('memakai batas maksimum server saat limit terlalu besar', () => {
+    expect(hitungJumlahHalamanPendaftaran(401, 999)).toBe(3);
+  });
+});
+
+describe('susunQueryPendaftaran', () => {
+  it('mempertahankan seluruh filter dan pagination 0-based', () => {
+    const params = new URLSearchParams(susunQueryPendaftaran({
+      tahun: '2026/2027', status: 'baru', q: 'Siti Aisyah', wilayah: 'Sukaraya', page: 0, limit: 50,
+    }));
+    expect(Object.fromEntries(params)).toEqual({
+      tahun: '2026/2027', status: 'baru', q: 'Siti Aisyah', wilayah: 'Sukaraya', page: '0', limit: '50',
+    });
+  });
+
+  it('tidak mengirim filter kosong dan membatasi ukuran halaman ke batas server', () => {
+    const params = new URLSearchParams(susunQueryPendaftaran({
+      tahun: '', status: null, q: undefined, wilayah: '', page: -1, limit: 999,
+    }));
+    expect(Object.fromEntries(params)).toEqual({ limit: String(PPDB_PAGE_LIMIT) });
+  });
+
+  it('mengabaikan page dan limit yang tidak sah', () => {
+    expect(susunQueryPendaftaran({ page: 1.5, limit: 0 })).toBe('');
+  });
+});
 
 /* Ekspor CSV adalah satu-satunya jalan keluar data pendaftaran: tata usaha
  * memakainya untuk memindahkan calon murid ke Dapodik dan mencetak daftar hadir

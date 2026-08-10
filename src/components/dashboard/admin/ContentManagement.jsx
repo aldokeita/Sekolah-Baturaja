@@ -17,12 +17,15 @@ import PrestasiContentSettings from '@/components/dashboard/admin/PrestasiConten
 import EkskulContentSettings from '@/components/dashboard/admin/EkskulContentSettings';
 import ProgramContentSettings from '@/components/dashboard/admin/ProgramContentSettings';
 import SchoolInfoSettings from '@/components/dashboard/admin/SchoolInfoSettings';
+import GalleryHeroMosaicSettings from '@/components/dashboard/admin/GalleryHeroMosaicSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import HafalanDisplay from '@/components/dashboard/shared/HafalanDisplay';
 import { createHafalanItem, deactivateHafalanItem, fetchHafalanItems, getAcademicErrorMessage, updateHafalanItem, HAFALAN_SCOPE_PER_KELAS, HAFALAN_SCOPE_PER_JUZ } from '@/lib/academicAdapters';
 import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
+import { buildGlobalContentSaveItems } from '@/lib/contentManagementSave';
 import { defaultContent, mergeHomepageContent } from '@/components/public/home/homeUtils';
+import { DEFAULT_GALLERY_HERO_MOSAIC, GALLERY_HERO_MOSAIC_KEY, normalizeGalleryAlbums, normalizeGalleryHeroMosaic, normalizeGalleryPhotos } from '@/lib/galleryContent';
 import {
   archiveAnnouncement,
   archiveNews,
@@ -32,6 +35,7 @@ import {
   fetchAdminNews,
   fetchWebsiteContentMap,
   getPublicContentErrorMessage,
+  announceWebsiteContentUpdate,
   assertNonEmptyWebsiteContentString,
   saveAnnouncement,
   saveNews,
@@ -247,7 +251,7 @@ const ContentManagement = () => {
    * Perubahan" akan menimpa isi tersimpan pembeli dengan kekosongan; dibiarkan,
    * data lama tetap utuh sampai ada keputusan memakainya lagi. */
   const [content, setContent] = useState({
-    ...defaultContent, brochures: [], pustaka: [], news: [], announcements: [], qiroatiVideos: [], hafalanVideos: [], waliDiscussions: [], santriOfTheMonth: [], guruOfTheMonth: null, leaderboard: [], parentingArticles: [], model3dSettings: { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 }
+    ...defaultContent, schoolBuildingPhoto: '', brochures: [], pustaka: [], news: [], announcements: [], qiroatiVideos: [], hafalanVideos: [], waliDiscussions: [], santriOfTheMonth: [], guruOfTheMonth: null, leaderboard: [], parentingArticles: [], galleryAlbums: [], [GALLERY_HERO_MOSAIC_KEY]: { ...DEFAULT_GALLERY_HERO_MOSAIC }, model3dSettings: { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 }
   });
 
   const [feedbacks, setFeedbacks] = useState([]);
@@ -266,6 +270,10 @@ const ContentManagement = () => {
     komunikasi: 'pesan',
     akademik: 'hafalan',
   });
+  const [assetUploadType, setAssetUploadType] = useState(null);
+  const [buildingPhotoPreviewError, setBuildingPhotoPreviewError] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveState, setSaveState] = useState('idle');
 
   useEffect(() => { fetchContent(); fetchSantriAndGuru(); fetchFeedbacks(); }, []);
 
@@ -309,10 +317,14 @@ const ContentManagement = () => {
       toast({ title: "Gagal Memuat Konten", description: getPublicContentErrorMessage(error), variant: "destructive" });
       return;
     }
-    const arrayKeys = ['heroSlides', 'brochures', 'pustaka', 'facilities', 'qiroatiVideos', 'hafalanVideos', 'waliDiscussions', 'santriOfTheMonth', 'leaderboard', 'parentingArticles', 'galleryPhotos', 'schedules', 'faqs'];
+    const arrayKeys = ['heroSlides', 'brochures', 'pustaka', 'facilities', 'qiroatiVideos', 'hafalanVideos', 'waliDiscussions', 'santriOfTheMonth', 'leaderboard', 'parentingArticles', 'galleryPhotos', 'galleryAlbums', 'schedules', 'faqs'];
     arrayKeys.forEach(key => { if (!newContent[key] || !Array.isArray(newContent[key])) newContent[key] = []; });
+    if (typeof newContent.schoolBuildingPhoto !== 'string') newContent.schoolBuildingPhoto = '';
     if(!newContent.quotas) newContent.quotas = { pagi: 0, siang: 0, sore: 0, dewasaPagi: 0, dewasaSiang: 0, dewasaMalam: 0 };
     Object.assign(newContent, mergeHomepageContent(newContent));
+    newContent.galleryPhotos = normalizeGalleryPhotos(newContent.galleryPhotos);
+    newContent.galleryAlbums = normalizeGalleryAlbums(newContent.galleryAlbums);
+    newContent[GALLERY_HERO_MOSAIC_KEY] = normalizeGalleryHeroMosaic(newContent[GALLERY_HERO_MOSAIC_KEY]);
     if(!newContent.model3dSettings || typeof newContent.model3dSettings !== 'object' || Array.isArray(newContent.model3dSettings)) {
       newContent.model3dSettings = { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 };
     }
@@ -326,21 +338,27 @@ const ContentManagement = () => {
   };
 
   const handleSaveAll = async () => {
-    const excludedKeys = new Set(['news', 'announcements']);
-    const dataToUpsert = Object.keys(content)
-      .filter(key => !excludedKeys.has(key))
-      .map(key => ({ key, content: content[key], is_public: true }));
+    if (isSaving) return;
+    const dataToUpsert = buildGlobalContentSaveItems(content);
+    setIsSaving(true);
+    setSaveState('saving');
     try {
       await saveWebsiteContentItems(dataToUpsert);
+      announceWebsiteContentUpdate(dataToUpsert.map((item) => item.key));
+      setSaveState('success');
       toast({ title: "Konten Disimpan!", description: `Semua perubahan telah berhasil disimpan.` });
     } catch (error) {
+      setSaveState('error');
       toast({ title: "Gagal Menyimpan!", description: getPublicContentErrorMessage(error), variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleFileUpload = async (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
+    setAssetUploadType(type);
     let folder = 'general';
     if (['news', 'announcements', 'parentingArticles'].includes(type)) folder = 'article-images';
     else if (type === 'facilities') folder = 'facilities-images';
@@ -349,8 +367,13 @@ const ContentManagement = () => {
     else if (type === 'ctaBackgroundUrl') folder = 'backgrounds';
     else if (type === 'heroSlides') folder = 'hero-slides';
     else if (type === 'galleryPhotos') folder = 'gallery';
+    else if (type === 'schoolBuildingPhoto') folder = 'homepage';
 
-    const assetKey = type === 'logoUrl' ? 'logo' : (type === 'ctaBackgroundUrl' ? 'cta-background' : null);
+    const assetKey = type === 'logoUrl'
+      ? 'logo'
+      : (type === 'ctaBackgroundUrl'
+        ? 'cta-background'
+        : (type === 'schoolBuildingPhoto' ? 'school-building' : null));
     let publicUrl = '';
     try {
       const result = await uploadWebsiteAsset({ folder, key: assetKey, file });
@@ -360,6 +383,7 @@ const ContentManagement = () => {
       }
     } catch (error) {
       toast({ title: "Upload Gagal!", description: getStorageErrorMessage(error), variant: "destructive" });
+      setAssetUploadType(null);
       return;
     }
 
@@ -372,6 +396,23 @@ const ContentManagement = () => {
       } catch (error) {
         toast({ title: "Logo Gagal Disimpan", description: getPublicContentErrorMessage(error), variant: "destructive" });
       }
+      setAssetUploadType(null);
+      return;
+    }
+    if (type === 'schoolBuildingPhoto') {
+      try {
+        const saved = await saveWebsiteContentItem({ key: 'schoolBuildingPhoto', content: publicUrl, isPublic: true });
+        const savedUrl = saved?.content || publicUrl;
+        setContent(prev => ({ ...prev, schoolBuildingPhoto: savedUrl }));
+        setBuildingPhotoPreviewError(false);
+        toast({ title: "Foto Header Disimpan!", description: "Foto gedung sekolah akan tampil di header beranda." });
+      } catch (error) {
+        // Keep the previous URL in state when the content write fails. The
+        // uploaded object is harmless, while the current public image remains
+        // usable until the database update succeeds.
+        toast({ title: "Foto Header Gagal Disimpan", description: getPublicContentErrorMessage(error), variant: "destructive" });
+      }
+      setAssetUploadType(null);
       return;
     }
     if (type === 'ctaBackgroundUrl') { setContent(prev => ({ ...prev, [type]: publicUrl })); }
@@ -379,12 +420,20 @@ const ContentManagement = () => {
     else if (type === 'galleryPhotos') { setFormState(prev => ({ ...prev, url: publicUrl })); }
     else { setFormState(prev => ({ ...prev, image_url: publicUrl })); }
     toast({ title: "Upload Berhasil!", description: `${file.name} berhasil diunggah.` });
+    setAssetUploadType(null);
   };
 
   const openModal = (type, item = null) => {
     setModalType(type);
-    if (item) { setEditingItem(item); setFormState(item); }
-    else { setEditingItem(null); setFormState({}); }
+    if (item) {
+      setEditingItem(item);
+      setFormState(type === 'galleryAlbums'
+        ? { ...item, photo_ids: item.photo_ids || item.photoIds || [] }
+        : item);
+    } else {
+      setEditingItem(null);
+      setFormState(type === 'galleryAlbums' ? { title: '', description: '', photo_ids: [] } : {});
+    }
     setIsModalOpen(true);
   };
 
@@ -400,6 +449,31 @@ const ContentManagement = () => {
       } catch (error) {
         toast({ title: "Gagal Menyimpan Konten", description: getPublicContentErrorMessage(error), variant: "destructive" });
       }
+      return;
+    }
+    if (modalType === 'galleryAlbums') {
+      const title = String(formState.title || '').trim();
+      const photoIds = [...new Set((formState.photo_ids || formState.photoIds || []).map((id) => String(id).trim()).filter(Boolean))];
+      if (!title) {
+        toast({ title: 'Nama album wajib diisi', description: 'Masukkan nama album sebelum menyimpan.', variant: 'destructive' });
+        return;
+      }
+      if (photoIds.length === 0) {
+        toast({ title: 'Pilih foto terlebih dahulu', description: 'Album harus mengambil setidaknya satu foto dari Galeri Kegiatan.', variant: 'destructive' });
+        return;
+      }
+      const album = {
+        ...formState,
+        id: editingItem?.id || formState.id || `album-${Date.now()}`,
+        title,
+        description: String(formState.description || '').trim(),
+        photo_ids: photoIds,
+      };
+      const updatedList = editingItem
+        ? content.galleryAlbums.map((item) => item.id === editingItem.id ? album : item)
+        : [...(content.galleryAlbums || []), album];
+      setContent((prev) => ({ ...prev, galleryAlbums: updatedList }));
+      setIsModalOpen(false);
       return;
     }
     let updatedList;
@@ -447,6 +521,8 @@ const ContentManagement = () => {
 
   const renderModalContent = () => {
     if (!modalType) return null;
+    const galleryPhotos = Array.isArray(content.galleryPhotos) ? content.galleryPhotos : [];
+    const selectedGalleryPhotoIds = new Set((formState.photo_ids || formState.photoIds || []).map((id) => String(id)));
     return (
       <>
         <div className="space-y-4">
@@ -455,6 +531,46 @@ const ContentManagement = () => {
           {modalType === 'facilities' && (<><Input placeholder="Nama Fasilitas" value={formState.name || ''} onChange={e => setFormState(p => ({...p, name: e.target.value}))} /><div className="grid grid-cols-2 gap-2"><Input placeholder="Kategori, mis. Belajar" value={formState.kategori || ''} onChange={e => setFormState(p => ({...p, kategori: e.target.value}))} /><Input placeholder="Luas, mis. 96 m²" value={formState.luas || ''} onChange={e => setFormState(p => ({...p, luas: e.target.value}))} /></div><Input placeholder="Ringkasan singkat (tampil di kartu)" value={formState.ringkas || ''} onChange={e => setFormState(p => ({...p, ringkas: e.target.value}))} /><Textarea placeholder="Deskripsi lengkap" value={formState.description || ''} onChange={e => setFormState(p => ({...p, description: e.target.value}))} /><Input placeholder="URL Gambar" value={formState.image_url || ''} onChange={e => setFormState(p => ({...p, image_url: e.target.value}))} /></>)}
           {modalType === 'hafalanVideos' && (<><Input placeholder="Judul Video" value={formState.title || ''} onChange={e => setFormState(p => ({...p, title: e.target.value}))} /><Input placeholder="URL Embed Video Youtube" value={formState.url || ''} onChange={e => setFormState(p => ({...p, url: e.target.value}))} />{modalType === 'hafalanVideos' && (<div className="space-y-2"><Textarea placeholder='Google Drive Embed Code' value={formState.google_drive_embed || ''} onChange={e => setFormState(p => ({...p, google_drive_embed: e.target.value}))} className="font-mono text-xs" rows={3}/><p className="text-[10px] text-muted-foreground">Isi salah satu: YouTube URL atau Google Drive Embed.</p></div>)}{modalType === 'hafalanVideos' && (<Select value={formState.jilid} onValueChange={val => setFormState(p => ({...p, jilid: val}))}><SelectTrigger><SelectValue placeholder="Pilih Jilid" /></SelectTrigger><SelectContent>{['Jilid 1', 'Jilid 2', 'Jilid 3', 'Jilid 4', 'Jilid 5', 'Jilid 6', 'Lainnya'].map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select>)}</>)}
           {modalType === 'galleryPhotos' && (<><Input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'galleryPhotos')} /><Input placeholder="Judul Foto" value={formState.caption || ''} onChange={e => setFormState(p => ({...p, caption: e.target.value}))} /><Select value={formState.kategori || 'Belajar'} onValueChange={val => setFormState(p => ({...p, kategori: val}))}><SelectTrigger><SelectValue placeholder="Kategori" /></SelectTrigger><SelectContent>{['Belajar', 'Ekstrakurikuler', 'Acara', 'Fasilitas', 'Prestasi'].map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent></Select><Textarea placeholder="Keterangan singkat (opsional)" value={formState.keterangan || ''} onChange={e => setFormState(p => ({...p, keterangan: e.target.value}))} /><Input placeholder="Tanggal, mis. Agustus 2025 (opsional)" value={formState.tanggal || ''} onChange={e => setFormState(p => ({...p, tanggal: e.target.value}))} />{formState.url && <img src={formState.url} alt="Preview" className="w-full h-40 object-cover rounded-md mt-2" />}</>)}
+          {modalType === 'galleryAlbums' && (
+            <>
+              <Input placeholder="Nama Album" value={formState.title || ''} onChange={e => setFormState(p => ({ ...p, title: e.target.value }))} />
+              <Textarea placeholder="Deskripsi singkat (opsional)" value={formState.description || ''} onChange={e => setFormState(p => ({ ...p, description: e.target.value }))} />
+              <div className="space-y-2">
+                <div>
+                  <p className="text-sm font-semibold">Pilih foto dari Galeri Kegiatan</p>
+                  <p className="text-xs text-muted-foreground">Album memakai foto yang sudah tersedia. Tidak perlu mengunggah ulang.</p>
+                </div>
+                {galleryPhotos.length > 0 ? (
+                  <div className="grid max-h-72 gap-2 overflow-y-auto rounded-lg border p-2 sm:grid-cols-2">
+                    {galleryPhotos.map((photo) => {
+                      const photoId = String(photo.id);
+                      const photoUrl = photo.url || photo.image_url || '';
+                      return (
+                        <label key={photoId} className="flex cursor-pointer items-center gap-3 rounded-md border bg-background p-2 transition-colors hover:bg-muted/60">
+                          <input
+                            type="checkbox"
+                            checked={selectedGalleryPhotoIds.has(photoId)}
+                            onChange={(event) => setFormState((previous) => {
+                              const current = new Set((previous.photo_ids || previous.photoIds || []).map((id) => String(id)));
+                              if (event.target.checked) current.add(photoId);
+                              else current.delete(photoId);
+                              return { ...previous, photo_ids: [...current] };
+                            })}
+                            className="h-4 w-4 accent-primary"
+                          />
+                          {photoUrl ? <img src={photoUrl} alt="" className="h-12 w-16 shrink-0 rounded object-cover" /> : <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded bg-muted text-[10px] text-muted-foreground">Tanpa foto</div>}
+                          <span className="min-w-0 truncate text-sm">{photo.caption || photo.name || 'Foto tanpa judul'}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Belum ada foto pada Galeri Kegiatan.</p>
+                )}
+                <p className="text-xs text-muted-foreground" role="status">{selectedGalleryPhotoIds.size} foto dipilih</p>
+              </div>
+            </>
+          )}
         </div>
         <div className="flex justify-end mt-4"><Button onClick={handleModalSubmit}>Simpan</Button></div>
       </>
@@ -504,7 +620,55 @@ const ContentManagement = () => {
       case 'media':
         return (
           <>
+            <div className="admin-card p-4 space-y-4 md:col-span-2">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-xl flex items-center gap-2"><Building2 /> Foto Gedung Header Beranda</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Kelola foto yang tampil pada area utama header halaman beranda.</p>
+                </div>
+                <span className="rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">Opsional</span>
+              </div>
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-center">
+                <div className="aspect-video overflow-hidden rounded-xl border border-slate-200/80 bg-muted/30 dark:border-white/10">
+                  {content.schoolBuildingPhoto && !buildingPhotoPreviewError ? (
+                    <img
+                      src={content.schoolBuildingPhoto}
+                      alt="Pratinjau foto gedung sekolah"
+                      className="h-full w-full object-cover"
+                      onError={() => setBuildingPhotoPreviewError(true)}
+                    />
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted-foreground">
+                      <Building2 className="h-8 w-8" aria-hidden="true" />
+                      <span>{content.schoolBuildingPhoto ? 'Pratinjau tidak dapat dimuat.' : 'Belum ada foto. Header memakai fallback bawaan.'}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold" htmlFor="school-building-photo">Unggah atau ganti foto</label>
+                  <Input
+                    id="school-building-photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => handleFileUpload(e, 'schoolBuildingPhoto')}
+                    disabled={assetUploadType === 'schoolBuildingPhoto'}
+                  />
+                  <p className="text-xs text-muted-foreground">Format JPG, PNG, atau WebP. Foto lama tetap dipakai jika upload atau penyimpanan gagal.</p>
+                  {assetUploadType === 'schoolBuildingPhoto' && <p className="text-sm font-medium text-primary" role="status">Mengunggah dan menyimpan foto…</p>}
+                </div>
+              </div>
+            </div>
+            <GalleryHeroMosaicSettings
+              photos={content.galleryPhotos}
+              value={content.galleryHeroMosaic}
+              saveState={saveState}
+              onChange={(galleryHeroMosaic) => {
+                setSaveState('idle');
+                setContent((previous) => ({ ...previous, galleryHeroMosaic }));
+              }}
+            />
             <div className="col-span-full"><ContentSection title="Galeri Kegiatan" modalType="galleryPhotos" data={content.galleryPhotos} icon={<ImageIcon />} renderItem={item => <div className="flex items-center gap-2"><img src={item.url} alt="" className="w-12 h-12 object-cover rounded-md" /><p className="truncate">{item.caption}</p></div>} /></div>
+            <div className="col-span-full"><ContentSection title="Album" modalType="galleryAlbums" data={content.galleryAlbums} icon={<BookMarked />} renderItem={item => <div className="min-w-0"><p className="truncate font-medium">{item.title || item.name}</p><p className="text-xs text-muted-foreground">{(item.photo_ids || item.photoIds || []).length} foto dari Galeri Kegiatan</p></div>} /></div>
             <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><FileText /> Brosur Pendaftaran</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'brochures')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.brochures.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('brochures', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>
             <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><Library /> Pustaka Digital</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'pustaka')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.pustaka.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('pustaka', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>
             <ContentSection title="Berita" modalType="news" data={content.news} icon={<BookCopy />} renderItem={item => <p className="truncate">{item.title}</p>} />
@@ -565,8 +729,8 @@ const ContentManagement = () => {
           </div>
         </div>
         <div className="admin-panel-header-actions">
-          <button onClick={handleSaveAll} className="admin-panel-primary-btn">
-            <Save className="w-4 h-4" /> Simpan Semua Perubahan
+          <button onClick={handleSaveAll} className="admin-panel-primary-btn" disabled={isSaving} aria-busy={isSaving}>
+            <Save className="w-4 h-4" /> {isSaving ? 'Menyimpan…' : 'Simpan Semua Perubahan'}
           </button>
         </div>
       </div>

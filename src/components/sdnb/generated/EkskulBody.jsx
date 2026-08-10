@@ -20,31 +20,35 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-ekskul.css';
 
 const EkskulBody = (vals = {}) => {
-  const { angka, indeks, jadwal, judulJumlah, langkah, panelCls, poster, stiker, total } = vals;
+  const {
+    angka, headerStatus, heroDescription, heroKicker, heroSuffix, heroTitle, heroYear,
+    indeks, jadwal, judulJumlah, langkah, panelCls, poster, stiker, total,
+  } = vals;
   return (
     <>
 <section className="hero2" style={{ maxWidth: "1240px", margin: "0 auto", padding: "30px 28px 0", display: "grid", gridTemplateColumns: "1.02fr .98fr", gap: "34px", alignItems: "center" }}>
       <div>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "9px 15px", borderRadius: "999px", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Sepulang sekolah</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "9px 15px", borderRadius: "999px", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>{heroKicker}</div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", fontSize: "11px", fontWeight: "700", letterSpacing: ".18em", textTransform: "uppercase", color: "#7b80a4" }}>
-            <span style={{ width: "26px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></span>Tahun ajaran 2025/2026
+            <span style={{ width: "26px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></span>{heroYear}
           </div>
         </div>
-        <h1 className="bigtitle" style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "92px", lineHeight: ".88", letterSpacing: "-.052em", fontWeight: "800", color: "#171827" }}>{judulJumlah}<br /><span style={{ position: "relative", display: "inline-block", color: "transparent", WebkitTextStroke: "2px var(--sekolah-aksen-pekat)" }}>kegiatan<span aria-hidden="true" style={{ position: "absolute", left: "2%", right: "2%", bottom: "9%", height: "14px", borderRadius: "99px", background: "linear-gradient(90deg,rgba(91,108,255,.28),rgba(240,119,159,.32))", zIndex: "-1" }}></span></span><br />satu halaman.</h1>
-        <p style={{ margin: "26px 0 0", maxWidth: "470px", fontSize: "16px", lineHeight: "1.7", color: "#4c5175", textWrap: "pretty" }}>Setiap murid mengikuti sedikitnya satu kegiatan setiap tahun ajaran. Latihan berlangsung sore hari di lingkungan sekolah, gratis, dan dibimbing guru pembina.</p>
+        <h1 className="bigtitle" style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "92px", lineHeight: ".88", letterSpacing: "-.052em", fontWeight: "800", color: "#171827" }}>{judulJumlah}<br /><span style={{ position: "relative", display: "inline-block", color: "transparent", WebkitTextStroke: "2px var(--sekolah-aksen-pekat)" }}>{heroTitle}<span aria-hidden="true" style={{ position: "absolute", left: "2%", right: "2%", bottom: "9%", height: "14px", borderRadius: "99px", background: "linear-gradient(90deg,rgba(91,108,255,.28),rgba(240,119,159,.32))", zIndex: "-1" }}></span></span><br />{heroSuffix}</h1>
+        <p style={{ margin: "26px 0 0", maxWidth: "470px", fontSize: "16px", lineHeight: "1.7", color: "#4c5175", textWrap: "pretty" }}>{heroDescription}</p>
+        {headerStatus?.message && <div role={headerStatus.state === 'error' ? 'alert' : 'status'} aria-live="polite" style={{ marginTop: "16px", display: "inline-flex", alignItems: "center", minHeight: "30px", padding: "7px 11px", borderRadius: "999px", fontSize: "11.5px", fontWeight: "700", color: headerStatus.state === 'error' ? "#9e3e58" : "#6d7192", background: headerStatus.state === 'error' ? "rgba(220,92,126,.12)" : "rgba(255,255,255,.58)", border: "1px solid rgba(120,132,200,.2)" }}>{headerStatus.message}</div>}
         <div style={{ marginTop: "30px", display: "flex", flexWrap: "wrap", gap: "26px" }}>
           {(angka || []).map((a, $index) => (<React.Fragment key={$index}>
             <div>
-              <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", fontWeight: "800", letterSpacing: "-.035em", color: "#1d1f33" }}><span data-count={a.n}>0</span>{a.suf}</div>
+              <div aria-busy={a.state === 'loading' || a.state === 'refreshing'} style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", fontWeight: "800", letterSpacing: "-.035em", color: "#1d1f33" }}>{a.state === 'loading' ? '…' : a.state === 'error' ? '—' : <><span data-count={a.n}>0</span>{a.suf}</>}</div>
               <div style={{ marginTop: "3px", fontSize: "12.5px", color: "#6d7192" }}>{a.label}</div>
             </div>
           </React.Fragment>))}
         </div>
       </div>
-      <div style={{ position: "relative", height: "470px" }}>
+      <div className="hero-label-stage">
         {(stiker || []).map((s, $index) => (<React.Fragment key={$index}>
-          <div className="stiker" style={__dcs(s.style)}>{s.nama}</div>
+          <div className="stiker" data-index={$index} style={__dcs(s.style)}>{s.nama}</div>
         </React.Fragment>))}
       </div>
     </section>
@@ -57,6 +61,7 @@ const EkskulBody = (vals = {}) => {
         <div style={{ marginTop: "6px" }}>
           {(indeks || []).map((i, $index) => (<React.Fragment key={$index}>
             <button className="idx" onClick={i.pick} data-on={i.on}>
+              {i.fotoUrl && <img src={i.fotoUrl} alt="" aria-hidden="true" loading="lazy" onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ position: "absolute", inset: "0", zIndex: "-3", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />}
               <span className="ibg" style={__dcs(i.foto)}></span>
               <span className="iveil"></span>
               <span style={__dcs(i.no)}>{i.nomor}</span>
@@ -74,6 +79,8 @@ const EkskulBody = (vals = {}) => {
 
       <div className={`${panelCls}`} style={{ position: "sticky", top: "110px" }}>
         <div style={__dcs(poster.wrap)}>
+          {poster.foto && <img src={poster.foto} alt="" aria-hidden="true" onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ position: "absolute", inset: "0", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />}
+          {poster.foto && <div aria-hidden="true" style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(24,28,62,.78),rgba(24,28,62,.12) 68%)" }}></div>}
           <div style={{ position: "absolute", inset: "0", background: "radial-gradient(120% 80% at 18% 6%,rgba(255,255,255,.35),rgba(255,255,255,0) 58%)" }}></div>
           <div aria-hidden="true" style={{ position: "absolute", right: "-40px", bottom: "-60px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "230px", lineHeight: ".8", fontWeight: "800", letterSpacing: "-.06em", color: "rgba(255,255,255,.16)" }}>{poster.nomor}</div>
           <div style={{ position: "relative", padding: "38px 40px 34px" }}>

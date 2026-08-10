@@ -1,4 +1,8 @@
-import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
+import {
+  announceWebsiteContentUpdate,
+  fetchWebsiteContentMap,
+  saveWebsiteContentItem,
+} from '@/lib/publicContentAdapters';
 
 /**
  * Isi halaman Program yang dapat disunting pembeli.
@@ -15,9 +19,14 @@ import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicCont
 
 export const PROGRAM_CONTENT_KEY = 'program_content';
 
-const PRG = (nama, jenis, kelas, waktu, ringkas, cerita, meta) => ({ nama, jenis, kelas, waktu, ringkas, cerita, meta });
+const PRG = (nama, jenis, kelas, waktu, ringkas, cerita, meta, foto_url = '') => ({ nama, jenis, kelas, waktu, ringkas, cerita, meta, foto_url });
 
 export const DEFAULT_PROGRAM_CONTENT = Object.freeze({
+  hero: Object.freeze({
+    title: 'Program belajar yang\ndijalankan setiap hari,',
+    accent: 'bukan hanya tertulis.',
+    description: 'Program yang benar-benar dijalankan sepanjang tahun ajaran — sebagian menempel pada jam pelajaran, sebagian berupa kebiasaan harian yang dijaga seluruh kelas.',
+  }),
   stats: Object.freeze({ temaProjek: 2, muridTerlibat: 0 }),
 
   programs: Object.freeze([
@@ -82,6 +91,7 @@ const normPrograms = (rows) => {
     return {
       nama, jenis: teks(r?.jenis) || 'Program', kelas: teks(r?.kelas), waktu: teks(r?.waktu),
       ringkas: teks(r?.ringkas), cerita: teks(r?.cerita), meta,
+      foto_url: teks(r?.foto_url || r?.fotoUrl || r?.image_url || r?.imageUrl),
     };
   }).filter(Boolean);
 };
@@ -104,10 +114,20 @@ const normRitme = (rows) => {
   }).filter(Boolean);
 };
 
+const normHero = (stored) => {
+  const source = stored && typeof stored === 'object' ? stored : {};
+  return {
+    title: teks(source.title) || DEFAULT_PROGRAM_CONTENT.hero.title,
+    accent: teks(source.accent) || DEFAULT_PROGRAM_CONTENT.hero.accent,
+    description: teks(source.description) || DEFAULT_PROGRAM_CONTENT.hero.description,
+  };
+};
+
 export const normalizeProgramContent = (stored) => {
   const source = stored && typeof stored === 'object' ? stored : {};
   const stats = source.stats && typeof source.stats === 'object' ? source.stats : {};
   return {
+    hero: normHero(source.hero),
     stats: { temaProjek: angka(stats.temaProjek), muridTerlibat: angka(stats.muridTerlibat) },
     programs: source.programs === undefined ? clone(DEFAULT_PROGRAM_CONTENT.programs) : normPrograms(source.programs),
     jam: source.jam === undefined ? clone(DEFAULT_PROGRAM_CONTENT.jam) : normJam(source.jam),
@@ -123,5 +143,6 @@ export const fetchProgramContent = async () => {
 export const saveProgramContent = async (content) => {
   const normalized = normalizeProgramContent(content);
   await saveWebsiteContentItem({ key: PROGRAM_CONTENT_KEY, content: normalized, isPublic: true });
+  announceWebsiteContentUpdate([PROGRAM_CONTENT_KEY]);
   return normalized;
 };

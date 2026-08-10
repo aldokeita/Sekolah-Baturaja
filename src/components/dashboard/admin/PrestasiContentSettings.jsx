@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Award, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
+import { Award, Loader2, Plus, RotateCcw, Save, Trash2, Upload, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import {
   fetchPrestasiContent, savePrestasiContent,
 } from '@/lib/prestasiContent';
 import { getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
+import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
 
 const salinBawaan = () => JSON.parse(JSON.stringify({
   stats: DEFAULT_PRESTASI_CONTENT.stats,
@@ -19,7 +20,7 @@ const salinBawaan = () => JSON.parse(JSON.stringify({
 
 const RECORD_KOSONG = {
   tahun: '', judul: '', tingkat: 'Kecamatan', peringkat: 'Juara 1',
-  oleh: '', bidang: 'Akademik', cerita: '', meta: [],
+  oleh: '', bidang: 'Akademik', cerita: '', foto_url: '', meta: [],
 };
 
 const PrestasiContentSettings = () => {
@@ -27,6 +28,7 @@ const PrestasiContentSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [uploadingRecord, setUploadingRecord] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -51,6 +53,28 @@ const PrestasiContentSettings = () => {
   const tambahRecord = () => setIsi((prev) => ({ ...prev, records: [...prev.records, { ...RECORD_KOSONG }] }));
   const hapusRecord = (index) => setIsi((prev) => ({ ...prev, records: prev.records.filter((_, i) => i !== index) }));
 
+  const handleFotoUpload = async (index, event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    setUploadingRecord(index);
+    try {
+      const { publicUrl } = await uploadWebsiteAsset({ folder: 'prestasi-images', file });
+      if (!publicUrl) throw new Error('URL foto perlombaan tidak tersedia setelah upload.');
+      ubahRecord(index, 'foto_url', publicUrl);
+      toast({
+        title: 'Foto siap disimpan',
+        description: 'Foto sudah diunggah. Tekan Simpan Prestasi untuk menerapkannya pada halaman publik.',
+      });
+    } catch (error) {
+      toast({ title: 'Gagal mengunggah foto', description: getStorageErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setUploadingRecord(null);
+      input.value = '';
+    }
+  };
+
   const ubahMeta = (ri, mi, field, value) => setIsi((prev) => ({
     ...prev,
     records: prev.records.map((r, i) => (i === ri
@@ -67,6 +91,7 @@ const PrestasiContentSettings = () => {
   }));
 
   const handleSave = async () => {
+    if (isSaving || uploadingRecord !== null) return;
     setIsSaving(true);
     try {
       const tersimpan = await savePrestasiContent(isi);
@@ -104,8 +129,8 @@ const PrestasiContentSettings = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4" /> Kembalikan bawaan</Button>
-          <Button type="button" onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" /> {isSaving ? 'Menyimpan…' : 'Simpan Prestasi'}</Button>
+          <Button type="button" variant="outline" onClick={handleReset} disabled={isSaving || uploadingRecord !== null}><RotateCcw className="mr-2 h-4 w-4" /> Kembalikan bawaan</Button>
+          <Button type="button" onClick={handleSave} disabled={isSaving || uploadingRecord !== null}><Save className="mr-2 h-4 w-4" /> {uploadingRecord !== null ? 'Menunggu upload…' : isSaving ? 'Menyimpan…' : 'Simpan Prestasi'}</Button>
         </div>
       </div>
 
@@ -181,6 +206,47 @@ const PrestasiContentSettings = () => {
             <div className="admin-edit-field">
               <label htmlFor={`p-cerita-${i}`}>Cerita / keterangan</label>
               <Textarea id={`p-cerita-${i}`} rows={2} value={r.cerita} onChange={(e) => ubahRecord(i, 'cerita', e.target.value)} />
+            </div>
+            <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <label htmlFor={`p-foto-${i}`} className="text-sm font-semibold text-foreground">Foto perlombaan (opsional)</label>
+                  <p className="mt-1 text-xs text-muted-foreground">Foto yang sama akan dipakai pada modal Prestasi dan cover Capaian Teratas di Profil.</p>
+                </div>
+                <label htmlFor={`p-foto-${i}`} className="inline-flex cursor-pointer items-center rounded-md border bg-background px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-accent has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                  {uploadingRecord === i ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                  {uploadingRecord === i ? 'Mengunggah…' : r.foto_url ? 'Ganti foto' : 'Unggah foto'}
+                  <input
+                    id={`p-foto-${i}`}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    disabled={uploadingRecord !== null}
+                    onChange={(event) => handleFotoUpload(i, event)}
+                  />
+                </label>
+              </div>
+              {r.foto_url ? (
+                <div className="relative overflow-hidden rounded-lg border bg-background">
+                  <img
+                    src={r.foto_url}
+                    alt={`Pratinjau foto ${r.judul || `prestasi ${i + 1}`}`}
+                    className="h-40 w-full object-cover"
+                    onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="absolute right-2 top-2 bg-background/90"
+                    onClick={() => ubahRecord(i, 'foto_url', '')}
+                  >
+                    <X className="mr-1 h-3.5 w-3.5" /> Lepas foto
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Belum ada foto. Tampilan publik akan menggunakan latar fallback.</p>
+              )}
             </div>
             <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
               <div className="flex items-center justify-between">

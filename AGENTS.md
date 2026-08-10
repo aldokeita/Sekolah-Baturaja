@@ -1,4 +1,4 @@
-# AGENTS.md — LPQ Al-Fath Maulana
+# AGENTS.md — SDN Baturaja
 
 **Generated:** 2026-08-06 | **Commit:** 7f61898 | **Branch:** migrate-frontpage-baru
 
@@ -14,12 +14,12 @@
 │   ├── components/dashboard/admin/  # 36 panel admin (AGENTS.md tersedia)
 │   ├── components/dashboard/shared/ # Widget dashboard bersama
 │   ├── components/ui/               # shadcn/ui (57 komponen)
-│   ├── components/reactbits/        # Efek visual kustom (aurora, glass, glow)
+│   ├── components/reactbits/        # Efek visual kustom yang dipakai secara terbatas
 │   ├── contexts/                    # AuthContext + ThemeContext
 │   ├── hooks/                       # 12 custom hooks (absensi, search, media)
 │   ├── lib/                         # Adapter layer + apiClient (AGENTS.md tersedia)
 │   ├── pages/                       # 31 route-level pages
-│   └── styles/                      # CSS (admin, public, aurora theme)
+│   └── styles/                      # CSS (admin, publik, dan sistem visual bersama)
 ├── backend/                      # Go API server — proxy ke Supabase (AGENTS.md tersedia)
 │   ├── cmd/seed-admin/              # CLI seed admin user
 │   └── internal/                    # auth, config, db, handler(17), middleware, storage
@@ -45,7 +45,7 @@
 | Migration DB | `supabase/migrations/` | SELALU buat file baru, JANGAN edit migration lama |
 | Edge function | `supabase/functions/` | Deno runtime, shared code di `_shared/` |
 | Feature flags | `src/lib/featureFlags.js` | Toggle untuk game, deferred features, backup/restore |
-| Design tokens | `src/styles/` + `tailwind.config.js` | Aurora Neo-Glass: teal–cyan–blue–violet palette |
+| Design tokens | `docs/design-reference/DESIGN.md` → `src/styles/sdnb*.css` | Sistem visual publik: indigo–violet–rose, Plus Jakarta Sans, Archivo |
 | Script deployment | `scripts/` | Lihat AGENTS.md di scripts/ untuk kategori |
 
 ## Code map (simbol kunci)
@@ -60,13 +60,12 @@
 | `fetchAttendance` | function | `src/lib/attendanceAdapters.js` | 31 consumer — adapter absensi paling sentral |
 | `createAttendance` | function | `src/lib/attendanceAdapters.js` | 12 consumer — buat record absensi |
 | `featureFlags` | module | `src/lib/featureFlags.js` | Toggle fitur (game, edge functions, backup) |
-| `SideRays` | component | `src/components/reactbits/SideRays/` | Efek visual aurora — dark mode only |
 
 ## 1. Prinsip utama
 
 Kerjakan hanya ruang lingkup yang diminta pengguna.
 
-Repository ini adalah aplikasi independen LPQ Al-Fath Maulana. Jangan menghubungkan, menyalin ulang, atau memakai credential, akun, data operasional, Project Ref, URL, domain, maupun asset identitas lembaga sumber. Semua layanan online baru memerlukan persetujuan eksplisit pengguna.
+Repository ini adalah aplikasi independen SDN Baturaja. Jangan menghubungkan, menyalin ulang, atau memakai credential, akun, data operasional, Project Ref, URL, domain, maupun asset identitas lembaga sumber. Semua layanan online baru memerlukan persetujuan eksplisit pengguna.
 
 Gunakan alur:
 
@@ -99,7 +98,7 @@ Panduan pemilihan bagian:
 
 ## 3. Penggunaan skill kreatif
 
-Aktifkan `$lpq-creative-web-expert` hanya untuk:
+Aktifkan `$sdnb-creative-web-expert` hanya untuk:
 
 - redesign;
 - UI/UX;
@@ -198,7 +197,7 @@ Pertahankan:
 - kontrak API;
 - kemampuan admin mengelola konten.
 
-Gaya resmi adalah **LPQ Aurora Neo-Glass**: frosted translucent glass, pencahayaan aurora teal–cyan–blue–violet, depth neumorphic lembut, kontrol tactile, spring microinteraction, light/dark mode yang matang, serta accessibility dan performa yang terjaga.
+Gaya resmi mengikuti [`docs/design-reference/DESIGN.md`](docs/design-reference/DESIGN.md) dan halaman publik saat ini: dasar terang `#e9edf6`, aksen indigo–violet–rose yang hemat, Plus Jakarta Sans untuk judul, Archivo untuk teks, permukaan putih lembut, serta hierarchy yang bersih. Dashboard dark mode memakai permukaan solid dan divider tenang, bukan efek cahaya dekoratif.
 
 UI harus:
 

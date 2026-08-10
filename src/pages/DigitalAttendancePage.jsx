@@ -54,7 +54,7 @@ import {
   fetchAttendance,
   fetchAttendanceCount,
   fetchAttendanceDates,
-  fetchCalendarEvents,
+  fetchCalendarContext,
   getAttendanceErrorMessage,
   getLocalDateString,
   getSantriAttendanceSuccessMessage,
@@ -69,6 +69,7 @@ import AttendanceProfileCard from '@/components/dashboard/shared/AttendanceProfi
 import { useAttendanceSessionConfiguration } from '@/hooks/useAttendanceSessionConfiguration';
 import { resolveSantriLevel } from '@/lib/santriLevel';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import { getActiveCalendarDates, isCalendarDateActive } from '@/lib/calendarUtils';
 
 // --- Data (unchanged) ---
 const guruQuotes = [
@@ -125,10 +126,24 @@ const getCurrentMonthDateRange = () => {
     };
 };
 
+const getRecentCalendarContext = async (date = new Date()) => {
+    const start = new Date(date);
+    start.setDate(start.getDate() - 35);
+    return fetchCalendarContext(getLocalDateString(start), getLocalDateString(date)).catch(() => null);
+};
+
+const isCalendarNonTeachingDate = (date, calendarContext) => {
+    if (!calendarContext) return date.getDay() === 0 || date.getDay() === 6;
+    return !isCalendarDateActive({
+        dateString: getLocalDateString(date),
+        ...calendarContext,
+    });
+};
+
 const getSantriMonthlyAttendanceStats = async (santriId) => {
     if (!santriId) return { present: 0, late: 0, absent: 0 };
 
-    const { start, end } = getCurrentMonthDateRange();
+    const { start } = getCurrentMonthDateRange();
     const now = new Date();
     const selectedYear = now.getFullYear();
     const selectedMonth = now.getMonth();
@@ -138,30 +153,22 @@ const getSantriMonthlyAttendanceStats = async (santriId) => {
 
     // date_to is inclusive on the API, so pass endInclusive rather than the
     // exclusive `end` the old .lt() filter used.
-    const [attendanceRows, holidayRows] = await Promise.all([
+    const [attendanceRows, calendarContext] = await Promise.all([
       fetchAttendance({ user_id: santriId, date_from: start, date_to: endInclusive, limit: 500 }).catch(() => null),
-      fetchCalendarEvents(start, endInclusive).catch(() => null),
+      fetchCalendarContext(start, endInclusive).catch(() => null),
     ]);
 
-    if (!attendanceRows || !holidayRows) {
+    if (!attendanceRows || !calendarContext) {
         return { present: 0, late: 0, absent: 0 };
     }
     const attendanceResult = { data: attendanceRows };
 
-    const holidaySet = new Set(holidayRows.map(item => item.date));
-    const activeDaysUntilToday = [];
-
-    for (let day = 1; day <= lastDay; day++) {
-        const date = new Date(selectedYear, selectedMonth, day);
-        const dateStr = date.toLocaleDateString('en-CA');
-        const dayOfWeek = new Date(Date.UTC(selectedYear, selectedMonth, day)).getUTCDay();
-        const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
-        const isPastOrToday = date <= today;
-
-        if (isWeekday && isPastOrToday && !holidaySet.has(dateStr)) {
-            activeDaysUntilToday.push(dateStr);
-        }
-    }
+    const activeDaysUntilToday = getActiveCalendarDates({
+        startDate: start,
+        endDate: endInclusive,
+        throughDate: today,
+        ...calendarContext,
+    });
 
     const activeDaySet = new Set(activeDaysUntilToday);
     const presentDateSet = new Set();
@@ -244,13 +251,24 @@ const getSantriLearningHighlights = async (santriId) => {
 };
 
 // --- Business logic (unchanged) ---
-const canCheckIn = (sesi, userRole, isPentashih = false, timestamp = new Date(), sessionTimes = DEFAULT_SESSION_TIMES) => {
+const canCheckIn = (
+    sesi,
+    userRole,
+    isPentashih = false,
+    timestamp = new Date(),
+    sessionTimes = DEFAULT_SESSION_TIMES,
+    calendarContext = null,
+) => {
     if (isPentashih) return { can: true, message: '' };
 
-    const today = timestamp;
-    const dayOfWeek = today.getDay();
-    if (userRole === 'guru' && (dayOfWeek === 0 || dayOfWeek === 6)) {
-      return { can: false, message: 'Absensi libur pada hari Sabtu dan Minggu.' };
+    if (userRole === 'guru') {
+      const dateString = getLocalDateString(timestamp);
+      const isActiveDay = calendarContext
+        ? isCalendarDateActive({ dateString, ...calendarContext })
+        : timestamp.getDay() >= 1 && timestamp.getDay() <= 5;
+      if (!isActiveDay) {
+        return { can: false, message: 'Absensi tidak tersedia pada hari libur kalender akademik.' };
+      }
     }
 
     const windowState = evaluateAttendanceWindow({ timestamp, sesi, sessionTimes });
@@ -608,12 +626,14 @@ const DigitalAttendancePage = () => {
               const totalMonthAttendance = attendanceCountResult?.count || 0;
               const hoursTaught = (totalMonthAttendance * 1.25).toFixed(2);
               const uniqueDates = [...new Set((historyDates || []).map(h => h.attendance_date || h))];
+              const streakCalendarContext = await getRecentCalendarContext();
               let streak = 0;
               const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - 1);
               while (true) {
                   const dateStr = checkDate.toLocaleDateString('en-CA');
                   if (uniqueDates.includes(dateStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); }
-                  else { const day = checkDate.getDay(); if (day === 0 || day === 6) { checkDate.setDate(checkDate.getDate() - 1); continue; } break; }
+                  else if (isCalendarNonTeachingDate(checkDate, streakCalendarContext)) { checkDate.setDate(checkDate.getDate() - 1); continue; }
+                  else break;
               }
               if (totalMonthAttendance > 0) streak++;
               const timeMap = { 'Pagi': 8, 'Siang': 14, 'Sore': 16, 'Malam': 18 };
@@ -670,6 +690,9 @@ const DigitalAttendancePage = () => {
           return;
         }
 
+        const calendarContext = userRole === 'guru'
+          ? await fetchCalendarContext(todayStr, todayStr)
+          : null;
         const checkInStatus = userRole === 'santri'
           ? resolveSantriAttendanceSession({
               timestamp: todayDate,
@@ -677,7 +700,7 @@ const DigitalAttendancePage = () => {
               assignedSession: sesiUser,
               sessionTimes,
             })
-          : canCheckIn(sesiUser, userRole, isPentashih, todayDate, sessionTimes);
+          : canCheckIn(sesiUser, userRole, isPentashih, todayDate, sessionTimes, calendarContext);
         if (!checkInStatus.can) {
           setLastScan({ type: 'warning', message: checkInStatus.message, name: user.nama || user.nama_lengkap, photo: user.foto_url, role: userRole, rfid: tag });
           return;
@@ -752,12 +775,14 @@ const DigitalAttendancePage = () => {
              ]);
              const hoursTaught = ((monthTotals?.count || 1) * 1.25).toFixed(2);
              const uniqueDates = [...new Set((historyDates || []).map(h => h.attendance_date || h))];
+              const streakCalendarContext = await getRecentCalendarContext();
               let streak = 0;
               const checkDate = new Date(); checkDate.setDate(checkDate.getDate() - 1);
               while (true) {
                   const dateStr = checkDate.toLocaleDateString('en-CA');
                   if (uniqueDates.includes(dateStr)) { streak++; checkDate.setDate(checkDate.getDate() - 1); }
-                  else { const day = checkDate.getDay(); if (day === 0 || day === 6) { checkDate.setDate(checkDate.getDate() - 1); continue; } break; }
+                  else if (isCalendarNonTeachingDate(checkDate, streakCalendarContext)) { checkDate.setDate(checkDate.getDate() - 1); continue; }
+                  else break;
               }
               streak++;
               guruStats = { hours: hoursTaught, streak, session: sesiUser };

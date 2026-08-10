@@ -10,39 +10,72 @@ import { fetchPaymentDetail, formatPaymentPeriod } from '@/lib/paymentAdapters';
 import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicContentAdapters';
 import { DEFAULT_WHATSAPP_TEMPLATES, fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import usePaymentReceiptConfiguration from '@/hooks/usePaymentReceiptConfiguration';
 import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
+import { getPaymentReceiptReference, isPaymentPaid, normalizeWhatsAppPhone } from '@/lib/paymentReceipt';
+import PaymentReceiptWatermark from './PaymentReceiptWatermark';
 
 const PaymentProofModal = ({ isOpen, onClose, payment }) => {
     const sekolah = useSchoolIdentity();
+    const { config: receiptConfig } = usePaymentReceiptConfiguration();
+    const receiptContent = receiptConfig.content;
+    const receiptVisibility = receiptConfig.visibility;
+    const receiptVisual = receiptConfig.visual;
+    const receiptFontFamily = {
+        system: 'inherit',
+        sans: 'Archivo, ui-sans-serif, system-ui, sans-serif',
+        serif: 'Georgia, Cambria, serif',
+        mono: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    }[receiptVisual.fontFamily] || 'inherit';
+    const receiptRadius = { sm: '0.75rem', md: '1rem', lg: '1.5rem' }[receiptVisual.radius] || '1rem';
+    const receiptDensityClass = receiptVisual.density === 'compact' ? 'p-3 sm:p-4' : 'p-4 sm:p-6';
     const receiptRef = useRef(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isLoadingPayment, setIsLoadingPayment] = useState(false);
+    const [paymentLoadError, setPaymentLoadError] = useState('');
+    const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+    const [isPrinting, setIsPrinting] = useState(false);
     const [completePayment, setCompletePayment] = useState(null);
     const [qrCodeDataURL, setQrCodeDataURL] = useState('');
     const [receiptLogoUrl, setReceiptLogoUrl] = useState(DEFAULT_LOGO_PATH);
     const [paymentMessageTemplate, setPaymentMessageTemplate] = useState(DEFAULT_WHATSAPP_TEMPLATES.paymentReceipt);
 
     useEffect(() => {
+        let active = true;
+
         const fetchCompletePayment = async () => {
             if (!isOpen || !payment?.id) {
-                setCompletePayment(null);
+                if (active) {
+                    setCompletePayment(null);
+                    setPaymentLoadError('');
+                    setIsLoadingPayment(false);
+                }
                 return;
             }
 
             setIsLoadingPayment(true);
+            setPaymentLoadError('');
+            setCompletePayment(null);
             try {
                 const data = await fetchPaymentDetail(payment.id);
                 if (!data) throw new Error('Record pembayaran tidak ditemukan.');
-                setCompletePayment(data);
+                if (active) setCompletePayment(data);
             } catch (error) {
-                setCompletePayment(null);
-                toast({ title: 'Gagal Memuat Bukti', description: error.message, variant: 'destructive' });
+                if (active) {
+                    const description = error?.message || 'Data lengkap tidak dapat dimuat. Bukti sementara dari riwayat tetap ditampilkan.';
+                    setCompletePayment(null);
+                    setPaymentLoadError(description);
+                    toast({ title: 'Gagal Memuat Bukti', description, variant: 'destructive' });
+                }
             } finally {
-                setIsLoadingPayment(false);
+                if (active) setIsLoadingPayment(false);
             }
         };
 
         fetchCompletePayment();
+        return () => {
+            active = false;
+        };
     }, [isOpen, payment?.id]);
 
     useEffect(() => {
@@ -74,9 +107,10 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
 
     const receiptPayment = completePayment || payment;
     const amount = Number(receiptPayment?.jumlah || 0);
-    const paymentDate = receiptPayment?.tanggal_pembayaran || receiptPayment?.created_at || new Date().toISOString();
+    const paymentDate = receiptPayment?.created_at || receiptPayment?.tanggal_pembayaran || new Date().toISOString();
     const paymentMethod = receiptPayment?.metode_pembayaran || '-';
-    const transactionRef = receiptPayment?.transaction_id || receiptPayment?.id || '-';
+    const transactionRef = getPaymentReceiptReference(receiptPayment);
+    const isPaid = isPaymentPaid(receiptPayment?.status);
     const studentName = receiptPayment?.santri?.nama_lengkap || 'Murid';
     const studentId = receiptPayment?.santri?.nomor_induk_qiroati || '-';
     const period = formatPaymentPeriod(receiptPayment?.bulan, receiptPayment?.tahun);
@@ -92,7 +126,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
             await waitForImagesToLoad(receiptRef.current);
             const dataUrl = await toPng(receiptRef.current, {
                 cacheBust: true,
-                backgroundColor: '#ffffff',
+                backgroundColor: receiptVisual.backgroundColor,
                 pixelRatio: 2,
                 imagePlaceholder: DEFAULT_LOGO_PATH,
             });
@@ -110,119 +144,183 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
         }
     };
 
-    const handleSendWhatsApp = () => {
+    const handleSendWhatsApp = async () => {
         if (!receiptPayment || !receiptPayment.santri?.no_hp_ortu) {
             toast({ title: "Gagal", description: "Nomor HP Wali Murid tidak ditemukan.", variant: "destructive" });
             return;
         }
 
-        let phoneNumber = receiptPayment.santri.no_hp_ortu.replace(/\D/g, '');
-        if (phoneNumber.startsWith('0')) phoneNumber = '62' + phoneNumber.substring(1);
-        else if (!phoneNumber.startsWith('62')) phoneNumber = '62' + phoneNumber;
-
-        if (phoneNumber.length < 10) {
+        const phoneNumber = normalizeWhatsAppPhone(receiptPayment.santri.no_hp_ortu);
+        if (!phoneNumber) {
             toast({ title: "Gagal", description: "Format nomor HP tidak valid.", variant: "destructive" });
             return;
         }
 
-        const formattedAmount = `Rp ${amount.toLocaleString('id-ID')}`;
-        const date = new Date(paymentDate).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-        const message = renderWhatsAppTemplate(paymentMessageTemplate, {
-            nama_santri: studentName,
-            nomor_induk: studentId,
-            rincian: notes,
-            nominal: formattedAmount,
-            tanggal: date,
-            periode: period,
-            metode: paymentMethod,
-            transaction_id: transactionRef,
-            status: 'LUNAS',
-            nama_lembaga: sekolah.name,
-        });
+        const popup = window.open('about:blank', '_blank');
+        if (!popup) {
+            toast({ title: 'WhatsApp Tidak Dapat Dibuka', description: 'Izinkan pop-up pada browser, lalu coba lagi.', variant: 'destructive' });
+            return;
+        }
 
-        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-        toast({ title: "Membuka WhatsApp", description: "Pesan telah disiapkan." });
+        setIsSendingWhatsApp(true);
+        try {
+            const formattedAmount = `Rp ${amount.toLocaleString('id-ID')}`;
+            const date = new Date(paymentDate).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            const templates = await fetchWhatsAppTemplates();
+            const message = renderWhatsAppTemplate(templates.paymentReceipt || paymentMessageTemplate, {
+                nama_santri: studentName,
+                nomor_induk: studentId,
+                rincian: notes,
+                nominal: formattedAmount,
+                tanggal: date,
+                periode: period,
+                metode: paymentMethod,
+                transaction_id: transactionRef,
+                status: isPaid ? receiptContent.paidStatusText : receiptContent.unpaidStatusText,
+                label_tanggal: receiptContent.dateLabel,
+                label_jam: receiptContent.timeLabel,
+                label_metode: receiptContent.methodLabel,
+                label_status: receiptContent.statusLabel,
+                label_penerima: receiptContent.recipientLabel,
+                label_item: receiptContent.itemLabel,
+                label_nominal: receiptContent.amountLabel,
+                label_periode: receiptContent.periodLabel,
+                label_total: receiptContent.totalLabel,
+                judul_bukti: receiptContent.receiptTitle,
+                footer_text: receiptContent.footerText,
+                nama_lembaga: sekolah.name,
+            });
+
+            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            popup.location.href = whatsappUrl;
+            toast({ title: "WhatsApp Siap Digunakan", description: "Pesan bukti pembayaran telah disiapkan." });
+        } catch (error) {
+            popup.close();
+            toast({ title: 'Gagal Menyiapkan WhatsApp', description: error?.message || 'Pesan bukti pembayaran tidak dapat disiapkan.', variant: 'destructive' });
+        } finally {
+            setIsSendingWhatsApp(false);
+        }
+    };
+
+    const handlePrint = () => {
+        if (!receiptPayment?.id || !receiptRef.current) {
+            toast({ title: 'Gagal Mencetak', description: 'Bukti pembayaran belum siap.', variant: 'destructive' });
+            return;
+        }
+        setIsPrinting(true);
+        window.setTimeout(() => {
+            try {
+                window.print();
+                toast({ title: 'Dialog Cetak Dibuka', description: 'Pilih printer atau simpan sebagai PDF dari dialog cetak.' });
+            } catch (error) {
+                toast({ title: 'Gagal Mencetak', description: error?.message || 'Dialog cetak tidak dapat dibuka.', variant: 'destructive' });
+            } finally {
+                setIsPrinting(false);
+            }
+        }, 0);
     };
 
     if (!payment) return null;
 
     return (
+        <>
+        <style>{`@media print {
+          body * { visibility: hidden !important; }
+          #payment-proof-content, #payment-proof-content * { visibility: visible !important; }
+          #payment-proof-content { position: absolute; left: 0; top: 0; width: 100%; max-width: 480px; box-shadow: none; }
+        }`}</style>
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-[480px] p-0 overflow-hidden bg-transparent border-none shadow-none">
-                <DialogTitle className="sr-only">Bukti Pembayaran</DialogTitle>
+            <DialogContent className="w-[calc(100%-1rem)] max-w-[480px] max-h-[90vh] overflow-y-auto p-0 bg-transparent border-none shadow-none">
+                <DialogTitle className="sr-only">{receiptContent.receiptTitle}</DialogTitle>
+                {paymentLoadError && (
+                    <div role="alert" className="mx-4 mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        {paymentLoadError}
+                    </div>
+                )}
                 <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
-                    <div ref={receiptRef} className="p-6 bg-white text-slate-800 relative font-sans">
+                    <div ref={receiptRef} id="payment-proof-content" className={`${receiptDensityClass} text-slate-800 relative`} style={{ backgroundColor: receiptVisual.backgroundColor, color: receiptVisual.textColor, borderColor: receiptVisual.borderColor, borderRadius: receiptRadius, fontFamily: receiptFontFamily }}>
                         {/* Header */}
-                        <div className="text-center pb-4 mb-4 border-b border-dashed border-slate-300 relative z-10">
-                            <img src={receiptLogoUrl} alt="Logo" className="w-16 h-16 mx-auto mb-2 object-contain"/>
-                            <h3 className="font-bold text-xl text-primary tracking-tight font-poppins">{sekolah.name.toUpperCase()}</h3>
-                            <p className="text-xs text-slate-500 mt-1">{sekolah.address}</p>
-                            <p className="text-xs text-slate-500">{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>
-                        </div>
-
-                        {/* Watermark LUNAS */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none select-none">
-                            <div className="border-4 border-red-500 text-red-500 rounded-lg px-8 py-3 text-5xl font-bold -rotate-12 opacity-15 whitespace-nowrap">
-                                LUNAS
-                            </div>
+                        <div className="text-center pb-4 mb-4 border-b border-dashed relative z-10" style={{ borderColor: receiptVisual.borderColor }}>
+                            {receiptVisibility.logo !== false && <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-16 h-16 mx-auto mb-2 object-contain"/>}
+                            {receiptContent.receiptTitle && <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: receiptVisual.accentColor }}>{receiptContent.receiptTitle}</p>}
+                            {receiptVisibility.schoolName !== false && <h3 className="font-bold text-xl tracking-tight font-poppins" style={{ color: receiptVisual.accentColor }}>{sekolah.name.toUpperCase()}</h3>}
+                            {receiptVisibility.address !== false && <p className="text-xs mt-1" style={{ color: receiptVisual.mutedTextColor }}>{sekolah.address}</p>}
+                            {receiptVisibility.contact !== false && <p className="text-xs" style={{ color: receiptVisual.mutedTextColor }}>{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>}
                         </div>
 
                         {/* Meta Info */}
-                        <div className="flex justify-between text-xs mb-4 text-slate-600 bg-slate-50 p-3 rounded-lg relative z-10">
+                        <div className="flex justify-between gap-4 text-xs mb-4 p-3 rounded-lg relative z-10" style={{ color: receiptVisual.mutedTextColor, backgroundColor: receiptVisual.surfaceColor, border: `1px solid ${receiptVisual.borderColor}` }}>
                             <div className="space-y-1">
-                                <p>Tgl: <span className="font-semibold text-slate-900">{new Date(paymentDate).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
-                                <p>Jam: <span className="font-semibold text-slate-900">{new Date(paymentDate).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
+                                <p>{receiptContent.dateLabel}: <span className="font-semibold" style={{ color: receiptVisual.textColor }}>{new Date(paymentDate).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
+                                <p>{receiptContent.timeLabel}: <span className="font-semibold" style={{ color: receiptVisual.textColor }}>{new Date(paymentDate).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
                             </div>
-                            <div className="space-y-1 text-right">
-                                <p>Metode: <span className="font-semibold text-slate-900 uppercase">{paymentMethod}</span></p>
-                                <p>Ref: <span className="font-mono">{String(transactionRef).substring(0, 18)}</span></p>
+                            <div className="space-y-1 text-right min-w-0">
+                                <p>{receiptContent.methodLabel}: <span className="font-semibold uppercase" style={{ color: receiptVisual.textColor }}>{paymentMethod}</span></p>
+                                {receiptVisibility.status !== false && isPaid && <p>{receiptContent.statusLabel}: <span className="font-semibold" style={{ color: receiptVisual.accentColor }}>{receiptContent.paidStatusText}</span></p>}
                             </div>
                         </div>
 
                         {/* Student Info */}
-                        <div className="mb-4 relative z-10">
-                            <p className="text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">Diterima Dari:</p>
-                            <p className="text-sm font-bold text-slate-900">{studentName}</p>
-                            <p className="text-xs text-slate-500 font-mono">No. Induk: {studentId}</p>
+                        <div className="relative z-10 mb-2" style={{ color: receiptVisual.textColor }}>
+                            {receiptVisibility.recipient !== false && <>
+                                <p className="text-[10px] font-semibold mb-1 uppercase tracking-wider" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.recipientLabel}</p>
+                                <p className="text-sm font-bold">{studentName}</p>
+                            </>}
+                            {receiptVisibility.studentId !== false && <p className="text-xs font-mono" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.studentIdLabel} {studentId}</p>}
                         </div>
+
+                        {isPaid && receiptVisibility.watermark !== false && (
+                            <div className="relative h-20 mb-2 overflow-hidden">
+                                <PaymentReceiptWatermark config={receiptConfig.watermark} />
+                            </div>
+                        )}
 
                         {/* Items */}
-                        <div className="space-y-3 mb-6 relative z-10">
-                            <div className="border-t border-slate-200 pt-3"></div>
+                        {receiptVisibility.items !== false && <div className="space-y-3 mb-6 relative z-10" style={{ color: receiptVisual.textColor }}>
+                            <div className="border-t pt-3" style={{ borderColor: receiptVisual.borderColor }}></div>
+                            <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wide" style={{ color: receiptVisual.mutedTextColor }}>
+                                <span>{receiptContent.itemLabel}</span><span>{receiptContent.amountLabel}</span>
+                            </div>
                             <div className="flex justify-between text-sm py-1">
-                                <span className="text-slate-700 flex-1 font-medium">{notes}</span>
-                                <span className="font-bold text-slate-900">Rp {amount.toLocaleString('id-ID')}</span>
+                                <span className="flex-1 font-medium">{notes}</span>
+                                <span className="font-bold">Rp {amount.toLocaleString('id-ID')}</span>
                             </div>
                             {period !== '-' && (
-                                <div className="text-xs text-slate-500 pl-2">
-                                    Tagihan: {period}
+                                <div className="text-xs pl-2" style={{ color: receiptVisual.mutedTextColor }}>
+                                    {receiptContent.periodLabel || 'Tagihan'}: {period}
                                 </div>
                             )}
-                            <div className="border-t border-slate-200 pt-3"></div>
-                        </div>
+                            <div className="border-t pt-3" style={{ borderColor: receiptVisual.borderColor }}></div>
+                        </div>}
 
                         {/* Total */}
-                        <div className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-100 mb-6 relative z-10">
-                            <span className="text-sm font-bold text-green-800">TOTAL BAYAR</span>
-                            <span className="text-xl font-black text-green-900">Rp {amount.toLocaleString('id-ID')}</span>
-                        </div>
+                        {receiptVisibility.total !== false && <div className="flex justify-between items-center p-3 rounded-lg border mb-6 relative z-10" style={{ backgroundColor: `${receiptVisual.accentColor}14`, borderColor: `${receiptVisual.accentColor}35`, color: receiptVisual.accentColor }}>
+                            <span className="text-sm font-bold">{receiptContent.totalLabel}</span>
+                            <span className="text-xl font-black">Rp {amount.toLocaleString('id-ID')}</span>
+                        </div>}
 
                         {/* Footer */}
-                        <div className="text-center relative z-10 flex flex-col items-center">
-                             <div className="bg-white p-1 inline-block rounded-lg shadow-sm border border-slate-100 mb-2">
-                                {qrCodeDataURL && <img src={qrCodeDataURL} alt="QR Code" className="w-20 h-20"/>}
-                            </div>
-                            <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Terima Kasih</p>
-                        </div>
+                        {((receiptVisibility.qr !== false && receiptConfig.qr.visible !== false) || receiptVisibility.footer !== false) && <div className="relative z-10">
+                             {receiptVisibility.qr !== false && receiptConfig.qr.visible !== false && <div className={`flex flex-col ${({ left: 'items-start', center: 'items-center', right: 'items-end' }[receiptConfig.qr.position] || 'items-center')}`}>
+                                <div className="p-1 inline-block rounded-lg shadow-sm border mb-2" style={{ backgroundColor: receiptVisual.backgroundColor, borderColor: receiptVisual.borderColor }}>
+                                {qrCodeDataURL && (
+                                    <img src={qrCodeDataURL} alt={receiptContent.qrLabel} style={{ width: `${receiptConfig.qr.size}px`, height: `${receiptConfig.qr.size}px` }}/>
+                                )}
+                                </div>
+                            </div>}
+                            {receiptVisibility.footer !== false && <p className="text-center text-[10px] font-bold tracking-widest uppercase" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.footerText}</p>}
+                        </div>}
                     </div>
 
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/90 flex justify-center gap-2 border-t dark:border-slate-700 flex-wrap">
                         <Button variant="outline" size="sm" onClick={onClose}>Tutup</Button>
-                        <Button variant="outline" size="sm" className="text-green-600 dark:text-green-400 border-green-200 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20" onClick={handleSendWhatsApp} disabled={isLoadingPayment}>
-                            <MessageSquare className="mr-2 h-4 w-4"/> Kirim WA
+                        <Button variant="outline" size="sm" className="text-green-600 dark:text-green-400 border-green-200 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20" onClick={handleSendWhatsApp} disabled={isLoadingPayment || isSendingWhatsApp}>
+                            {isSendingWhatsApp ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MessageSquare className="mr-2 h-4 w-4"/>} {isSendingWhatsApp ? 'Menyiapkan...' : 'Kirim WA'}
                         </Button>
-                        <Button size="sm" onClick={handleDownload} disabled={isGenerating || isLoadingPayment || !completePayment}>
+                        <Button variant="outline" size="sm" onClick={handlePrint} disabled={isPrinting || isLoadingPayment}>
+                            {isPrinting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Printer className="mr-2 h-4 w-4"/>} {isPrinting ? 'Membuka...' : 'Cetak'}
+                        </Button>
+                        <Button size="sm" onClick={handleDownload} disabled={isGenerating || isLoadingPayment || !receiptPayment?.id}>
                             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Download className="mr-2 h-4 w-4"/>}
                             {isLoadingPayment ? 'Memuat...' : 'Simpan Bukti'}
                         </Button>
@@ -230,6 +328,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
                 </div>
             </DialogContent>
         </Dialog>
+        </>
     );
 };
 

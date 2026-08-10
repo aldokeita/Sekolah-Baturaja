@@ -99,6 +99,7 @@ const TestiCard = ({ t }) => (
     <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
     <div style={{ position: 'relative', flex: 'none', width: 104, height: 104, borderRadius: 32, background: t.avatar, boxShadow: '0 18px 36px -14px rgba(60,70,140,.55),inset 0 2px 0 rgba(255,255,255,.85)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
       <AvatarSvg />
+      {t.avatar_url && <img src={t.avatar_url} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ position: 'absolute', zIndex: 1, inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
     </div>
     <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
       <div style={{ position: 'relative', padding: '16px 18px', borderRadius: '18px 18px 18px 6px', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>
@@ -117,6 +118,7 @@ const HomePage = () => {
   const [counts, setCounts] = useState({ siswa: 624, guru: 34 });
   const [news, setNews] = useState([]);
   const [photos, setPhotos] = useState([]);
+  const [buildingPhoto, setBuildingPhoto] = useState('');
   const [open, setOpen] = useState(0);
   // Bawaan dipakai lebih dulu supaya halaman tidak kosong selagi menunggu server.
   const [isi, setIsi] = useState(DEFAULT_HOME_CONTENT);
@@ -128,13 +130,14 @@ const HomePage = () => {
         publicFetch('/api/santri/count').then((d) => d?.total || 0).catch(() => 0),
         publicFetch('/api/guru/count').then((d) => d?.total || 0).catch(() => 0),
         fetchPublishedNews({ limit: 3 }).catch(() => []),
-        fetchWebsiteContentMap({ keys: ['galleryPhotos'], publicOnly: true }).catch(() => ({})),
+        fetchWebsiteContentMap({ keys: ['galleryPhotos', 'schoolBuildingPhoto'], publicOnly: true }).catch(() => ({})),
         fetchHomeContent().catch(() => null),
       ]);
       if (!mounted) return;
       setCounts({ siswa: siswa || 624, guru: guru || 34 });
       if (Array.isArray(newsResult)) setNews(newsResult);
       if (Array.isArray(contentMap.galleryPhotos)) setPhotos(contentMap.galleryPhotos);
+      if (typeof contentMap.schoolBuildingPhoto === 'string') setBuildingPhoto(contentMap.schoolBuildingPhoto);
       if (homeContent) setIsi(homeContent);
     })();
     return () => { mounted = false; };
@@ -226,31 +229,33 @@ const HomePage = () => {
           </div>
         </div>
 
-        <div style={{ position: 'relative' }}>
-          <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 30, height: 470, background: 'linear-gradient(150deg,#ffc3d8 0%,#c7b4f5 34%,#9fc4f8 62%,#a7ecdf 100%)', border: '1px solid rgba(255,255,255,.7)', boxShadow: '0 40px 80px -30px rgba(70,80,150,.65),inset 0 1px 0 rgba(255,255,255,.8)' }}>
+        <div className="sdnb-photo-stage" style={{ position: 'relative' }}>
+          <div className="sdnb-photo-frame" style={{ position: 'relative', overflow: 'hidden', borderRadius: 30, height: 470, background: 'linear-gradient(150deg,#ffc3d8 0%,#c7b4f5 34%,#9fc4f8 62%,#a7ecdf 100%)' }}>
+            {buildingPhoto && <img className="sdnb-photo-frame__image" src={buildingPhoto} alt="Gedung sekolah" onError={() => setBuildingPhoto('')} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
             <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 20% 10%,rgba(255,255,255,.6),rgba(255,255,255,0) 55%)' }} />
-            <div aria-hidden="true" style={{ position: 'absolute', left: '-10%', right: '-10%', bottom: '-18%', height: '62%', borderRadius: '50% 50% 0 0', background: 'linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.05))' }} />
-            <div style={{ position: 'absolute', inset: '0 0 130px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'rgba(60,50,90,.5)', fontSize: 12.5, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+            {!buildingPhoto && <div style={{ position: 'absolute', inset: '0 0 130px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'rgba(60,50,90,.5)', fontSize: 12.5, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' }}>
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="8.5" cy="9.5" r="1.8" /><path d="m4 17 5-5 4.5 4.5L17 13l3 3" /></svg>
               Foto gedung sekolah
+            </div>}
+            <div className="sdnb-photo-frame__sheen" aria-hidden="true" />
+            <div className="sdnb-photo-frame__edge" aria-hidden="true" />
+          </div>
+
+          <div className="sdnb-photo-glass-card sdnb-photo-glass-card--accreditation" style={{ position: 'absolute', left: -26, bottom: 52, width: 214, padding: '16px 18px', borderRadius: 20 }}>
+            <div className="sdnb-photo-glass-card__content">
+              <div className="sdnb-photo-glass-card__eyebrow">Akreditasi</div>
+              <div className="sdnb-photo-glass-card__value">A <span className="sdnb-photo-glass-card__score">· 96,4</span></div>
+              <div className="sdnb-photo-glass-card__meta">BAN-S/M, berlaku s.d. 2029</div>
             </div>
           </div>
 
-          <div style={{ ...glassCard, position: 'absolute', left: -26, bottom: 52, width: 214, padding: '16px 18px', borderRadius: 20, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(24px) saturate(185%)', WebkitBackdropFilter: 'blur(24px) saturate(185%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 24px 50px -20px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
-            <Before height="55%" deg="165deg" alpha=".65" />
-            <div style={{ position: 'relative', fontSize: 11, fontWeight: 600, letterSpacing: '.05em', textTransform: 'uppercase', color: '#6d7192' }}>Akreditasi</div>
-            <div style={{ position: 'relative', marginTop: 4, fontSize: 30, fontWeight: 800, letterSpacing: '-.03em', color: '#1d1f33' }}>A <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--sekolah-aksen-pekat)' }}>· 96,4</span></div>
-            <div style={{ position: 'relative', marginTop: 2, fontSize: 11.5, color: '#6d7192' }}>BAN-S/M, berlaku s.d. 2029</div>
-          </div>
-
-          <div style={{ ...glassCard, position: 'absolute', right: -18, top: 44, padding: '14px 16px', borderRadius: 18, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(24px) saturate(185%)', WebkitBackdropFilter: 'blur(24px) saturate(185%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 22px 46px -20px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.95)', display: 'flex', alignItems: 'center', gap: 11 }}>
-            <Before height="55%" deg="165deg" alpha=".65" />
-            <div style={{ position: 'relative', width: 34, height: 34, borderRadius: 11, background: 'linear-gradient(140deg,#a7f3d0,#7dd3fc)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.9)' }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0f5f6b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6.5 12 3l8 3.5-8 3.5z" /><path d="M6 11v4.5c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V11" /></svg>
+          <div className="sdnb-photo-glass-card sdnb-photo-glass-card--extracurricular" style={{ position: 'absolute', right: -18, top: 44, padding: '14px 16px', borderRadius: 18, display: 'flex', alignItems: 'center', gap: 11 }}>
+            <div className="sdnb-photo-glass-card__icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6.5 12 3l8 3.5-8 3.5z" /><path d="M6 11v4.5c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V11" /></svg>
             </div>
-            <div style={{ position: 'relative' }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#1d1f33', lineHeight: 1.1 }}>18 Ekstrakurikuler</div>
-              <div style={{ fontSize: 11.5, color: '#6d7192' }}>Pramuka, seni, dan olahraga</div>
+            <div className="sdnb-photo-glass-card__content">
+              <div className="sdnb-photo-glass-card__title">18 Ekstrakurikuler</div>
+              <div className="sdnb-photo-glass-card__meta">Pramuka, seni, dan olahraga</div>
             </div>
           </div>
         </div>
@@ -265,8 +270,8 @@ const HomePage = () => {
             { count: counts.guru, label: 'Guru & tenaga kependidikan' },
             { count: 98, suffix: '%', label: 'Lulusan diterima SMP negeri' },
             { count: 32, label: 'Prestasi tingkat kabupaten & provinsi' },
-          ].map((s, i) => (
-            <div key={s.label} style={{ position: 'relative', padding: '26px 28px', borderRight: i === 3 ? undefined : '1px solid rgba(255,255,255,.6)' }}>
+          ].map((s) => (
+            <div key={s.label} style={{ position: 'relative', padding: '26px 28px' }}>
               <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}><span data-count={s.count}>0</span>{s.suffix}</div>
               <div style={{ marginTop: 3, fontSize: 12.5, color: '#63678a' }}>{s.label}</div>
             </div>

@@ -34,18 +34,19 @@ func (h *BackupHandler) Routes() chi.Router {
 // backupConflictCol memetakan nama tabel ke kolom PK-nya.
 // Juga berfungsi sebagai allowlist — tabel di luar map ini ditolak.
 var backupConflictCol = map[string]string{
-	"guru":              "id",
-	"classes":           "id",
-	"santri":            "id",
-	"class_memberships": "id",
-	"class_mutations":   "id",
-	"jilid_history":     "id",
-	"attendance":        "id",
-	"academic_calendar": "id",
-	"payments":          "id",
-	"expenses":          "id",
-	"website_content":   "key",
-	"login_logs":        "id",
+	"guru":                             "id",
+	"classes":                          "id",
+	"santri":                           "id",
+	"class_memberships":                "id",
+	"class_mutations":                  "id",
+	"jilid_history":                    "id",
+	"attendance":                       "id",
+	"academic_calendar":                "id",
+	"academic_calendar_month_settings": "id",
+	"payments":                         "id",
+	"expenses":                         "id",
+	"website_content":                  "key",
+	"login_logs":                       "id",
 }
 
 // validColPattern: hanya nama kolom yang aman untuk disisiplan ke SQL.

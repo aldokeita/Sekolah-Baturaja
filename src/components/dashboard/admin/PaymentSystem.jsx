@@ -1,17 +1,18 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import QRCode from 'qrcode';
-import { Search, Printer, Book, Wallet, Shirt, WalletCards as IdCard, BookOpen, X, Trash2, Briefcase, MessageSquare, ScanLine, Edit, Users, Check, Banknote, Loader2, AlertTriangle, Building, RotateCcw, Plus, Minus, ShoppingCart, Download, FileText } from 'lucide-react';
+import { Search, Printer, Book, Wallet, Shirt, WalletCards as IdCard, BookOpen, X, Trash2, Briefcase, MessageSquare, ScanLine, Edit, Users, Check, Banknote, Loader2, AlertTriangle, Building, RotateCcw, Plus, Minus, ShoppingCart, Download, FileText, Settings, Save } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toPng } from 'html-to-image';
@@ -27,26 +28,36 @@ import {
   getSharedDefaultSppAmount,
   monthNameToNumber,
   monthNumberToName,
+  deletePaymentItemSetting,
+  fetchPaymentItemSettings,
+  parsePaymentItemAmount,
+  PAYMENT_ITEM_SETTING_KEYS,
+  savePaymentItemSetting,
   selectedMonthToNumber,
   validatePaymentAmount,
+  validatePaymentItemAmount,
 } from '@/lib/paymentAdapters';
+import { getLocalDateString } from '@/lib/financeAdapters';
 import { fetchReceiptLogoDataUrl, waitForImagesToLoad } from '@/lib/publicContentAdapters';
 import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
 import PaymentProofModal from './PaymentProofModal';
+import PaymentReceiptWatermark from './PaymentReceiptWatermark';
 import { fetchWhatsAppTemplates, renderWhatsAppTemplate } from '@/lib/whatsappTemplateAdapters';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import usePaymentReceiptConfiguration from '@/hooks/usePaymentReceiptConfiguration';
+import { formatPaymentStatus, getPaymentReceiptReference, isPaymentPaid, normalizePaymentStatus, normalizeWhatsAppPhone } from '@/lib/paymentReceipt';
 
 const paymentItems = [
-  { name: 'SPP Bulanan', amount: 0, monthly: true, icon: Wallet, custom: 'spp_dropdown' },
-  { name: 'Sarpras', amount: 0, monthly: false, icon: Building },
-  { name: 'Seragam', amount: 0, monthly: false, icon: Shirt },
-  { name: 'Tas Murid', amount: 0, monthly: false, icon: Briefcase },
-  { name: 'ID Card Murid', amount: 0, monthly: false, icon: IdCard },
-  { name: 'Buku Paket', amount: 0, monthly: false, icon: Book },
-  { name: 'LKS', amount: 0, monthly: false, icon: BookOpen },
-  { name: 'Custom', amount: 0, monthly: false, icon: Edit, custom: 'item' },
+  { key: 'spp', name: 'SPP Bulanan', amount: 0, monthly: true, icon: Wallet, custom: 'spp_dropdown' },
+  { key: 'sarpras', name: 'Sarpras', amount: 0, monthly: false, icon: Building },
+  { key: 'seragam', name: 'Seragam', amount: 0, monthly: false, icon: Shirt },
+  { key: 'tas_murid', name: 'Tas Murid', amount: 0, monthly: false, icon: Briefcase },
+  { key: 'id_card_murid', name: 'ID Card Murid', amount: 0, monthly: false, icon: IdCard },
+  { key: 'buku_paket', name: 'Buku Paket', amount: 0, monthly: false, icon: Book },
+  { key: 'lks', name: 'LKS', amount: 0, monthly: false, icon: BookOpen },
+  { key: 'custom', name: 'Custom', amount: 0, monthly: false, icon: Edit, custom: 'item' },
 ];
 const monthsList = MONTH_NAMES;
 const sppOptions = [50000, 70000, 100000, 120000, 150000];
@@ -165,6 +176,133 @@ const MonthSelectorDialog = ({ open, onOpenChange, item, onConfirm, initialYear,
     );
 };
 
+const PaymentItemAmountDialog = ({
+    open,
+    onOpenChange,
+    items,
+    amounts,
+    focusKey,
+    isLoading,
+    savingKey,
+    onSave,
+    onReset,
+}) => {
+    const [drafts, setDrafts] = useState({});
+    const wasOpenRef = useRef(false);
+    const configurableItems = useMemo(
+        () => items.filter((item) => PAYMENT_ITEM_SETTING_KEYS.includes(item.key)),
+        [items],
+    );
+
+    useEffect(() => {
+        if (open && !wasOpenRef.current) {
+            setDrafts(configurableItems.reduce((result, item) => {
+                result[item.key] = amounts[item.key] ?? '';
+                return result;
+            }, {}));
+        }
+        wasOpenRef.current = open;
+    }, [open, amounts, configurableItems]);
+
+    const handleDraftChange = (itemKey, value) => {
+        setDrafts((current) => ({ ...current, [itemKey]: value }));
+    };
+
+    const handleReset = async (itemKey) => {
+        const wasReset = await onReset(itemKey);
+        if (wasReset) {
+            setDrafts((current) => ({ ...current, [itemKey]: '' }));
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Atur Nominal Item Pembayaran</DialogTitle>
+                    <DialogDescription>
+                        Simpan nominal setiap item secara terpisah. Perubahan satu item tidak mengubah item lainnya.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-100">
+                    SPP Bulanan tidak diatur di sini. Nominal SPP tetap mengikuti pengaturan SPP khusus pada saat memilih periode tagihan, sedangkan item Custom tetap diisi langsung per transaksi.
+                </div>
+
+                {isLoading ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">Memuat nominal item...</div>
+                ) : (
+                    <div className="space-y-3 py-2">
+                        {configurableItems.map((item) => {
+                            const ItemIcon = item.icon;
+                            const savedAmount = amounts[item.key];
+                            const isSaving = savingKey === item.key;
+                            return (
+                                <div
+                                    key={item.key}
+                                    className={cn(
+                                        'rounded-lg border p-3 transition-colors',
+                                        focusKey === item.key && 'border-primary bg-primary/5 ring-1 ring-primary/30',
+                                    )}
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex min-w-0 items-center gap-2">
+                                            <ItemIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                            <div className="min-w-0">
+                                                <p className="font-medium">{item.name}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {savedAmount ? `Tersimpan: Rp${savedAmount.toLocaleString('id-ID')}` : 'Belum diatur'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <Input
+                                                type="number"
+                                                min="1"
+                                                step="1000"
+                                                value={drafts[item.key] ?? ''}
+                                                onChange={(event) => handleDraftChange(item.key, event.target.value)}
+                                                placeholder="Nominal"
+                                                className="h-9 w-32 text-right"
+                                                aria-label={`Nominal ${item.name}`}
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={() => onSave(item.key, drafts[item.key])}
+                                                disabled={isSaving}
+                                            >
+                                                {isSaving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+                                                Simpan
+                                            </Button>
+                                            {savedAmount && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleReset(item.key)}
+                                                    disabled={isSaving}
+                                                    className="text-muted-foreground"
+                                                >
+                                                    Reset
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Tutup</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 const DeleteConfirmationDialog = ({ open, onOpenChange, onConfirm, count }) => (
     <Dialog open={open} onOpenChange={onOpenChange}><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="w-5 h-5"/> Konfirmasi Hapus</DialogTitle><DialogDescription>Anda akan menghapus <strong>{count}</strong> riwayat pembayaran. Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin?</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Batal</Button><Button variant="destructive" onClick={() => { onConfirm(); onOpenChange(false); }}>Ya, Hapus Permanen</Button></DialogFooter></DialogContent></Dialog>
 );
@@ -175,6 +313,18 @@ const DuplicatePaymentDialog = ({ open, onOpenChange, onResetMonth }) => (
 
 const PaymentSystem = () => {
   const sekolah = useSchoolIdentity();
+  const { config: receiptConfig } = usePaymentReceiptConfiguration();
+  const receiptContent = receiptConfig.content;
+  const receiptVisibility = receiptConfig.visibility;
+  const receiptVisual = receiptConfig.visual;
+  const receiptFontFamily = {
+    system: 'inherit',
+    sans: 'Archivo, ui-sans-serif, system-ui, sans-serif',
+    serif: 'Georgia, Cambria, serif',
+    mono: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  }[receiptVisual.fontFamily] || 'inherit';
+  const receiptRadius = { sm: '0.75rem', md: '1rem', lg: '1.5rem' }[receiptVisual.radius] || '1rem';
+  const receiptDensityClass = receiptVisual.density === 'compact' ? 'p-3' : 'p-4';
   const [santriList, setSantriList] = useState([]);
   const [selectedSantri, setSelectedSantri] = useState([]);
   const [cart, setCart] = useState([]);
@@ -187,7 +337,7 @@ const PaymentSystem = () => {
   const rfidInputRef = useRef(null);
   const receiptRef = useRef(null);
   const [qrCodeDataURL, setQrCodeDataURL] = useState('');
-  const [historyFilter, setHistoryFilter] = useState({ year: 'all', month: 'all' });
+  const [historyFilter, setHistoryFilter] = useState({ year: 'all', month: 'all', status: 'all' });
   const [selectedHistory, setSelectedHistory] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState('Tunai');
   const availableYears = [2027, 2026, 2025, 2024, 2023];
@@ -199,8 +349,24 @@ const PaymentSystem = () => {
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPaymentMarkedPaid, setIsPaymentMarkedPaid] = useState(true);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isSendingReceiptWhatsApp, setIsSendingReceiptWhatsApp] = useState(false);
+  const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
   const [receiptLogoUrl, setReceiptLogoUrl] = useState(DEFAULT_LOGO_PATH);
   const [historyProofPayment, setHistoryProofPayment] = useState(null);
+  const [paymentItemAmounts, setPaymentItemAmounts] = useState({});
+  const [isAmountSettingsOpen, setIsAmountSettingsOpen] = useState(false);
+  const [amountSettingsFocusKey, setAmountSettingsFocusKey] = useState(null);
+  const [amountSettingsLoading, setAmountSettingsLoading] = useState(true);
+  const [amountSettingsSavingKey, setAmountSettingsSavingKey] = useState(null);
+
+  const paymentItemsWithAmounts = useMemo(() => paymentItems.map((item) => ({
+    ...item,
+    amount: item.key && !item.monthly && !item.custom
+      ? paymentItemAmounts[item.key] ?? 0
+      : item.amount,
+  })), [paymentItemAmounts]);
 
   const location = useLocation();
 
@@ -235,12 +401,32 @@ const PaymentSystem = () => {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    setAmountSettingsLoading(true);
+    fetchPaymentItemSettings()
+      .then((settings) => {
+        if (active) setPaymentItemAmounts(settings);
+      })
+      .catch(() => {
+        if (active) {
+          toast({ title: 'Nominal item belum dimuat', description: 'Pengaturan nominal dapat dicoba lagi setelah koneksi tersedia.', variant: 'destructive' });
+        }
+      })
+      .finally(() => {
+        if (active) setAmountSettingsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (santriList.length > 0 && location.state?.santriId) {
        const santriToSelect = santriList.find(s => s.id === location.state.santriId);
        if (santriToSelect && !selectedSantri.some(s => s.id === santriToSelect.id)) {
            setSelectedSantri([santriToSelect]);
            loadPaymentHistory(santriToSelect.id);
-           setHistoryFilter({ year: 'all', month: 'all' });
+           setHistoryFilter({ year: 'all', month: 'all', status: 'all' });
        }
     }
   }, [santriList, location.state]);
@@ -249,7 +435,9 @@ const PaymentSystem = () => {
     const filtered = paymentHistory.filter(p => {
         const billingYear = p.tahun || new Date(p.tanggal_pembayaran).getFullYear();
         const billingMonthIndex = p.bulan ? Number(p.bulan) - 1 : new Date(p.tanggal_pembayaran).getMonth();
-        return (historyFilter.year === 'all' || billingYear === historyFilter.year) && (historyFilter.month === 'all' || billingMonthIndex === historyFilter.month);
+        return (historyFilter.year === 'all' || billingYear === historyFilter.year)
+          && (historyFilter.month === 'all' || billingMonthIndex === historyFilter.month)
+          && (historyFilter.status === 'all' || normalizePaymentStatus(p.status) === historyFilter.status);
     });
     setFilteredHistory(filtered);
   }, [paymentHistory, historyFilter]);
@@ -296,7 +484,7 @@ const PaymentSystem = () => {
     });
     if (selectedSantri.length === 0 || !selectedSantri.some(s => s.id === santri.id)) {
         loadPaymentHistory(santri.id);
-        setHistoryFilter({ year: 'all', month: 'all' });
+        setHistoryFilter({ year: 'all', month: 'all', status: 'all' });
     }
   };
 
@@ -312,8 +500,61 @@ const PaymentSystem = () => {
     }
   };
 
+  const openAmountSettings = (itemKey = null) => {
+    setAmountSettingsFocusKey(itemKey);
+    setIsAmountSettingsOpen(true);
+  };
+
+  const handleSavePaymentItemAmount = async (itemKey, value) => {
+    if (!validatePaymentItemAmount(value)) {
+      toast({ title: 'Nominal tidak valid', description: 'Masukkan nominal item yang lebih besar dari nol.', variant: 'destructive' });
+      return;
+    }
+
+    setAmountSettingsSavingKey(itemKey);
+    try {
+      const saved = await savePaymentItemSetting(itemKey, parsePaymentItemAmount(value));
+      setPaymentItemAmounts((current) => ({ ...current, [itemKey]: saved.amount }));
+      toast({ title: 'Nominal tersimpan', description: 'Nominal item pembayaran berhasil disimpan.' });
+    } catch (error) {
+      toast({ title: 'Gagal menyimpan nominal', description: getPaymentErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setAmountSettingsSavingKey(null);
+    }
+  };
+
+  const handleResetPaymentItemAmount = async (itemKey) => {
+    setAmountSettingsSavingKey(itemKey);
+    try {
+      await deletePaymentItemSetting(itemKey);
+      setPaymentItemAmounts((current) => {
+        const next = { ...current };
+        delete next[itemKey];
+        return next;
+      });
+      toast({ title: 'Nominal direset', description: 'Item perlu diberi nominal lagi sebelum dapat ditambahkan ke pembayaran.' });
+      return true;
+    } catch (error) {
+      toast({ title: 'Gagal mereset nominal', description: getPaymentErrorMessage(error), variant: 'destructive' });
+      return false;
+    } finally {
+      setAmountSettingsSavingKey(null);
+    }
+  };
+
   const initiateAddToCart = (item) => {
-    if (item.monthly) { setConfigItem(item); setEditingCartId(null); setIsConfigOpen(true); } else { addToCart(item); }
+    if (item.monthly) {
+      setConfigItem(item);
+      setEditingCartId(null);
+      setIsConfigOpen(true);
+      return;
+    }
+    if (!item.custom && !validatePaymentItemAmount(item.amount)) {
+      openAmountSettings(item.key);
+      toast({ title: 'Nominal belum diatur', description: `Atur nominal ${item.name} terlebih dahulu.` });
+      return;
+    }
+    addToCart(item);
   };
 
   const checkDuplicates = async (config) => {
@@ -333,6 +574,10 @@ const PaymentSystem = () => {
   };
 
   const addToCart = async (item, config = null) => {
+    if (!config && !item.monthly && !item.custom && !validatePaymentItemAmount(item.amount)) {
+      openAmountSettings(item.key);
+      return;
+    }
     if (config) {
         const isDuplicate = await checkDuplicates(config);
         if (isDuplicate) {
@@ -355,9 +600,11 @@ const PaymentSystem = () => {
   const updateCartItem = (cartId, updates) => setCart(prev => prev.map(item => item.cartId === cartId ? { ...item, ...updates } : item));
 
   const handlePayment = async () => {
+    if (isProcessingPayment) return;
     if (selectedSantri.length === 0 || cart.length === 0) return toast({ title: "Error", description: "Pilih murid dan tambahkan item pembayaran.", variant: "destructive" });
+    const paymentStatus = isPaymentMarkedPaid ? 'paid' : 'unpaid';
+    setIsProcessingPayment(true);
     try {
-        const transactionId = crypto.randomUUID();
         let newPayments = [];
 
         for (const santri of selectedSantri) {
@@ -374,8 +621,8 @@ const PaymentSystem = () => {
                             bulan: monthNumber,
                             tahun: item.year,
                             jumlah: Number(item.amount),
-                            tanggal_pembayaran: new Date().toLocaleDateString('en-CA'),
-                            status: 'paid',
+                            tanggal_pembayaran: getLocalDateString(),
+                            status: paymentStatus,
                             catatan: `${item.name} (${month} ${item.year})`,
                             metode_pembayaran: paymentMethod
                          });
@@ -391,28 +638,50 @@ const PaymentSystem = () => {
                       bulan: null,
                       tahun: null,
                       jumlah: Number(item.amount * item.quantity),
-                      tanggal_pembayaran: new Date().toLocaleDateString('en-CA'),
-                      status: 'paid',
+                      tanggal_pembayaran: getLocalDateString(),
+                      status: paymentStatus,
                       catatan: `${paymentType} (Qty: ${item.quantity})`,
                       metode_pembayaran: paymentMethod
                     });
                 }
             }
         }
+        if (newPayments.length === 0) throw new Error("Tidak ada pembayaran yang dapat diproses.");
         const data = await createPaymentsBatch(newPayments);
+        if (!Array.isArray(data) || data.length !== newPayments.length || data.some((payment) => normalizePaymentStatus(payment?.status) !== paymentStatus)) {
+          throw new Error("Konfirmasi pembayaran tidak lengkap. Tidak ada bukti yang dibuat.");
+        }
         if (selectedSantri.length === 1) loadPaymentHistory(selectedSantri[0].id);
-
-        toast({ title: "Pembayaran Berhasil!", description: `Pembayaran untuk ${selectedSantri.length} murid telah lunas.` });
 
         let totalAmount = 0;
         for (const item of cart) { if (item.monthly) { totalAmount += (item.amount * item.months.length); } else { totalAmount += (item.amount * item.quantity); } }
         totalAmount = totalAmount * selectedSantri.length;
         const qrCodeLoginUrl = `${window.location.origin}/login`;
-        setReceiptData({ items: cart, total: totalAmount, santri: selectedSantri, qrCodeUrl: qrCodeLoginUrl, timestamp: new Date(), method: paymentMethod, transactionId: transactionId, paymentId: data?.[0]?.id });
+        const transactionIds = data.map((payment) => getPaymentReceiptReference(payment)).filter((reference) => reference !== '-');
+        setReceiptData({
+          items: cart,
+          total: totalAmount,
+          santri: selectedSantri,
+          qrCodeUrl: qrCodeLoginUrl,
+          timestamp: new Date(),
+          method: paymentMethod,
+          status: paymentStatus,
+          transactionId: getPaymentReceiptReference(data[0]),
+          transactionIds,
+          paymentId: data[0]?.id,
+        });
+        toast({
+          title: isPaymentMarkedPaid ? "Pembayaran Berhasil!" : "Transaksi Tersimpan",
+          description: isPaymentMarkedPaid
+            ? `Pembayaran untuk ${selectedSantri.length} murid telah dikonfirmasi dan bukti siap digunakan.`
+            : `Transaksi untuk ${selectedSantri.length} murid tersimpan dengan status Belum Lunas.`,
+        });
         setIsReceiptOpen(true);
         setCart([]);
     } catch (error) {
         toast({ title: "Pembayaran Gagal!", description: getPaymentErrorMessage(error), variant: "destructive" });
+    } finally {
+        setIsProcessingPayment(false);
     }
   };
 
@@ -429,7 +698,23 @@ const PaymentSystem = () => {
 
   const confirmDelete = () => { if (selectedHistory.length === 0) return; setDeleteConfirmOpen(true); }
   const handleSelectHistory = (id) => { setSelectedHistory(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]); };
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    if (!receiptData || !receiptRef.current) {
+      toast({ title: 'Gagal Mencetak', description: 'Bukti pembayaran belum siap.', variant: 'destructive' });
+      return;
+    }
+    setIsPrintingReceipt(true);
+    window.setTimeout(() => {
+      try {
+        window.print();
+        toast({ title: 'Dialog Cetak Dibuka', description: 'Pilih printer atau simpan sebagai PDF dari dialog cetak.' });
+      } catch (error) {
+        toast({ title: 'Gagal Mencetak', description: error?.message || 'Dialog cetak tidak dapat dibuka.', variant: 'destructive' });
+      } finally {
+        setIsPrintingReceipt(false);
+      }
+    }, 0);
+  };
 
   const savePaymentProof = async () => {
     if (!receiptData || !receiptRef.current) return;
@@ -440,7 +725,7 @@ const PaymentSystem = () => {
 
       const dataUrl = await toPng(receiptRef.current, {
         cacheBust: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: receiptVisual.backgroundColor,
         pixelRatio: 2,
         imagePlaceholder: DEFAULT_LOGO_PATH,
       });
@@ -464,35 +749,60 @@ const PaymentSystem = () => {
     if (!receiptData || !receiptData.santri?.length) return;
     const santriWithPhone = receiptData.santri.find(s => String(s.no_hp_ortu || '').trim());
     if (!santriWithPhone) { toast({ title: "Gagal", description: "Tidak ada nomor HP wali murid yang ditemukan.", variant: "destructive" }); return; }
-    let phoneNumber = santriWithPhone.no_hp_ortu.replace(/\D/g, '');
-    if (phoneNumber.startsWith('0')) phoneNumber = '62' + phoneNumber.substring(1);
-    else if (!phoneNumber.startsWith('62')) phoneNumber = '62' + phoneNumber;
+    const phoneNumber = normalizeWhatsAppPhone(santriWithPhone.no_hp_ortu);
+    if (!phoneNumber) { toast({ title: "Gagal", description: "Format nomor HP wali murid tidak valid.", variant: "destructive" }); return; }
 
-    const itemsText = receiptData.items.map(item => {
-        let name = item.name;
-        let subTotal = 0;
-        if (item.monthly) { name += ` (${item.months.join(', ')} ${item.year})`; subTotal = item.amount * item.months.length; }
-        else { if(item.custom === 'item') name = item.name; else if (item.hasSubtypes) name = `${item.name} ${item.subtype}`; subTotal = item.amount * item.quantity; }
-        return `- ${name}: Rp${subTotal.toLocaleString('id-ID')}`;
-    }).join('\n');
+    const popup = window.open('about:blank', '_blank');
+    if (!popup) {
+      toast({ title: 'WhatsApp Tidak Dapat Dibuka', description: 'Izinkan pop-up pada browser, lalu coba lagi.', variant: 'destructive' });
+      return;
+    }
 
-    const santriNames = receiptData.santri.map(s => s.nama_lengkap).join(', ');
-    const totalAmount = receiptData.total;
-    const templates = await fetchWhatsAppTemplates();
-    const message = renderWhatsAppTemplate(templates.paymentReceipt, {
-      nama_santri: santriNames,
-      nomor_induk: santriWithPhone.nomor_induk_qiroati || '-',
-      rincian: itemsText,
-      nominal: `Rp ${totalAmount.toLocaleString('id-ID')}`,
-      tanggal: receiptData.timestamp.toLocaleDateString('id-ID'),
-      periode: receiptData.items.filter((item) => item.monthly).flatMap((item) => item.months || []).join(', ') || '-',
-      metode: receiptData.method,
-      transaction_id: receiptData.transactionId || '-',
-      status: 'LUNAS',
-      nama_lembaga: getSchoolIdentity().name,
-    });
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    setIsSendingReceiptWhatsApp(true);
+    try {
+      const itemsText = receiptData.items.map(item => {
+          let name = item.name;
+          let subTotal = 0;
+          if (item.monthly) { name += ` (${item.months.join(', ')} ${item.year})`; subTotal = item.amount * item.months.length; }
+          else { if(item.custom === 'item') name = item.name; else if (item.hasSubtypes) name = `${item.name} ${item.subtype}`; subTotal = item.amount * item.quantity; }
+          return `- ${name}: Rp${subTotal.toLocaleString('id-ID')}`;
+      }).join('\n');
+
+      const santriNames = receiptData.santri.map(s => s.nama_lengkap).join(', ');
+      const totalAmount = receiptData.total;
+      const templates = await fetchWhatsAppTemplates();
+      const message = renderWhatsAppTemplate(templates.paymentReceipt, {
+        nama_santri: santriNames,
+        nomor_induk: santriWithPhone.nomor_induk_qiroati || '-',
+        rincian: itemsText,
+        nominal: `Rp ${totalAmount.toLocaleString('id-ID')}`,
+        tanggal: receiptData.timestamp.toLocaleDateString('id-ID'),
+        periode: receiptData.items.filter((item) => item.monthly).flatMap((item) => item.months || []).join(', ') || '-',
+        metode: receiptData.method,
+        transaction_id: receiptData.transactionIds?.join(', ') || receiptData.transactionId || '-',
+        status: isPaymentPaid(receiptData.status) ? receiptContent.paidStatusText : receiptContent.unpaidStatusText,
+        label_tanggal: receiptContent.dateLabel,
+        label_jam: receiptContent.timeLabel,
+        label_metode: receiptContent.methodLabel,
+        label_status: receiptContent.statusLabel,
+        label_penerima: receiptContent.recipientLabel,
+        label_item: receiptContent.itemLabel,
+        label_nominal: receiptContent.amountLabel,
+        label_periode: receiptContent.periodLabel,
+        label_total: receiptContent.totalLabel,
+        judul_bukti: receiptContent.receiptTitle,
+        footer_text: receiptContent.footerText,
+        nama_lembaga: getSchoolIdentity().name,
+      });
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      popup.location.href = whatsappUrl;
+      toast({ title: 'WhatsApp Siap Digunakan', description: 'Pesan bukti pembayaran telah disiapkan untuk wali murid.' });
+    } catch (error) {
+      popup.close();
+      toast({ title: 'Gagal Menyiapkan WhatsApp', description: error?.message || 'Pesan bukti pembayaran tidak dapat disiapkan.', variant: 'destructive' });
+    } finally {
+      setIsSendingReceiptWhatsApp(false);
+    }
   };
 
   const totalCart = cart.reduce((sum, item) => { if(item.monthly) return sum + (item.amount * item.months.length); return sum + ((item.amount || 0) * item.quantity); }, 0);
@@ -541,7 +851,28 @@ const PaymentSystem = () => {
                             </div>
                         </div>
                     )}
-                    <div><h3 className="font-bold mb-2">Item Pembayaran</h3><div className="grid grid-cols-2 gap-2">{paymentItems.map(item => (<Button key={item.name} onClick={() => initiateAddToCart(item)} variant="outline" className="h-auto flex flex-col p-3 hover:border-primary hover:text-primary"><item.icon className="w-6 h-6 mb-1" /><span className="text-xs text-center">{item.name}</span></Button>))}</div></div>
+                    <div>
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                            <h3 className="font-bold">Item Pembayaran</h3>
+                            <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => openAmountSettings()}>
+                                <Settings className="mr-1.5 h-3.5 w-3.5" /> Atur nominal
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            {paymentItemsWithAmounts.map((item) => {
+                                const ItemIcon = item.icon;
+                                const isConfiguredItem = !item.monthly && !item.custom;
+                                return (
+                                    <Button key={item.key} onClick={() => initiateAddToCart(item)} variant="outline" className="h-auto flex flex-col p-3 hover:border-primary hover:text-primary">
+                                        <ItemIcon className="w-6 h-6 mb-1" />
+                                        <span className="text-center text-xs">{item.name}</span>
+                                        {item.monthly && <span className="mt-1 text-[10px] text-muted-foreground">Atur per periode</span>}
+                                        {isConfiguredItem && <span className="mt-1 text-[10px] text-muted-foreground">{item.amount ? `Rp${item.amount.toLocaleString('id-ID')}` : 'Nominal belum diatur'}</span>}
+                                    </Button>
+                                );
+                            })}
+                        </div>
+                    </div>
                  </div>
             </div>
 
@@ -560,20 +891,59 @@ const PaymentSystem = () => {
                         {cart.length === 0 && (<div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed border-slate-200 rounded-xl"><ShoppingCart className="w-12 h-12 mb-2 opacity-20"/><p>Keranjang kosong</p><p className="text-xs">Pilih item pembayaran di sebelah kiri</p></div>)}
                     </CardContent>
                     <CardFooter className="flex-col gap-4 pt-6 pb-6 bg-white dark:bg-slate-950 border-t rounded-b-xl">
+                        <div className="w-full flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+                            <label htmlFor="payment-status-toggle" className="min-w-0 cursor-pointer">
+                                <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">Tandai transaksi sebagai lunas</span>
+                                <span className={`mt-0.5 block text-xs ${isPaymentMarkedPaid ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>
+                                    {isPaymentMarkedPaid ? 'Bukti akan berstatus LUNAS.' : 'Bukti tidak menampilkan status LUNAS dan riwayat menandainya Belum Lunas.'}
+                                </span>
+                            </label>
+                            <Switch
+                              id="payment-status-toggle"
+                              checked={isPaymentMarkedPaid}
+                              onCheckedChange={setIsPaymentMarkedPaid}
+                              aria-label="Tandai transaksi sebagai lunas"
+                            />
+                        </div>
                         <div className="w-full flex justify-between items-center px-4 py-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
                             <div className="flex items-center gap-3"><div className="p-2 bg-white dark:bg-slate-800 rounded-md shadow-sm"><Banknote className="w-5 h-5 text-green-600"/></div><div><p className="text-xs font-semibold text-muted-foreground uppercase">Total Tagihan</p><p className="text-xl font-black text-slate-800 dark:text-white">Rp {(totalCart * Math.max(1, selectedSantri.length)).toLocaleString('id-ID')}</p></div></div>
 <Select value={paymentMethod} onValueChange={setPaymentMethod}><SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Tunai">Tunai</SelectItem><SelectItem value="Transfer">Transfer</SelectItem></SelectContent></Select>
                         </div>
-                        <Button onClick={handlePayment} className="w-full h-12 text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.99]" size="lg" disabled={cart.length === 0 || selectedSantri.length === 0}>Proses Pembayaran {selectedSantri.length > 1 && `(${selectedSantri.length} Murid)`}</Button>
+                        <Button onClick={handlePayment} className="w-full h-12 text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.99]" size="lg" disabled={cart.length === 0 || selectedSantri.length === 0 || isProcessingPayment}>
+                          {isProcessingPayment && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                          {isProcessingPayment ? 'Memproses...' : 'Proses Pembayaran'} {selectedSantri.length > 1 && `(${selectedSantri.length} Murid)`}
+                        </Button>
                     </CardFooter>
                 </Card>
 
                 {selectedSantri.length === 1 && (
                 <div className="mt-4">
-                    <div className="flex justify-between items-center mb-2"><h3 className="font-bold text-xl">Riwayat Bayar Murid</h3><div className="flex gap-2 items-center"><span className="text-xs font-medium mr-1">Filter Tagihan:</span><Select value={historyFilter.year.toString()} onValueChange={val => setHistoryFilter(f => ({...f, year: val === 'all' ? 'all' : Number(val)}))}><SelectTrigger className="w-[100px] h-8"><SelectValue placeholder="Tahun" /></SelectTrigger><SelectContent><SelectItem value="all">Semua</SelectItem>{availableYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select><Select value={historyFilter.month.toString()} onValueChange={val => setHistoryFilter(f => ({...f, month: val === 'all' ? 'all' : Number(val)}))}><SelectTrigger className="w-[120px] h-8"><SelectValue placeholder="Bulan" /></SelectTrigger><SelectContent><SelectItem value="all">Semua</SelectItem>{monthsList.map((m, i) => <SelectItem key={i} value={i.toString()}>{m}</SelectItem>)}</SelectContent></Select>{selectedHistory.length > 0 && <Button onClick={confirmDelete} variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/> Hapus ({selectedHistory.length})</Button>}</div></div>
+                    <div className="flex flex-col gap-3 mb-2 lg:flex-row lg:items-center lg:justify-between">
+                      <h3 className="font-bold text-xl">Riwayat Bayar Murid</h3>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <span className="text-xs font-medium mr-1">Filter:</span>
+                        <Select value={historyFilter.year.toString()} onValueChange={val => setHistoryFilter(f => ({...f, year: val === 'all' ? 'all' : Number(val)}))}>
+                          <SelectTrigger className="w-[100px] h-8"><SelectValue placeholder="Tahun" /></SelectTrigger>
+                          <SelectContent><SelectItem value="all">Semua Tahun</SelectItem>{availableYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={historyFilter.month.toString()} onValueChange={val => setHistoryFilter(f => ({...f, month: val === 'all' ? 'all' : Number(val)}))}>
+                          <SelectTrigger className="w-[120px] h-8"><SelectValue placeholder="Bulan" /></SelectTrigger>
+                          <SelectContent><SelectItem value="all">Semua Bulan</SelectItem>{monthsList.map((m, i) => <SelectItem key={i} value={i.toString()}>{m}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={historyFilter.status} onValueChange={(status) => setHistoryFilter(f => ({ ...f, status }))}>
+                          <SelectTrigger className="w-[140px] h-8"><SelectValue placeholder="Status" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Semua Status</SelectItem>
+                            <SelectItem value="paid">Lunas</SelectItem>
+                            <SelectItem value="unpaid">Belum Lunas</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {selectedHistory.length > 0 && <Button onClick={confirmDelete} variant="destructive" size="sm"><Trash2 className="h-4 w-4 mr-2"/> Hapus ({selectedHistory.length})</Button>}
+                      </div>
+                    </div>
                     <div className="max-h-48 overflow-y-auto space-y-2 border rounded-lg p-2">
                     {filteredHistory.length > 0 && (<div className="flex items-center px-2"><Checkbox id="selectAllHistory" checked={selectedHistory.length === filteredHistory.length && filteredHistory.length > 0} onCheckedChange={checked => checked ? setSelectedHistory(filteredHistory.map(p => p.id)) : setSelectedHistory([])} /><label htmlFor="selectAllHistory" className="ml-2 text-sm font-medium">Pilih Semua</label></div>)}
-                    {filteredHistory.map(p => (<div key={p.id} className="flex items-center justify-between gap-2 p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"><div className="flex items-center gap-3 min-w-0 flex-1"><Checkbox id={`history-${p.id}`} checked={selectedHistory.includes(p.id)} onCheckedChange={() => handleSelectHistory(p.id)} className="flex-shrink-0" /><div className="flex-grow min-w-0"><p className="font-semibold truncate text-sm">{p.catatan}</p><div className="flex flex-wrap items-center gap-2 text-xs text-gray-500"><span>{new Date(p.tanggal_pembayaran).toLocaleString('id-ID')}</span>{p.bulan && <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px]">Tagihan: {monthNumberToName(p.bulan)} {p.tahun}</span>}</div></div><p className="font-bold whitespace-nowrap text-sm text-primary">Rp{Number(p.jumlah || 0).toLocaleString('id-ID')}</p></div><Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40" onClick={() => setHistoryProofPayment(p)} title="Buka bukti pembayaran" aria-label="Buka bukti pembayaran"><FileText className="h-4 w-4" /></Button></div>))}
+                    {filteredHistory.map(p => (<div key={p.id} className="flex items-center justify-between gap-2 p-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"><div className="flex items-center gap-3 min-w-0 flex-1"><Checkbox id={`history-${p.id}`} checked={selectedHistory.includes(p.id)} onCheckedChange={() => handleSelectHistory(p.id)} className="flex-shrink-0" /><div className="flex-grow min-w-0"><p className="font-semibold truncate text-sm">{p.catatan}</p><div className="flex flex-wrap items-center gap-2 text-xs text-gray-500"><span>{new Date(p.tanggal_pembayaran).toLocaleString('id-ID')}</span>{p.bulan && <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-[10px]">Tagihan: {monthNumberToName(p.bulan)} {p.tahun}</span>}<Badge variant={isPaymentPaid(p.status) ? 'secondary' : 'outline'} className={isPaymentPaid(p.status) ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]' : 'bg-amber-50 text-amber-700 border-amber-200 text-[10px]'}>{formatPaymentStatus(p.status)}</Badge></div></div><p className="font-bold whitespace-nowrap text-sm text-primary">Rp{Number(p.jumlah || 0).toLocaleString('id-ID')}</p></div><Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40" onClick={() => setHistoryProofPayment(p)} title="Buka bukti pembayaran" aria-label="Buka bukti pembayaran"><FileText className="h-4 w-4" /></Button></div>))}
                     {filteredHistory.length === 0 && <p className="text-center text-gray-500 py-4">Tidak ada riwayat untuk periode ini.</p>}</div>
                 </div>
                 )}
@@ -582,88 +952,115 @@ const PaymentSystem = () => {
 
         <SantriSelectorModal santriList={santriList} open={isSantriSelectorOpen} onOpenChange={setIsSantriSelectorOpen} onSelect={handleSantriSelect} selectedSantriIds={new Set(selectedSantri.map(s => s.id))} />
         <MonthSelectorDialog open={isConfigOpen} onOpenChange={setIsConfigOpen} item={configItem} onConfirm={(config) => { addToCart(configItem, config); }} initialYear={configItem?.year} initialMonths={configItem?.months} resetKey={resetKey} selectedSantri={selectedSantri} />
+        <PaymentItemAmountDialog
+          open={isAmountSettingsOpen}
+          onOpenChange={setIsAmountSettingsOpen}
+          items={paymentItems}
+          amounts={paymentItemAmounts}
+          focusKey={amountSettingsFocusKey}
+          isLoading={amountSettingsLoading}
+          savingKey={amountSettingsSavingKey}
+          onSave={handleSavePaymentItemAmount}
+          onReset={handleResetPaymentItemAmount}
+        />
         <DuplicatePaymentDialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen} onResetMonth={() => { setResetKey(prev => prev + 1); setIsConfigOpen(true); }} />
 
         <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
-          <DialogContent className="max-w-[400px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-2 border-b"><DialogTitle className="text-center">Bukti Pembayaran</DialogTitle></DialogHeader>
+          <DialogContent className="w-[calc(100%-1rem)] max-w-[400px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-2 border-b" style={{ borderColor: receiptVisual.borderColor }}><DialogTitle className="text-center" style={{ color: receiptVisual.textColor }}>{receiptContent.receiptTitle}</DialogTitle></DialogHeader>
             {receiptData && (<>
-              <div ref={receiptRef} className="p-4 bg-white text-slate-800 rounded-xl shadow-lg border border-slate-100 relative overflow-hidden" id="receipt-content">
-                  <div className="text-center pb-2 mb-2 border-b border-dashed border-slate-300 relative z-10">
-                       <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-12 h-12 mx-auto mb-2 object-contain"/>
-                       <h3 className="font-bold text-lg text-primary tracking-tight font-poppins">{sekolah.name.toUpperCase()}</h3>
-                       <p className="text-[10px] text-slate-500 mt-1">{sekolah.address}</p>
-                       <p className="text-[10px] text-slate-500">{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>
+              <div ref={receiptRef} className={`${receiptDensityClass} text-slate-800 rounded-xl shadow-lg border relative overflow-hidden`} id="receipt-content" style={{ backgroundColor: receiptVisual.backgroundColor, color: receiptVisual.textColor, borderColor: receiptVisual.borderColor, borderRadius: receiptRadius, fontFamily: receiptFontFamily }}>
+                  <div className="text-center pb-2 mb-2 border-b border-dashed relative z-10" style={{ borderColor: receiptVisual.borderColor }}>
+                       {receiptVisibility.logo !== false && <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-12 h-12 mx-auto mb-2 object-contain"/>}
+                       {receiptContent.receiptTitle && <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: receiptVisual.accentColor }}>{receiptContent.receiptTitle}</p>}
+                       {receiptVisibility.schoolName !== false && <h3 className="font-bold text-lg tracking-tight font-poppins" style={{ color: receiptVisual.accentColor }}>{sekolah.name.toUpperCase()}</h3>}
+                       {receiptVisibility.address !== false && <p className="text-[10px] mt-1" style={{ color: receiptVisual.mutedTextColor }}>{sekolah.address}</p>}
+                       {receiptVisibility.contact !== false && <p className="text-[10px]" style={{ color: receiptVisual.mutedTextColor }}>{[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}</p>}
                   </div>
 
-                  {/* Lunas Stamp - Centered */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none select-none">
-                       <div className="border-4 border-red-500 text-red-500 rounded-lg px-6 py-2 text-3xl font-bold -rotate-12 opacity-15 whitespace-nowrap">
-                           LUNAS
-                       </div>
-                  </div>
-
-                  <div className="flex justify-between text-[10px] mb-3 text-slate-600 bg-slate-50 p-2 rounded-lg relative z-10">
+                  <div className="flex justify-between text-[10px] mb-3 p-2 rounded-lg relative z-10" style={{ color: receiptVisual.mutedTextColor, backgroundColor: receiptVisual.surfaceColor, border: `1px solid ${receiptVisual.borderColor}` }}>
                       <div className="space-y-0.5">
-                         <p>Tgl: <span className="font-semibold text-slate-900">{receiptData.timestamp.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
-                         <p>Jam: <span className="font-semibold text-slate-900">{receiptData.timestamp.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
+                         <p>{receiptContent.dateLabel}: <span className="font-semibold" style={{ color: receiptVisual.textColor }}>{receiptData.timestamp.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
+                         <p>{receiptContent.timeLabel}: <span className="font-semibold" style={{ color: receiptVisual.textColor }}>{receiptData.timestamp.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span></p>
                       </div>
-                      <div className="space-y-0.5 text-right">
-                         <p>Metode: <span className="font-semibold text-slate-900 uppercase">{receiptData.method}</span></p>
-                         <p>ID: <span className="font-mono">{receiptData.paymentId ? receiptData.paymentId.substring(0,8) : '-'}</span></p>
+                      <div className="space-y-0.5 text-right max-w-[58%]">
+                         <p>{receiptContent.methodLabel}: <span className="font-semibold uppercase" style={{ color: receiptVisual.textColor }}>{receiptData.method}</span></p>
+                         {receiptVisibility.status !== false && isPaymentPaid(receiptData.status) && <p>{receiptContent.statusLabel}: <span className="font-semibold" style={{ color: receiptVisual.accentColor }}>{receiptContent.paidStatusText}</span></p>}
                       </div>
                   </div>
 
-                  <div className="mb-3 relative z-10">
-                      <p className="text-[10px] font-semibold text-slate-500 mb-0.5">Diterima Dari:</p>
-                      <p className="text-xs font-bold text-slate-900">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
+                  <div className="mb-2 relative z-10" style={{ color: receiptVisual.textColor }}>
+                    {receiptVisibility.recipient !== false && <>
+                      <p className="text-[10px] font-semibold mb-0.5" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.recipientLabel}</p>
+                      <p className="text-xs font-bold">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
+                    </>}
+                    {receiptVisibility.studentId !== false && <p className="text-[10px] font-mono mt-1" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.studentIdLabel} {receiptData.santri.map(s => s.nomor_induk_qiroati || s.nis || s.nisn).filter(Boolean).join(', ') || '-'}</p>}
                   </div>
 
-                  <div className="space-y-2 mb-3 relative z-10">
-                    <div className="border-t border-slate-200 pt-2"></div>
+                  {isPaymentPaid(receiptData.status) && receiptVisibility.watermark !== false && (
+                    <div className="relative h-20 mb-2 overflow-hidden">
+                      <PaymentReceiptWatermark config={receiptConfig.watermark} />
+                    </div>
+                  )}
+
+                  {receiptVisibility.items !== false && <div className="space-y-2 mb-3 relative z-10" style={{ color: receiptVisual.textColor }}>
+                    <div className="border-t pt-2" style={{ borderColor: receiptVisual.borderColor }}></div>
+                    <div className="flex justify-between text-[9px] font-semibold uppercase tracking-wide" style={{ color: receiptVisual.mutedTextColor }}>
+                      <span>{receiptContent.itemLabel}</span><span>{receiptContent.amountLabel}</span>
+                    </div>
                       {receiptData.items.map(item => {
                           if (item.monthly) {
                              return item.months.map(m => (
                                 <div key={`${item.cartId}-${m}`} className="flex justify-between text-xs py-0.5">
-                                    <span className="text-slate-700 flex-1">{item.name} <span className="text-[9px] text-slate-400">({m} {item.year})</span></span>
-                                    <span className="font-semibold text-slate-900">Rp{item.amount.toLocaleString('id-ID')}</span>
+                                    <span className="flex-1">{item.name} <span className="text-[9px]" style={{ color: receiptVisual.mutedTextColor }}>({m} {item.year})</span></span>
+                                    <span className="font-semibold">Rp{item.amount.toLocaleString('id-ID')}</span>
                                 </div>
                              ));
                           } else {
                              return (
                                 <div key={item.cartId} className="flex justify-between text-xs py-0.5">
-                                    <span className="text-slate-700 flex-1">
+                                    <span className="flex-1">
                                         {item.custom === 'item' ? item.name : (item.hasSubtypes ? `${item.name} ${item.subtype}` : item.name)}
-                                        {item.quantity > 1 && <span className="text-[9px] text-slate-400 ml-1">x{item.quantity}</span>}
+                                        {item.quantity > 1 && <span className="text-[9px] ml-1" style={{ color: receiptVisual.mutedTextColor }}>x{item.quantity}</span>}
                                     </span>
-                                    <span className="font-semibold text-slate-900">Rp{(item.amount * item.quantity).toLocaleString('id-ID')}</span>
+                                    <span className="font-semibold">Rp{(item.amount * item.quantity).toLocaleString('id-ID')}</span>
                                 </div>
                              );
                           }
                       })}
-                     <div className="border-t border-slate-200 pt-2"></div>
-                  </div>
+                     <div className="border-t pt-2" style={{ borderColor: receiptVisual.borderColor }}></div>
+                  </div>}
 
-                  <div className="flex justify-between items-center bg-green-50 p-2 rounded-lg border border-green-100 mb-4 relative z-10">
-                      <span className="text-xs font-bold text-green-800">TOTAL BAYAR</span>
-                      <span className="text-base font-black text-green-900">Rp{receiptData.total.toLocaleString('id-ID')}</span>
-                  </div>
+                  {receiptVisibility.total !== false && <div className="flex justify-between items-center p-2 rounded-lg border mb-4 relative z-10" style={{ backgroundColor: `${receiptVisual.accentColor}14`, borderColor: `${receiptVisual.accentColor}35`, color: receiptVisual.accentColor }}>
+                      <span className="text-xs font-bold">{receiptContent.totalLabel}</span>
+                      <span className="text-base font-black">Rp{receiptData.total.toLocaleString('id-ID')}</span>
+                  </div>}
 
-                  <div className="text-center relative z-10">
-                      <div className="bg-white p-1 inline-block rounded-lg shadow-sm border border-slate-100 mb-2">
-                        {qrCodeDataURL && <img src={qrCodeDataURL} alt="QR Code Status" className="w-16 h-16"/>}
-                      </div>
-                      <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">Terima Kasih</p>
-                  </div>
+                  {((receiptVisibility.qr !== false && receiptConfig.qr.visible !== false) || receiptVisibility.footer !== false) && <div className="relative z-10">
+                      {receiptVisibility.qr !== false && receiptConfig.qr.visible !== false && <div className={`flex flex-col ${({ left: 'items-start', center: 'items-center', right: 'items-end' }[receiptConfig.qr.position] || 'items-center')}`}>
+                        <div className="p-1 inline-block rounded-lg shadow-sm border mb-2" style={{ backgroundColor: receiptVisual.backgroundColor, borderColor: receiptVisual.borderColor }}>
+                        {qrCodeDataURL && (
+                          <img src={qrCodeDataURL} alt={receiptContent.qrLabel} style={{ width: `${receiptConfig.qr.size}px`, height: `${receiptConfig.qr.size}px` }}/>
+                        )}
+                        </div>
+                      </div>}
+                      {receiptVisibility.footer !== false && <p className="text-center text-[9px] font-bold tracking-widest uppercase" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.footerText}</p>}
+                  </div>}
               </div>
 
               <div className="flex justify-center flex-wrap gap-2 p-2">
-                <Button variant="outline" size="sm" onClick={handleSendWhatsApp} className="bg-green-600 text-white hover:bg-green-700 border-0 shadow-sm text-xs h-8"><MessageSquare className="mr-2 h-3 w-3"/> WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={handleSendWhatsApp} disabled={isSendingReceiptWhatsApp} className="bg-green-600 text-white hover:bg-green-700 border-0 shadow-sm text-xs h-8">
+                  {isSendingReceiptWhatsApp ? <Loader2 className="mr-2 h-3 w-3 animate-spin"/> : <MessageSquare className="mr-2 h-3 w-3"/>}
+                  {isSendingReceiptWhatsApp ? 'Menyiapkan...' : 'WhatsApp'}
+                </Button>
                 <Button variant="outline" size="sm" onClick={savePaymentProof} disabled={isSaving} className="shadow-sm text-xs h-8">
                   {isSaving ? <Loader2 className="mr-2 h-3 w-3 animate-spin"/> : <Download className="mr-2 h-3 w-3"/>}
                   {isSaving ? 'Menyimpan...' : 'Simpan Bukti'}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handlePrint} className="shadow-sm text-xs h-8"><Printer className="mr-2 h-3 w-3"/> Cetak</Button>
+                <Button variant="outline" size="sm" onClick={handlePrint} disabled={isPrintingReceipt} className="shadow-sm text-xs h-8">
+                  {isPrintingReceipt ? <Loader2 className="mr-2 h-3 w-3 animate-spin"/> : <Printer className="mr-2 h-3 w-3"/>}
+                  {isPrintingReceipt ? 'Membuka...' : 'Cetak'}
+                </Button>
               </div>
             </>)}
           </DialogContent>

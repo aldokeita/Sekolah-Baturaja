@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import ProgramBody from '@/components/sdnb/generated/ProgramBody';
-import { fetchProgramContent, normalizeProgramContent } from '@/lib/programContent';
+import { fetchProgramContent, normalizeProgramContent, PROGRAM_CONTENT_KEY } from '@/lib/programContent';
+import {
+  getPublicContentErrorMessage,
+  WEBSITE_CONTENT_UPDATED_EVENT,
+  WEBSITE_CONTENT_UPDATED_STORAGE_KEY,
+} from '@/lib/publicContentAdapters';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
 
@@ -25,21 +30,59 @@ const GRADIEN = [
 const ProgramPage = () => {
   const [content, setContent] = useState(() => normalizeProgramContent(undefined));
   const [idx, setIdx] = useState(-1);
+  const [contentStatus, setContentStatus] = useState('loading');
+  const [contentError, setContentError] = useState('');
+  const [reloadToken, setReloadToken] = useState(0);
 
-  useSdnbMotion([]);
+  useSdnbMotion([contentStatus]);
 
   useEffect(() => {
     let hidup = true;
+    setContentStatus((previous) => (previous === 'ready' || previous === 'empty' ? 'refreshing' : 'loading'));
     fetchProgramContent()
-      .then((data) => { if (hidup && data) setContent(data); })
-      .catch(() => { /* biarkan bawaan; halaman tetap tampil */ });
+      .then((data) => {
+        if (!hidup || !data) return;
+        setContent(data);
+        setContentError('');
+        const hasData = (data.programs || []).length > 0 || (data.jam || []).length > 0 || (data.ritme || []).length > 0;
+        setContentStatus(hasData ? 'ready' : 'empty');
+      })
+      .catch((error) => {
+        if (!hidup) return;
+        setContentError(getPublicContentErrorMessage(error));
+        setContentStatus('error');
+      });
     return () => { hidup = false; };
+  }, [reloadToken]);
+
+  useEffect(() => {
+    const shouldRefresh = (keys) => !keys.length || keys.includes(PROGRAM_CONTENT_KEY);
+    const onContentUpdate = (event) => {
+      const keys = Array.isArray(event.detail?.keys) ? event.detail.keys : [];
+      if (shouldRefresh(keys)) setReloadToken((token) => token + 1);
+    };
+    const onStorage = (event) => {
+      if (event.key !== WEBSITE_CONTENT_UPDATED_STORAGE_KEY || !event.newValue) return;
+      try {
+        const payload = JSON.parse(event.newValue);
+        const keys = Array.isArray(payload?.keys) ? payload.keys : [];
+        if (shouldRefresh(keys)) setReloadToken((token) => token + 1);
+      } catch {
+        setReloadToken((token) => token + 1);
+      }
+    };
+    window.addEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdate);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdate);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
-  // Tuple program: [nama, jenis, kelas, waktu, gradien, ringkas, cerita, meta].
+  // Tuple program: [nama, jenis, kelas, waktu, gradien, ringkas, cerita, meta, foto].
   const P = useMemo(() => (content.programs || []).map((p, i) => [
     p.nama, p.jenis, p.kelas, p.waktu, GRADIEN[i % GRADIEN.length], p.ringkas, p.cerita,
-    (p.meta || []).map((m) => [m.label, m.value]),
+    (p.meta || []).map((m) => [m.label, m.value]), p.foto_url,
   ]), [content.programs]);
 
   const JAM = useMemo(() => (content.jam || []).map((j) => [j.mapel, j.jp]), [content.jam]);
@@ -66,8 +109,22 @@ const ProgramPage = () => {
 
   const vals = {
     bebanTampil: JAM.length > 0,
-    judulProgram: `${P.length} program`,
-    ringkasProgram: 'Program yang benar-benar dijalankan sepanjang tahun ajaran — sebagian menempel pada jam pelajaran, sebagian berupa kebiasaan harian yang dijaga seluruh kelas.',
+    judulProgram: 'Program Utama',
+    judulHero: content.hero?.title || '',
+    judulHeroAksen: content.hero?.accent || '',
+    ringkasProgram: content.hero?.description || '',
+    headerStatus: {
+      state: contentStatus,
+      message: contentStatus === 'loading'
+        ? 'Memuat statistik…'
+        : contentStatus === 'refreshing'
+          ? 'Memperbarui statistik…'
+          : contentStatus === 'empty'
+            ? 'Belum ada data program tersimpan.'
+            : contentStatus === 'error'
+              ? `Statistik belum dapat dimuat${contentError ? `: ${contentError}` : '.'}`
+              : '',
+    },
     gridProgram: 'margin-top:26px;display:grid;grid-template-columns:repeat(3,1fr);gap:22px',
 
     pintas: P.map((p) => ({
@@ -81,10 +138,11 @@ const ProgramPage = () => {
       { n: totalJp, suf: ' JP', label: 'jam pelajaran per pekan' },
       { n: content.stats?.temaProjek || 0, suf: '', label: 'tema projek per tahun' },
       { n: content.stats?.muridTerlibat || 0, suf: '', label: 'murid terlibat' },
-    ].map((a, i) => ({ ...a, box: `padding:26px 28px;border-right:${i === 3 ? 'none' : '1px solid rgba(120,132,200,.24)'}` })),
+    ].map((a, i) => ({ ...a, state: contentStatus, box: `padding:26px 28px;border-right:${i === 3 ? 'none' : '1px solid rgba(120,132,200,.24)'}` })),
 
     program: P.map((p, i) => ({
       nama: p[0], jenis: p[1], kelas: p[2], waktu: p[3], ringkas: p[5],
+      foto: p[8],
       no: String(i + 1).padStart(2, '0'),
       open: () => setIdx(i),
       card: 'position:relative;overflow:hidden;cursor:pointer;min-height:320px;border-radius:28px;border:1px solid rgba(255,255,255,.5);box-shadow:0 30px 64px -26px rgba(55,65,120,.55)',
@@ -101,13 +159,15 @@ const ProgramPage = () => {
       jp: `${jp} JP`,
       bar: `height:100%;width:${Math.round((jp / maxJp) * 100)}%;border-radius:99px;background:linear-gradient(90deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))`,
     })),
+    totalJpLabel: `${totalJp} JP`,
 
     detilAda: idx >= 0,
     detil: d ? {
       nama: d[0], jenis: d[1], cerita: d[6],
       meta: d[7].map(([k, v]) => ({ k, v })),
+      foto: d[8],
       hero: `position:relative;height:236px;overflow:hidden;background:linear-gradient(145deg,${d[4]})`,
-    } : { nama: '', jenis: '', cerita: '', meta: [], hero: '' },
+    } : { nama: '', jenis: '', cerita: '', meta: [], foto: '', hero: '' },
     sebelum: () => geser(-1),
     sesudah: () => geser(1),
     tutup: () => setIdx(-1),

@@ -53,8 +53,11 @@ func (h *AttendanceHandler) Routes() chi.Router {
 	// Calendar. Reads are open to any authenticated user (the attendance recap and
 	// rapor generator both need the holiday list); writes are staff-only.
 	r.Get("/calendar", h.Calendar)
+	r.Get("/calendar-settings", h.CalendarMonthSettings)
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequireRole("admin", "tata_usaha"))
+		r.Put("/calendar-settings/{year}/{month}", h.UpsertCalendarMonthSetting)
+		r.Delete("/calendar-settings/{year}/{month}", h.DeleteCalendarMonthSetting)
 		r.Post("/calendar", h.CreateCalendar)
 		r.Put("/calendar/{id}", h.UpdateCalendar)
 		r.Delete("/calendar/{id}", h.DeleteCalendar)
@@ -692,6 +695,162 @@ func (h *AttendanceHandler) Calendar(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]any{"data": dates})
 }
 
+// CalendarMonthSettings GET /calendar-settings?year=2026 — aturan Sabtu per
+// bulan. Bulan tanpa baris sengaja tidak dikembalikan agar klien dapat memakai
+// perilaku bawaan lama (Sabtu dan Minggu libur otomatis).
+func (h *AttendanceHandler) CalendarMonthSettings(w http.ResponseWriter, r *http.Request) {
+	year, err := parseCalendarYear(r.URL.Query().Get("year"))
+	if err != nil {
+		jsonError(w, "year tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	rows, err := h.db.Query(r.Context(), `
+		SELECT id::text, year, month, saturday_is_holiday
+		FROM academic_calendar_month_settings
+		WHERE year = $1
+		ORDER BY month ASC
+	`, year)
+	if err != nil {
+		jsonError(w, "gagal mengambil aturan kalender", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	items := make([]map[string]any, 0)
+	for rows.Next() {
+		var (
+			id                string
+			rowYear           int
+			month             int16
+			saturdayIsHoliday bool
+		)
+		if err := rows.Scan(&id, &rowYear, &month, &saturdayIsHoliday); err != nil {
+			jsonError(w, "gagal membaca aturan kalender", http.StatusInternalServerError)
+			return
+		}
+		items = append(items, map[string]any{
+			"id":                  id,
+			"year":                rowYear,
+			"month":               month,
+			"saturday_is_holiday": saturdayIsHoliday,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		jsonError(w, "gagal membaca aturan kalender", http.StatusInternalServerError)
+		return
+	}
+	jsonData(w, items)
+}
+
+type calendarMonthSettingInput struct {
+	SaturdayIsHoliday *bool `json:"saturday_is_holiday"`
+}
+
+func parseCalendarYear(value string) (int, error) {
+	year, err := strconv.Atoi(value)
+	if err != nil || year < 1 || year > 9999 {
+		return 0, errors.New("year tidak valid")
+	}
+	return year, nil
+}
+
+func parseCalendarMonth(value string) (int16, error) {
+	month, err := strconv.Atoi(value)
+	if err != nil || month < 1 || month > 12 {
+		return 0, errors.New("month tidak valid")
+	}
+	return int16(month), nil
+}
+
+// UpsertCalendarMonthSetting PUT /calendar-settings/{year}/{month} — membuat
+// atau menyunting aturan Sabtu tanpa menyentuh agenda di academic_calendar.
+func (h *AttendanceHandler) UpsertCalendarMonthSetting(w http.ResponseWriter, r *http.Request) {
+	year, err := parseCalendarYear(chi.URLParam(r, "year"))
+	if err != nil {
+		jsonError(w, "year tidak valid", http.StatusBadRequest)
+		return
+	}
+	month, err := parseCalendarMonth(chi.URLParam(r, "month"))
+	if err != nil {
+		jsonError(w, "month tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	var in calendarMonthSettingInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+	if in.SaturdayIsHoliday == nil {
+		jsonError(w, "saturday_is_holiday wajib diisi", http.StatusBadRequest)
+		return
+	}
+
+	var (
+		id                string
+		rowYear           int
+		rowMonth          int16
+		saturdayIsHoliday bool
+	)
+	actor := nullableUserID(r)
+	err = h.db.QueryRow(r.Context(), `
+		INSERT INTO academic_calendar_month_settings
+			(year, month, saturday_is_holiday, created_by, updated_by)
+		VALUES ($1, $2, $3, $4, $4)
+		ON CONFLICT (year, month) DO UPDATE SET
+			saturday_is_holiday = EXCLUDED.saturday_is_holiday,
+			updated_by = EXCLUDED.updated_by
+		RETURNING id::text, year, month, saturday_is_holiday
+	`, year, month, *in.SaturdayIsHoliday, actor).Scan(
+		&id, &rowYear, &rowMonth, &saturdayIsHoliday,
+	)
+	if err != nil {
+		jsonError(w, "gagal menyimpan aturan kalender", http.StatusBadRequest)
+		return
+	}
+
+	jsonData(w, map[string]any{
+		"id":                  id,
+		"year":                rowYear,
+		"month":               rowMonth,
+		"saturday_is_holiday": saturdayIsHoliday,
+	})
+}
+
+// DeleteCalendarMonthSetting DELETE /calendar-settings/{year}/{month} —
+// menghapus override bulan sehingga perilaku default lama kembali berlaku.
+func (h *AttendanceHandler) DeleteCalendarMonthSetting(w http.ResponseWriter, r *http.Request) {
+	year, err := parseCalendarYear(chi.URLParam(r, "year"))
+	if err != nil {
+		jsonError(w, "year tidak valid", http.StatusBadRequest)
+		return
+	}
+	month, err := parseCalendarMonth(chi.URLParam(r, "month"))
+	if err != nil {
+		jsonError(w, "month tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	result, err := h.db.Exec(r.Context(), `
+		DELETE FROM academic_calendar_month_settings
+		WHERE year = $1 AND month = $2
+	`, year, month)
+	if err != nil {
+		jsonError(w, "gagal mengembalikan aturan kalender", http.StatusInternalServerError)
+		return
+	}
+	if result.RowsAffected() == 0 {
+		jsonError(w, "aturan kalender belum tersedia", http.StatusNotFound)
+		return
+	}
+	jsonData(w, map[string]any{
+		"year":    year,
+		"month":   month,
+		"deleted": true,
+	})
+}
+
 // PublicCalendar GET /api/public/calendar — agenda yang boleh tampil di website
 // sekolah. Tanpa autentikasi: hanya mengembalikan baris is_public = true dan
 // hanya field yang aman ditampilkan publik (tanpa metadata internal). Dipakai
@@ -765,9 +924,9 @@ func (h *AttendanceHandler) calendarFull(w http.ResponseWriter, r *http.Request,
 	items := make([]map[string]any, 0)
 	for rows.Next() {
 		var (
-			id, date, title           string
-			description, eventType    *string
-			isHoliday, isPublic       bool
+			id, date, title        string
+			description, eventType *string
+			isHoliday, isPublic    bool
 		)
 		if err := rows.Scan(&id, &date, &title, &description, &isHoliday, &isPublic, &eventType); err != nil {
 			jsonError(w, "gagal membaca kalender akademik", http.StatusInternalServerError)

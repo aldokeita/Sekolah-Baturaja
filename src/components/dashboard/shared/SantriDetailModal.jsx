@@ -10,7 +10,7 @@ import {
   BookOpen, Printer, Sparkles, Star, ShieldCheck, CheckCircle2,
   TrendingUp, BarChart2, HeartHandshake, UserCheck, GraduationCap
 } from 'lucide-react';
-import { fetchAttendance } from '@/lib/attendanceAdapters';
+import { fetchAttendance, fetchCalendarContext } from '@/lib/attendanceAdapters';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,7 @@ import {
 import { fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import SantriDevelopmentProfile from '@/components/dashboard/shared/SantriDevelopmentProfile';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import { getActiveCalendarDates, getCalendarDateDayOfWeek, getCalendarDateRange, isCalendarDateActive } from '@/lib/calendarUtils';
 
 const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }) => {
     const { user, role } = useAuth();
@@ -263,7 +264,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 {(onPromote || onDemote) && (
                                     <>
                                         {onPromote && (
-                                            <Button onClick={onPromote} size="sm" className="h-8 flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold" title="Naik Tingkat">
+                                            <Button onClick={onPromote} size="sm" className="h-8 flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold" title="Naik Tingkat">
                                                 <ChevronUp className="w-4 h-4 mr-1" /> Naik Tingkat
                                             </Button>
                                         )}
@@ -277,9 +278,9 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <Button
                                     size="sm"
                                     onClick={() => setIsAttendanceRecapOpen(true)}
-                                    className="h-8 bg-gradient-to-r from-teal-500/15 via-cyan-500/20 to-blue-500/15 hover:from-teal-500/25 hover:to-blue-500/25 text-cyan-800 dark:text-cyan-200 border border-cyan-400/40 dark:border-cyan-700/50 backdrop-blur-md shadow-xs font-bold rounded-xl transition-all duration-200 px-3.5"
+                                    className="h-8 bg-gradient-to-r from-indigo-500/15 via-violet-500/20 to-rose-500/15 hover:from-indigo-500/25 hover:to-rose-500/25 text-indigo-800 dark:text-indigo-200 border border-indigo-400/40 dark:border-indigo-700/50 backdrop-blur-md shadow-xs font-bold rounded-xl transition-all duration-200 px-3.5"
                                 >
-                                    <History className="w-4 h-4 mr-1.5 text-cyan-600 dark:text-cyan-400" /> Absensi
+                                    <History className="w-4 h-4 mr-1.5 text-indigo-600 dark:text-indigo-400" /> Absensi
                                 </Button>
                             </div>
                             {jilidDuration !== null && (
@@ -395,7 +396,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
             </Dialog>
 
             {/* ========================================================================================= */}
-            {/* LPQ AURORA NEO GLASS - COMPREHENSIVE INTERACTIVE RAPOR PREVIEW & PRINT MODAL               */}
+            {/* COMPREHENSIVE INTERACTIVE RAPOR PREVIEW & PRINT MODAL */}
             {/* ========================================================================================= */}
             <Dialog open={isReportViewOpen} onOpenChange={setIsReportViewOpen}>
                 <DialogContent className="max-w-7xl w-[95vw] max-h-[96vh] overflow-y-auto p-0 bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:max-w-none print:max-h-none print:overflow-visible print:w-full">
@@ -526,7 +527,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         </div>
                     </div>
 
-                    {/* RAPOR CONTENT BODY (AURORA NEO GLASS DESIGN) */}
+                    {/* RAPOR CONTENT BODY */}
                     <div className="p-6 md:p-8 space-y-8 bg-white dark:bg-slate-900 m-4 md:m-6 rounded-3xl shadow-xl border border-slate-200/80 dark:border-slate-800 print:m-0 print:p-6 print:border-none print:shadow-none print:bg-white">
 
                         {/* Kop / Header Rapor Official */}
@@ -828,7 +829,6 @@ const AttendanceMatrixPanel = ({ santriId }) => {
     const [loading, setLoading] = React.useState(false);
 
     const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    const DAY_NAMES = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum']; // Mon-Fri
     const STATUS_CONFIG = {
         hadir:      { bg: 'bg-emerald-500', text: 'text-white', label: 'H', title: 'Hadir' },
         present:    { bg: 'bg-emerald-500', text: 'text-white', label: 'H', title: 'Hadir' },
@@ -841,8 +841,10 @@ const AttendanceMatrixPanel = ({ santriId }) => {
     };
     // Past weekday without record = Tidak Hadir
     const TH_CONFIG = { bg: 'bg-rose-100 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800', text: 'text-rose-700 dark:text-rose-400', label: 'TH', title: 'Tidak Hadir' };
-    // Today/future weekday without record = Belum Absen
+    const HOLIDAY_CONFIG = { bg: 'bg-slate-100 dark:bg-slate-900/65 border-slate-200 dark:border-slate-800', text: 'text-slate-400 dark:text-slate-500', label: 'L', title: 'Libur Akademik' };
+    // Today/future active day without record = Belum Absen
     const UNASSESSED_CONFIG = { bg: 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700', text: 'text-slate-400 dark:text-slate-500', label: '-', title: 'Belum Absen' };
+    const [calendarContext, setCalendarContext] = React.useState({ eventsByDate: {}, monthSettingsByYear: {} });
 
     React.useEffect(() => {
         if (!santriId) return;
@@ -850,31 +852,42 @@ const AttendanceMatrixPanel = ({ santriId }) => {
         const startDate = `${year}-${String(month).padStart(2,'0')}-01`;
         const endDay = new Date(year, month, 0).getDate();
         const endDate = `${year}-${String(month).padStart(2,'0')}-${String(endDay).padStart(2,'0')}`;
-        fetchAttendance({ user_id: santriId, date_from: startDate, date_to: endDate })
-            .then((data) => {
+        Promise.all([
+            fetchAttendance({ user_id: santriId, date_from: startDate, date_to: endDate }),
+            fetchCalendarContext(startDate, endDate),
+        ]).then(([data, context]) => {
                 setRecords(data || []);
+                setCalendarContext(context);
                 setLoading(false);
             });
     }, [santriId, year, month]);
 
     const recordMap = Object.fromEntries((records || []).map(r => [r.attendance_date, r.status?.toLowerCase()]));
     const daysInMonth = new Date(year, month, 0).getDate();
-    const todayStr = new Date().toISOString().split('T')[0];
-
-    // Only weekdays (Mon=1 to Fri=5)
-    const weekdays = Array.from({ length: daysInMonth }, (_, i) => i + 1).filter(day => {
-        const dow = new Date(year, month - 1, day).getDay();
-        return dow >= 1 && dow <= 5;
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    const startDate = `${year}-${String(month).padStart(2,'0')}-01`;
+    const endDate = `${year}-${String(month).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+    const activeDates = getActiveCalendarDates({
+        startDate,
+        endDate,
+        ...calendarContext,
     });
-
-    const totalHadir = records.filter(r => ['hadir','present'].includes(r.status?.toLowerCase())).length;
-    const totalTerlambat = records.filter(r => ['terlambat','late'].includes(r.status?.toLowerCase())).length;
-    const totalAlpha = records.filter(r => ['alpha','absent'].includes(r.status?.toLowerCase())).length;
-    // TH = ONLY past weekdays with no record
-    const totalTH = weekdays.filter(d => {
-        const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        return dateStr < todayStr && !recordMap[dateStr];
-    }).length;
+    const activeDateSet = new Set(activeDates);
+    const displayDates = getCalendarDateRange(startDate, endDate).filter((dateString) => {
+        const dayOfWeek = getCalendarDateDayOfWeek(dateString);
+        if (dayOfWeek === 0) return false;
+        const hasEvent = (calendarContext.eventsByDate?.[dateString] || []).length > 0;
+        return dayOfWeek !== 6 || activeDateSet.has(dateString) || hasEvent;
+    });
+    const weekdays = displayDates.map((dateString) => Number(dateString.slice(8, 10)));
+    const validRecords = records.filter((record) => activeDateSet.has(String(record.attendance_date || '').split('T')[0]));
+    const totalHadir = validRecords.filter(r => ['hadir','present'].includes(r.status?.toLowerCase())).length;
+    const totalTerlambat = validRecords.filter(r => ['terlambat','late'].includes(r.status?.toLowerCase())).length;
+    const totalAlpha = validRecords.filter(r => ['alpha','absent'].includes(r.status?.toLowerCase())).length;
+    // TH = ONLY past active days with no record
+    const totalTH = activeDates.filter(dateStr => dateStr < todayStr && !recordMap[dateStr]).length;
+    const showSaturdayColumn = displayDates.some((dateString) => getCalendarDateDayOfWeek(dateString) === 6);
+    const DAY_NAMES = showSaturdayColumn ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] : ['Sen', 'Sel', 'Rab', 'Kam', 'Jum'];
     const currentYear = new Date().getFullYear();
 
     return (
@@ -911,8 +924,7 @@ const AttendanceMatrixPanel = ({ santriId }) => {
                 <p className="text-center text-muted-foreground text-sm py-8">Tidak ada hari kerja di bulan ini.</p>
             ) : (
                 <div className="overflow-x-auto">
-                    {/* Grid: 5 columns = Mon-Fri */}
-                    <div className="grid gap-1.5 min-w-[300px]" style={{gridTemplateColumns: 'repeat(5, minmax(52px, 1fr))'}}>
+                    <div className="grid gap-1.5 min-w-[300px]" style={{gridTemplateColumns: `repeat(${showSaturdayColumn ? 6 : 5}, minmax(52px, 1fr))`}}>
                         {/* Day name headers */}
                         {DAY_NAMES.map(d => (
                             <div key={d} className="text-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider py-1">
@@ -922,8 +934,8 @@ const AttendanceMatrixPanel = ({ santriId }) => {
 
                         {/* Offset empty cells for the first week */}
                         {(() => {
-                            const firstDay = new Date(year, month - 1, weekdays[0]).getDay(); // 1=Mon..5=Fri
-                            return Array.from({ length: firstDay - 1 }, (_, i) => <div key={`empty-${i}`} />);
+                            const firstDay = getCalendarDateDayOfWeek(`${year}-${String(month).padStart(2,'0')}-${String(weekdays[0]).padStart(2,'0')}`);
+                            return Array.from({ length: Math.max(firstDay - 1, 0) }, (_, i) => <div key={`empty-${i}`} />);
                         })()}
 
                         {/* Weekday cells */}
@@ -932,9 +944,12 @@ const AttendanceMatrixPanel = ({ santriId }) => {
                             const status = recordMap[dateStr];
                             const isPast = dateStr < todayStr;
                             const isToday = dateStr === todayStr;
+                            const isActiveDay = isCalendarDateActive({ dateString: dateStr, ...calendarContext });
 
                             let cfg;
-                            if (status) {
+                            if (!isActiveDay) {
+                                cfg = HOLIDAY_CONFIG;
+                            } else if (status) {
                                 cfg = STATUS_CONFIG[status] || { bg: 'bg-slate-400', text: 'text-white', label: status.charAt(0).toUpperCase(), title: status };
                             } else if (isPast) {
                                 cfg = TH_CONFIG;
@@ -945,7 +960,7 @@ const AttendanceMatrixPanel = ({ santriId }) => {
                             return (
                                 <div key={day}
                                     title={`${day} — ${cfg.title}`}
-                                    className={`flex flex-col items-center justify-center rounded-xl p-1.5 min-h-[56px] text-center transition-all cursor-default border ${cfg.bg} ${cfg.text} ${isToday ? 'ring-2 ring-offset-1 ring-cyan-500' : ''}`}>
+                                    className={`flex flex-col items-center justify-center rounded-xl p-1.5 min-h-[56px] text-center transition-all cursor-default border ${cfg.bg} ${cfg.text} ${isToday ? 'ring-2 ring-offset-1 ring-indigo-500' : ''}`}>
                                     <span className="text-[9px] font-bold opacity-75">{day}</span>
                                     <span className="text-[13px] font-black leading-tight mt-0.5">{cfg.label}</span>
                                 </div>

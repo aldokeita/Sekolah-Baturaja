@@ -11,6 +11,7 @@ import {
     buildSantriAttendancePayload,
     createAttendance,
     fetchAttendance,
+    fetchCalendarContext,
     getAttendanceErrorMessage,
     getLocalDateString,
     getSantriAttendanceSuccessMessage,
@@ -28,6 +29,7 @@ import {
     resolveSantriAttendanceSession,
 } from '@/utils/AttendanceStatusLogic';
 import { useAttendanceSessionConfiguration } from '@/hooks/useAttendanceSessionConfiguration';
+import { isCalendarDateActive } from '@/lib/calendarUtils';
 
 const DigitalClock = () => {
     const [time, setTime] = useState(new Date());
@@ -112,11 +114,15 @@ const DigitalAttendance = () => {
         }
     };
 
-    const canCheckIn = (sesi, role, timestamp = new Date()) => {
-        const today = timestamp;
-        const dayOfWeek = today.getDay();
-        if (role === 'guru' && (dayOfWeek === 0 || dayOfWeek === 6)) {
-            return { can: false, message: 'Absensi libur pada hari Sabtu dan Minggu.' };
+    const canCheckIn = (sesi, role, timestamp = new Date(), calendarContext = null) => {
+        if (role === 'guru') {
+            const dateString = getLocalDateString(timestamp);
+            const isActiveDay = calendarContext
+                ? isCalendarDateActive({ dateString, ...calendarContext })
+                : timestamp.getDay() >= 1 && timestamp.getDay() <= 5;
+            if (!isActiveDay) {
+                return { can: false, message: 'Absensi tidak tersedia pada hari libur kalender akademik.' };
+            }
         }
 
         const windowState = evaluateAttendanceWindow({ timestamp, sesi, sessionTimes });
@@ -260,6 +266,9 @@ const DigitalAttendance = () => {
             }
 
             const now = new Date();
+            const calendarContext = userRole === 'guru'
+                ? await fetchCalendarContext(today, today)
+                : null;
             const checkInStatus = userRole === 'santri'
                 ? resolveSantriAttendanceSession({
                     timestamp: now,
@@ -267,7 +276,7 @@ const DigitalAttendance = () => {
                     assignedSession: sesiUser,
                     sessionTimes,
                 })
-                : canCheckIn(sesiUser, userRole, now);
+                : canCheckIn(sesiUser, userRole, now, calendarContext);
             if (!checkInStatus.can) { setLastScan({ type: 'warning', message: checkInStatus.message, name: user.nama || user.nama_lengkap, photo: user.foto_url }); return; }
 
             const timestamp = now;
@@ -329,7 +338,7 @@ const DigitalAttendance = () => {
 
     const ScanResult = ({ scan }) => {
         const variants = {
-            success: { bg: 'bg-gradient-to-br from-green-500 to-teal-500', icon: <CheckCircle className="w-16 h-16 mb-4" /> },
+            success: { bg: 'bg-gradient-to-br from-emerald-500 to-green-500', icon: <CheckCircle className="w-16 h-16 mb-4" /> },
             error: { bg: 'bg-gradient-to-br from-red-500 to-rose-600', icon: <XCircle className="w-16 h-16 mb-4" /> },
             warning: { bg: 'bg-gradient-to-br from-yellow-500 to-amber-500', icon: <AlertTriangle className="w-16 h-16 mb-4" /> },
             confirmation: { bg: 'bg-gradient-to-br from-blue-500 to-indigo-500', icon: <HelpCircle className="w-16 h-16 mb-4 animate-pulse" /> },
@@ -338,7 +347,7 @@ const DigitalAttendance = () => {
         if (scan?.type === 'scanning') {
           return <motion.div key="scanning" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center h-full">
             <div className="w-48 h-32 bg-gray-800 rounded-xl relative overflow-hidden border-2 border-blue-400">
-              <motion.div className="absolute top-0 left-0 w-full h-1 bg-cyan-400 shadow-[0_0_10px_2px_#0ff]" animate={{ y: [0, 128] }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} />
+              <motion.div className="absolute top-0 left-0 h-1 w-full bg-indigo-400" animate={{ y: [0, 128] }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} />
               <p className="text-white text-center mt-12">Scanning ID Card...</p>
             </div>
           </motion.div>

@@ -485,10 +485,10 @@ const GuruManagement = () => {
               </div>
 
               {isAdmin && (
-              <div className="relative overflow-hidden rounded-2xl border border-cyan-200/70 bg-gradient-to-br from-white/85 via-cyan-50/70 to-blue-50/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_16px_40px_rgba(14,116,144,0.08)] backdrop-blur-xl dark:border-cyan-800/60 dark:from-slate-900/85 dark:via-cyan-950/35 dark:to-blue-950/35">
-                  <div className="pointer-events-none absolute -right-16 -top-20 h-40 w-40 rounded-full bg-cyan-300/20 blur-3xl dark:bg-cyan-500/10" aria-hidden="true" />
+              <div className="relative overflow-hidden rounded-2xl border border-indigo-200/70 bg-gradient-to-br from-white/85 via-indigo-50/70 to-violet-50/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_16px_40px_rgba(91,108,255,0.08)] backdrop-blur-xl dark:border-indigo-800/60 dark:from-slate-900/85 dark:via-indigo-950/35 dark:to-violet-950/35">
+                  <div className="pointer-events-none absolute -right-16 -top-20 h-40 w-40 rounded-full bg-rose-300/20 blur-3xl dark:bg-rose-500/10" aria-hidden="true" />
                   <div className="relative mb-3 flex items-start gap-3">
-                      <div className="rounded-xl border border-cyan-200/80 bg-white/70 p-2 text-cyan-700 shadow-sm dark:border-cyan-800 dark:bg-slate-900/70 dark:text-cyan-300">
+                      <div className="rounded-xl border border-indigo-200/80 bg-white/70 p-2 text-indigo-700 shadow-sm dark:border-indigo-800 dark:bg-slate-900/70 dark:text-indigo-300">
                           <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                       </div>
                       <div>
@@ -498,7 +498,7 @@ const GuruManagement = () => {
                   </div>
                   <div className="relative grid gap-2 sm:grid-cols-2">
                       {AVAILABLE_ROLES.map(roleOption => (
-                          <div key={roleOption} className={`flex min-h-11 items-center space-x-2 rounded-xl border px-3 py-2 transition-colors ${(formData.roles || []).includes(roleOption) ? 'border-cyan-300 bg-white/85 shadow-sm dark:border-cyan-700 dark:bg-slate-900/80' : 'border-white/70 bg-white/45 hover:bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/35 dark:hover:bg-slate-900/60'}`}>
+                          <div key={roleOption} className={`flex min-h-11 items-center space-x-2 rounded-xl border px-3 py-2 transition-colors ${(formData.roles || []).includes(roleOption) ? 'border-indigo-300 bg-white/85 shadow-sm dark:border-indigo-700 dark:bg-slate-900/80' : 'border-white/70 bg-white/45 hover:bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/35 dark:hover:bg-slate-900/60'}`}>
                               <Checkbox id={`role-${roleOption}`} checked={(formData.roles || []).includes(roleOption)} onCheckedChange={(checked) => handleRoleChange(roleOption, checked)} />
                               <label htmlFor={`role-${roleOption}`} className="flex-1 cursor-pointer select-none text-sm font-medium">{ROLE_LABELS[roleOption] || roleOption}</label>
                           </div>
@@ -510,7 +510,7 @@ const GuruManagement = () => {
                     </p>
                   )}
                   {(formData.roles || []).includes('Tata Usaha') && !(formData.roles || []).includes('Admin') && (
-                    <p className="relative mt-3 rounded-xl border border-cyan-200/80 bg-cyan-50/80 px-3 py-2 text-xs font-medium text-cyan-900 dark:border-cyan-800/70 dark:bg-cyan-950/30 dark:text-cyan-200" role="status">
+                    <p className="relative mt-3 rounded-xl border border-indigo-200/80 bg-indigo-50/80 px-3 py-2 text-xs font-medium text-indigo-900 dark:border-indigo-800/70 dark:bg-indigo-950/30 dark:text-indigo-200" role="status">
                       Saat login, akun ini akan diarahkan ke Dashboard Tata Usaha (administrasi &amp; operasional, tanpa backup atau log login).
                     </p>
                   )}

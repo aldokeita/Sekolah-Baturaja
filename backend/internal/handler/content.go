@@ -12,14 +12,16 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"lpq-backend/internal/middleware"
+	"lpq-backend/internal/storage"
 )
 
 type ContentHandler struct {
-	db *pgxpool.Pool
+	db    *pgxpool.Pool
+	store *storage.Store
 }
 
-func NewContentHandler(db *pgxpool.Pool) *ContentHandler {
-	return &ContentHandler{db: db}
+func NewContentHandler(db *pgxpool.Pool, store *storage.Store) *ContentHandler {
+	return &ContentHandler{db: db, store: store}
 }
 
 func (h *ContentHandler) Routes() http.Handler {
@@ -77,7 +79,7 @@ type publicTeacherRow struct {
 // halaman kontak situs pembeli.
 func (h *ContentHandler) ListPublicTeachers(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.db.Query(r.Context(), `
-		SELECT g.id, g.nama, g.jabatan, g.foto_url, g.roles, g.jenis_kelamin
+		SELECT g.id, g.nama, g.jabatan, g.foto_url, g.avatar_path, g.roles, g.jenis_kelamin
 		FROM guru g
 		LEFT JOIN user_profiles up ON up.id = g.id
 		WHERE g.status = 'active'
@@ -94,14 +96,37 @@ func (h *ContentHandler) ListPublicTeachers(w http.ResponseWriter, r *http.Reque
 	result := []publicTeacherRow{}
 	for rows.Next() {
 		var t publicTeacherRow
-		if err := rows.Scan(&t.ID, &t.Nama, &t.Jabatan, &t.FotoURL, &t.Roles, &t.JenisKelamin); err != nil {
+		var avatarPath *string
+		if err := rows.Scan(&t.ID, &t.Nama, &t.Jabatan, &t.FotoURL, &avatarPath, &t.Roles, &t.JenisKelamin); err != nil {
 			jsonError(w, "gagal membaca data pengajar", http.StatusInternalServerError)
 			return
+		}
+		// Avatar guru disimpan di bucket privat dan hanya path-nya yang
+		// persisten. Buat URL bertanda tangan untuk halaman publik agar foto
+		// tetap dapat dibaca tanpa membuka bucket atau menyimpan URL kadaluarsa.
+		if h.store != nil && avatarPath != nil && strings.TrimSpace(*avatarPath) != "" {
+			url := h.store.SignedURL(storage.BucketAvatars, strings.TrimSpace(*avatarPath), time.Hour, publicRequestBaseURL(r))
+			t.FotoURL = &url
 		}
 		result = append(result, t)
 	}
 
 	jsonOK(w, map[string]any{"data": result})
+}
+
+func publicRequestBaseURL(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
+		scheme = strings.Split(forwarded, ",")[0]
+	}
+	host := r.Host
+	if host == "" {
+		host = "localhost:8080"
+	}
+	return scheme + "://" + host
 }
 
 // ---------------------------------------------------------------------------

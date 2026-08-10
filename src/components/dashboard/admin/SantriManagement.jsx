@@ -768,7 +768,7 @@ const SantriManagement = () => {
           : (editingSantri ? "Data murid berhasil diperbarui" : "Murid baru berhasil ditambahkan"),
       });
       await loadData();
-      window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
+      window.dispatchEvent(new CustomEvent('school:student-data-changed'));
       setIsFormOpen(false);
       resetForm();
     } catch (error) {
@@ -794,7 +794,7 @@ const SantriManagement = () => {
         try {
           await archiveSantriAccounts(idsToDelete, 'Dipindahkan ke arsip dari Data Murid');
           await loadData();
-          window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
+          window.dispatchEvent(new CustomEvent('school:student-data-changed'));
           setSelectedSantri(new Set());
           toast({ title: "Masuk arsip", description: "Murid terpilih telah diarsipkan tanpa menghapus riwayatnya." });
         } catch (error) {
@@ -817,7 +817,7 @@ const SantriManagement = () => {
         try {
           await archiveSantriAccounts(idsToUpdate, 'Dinonaktifkan dari Data Murid');
           await loadData();
-          window.dispatchEvent(new CustomEvent('lpq:santri-data-changed'));
+          window.dispatchEvent(new CustomEvent('school:student-data-changed'));
           setSelectedSantri(new Set());
           toast({ title: "Murid dinonaktifkan", description: "Data dipindahkan ke arsip dan dapat dipulihkan kapan saja." });
         } catch (error) {

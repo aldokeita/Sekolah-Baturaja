@@ -180,7 +180,7 @@ const AttendanceDetailsModal = ({ isOpen, onClose, details, onSuccess }) => {
                       </div>
                       {details.sessionStartTime && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: 'var(--att-radius-sm)', backgroundColor: 'hsl(var(--att-surface-sunken) / 0.4)', border: '1px solid hsl(var(--att-border-subtle))' }}>
-                          <Calendar style={{ width: '1.125rem', height: '1.125rem', color: 'hsl(var(--att-cyan))', flexShrink: 0 }} />
+                          <Calendar style={{ width: '1.125rem', height: '1.125rem', color: 'hsl(var(--att-secondary))', flexShrink: 0 }} />
                           <div>
                             <p style={{ fontSize: '0.6875rem', color: 'hsl(var(--att-text-muted))', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Waktu Sesi</p>
                             <p style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: 'hsl(var(--att-text-primary))', fontSize: '0.9375rem' }}>

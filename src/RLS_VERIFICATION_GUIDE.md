@@ -1,6 +1,6 @@
 # Row Level Security (RLS) Verification & Testing Guide
 
-This guide outlines the purpose, expected behaviors, and testing procedures for the Row Level Security (RLS) policies implemented in the LPQ Al-Fath Maulana database.
+This guide outlines the purpose, expected behaviors, and testing procedures for the Row Level Security (RLS) policies implemented in the SDN Baturaja database.
 
 ## 1. Table RLS Overview
 

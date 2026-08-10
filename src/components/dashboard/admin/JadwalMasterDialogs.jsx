@@ -122,7 +122,7 @@ export const MataPelajaranDialog = ({ open, onOpenChange, items = [], isLoading 
                     )}
                     {!isLoading && items.map((item) => (
                         <div key={item.id} className="flex items-center gap-3 rounded-xl border border-white/60 bg-white/50 px-3 py-2 transition-colors hover:bg-white/80 dark:border-slate-700/60 dark:bg-slate-900/40 dark:hover:bg-slate-900/70">
-                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-[11px] font-semibold text-cyan-700 dark:text-cyan-300">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
                                 {item.urutan ?? '–'}
                             </span>
                             <div className="min-w-0 flex-1">

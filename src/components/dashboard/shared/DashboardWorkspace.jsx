@@ -33,7 +33,7 @@ import AdminStatCard from './AdminStatCard';
 import AdminModuleNav from './AdminModuleNav';
 
 import { fetchSantriCount, fetchSantriDetail } from '@/lib/dataMasterAdapters';
-import { fetchCashflowSummary } from '@/lib/financeAdapters';
+import { FINANCE_DATA_CHANGED_EVENT, fetchCashflowSummary } from '@/lib/financeAdapters';
 import { resolveAvatarRecord } from '@/lib/storageAdapters';
 import { enableGameFeatures } from '@/lib/featureFlags';
 import { fetchAppConfig, APP_CONFIG_KEYS } from '@/lib/appConfigAdapters';
@@ -75,7 +75,8 @@ const renderModule = (value) => {
  * Both the Admin dashboard and the Tata Usaha dashboard render this component;
  * they differ only in the `title`, `subtitle`, and the `tabs` they pass in.
  * Layout, styling, stats, global search, quick actions, and the module registry
- * are identical across roles by construction (LPQ Aurora Neo-Glass).
+ * are identical across roles by construction and follow the SDN Baturaja
+ * public-site design system.
  *
  * Props:
  * - title, subtitle: page header text
@@ -103,15 +104,22 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
   const hasSantriTab = tabs.some((t) => t.value === 'santri');
 
   useEffect(() => {
+    let active = true;
+    let latestRequest = 0;
+
     fetchAppConfig(APP_CONFIG_KEYS.TAHFIZH)
       .then((stored) => { if (stored) applyTahfizhConfig(stored); })
       .catch(() => { /* daftar tingkat bawaan tetap dipakai */ });
 
     const fetchStats = async () => {
+      const requestId = ++latestRequest;
       setIsLoading(true);
       setError(null);
 
       try {
+        // The dashboard period is a local calendar period. Payment dates are
+        // stored as SQL DATE values, so deriving year/month from local time
+        // keeps the card correct around midnight and at month boundaries.
         const today = new Date();
         const currentMonth = today.getMonth() + 1;
         const currentYear = today.getFullYear();
@@ -121,12 +129,14 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
           fetchCashflowSummary({ year: currentYear, month: currentMonth }),
         ]);
 
+        if (!active || requestId !== latestRequest) return;
         setStats({
           totalSantri: santriCount,
           totalPemasukanBulanIni: financeSummary.totalPemasukan,
           totalPengeluaranBulanIni: financeSummary.totalPengeluaran,
         });
       } catch (err) {
+        if (!active || requestId !== latestRequest) return;
         setError(err.message);
         toast({
           title: 'Gagal memuat data',
@@ -134,11 +144,19 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
           variant: 'destructive',
         });
       } finally {
-        setIsLoading(false);
+        if (active && requestId === latestRequest) setIsLoading(false);
       }
     };
 
     fetchStats();
+
+    const handleFinanceDataChanged = () => fetchStats();
+    window.addEventListener(FINANCE_DATA_CHANGED_EVENT, handleFinanceDataChanged);
+
+    return () => {
+      active = false;
+      window.removeEventListener(FINANCE_DATA_CHANGED_EVENT, handleFinanceDataChanged);
+    };
   }, []);
 
   const handleGlobalSearchNavigate = async (item, category) => {
@@ -177,9 +195,8 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
   };
 
   return (
-    // `sdnb-dash` re-skins the whole surface to the SDN Baturaja Aurora Glass
-    // language (see styles/sdnb-dashboard.css). Because admin-dashboard.css is
-    // token-driven, every module panel inside inherits the new palette.
+    // `sdnb-dash` mirrors the public light shell and switches to a solid,
+    // token-driven dark workspace (see sdnb-dashboard.css).
     <div className="sdnb-dash">
       <div className="sdnb-dash__bg" aria-hidden="true" />
       <div className="sdnb-dash__orb sdnb-dash__orb--a" aria-hidden="true" />
@@ -198,7 +215,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
         <button
           type="button"
           onClick={() => navigate('/tv-display-mode')}
-          className="attendance-header__action-btn attendance-header__action-btn--tv lpq-shiny-button"
+          className="attendance-header__action-btn attendance-header__action-btn--tv school-shine-button"
         >
           <Tv className="w-4 h-4"/><span>TV Display</span>
         </button>
@@ -207,7 +224,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
             <button
               type="button"
               onClick={() => navigate('/gatcha-game')}
-              className="attendance-header__action-btn attendance-header__action-btn--gatcha lpq-shiny-button"
+              className="attendance-header__action-btn attendance-header__action-btn--gatcha school-shine-button"
             >
               <Gamepad2 className="w-4 h-4"/><span>Play Gatcha</span>
             </button>
@@ -215,7 +232,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
             <button
               type="button"
               onClick={() => navigate('/random-name')}
-              className="attendance-header__action-btn attendance-header__action-btn--random lpq-shiny-button"
+              className="attendance-header__action-btn attendance-header__action-btn--random school-shine-button"
             >
               <Shuffle className="w-4 h-4"/><span>Acak Nama</span>
             </button>

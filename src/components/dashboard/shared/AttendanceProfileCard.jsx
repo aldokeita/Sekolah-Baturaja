@@ -398,7 +398,7 @@ function getStatusConfig(status) {
     case 'Alpha':
       return { label: 'Tidak Hadir', color: 'var(--att-danger)', icon: <span className="w-4 h-4 flex items-center justify-center">&#x2716;</span> };
     case 'Izin':
-      return { label: 'Izin', color: 'var(--att-cyan)', icon: <span className="w-4 h-4 flex items-center justify-center">&#9998;</span> };
+      return { label: 'Izin', color: 'var(--att-secondary)', icon: <span className="w-4 h-4 flex items-center justify-center">&#9998;</span> };
     case 'Sakit':
       return { label: 'Sakit', color: 'var(--att-violet)', icon: <span className="w-4 h-4 flex items-center justify-center">&#9829;</span> };
     default:

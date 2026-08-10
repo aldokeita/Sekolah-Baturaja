@@ -45,6 +45,21 @@ func (h *ClassesHandler) Routes() chi.Router {
 	return r
 }
 
+// Count returns the number of active learning groups for public school
+// statistics. It deliberately exposes only an aggregate, never class names,
+// teachers, or student rosters.
+// GET /api/classes/count
+func (h *ClassesHandler) Count(w http.ResponseWriter, r *http.Request) {
+	var total int
+	if err := h.db.QueryRow(r.Context(), `
+		SELECT COUNT(*) FROM classes WHERE is_active = true
+	`).Scan(&total); err != nil {
+		jsonError(w, "gagal menghitung rombongan belajar", http.StatusInternalServerError)
+		return
+	}
+	jsonData(w, map[string]int{"total": total})
+}
+
 // Columns a client may set on create/update.
 var classesEditable = map[string]bool{
 	"nama_kelas": true, "sesi": true, "id_guru": true, "kategori": true,

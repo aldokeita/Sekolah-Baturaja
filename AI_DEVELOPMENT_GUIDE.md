@@ -1,10 +1,10 @@
-# AI Development Guide — LPQ Al-Fath Maulana
+# AI Development Guide — SDN Baturaja
 
-> Pedoman operasional utama untuk Codex dan coding agent lain ketika merancang, mengembangkan, menguji, mengamankan, dan mendeploy website LPQ Al-Fath Maulana.
+> Pedoman operasional utama untuk Codex dan coding agent lain ketika merancang, mengembangkan, menguji, mengamankan, dan mendeploy website SDN Baturaja.
 
 ## 0. Status dokumen
 
-- **Project:** LPQ Al-Fath Maulana
+- **Project:** SDN Baturaja
 - **Stack utama:** React, Vite, Supabase, GitHub, Vercel
 - **Bahasa komunikasi:** Bahasa Indonesia; technical terms boleh tetap dalam bahasa Inggris
 - **Target default:** staging
@@ -12,7 +12,7 @@
 - **Production:** tidak boleh disentuh tanpa instruksi eksplisit pengguna
 - **Prinsip utama:** implementasi lengkap, aman, dapat diuji, dapat di-rollback, dan hemat token
 - **Independensi:** tidak boleh memakai identitas, akun, credential, URL, Project Ref, data, atau asset privat lembaga sumber
-- **Gaya resmi:** LPQ Aurora Neo-Glass — frosted translucent glass, aurora teal–cyan–blue–violet, depth neumorphic lembut, kontrol tactile, spring microinteraction, light/dark mode matang, accessibility, dan performa terjaga
+- **Gaya resmi:** `docs/design-reference/DESIGN.md` dan halaman publik saat ini. Gunakan dasar terang `#e9edf6`, indigo–violet–rose seperlunya, Plus Jakarta Sans untuk judul, Archivo untuk teks, permukaan lembut yang mudah dibaca, dan dark mode dashboard yang solid.
 
 Dokumen ini adalah sumber aturan pengembangan lintas fitur. Instruksi pengguna pada task aktif tetap memiliki prioritas tertinggi selama tidak bertentangan dengan keamanan, integritas data, atau batas akses yang eksplisit.
 
@@ -28,7 +28,7 @@ Contoh isi `AGENTS.md` yang direkomendasikan:
 # Repository instructions
 
 Sebelum melakukan perubahan produk, baca `AI_DEVELOPMENT_GUIDE.md`.
-Untuk pekerjaan desain, UI/UX, fitur, atau visual QA, gunakan skill `$lpq-creative-web-expert` bila tersedia.
+Untuk pekerjaan desain, UI/UX, fitur, atau visual QA, gunakan skill `$sdnb-creative-web-expert` bila tersedia.
 Baca hanya bagian panduan yang relevan dengan task agar penggunaan context tetap efisien.
 ```
 
@@ -110,7 +110,7 @@ Semua keputusan harus memperkuat tujuan berikut:
 - memudahkan guru menjalankan pembelajaran dan administrasi;
 - memudahkan pentashih mengakses assignment yang relevan;
 - memudahkan santri dan wali memahami progres, absensi, dan kewajiban;
-- membuat website publik kredibel, hangat, modern, dan sesuai identitas LPQ;
+- membuat website publik kredibel, hangat, modern, dan sesuai identitas SDN Baturaja;
 - menjaga privasi, akurasi data, dan permission antar-role;
 - membuat sistem mudah dipelihara dan dikembangkan.
 
@@ -596,12 +596,12 @@ Adapter harus:
 
 ## 14. UI/UX dan design system
 
-Gunakan skill `$lpq-creative-web-expert` untuk pekerjaan desain besar bila tersedia.
+Gunakan skill `$sdnb-creative-web-expert` untuk pekerjaan desain besar bila tersedia.
 
 Prinsip umum:
 
-- modern Islamic educational premium;
-- jelas, hangat, profesional, dan child-friendly;
+- modern, jelas, profesional, dan ramah untuk ekosistem sekolah dasar;
+- selaras dengan DESIGN.md dan halaman publik yang sedang berlaku;
 - tidak terasa seperti template AI generik;
 - satu visual thesis yang konsisten;
 - kreativitas harus meningkatkan fungsi.

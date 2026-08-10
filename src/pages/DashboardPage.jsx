@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import useAdminBodyClass from '@/hooks/useAdminBodyClass';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -12,13 +11,11 @@ import TataUsahaDashboard from '@/components/dashboard/TataUsahaDashboard';
 import GuruDashboard from '@/components/dashboard/GuruDashboard';
 import SantriDashboard from '@/components/dashboard/SantriDashboard';
 import PentashihDashboard from '@/components/dashboard/PentashihDashboard';
-import SideRays from '@/components/reactbits/SideRays/SideRays';
 import { fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import '@/styles/admin-dashboard.css';
 
 const DashboardPage = () => {
   const { role, user } = useAuth();
-  const { isDark } = useTheme();
   const sekolah = useSchoolIdentity();
   const [santriProfile, setSantriProfile] = useState(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
@@ -54,8 +51,8 @@ const DashboardPage = () => {
       }
   }, [role, user]);
 
-  // Admin and Tata Usaha render through DashboardWorkspace, which already
-  // brings the SDN Aurora Glass shell (background wash + orbs).
+  // Admin and Tata Usaha render through DashboardWorkspace, which owns the
+  // shared SDN shell and its theme-specific background treatment.
   const usesSdnbTheme = role === 'admin' || role === 'superadmin' || role === 'tata_usaha';
 
   const renderDashboard = () => {
@@ -128,28 +125,7 @@ const DashboardPage = () => {
         <meta name="description" content={`Dashboard sistem manajemen ${sekolah.name}`} />
       </Helmet>
 
-      <div className={`min-h-screen relative ${usesSdnbTheme ? '' : 'lpq-admin-surface py-8'}`}>
-        {/* SideRays — dark mode only, behind content. Surface is transparent
-            so rays show through the gaps between cards and panels. Skipped for
-            the dashboards already re-skinned to the SDN Aurora Glass theme,
-            which paint their own fixed background and floating orbs. */}
-        {isDark && !usesSdnbTheme && (
-          <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-            <SideRays
-              speed={1.2}
-              rayColor1="#06b6d4"
-              rayColor2="#8b5cf6"
-              intensity={2.0}
-              spread={2.5}
-              origin="top-right"
-              tilt={5}
-              saturation={1.5}
-              blend={0.6}
-              falloff={1.4}
-              opacity={0.5}
-            />
-          </div>
-        )}
+      <div className={`min-h-screen relative ${usesSdnbTheme ? '' : 'school-admin-surface py-8'}`}>
         <div className="relative" style={{ zIndex: 1 }}>
           {/* Di luar ErrorBoundary dengan sengaja: kalau dashboard gagal dirender,
               tombol Keluar dan Lihat situs justru paling dibutuhkan. */}

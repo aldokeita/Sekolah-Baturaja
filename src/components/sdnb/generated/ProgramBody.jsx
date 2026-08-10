@@ -20,7 +20,12 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-program.css';
 
 const ProgramBody = (vals = {}) => {
-  const { angka, bebanTampil, detil, detilAda, gridProgram, jam, judulProgram, pintas, program, ringkasProgram, sebelum, sesudah, stop, tutup, urutan } = vals;
+  const {
+    angka, bebanTampil, detil, detilAda, gridProgram, headerStatus, jam,
+    judulHero, judulHeroAksen, judulProgram, pintas, program, ringkasProgram,
+    sebelum, sesudah, stop, totalJpLabel, tutup, urutan,
+  } = vals;
+  const heroTitleLines = String(judulHero || '').split(/\r?\n/);
   return (
     <>
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "24px 28px 0" }}>
@@ -33,8 +38,13 @@ const ProgramBody = (vals = {}) => {
         <div aria-hidden="true" style={{ position: "absolute", right: "-6%", top: "-30%", width: "520px", height: "520px", borderRadius: "50%", background: "conic-gradient(from 210deg,rgba(100,112,255,.36),rgba(229,143,196,.34),rgba(160,240,225,.32),rgba(100,112,255,.36))", filter: "blur(34px)", animation: "floaty 19s ease-in-out infinite" }}></div>
         <div style={{ position: "relative", padding: "52px 48px 46px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "11px", padding: "9px 16px", borderRadius: "999px", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)", fontSize: "11.5px", fontWeight: "800", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Kurikulum Merdeka &middot; 2025/2026</div>
-          <h1 className="phero" style={{ margin: "26px 0 0", maxWidth: "900px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "76px", lineHeight: ".98", letterSpacing: "-.048em", fontWeight: "800", color: "#141628", textWrap: "pretty" }}>Program belajar yang<br />dijalankan setiap hari,<br /><span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 46%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>bukan hanya tertulis.</span></h1>
+          <h1 className="phero" style={{ margin: "26px 0 0", maxWidth: "900px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "76px", lineHeight: ".98", letterSpacing: "-.048em", fontWeight: "800", color: "#141628", textWrap: "pretty" }}>
+            {heroTitleLines.map((line, $index) => (<React.Fragment key={$index}>{line}{$index < heroTitleLines.length - 1 && <br />}</React.Fragment>))}
+            <br />
+            <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 46%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>{judulHeroAksen}</span>
+          </h1>
           <p style={{ margin: "26px 0 0", maxWidth: "620px", fontSize: "16px", lineHeight: "1.72", color: "#4c5175", textWrap: "pretty" }}>{ringkasProgram}</p>
+          {headerStatus?.message && <div role={headerStatus.state === 'error' ? 'alert' : 'status'} aria-live="polite" style={{ marginTop: "16px", display: "inline-flex", alignItems: "center", minHeight: "30px", padding: "7px 11px", borderRadius: "999px", fontSize: "11.5px", fontWeight: "700", color: headerStatus.state === 'error' ? "#9e3e58" : "#6d7192", background: headerStatus.state === 'error' ? "rgba(220,92,126,.12)" : "rgba(255,255,255,.58)", border: "1px solid rgba(120,132,200,.2)" }}>{headerStatus.message}</div>}
           <div style={{ marginTop: "34px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
             {(pintas || []).map((p, $index) => (<React.Fragment key={$index}>
               <a className="pill" href={p.href} style={__dcs(p.style)}>{p.label}</a>
@@ -44,7 +54,9 @@ const ProgramBody = (vals = {}) => {
         <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderTop: "1px solid rgba(120,132,200,.24)" }}>
           {(angka || []).map((a, $index) => (<React.Fragment key={$index}>
             <div style={__dcs(a.box)}>
-              <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "36px", lineHeight: "1", letterSpacing: "-.04em", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#1d1f33" }}><span data-count={a.n}>0</span>{a.suf}</div>
+              <div aria-busy={a.state === 'loading' || a.state === 'refreshing'} style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "36px", lineHeight: "1", letterSpacing: "-.04em", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#1d1f33" }}>
+                {a.state === 'loading' ? '…' : a.state === 'error' ? '—' : <><span data-count={a.n}>0</span>{a.suf}</>}
+              </div>
               <div style={{ marginTop: "9px", fontSize: "12px", color: "#6d7192" }}>{a.label}</div>
             </div>
           </React.Fragment>))}
@@ -60,6 +72,7 @@ const ProgramBody = (vals = {}) => {
         {(program || []).map((p, $index) => (<React.Fragment key={$index}>
           <div className="prog" onClick={p.open} style={__dcs(p.card)}>
             <div className="pf" style={__dcs(p.fill)}></div>
+            {p.foto && <img src={p.foto} alt="" aria-hidden="true" loading="lazy" onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ position: "absolute", inset: "0", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />}
             <div style={{ position: "absolute", inset: "0", background: "radial-gradient(120% 80% at 20% 6%,rgba(255,255,255,.4),rgba(255,255,255,0) 58%)" }}></div>
             <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(24,28,62,.8),rgba(24,28,62,.08) 62%)" }}></div>
             <div style={{ position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", padding: "26px 26px 24px" }}>
@@ -116,7 +129,7 @@ const ProgramBody = (vals = {}) => {
           </div>
           <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid rgba(120,132,200,.24)", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
             <span style={{ fontSize: "12.5px", color: "#6d7192" }}>Total per pekan</span>
-            <span style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "22px", fontWeight: "800", letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums", color: "#1d1f33" }}>36 JP</span>
+            <span style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "22px", fontWeight: "800", letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums", color: "#1d1f33" }}>{totalJpLabel}</span>
           </div>
         </div>
         </>)}
@@ -133,6 +146,7 @@ const ProgramBody = (vals = {}) => {
     <div onClick={tutup} style={{ position: "fixed", inset: "0", zIndex: "90", display: "flex", alignItems: "center", justifyContent: "center", padding: "28px", background: "rgba(24,30,60,.62)", backdropFilter: "blur(18px) saturate(140%)", WebkitBackdropFilter: "blur(18px) saturate(140%)", animation: "fadeup .28s ease both" }}>
       <div onClick={stop} style={{ position: "relative", width: "min(780px,100%)", maxHeight: "86vh", overflow: "auto", borderRadius: "30px", background: "rgba(255,255,255,.9)", backdropFilter: "blur(30px) saturate(190%)", WebkitBackdropFilter: "blur(30px) saturate(190%)", border: "1px solid rgba(255,255,255,.95)", boxShadow: "0 54px 110px -34px rgba(28,34,90,.72)", animation: "swapin .45s cubic-bezier(.2,.9,.25,1) both" }}>
         <div style={__dcs(detil.hero)}>
+          {detil.foto && <img src={detil.foto} alt="" aria-hidden="true" onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ position: "absolute", inset: "0", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />}
           <div style={{ position: "absolute", inset: "0", background: "radial-gradient(120% 80% at 20% 8%,rgba(255,255,255,.42),rgba(255,255,255,0) 58%)" }}></div>
           <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(24,28,62,.75),rgba(24,28,62,0) 62%)" }}></div>
           <button onClick={tutup} style={{ position: "absolute", right: "16px", top: "16px", width: "42px", height: "42px", borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "1px solid rgba(255,255,255,.5)", background: "rgba(255,255,255,.22)" }} aria-label="Tutup">

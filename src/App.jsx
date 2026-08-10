@@ -115,9 +115,9 @@ function App() {
    * We remove it on mount so there is zero additional delay.
    * ---------------------------------------------------------------- */
   useEffect(() => {
-    const shell = document.getElementById('lpq-loading');
+    const shell = document.getElementById('school-loading');
     if (shell) {
-      shell.classList.add('lpq-loading-hide');
+      shell.classList.add('school-loading-hide');
       // Remove from DOM after transition completes
       const onEnd = () => shell.remove();
       shell.addEventListener('transitionend', onEnd, { once: true });
@@ -125,7 +125,7 @@ function App() {
       setTimeout(() => shell.remove(), 600);
     }
     try {
-      sessionStorage.setItem('lpq_initial_load_done', 'true');
+      sessionStorage.setItem('school_initial_load_done', 'true');
     } catch {
       // sessionStorage can be unavailable in restricted browser modes.
     }
@@ -173,11 +173,9 @@ function App() {
                   </>
                 )}
 
-                {/* Login and the dashboard sit outside the public shell: the
-                    mockup's Login page is a standalone full-screen design with no
-                    nav/footer, and the dashboard has its own chrome (the public
-                    wrapper's font + overflow rules would bleed into it). */}
-                {/* Standalone full-screen mockups: no shared nav/footer. */}
+                {/* Login and the dashboard sit outside the public content shell:
+                    login mounts the shared public navbar around its form, while
+                    the dashboard keeps its own chrome and permissions. */}
                 <Route path="/pendaftaran" element={<PpdbPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/dashboard" element={<ProtectedRoute allowedRoles={allDashboardRoles}><DashboardPage /></ProtectedRoute>} />
@@ -189,7 +187,7 @@ function App() {
                         <Route path="/" element={<HomePage />} />
                         <Route path="/profil" element={<ProfilePage />} />
                         <Route path="/profil/galeri" element={<GalleryPage />} />
-                        {/* LPQ-only public pages (Parenting, Metode Qiroati, Forum,
+                        {/* Halaman publik lama (Parenting, Metode Qiroati, Forum,
                             Brosur, Sistem Mengaji, Pengumuman, detail Berita) were
                             removed with the switch to the SDN Baturaja template.
                             Announcements are a Berita category now, and Berita has a

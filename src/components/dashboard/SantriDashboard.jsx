@@ -550,7 +550,7 @@ const SantriDashboard = ({ isAdult = false }) => {
                 type="button"
                 onClick={openMyAttendanceModal}
                 className={cn(
-                  'lpq-shiny-button flex min-h-10 items-center justify-center gap-3 rounded-md px-4 py-2 text-sm font-semibold shadow-md transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  'school-shine-button flex min-h-10 items-center justify-center gap-3 rounded-md px-4 py-2 text-sm font-semibold shadow-md transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                   hasAttendedToday ? 'bg-emerald-600 text-white hover:bg-emerald-700 dark:border dark:border-emerald-400/40 dark:bg-slate-800 dark:hover:bg-slate-700' : 'bg-slate-800 text-white hover:bg-slate-700'
                 )}
               >

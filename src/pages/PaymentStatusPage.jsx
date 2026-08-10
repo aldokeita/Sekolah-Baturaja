@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import usePaymentReceiptConfiguration from '@/hooks/usePaymentReceiptConfiguration';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import {
@@ -20,16 +21,30 @@ import {
   BookOpen
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { Badge } from '@/components/ui/badge';
 import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
 import { calculateAttendanceData, getHafalanProgressData, getPointsData } from '@/utils/reportUtils';
 import { fetchAllPayments, fetchPaymentDetail } from '@/lib/paymentAdapters';
 import { fetchReceiptLogoDataUrl } from '@/lib/publicContentAdapters';
 import { DEFAULT_LOGO_PATH } from '@/lib/schoolAssets';
+import { isPaymentPaid } from '@/lib/paymentReceipt';
+import PaymentReceiptWatermark from '@/components/dashboard/admin/PaymentReceiptWatermark';
 
 const PaymentStatusPage = () => {
   const sekolah = useSchoolIdentity();
+  const { config: receiptConfig } = usePaymentReceiptConfiguration();
+  const receiptContent = receiptConfig.content;
+  const receiptVisibility = receiptConfig.visibility;
+  const receiptVisual = receiptConfig.visual;
+  const receiptFontFamily = {
+    system: 'inherit',
+    sans: 'Archivo, ui-sans-serif, system-ui, sans-serif',
+    serif: 'Georgia, Cambria, serif',
+    mono: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  }[receiptVisual.fontFamily] || 'inherit';
+  const receiptRadius = { sm: '0.75rem', md: '1rem', lg: '1.5rem' }[receiptVisual.radius] || '1rem';
+  const receiptQrAlign = { left: 'items-start', center: 'items-center', right: 'items-end' }[receiptConfig.qr.position] || 'items-center';
+  const receiptReportPadding = receiptVisual.density === 'compact' ? 'p-6 sm:p-8' : 'p-10';
   const { paymentId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -118,7 +133,7 @@ const PaymentStatusPage = () => {
     try {
       toast({ title: "Memproses...", description: "Sedang membuat dokumen resmi." });
 
-      const dataUrl = await toPng(receiptRef.current, { cacheBust: true, backgroundColor: '#ffffff', pixelRatio: 2 });
+      const dataUrl = await toPng(receiptRef.current, { cacheBust: true, backgroundColor: receiptVisual.backgroundColor, pixelRatio: 2 });
 
       const link = document.createElement('a');
       const santriName = paymentData.santri ? paymentData.santri.nama_lengkap.replace(/\s+/g, '_') : 'Murid';
@@ -163,6 +178,7 @@ const PaymentStatusPage = () => {
 
   const totalAmount = relatedPayments.reduce((sum, p) => sum + p.jumlah, 0);
   const teacherName = paymentData.santri?.class?.guru?.nama || 'Guru Pengampu';
+  const paymentIsPaid = isPaymentPaid(paymentData.status);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 flex justify-center relative overflow-hidden">
@@ -175,18 +191,18 @@ const PaymentStatusPage = () => {
              </Button>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 print-break-inside-avoid relative" ref={receiptRef} style={{ width: '100%', maxWidth: '210mm', margin: '0 auto', backgroundColor: '#fff', color: '#1e293b' }}>
+          <div className="rounded-2xl shadow-xl overflow-hidden border print-break-inside-avoid relative" ref={receiptRef} style={{ width: '100%', maxWidth: '210mm', margin: '0 auto', backgroundColor: receiptVisual.backgroundColor, color: receiptVisual.textColor, borderColor: receiptVisual.borderColor, borderRadius: receiptRadius, fontFamily: receiptFontFamily }}>
               {/* HEADER SECTION (Dual Logos) */}
               <div className="px-10 pt-10 pb-6 border-b-4 border-primary/20 relative">
                   <div className="flex justify-between items-center">
-                      <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-20 h-20 object-contain"/>
+                      {receiptVisibility.logo !== false && <img src={receiptLogoUrl} alt={`Logo ${sekolah.name}`} className="w-20 h-20 object-contain"/>}
                       <div className="text-center flex-1 px-4">
-                          <h1 className="text-2xl font-black text-slate-900 font-serif uppercase tracking-widest">{sekolah.name}</h1>
+                          {receiptVisibility.schoolName !== false && <h1 className="text-2xl font-black font-serif uppercase tracking-widest" style={{ color: receiptVisual.textColor }}>{sekolah.name}</h1>}
                           <h2 className="text-lg font-bold text-primary tracking-wide">{sekolah.tagline}</h2>
-                          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
+                          {receiptVisibility.address !== false && <p className="text-xs mt-1 max-w-sm mx-auto leading-relaxed" style={{ color: receiptVisual.mutedTextColor }}>
                               {sekolah.address}<br/>
-                              {[sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}
-                          </p>
+                              {receiptVisibility.contact !== false && [sekolah.phone, sekolah.website?.replace(/^https?:\/\//, '')].filter(Boolean).join(' · ')}
+                          </p>}
                       </div>
                       <div className="w-20 h-20 flex items-center justify-center border-2 border-slate-200 rounded-full bg-slate-50 text-[10px] font-bold text-center text-slate-400">
                           <span className="font-serif">{sekolah.logoAbbr || sekolah.shortName}</span>
@@ -199,7 +215,7 @@ const PaymentStatusPage = () => {
                   </div>
               </div>
 
-              <div className="p-10 space-y-8">
+              <div className={`${receiptReportPadding} space-y-8`}>
                   {/* SANTRI INFO */}
                   <div className="grid grid-cols-2 gap-4 text-sm p-4 bg-slate-50 rounded-xl border border-slate-100">
                       <div>
@@ -278,49 +294,50 @@ const PaymentStatusPage = () => {
                   <div className="space-y-4">
                       <div className="flex items-center gap-2 border-b-2 border-slate-200 pb-2">
                           <CreditCard className="w-5 h-5 text-primary" />
-                          <h3 className="text-lg font-bold text-slate-800">Kwitansi Pembayaran Resmi</h3>
+                          <h3 className="text-lg font-bold" style={{ color: receiptVisual.textColor }}>{receiptContent.officialReceiptTitle}</h3>
                       </div>
 
-                      <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden relative">
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none">
-                              <div className="border-8 border-green-500 text-green-500 rounded-xl px-8 py-3 text-5xl font-black -rotate-12 opacity-10 whitespace-nowrap">
-                                  L U N A S
-                              </div>
-                          </div>
-
-                          <div className="flex justify-between items-center p-4 bg-slate-50 border-b">
+                      <div className="border-2 rounded-xl overflow-hidden relative" style={{ backgroundColor: receiptVisual.backgroundColor, borderColor: receiptVisual.borderColor }}>
+                          <div className="flex justify-between items-center p-4 border-b relative z-10" style={{ backgroundColor: receiptVisual.surfaceColor, borderColor: receiptVisual.borderColor }}>
                               <div>
-                                  <p className="text-xs text-slate-500 font-medium">Tanggal Transaksi</p>
-                                  <p className="font-bold text-slate-900">{new Date(paymentData.tanggal_pembayaran).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                  <p className="text-xs font-medium" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.transactionDateLabel || receiptContent.dateLabel}</p>
+                                  <p className="font-bold" style={{ color: receiptVisual.textColor }}>{new Date(paymentData.tanggal_pembayaran).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                               </div>
-                              <div className="text-right">
-                                  <p className="text-xs text-slate-500 font-medium">Metode & No. Transaksi</p>
-                                  <p className="font-mono text-sm font-bold text-slate-900">{paymentData.metode_pembayaran?.toUpperCase()} - {paymentData.transaction_id ? paymentData.transaction_id.substring(0,8) : 'MANUAL'}</p>
+                              <div className="text-right flex flex-col items-end gap-1">
+                                  {receiptVisibility.status !== false && paymentIsPaid && <p className="text-xs font-semibold" style={{ color: receiptVisual.accentColor }}>{receiptContent.statusLabel}: {receiptContent.paidStatusText}</p>}
+                                  <p className="text-xs font-medium" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.transactionMethodLabel || receiptContent.methodLabel}</p>
+                                  <p className="font-mono text-sm font-bold" style={{ color: receiptVisual.textColor }}>{paymentData.metode_pembayaran?.toUpperCase() || 'MANUAL'}</p>
                               </div>
                           </div>
 
-                          <div className="p-4 relative z-10">
+                          {paymentIsPaid && receiptVisibility.watermark !== false && (
+                              <div className="relative h-20 overflow-hidden border-b" style={{ borderColor: receiptVisual.borderColor }}>
+                                  <PaymentReceiptWatermark config={receiptConfig.watermark} />
+                              </div>
+                          )}
+
+                          <div className="p-4 relative z-10" style={{ color: receiptVisual.textColor }}>
                               <table className="w-full text-sm">
-                                  <thead className="border-b-2 border-slate-200 text-slate-500">
-                                      <tr><th className="py-2 text-left">Deskripsi Pembayaran</th><th className="py-2 text-right">Jumlah</th></tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-100">
-                                      {relatedPayments.map((item, idx) => (
+                                  {receiptVisibility.items !== false && <thead className="border-b-2" style={{ borderColor: receiptVisual.borderColor, color: receiptVisual.mutedTextColor }}>
+                                      <tr><th className="py-2 text-left">{receiptContent.descriptionLabel || receiptContent.itemLabel}</th><th className="py-2 text-right">{receiptContent.amountLabel}</th></tr>
+                                  </thead>}
+                                  <tbody className="divide-y" style={{ borderColor: receiptVisual.borderColor }}>
+                                      {receiptVisibility.items !== false && relatedPayments.map((item, idx) => (
                                           <tr key={idx}>
-                                              <td className="py-3 font-medium text-slate-800">
+                                              <td className="py-3 font-medium">
                                                   {item.catatan || 'Pembayaran Administrasi'}
-                                                  {item.bulan && item.tahun && <span className="block text-xs text-slate-500 font-normal">Periode: {item.bulan} {item.tahun}</span>}
+                                                  {item.bulan && item.tahun && <span className="block text-xs font-normal" style={{ color: receiptVisual.mutedTextColor }}>Periode: {item.bulan} {item.tahun}</span>}
                                               </td>
-                                              <td className="py-3 text-right font-bold text-slate-900">Rp {item.jumlah.toLocaleString('id-ID')}</td>
+                                              <td className="py-3 text-right font-bold">Rp {item.jumlah.toLocaleString('id-ID')}</td>
                                           </tr>
                                       ))}
                                   </tbody>
-                                  <tfoot>
-                                      <tr className="bg-primary/5">
-                                          <td className="py-4 px-3 font-bold text-primary text-base">TOTAL DIBAYARKAN</td>
-                                          <td className="py-4 px-3 text-right font-black text-primary text-xl">Rp {totalAmount.toLocaleString('id-ID')}</td>
+                                  {receiptVisibility.total !== false && <tfoot>
+                                      <tr style={{ backgroundColor: `${receiptVisual.accentColor}14`, color: receiptVisual.accentColor }}>
+                                          <td className="py-4 px-3 font-bold text-base">{receiptContent.totalPaidLabel || receiptContent.totalLabel}</td>
+                                          <td className="py-4 px-3 text-right font-black text-xl">Rp {totalAmount.toLocaleString('id-ID')}</td>
                                       </tr>
-                                  </tfoot>
+                                  </tfoot>}
                               </table>
                           </div>
                       </div>
@@ -328,9 +345,9 @@ const PaymentStatusPage = () => {
 
                   {/* SIGNATURE SECTION */}
                   <div className="pt-8 flex justify-between items-end">
-                      <div className="flex flex-col items-center">
-                          {qrCodeDataURL && <img src={qrCodeDataURL} alt="QR Code Verification" className="w-24 h-24 border p-1 rounded-lg shadow-sm" />}
-                          <p className="text-[10px] text-slate-500 mt-2 font-mono flex items-center gap-1"><ShieldCheck className="w-3 h-3"/> Dokumen Tervalidasi</p>
+                      <div className={`flex flex-col ${receiptQrAlign}`}>
+                          {receiptVisibility.qr !== false && receiptConfig.qr.visible !== false && qrCodeDataURL && <img src={qrCodeDataURL} alt={receiptContent.qrLabel} className="border p-1 rounded-lg shadow-sm" style={{ width: `${receiptConfig.qr.size}px`, height: `${receiptConfig.qr.size}px`, borderColor: receiptVisual.borderColor }} />}
+                          <p className="text-[10px] mt-2 font-mono flex items-center gap-1" style={{ color: receiptVisual.mutedTextColor }}><ShieldCheck className="w-3 h-3"/> {receiptContent.verificationLabel || receiptContent.qrLabel}</p>
                       </div>
 
                       <div className="text-center">
@@ -339,6 +356,7 @@ const PaymentStatusPage = () => {
                           <p className="text-xs text-slate-500 mt-1">Guru Kelas / Administrasi</p>
                       </div>
                   </div>
+                  {receiptVisibility.footer !== false && <p className="pt-6 text-center text-xs font-bold uppercase tracking-[0.16em]" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.footerText}</p>}
               </div>
           </div>
       </div>

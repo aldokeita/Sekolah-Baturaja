@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fetchClassList, fetchGuruList, fetchSantriList } from '@/lib/dataMasterAdapters';
-import { fetchAttendance, fetchCalendarEvents } from '@/lib/attendanceAdapters';
+import { fetchAttendance, fetchCalendarContext } from '@/lib/attendanceAdapters';
 import { fetchHafalanProgress } from '@/lib/academicAdapters';
+import { getActiveCalendarDates } from '@/lib/calendarUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
@@ -112,24 +113,22 @@ const GuruPerformanceSummary = () => {
         const lastDay = new Date(selectedYear, selectedMonth + 1, 0).getDate();
         const endDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${lastDay}`;
 
-        // Fetch Holidays to exclude from expected sessions
-        const calendarData = await fetchCalendarEvents(startDate, endDate).catch(() => []);
-        const holidaySet = new Set((calendarData || []).map(c => c.date));
+        // Kalender lengkap + konfigurasi bulanan menentukan hari sesi yang valid.
+        const calendarContext = await fetchCalendarContext(startDate, endDate);
 
         // Calculate past active session days in the selected month
         let pastSessionDays = 0;
         const today = new Date();
         today.setHours(0,0,0,0);
 
-        for (let d = 1; d <= lastDay; d++) {
-            const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const loopDate = new Date(selectedYear, selectedMonth, d);
-            const isWeekend = loopDate.getDay() === 0 || loopDate.getDay() === 6;
-
-            if (loopDate <= today && !isWeekend && !holidaySet.has(dateStr)) {
-                pastSessionDays++;
-            }
-        }
+        const monthStart = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+        const monthEnd = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+        pastSessionDays = getActiveCalendarDates({
+            startDate: monthStart,
+            endDate: monthEnd,
+            throughDate: today,
+            ...calendarContext,
+        }).length;
 
         // 2. Fetch Guru Attendance (Sesi Terlaksana). The "Hadir%" prefix match
         // stays client-side — the API has no status filter, and a month of one

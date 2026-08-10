@@ -19,7 +19,7 @@ export const CHARACTER_STRENGTH_OPTIONS = [
 export const VIOLATION_LEVELS = {
     Ringan: { examples: 'Terlambat, lupa membawa buku, tidak memakai ID Card, atau bercanda saat belajar', followUp: 'Nasihat dan pengingat dari guru' },
     Sedang: { examples: 'Mengganggu teman berulang kali, tidak sopan kepada guru, atau tidak mengerjakan hafalan berulang', followUp: 'Pembinaan, pencatatan, dan pemberitahuan kepada orang tua' },
-    Berat: { examples: 'Berkelahi, merusak fasilitas, membawa barang berbahaya, atau tindakan yang membahayakan', followUp: 'Pertemuan dengan orang tua, pembinaan intensif, dan keputusan kepala LPQ' }
+    Berat: { examples: 'Berkelahi, merusak fasilitas, membawa barang berbahaya, atau tindakan yang membahayakan', followUp: 'Pertemuan dengan orang tua, pembinaan intensif, dan keputusan kepala sekolah' }
 };
 
 export const getDevelopmentScoreMeta = (score) => (
@@ -76,6 +76,22 @@ export const fetchCalendarEvents = async ({ startDate, endDate }) => {
     const params = new URLSearchParams({ date_from: startDate, date_to: endDate, view: 'full' });
     const data = await apiClient.get(`/api/attendance/calendar?${params}`);
     return Array.isArray(data) ? data : [];
+};
+
+export const fetchCalendarMonthSettings = async (year) => {
+    const params = new URLSearchParams({ year: String(year) });
+    const data = await apiClient.get(`/api/attendance/calendar-settings?${params}`);
+    return Array.isArray(data) ? data : [];
+};
+
+export const saveCalendarMonthSetting = async ({ year, month, saturdayIsHoliday }) => (
+    apiClient.put(`/api/attendance/calendar-settings/${year}/${month}`, {
+        saturday_is_holiday: Boolean(saturdayIsHoliday),
+    })
+);
+
+export const deleteCalendarMonthSetting = async ({ year, month }) => {
+    await apiClient.delete(`/api/attendance/calendar-settings/${year}/${month}`);
 };
 
 export const saveCalendarEvent = async ({ existingId, selectedDate, title, description, isHoliday, userId }) => {
