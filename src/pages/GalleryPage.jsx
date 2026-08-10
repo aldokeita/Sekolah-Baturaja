@@ -61,6 +61,7 @@ const HERO_GRADS = [
 ];
 const HEIGHTS = [104, 138, 92, 124, 110, 150, 118, 132];
 const HERO_TILE_HEIGHT_SCALES = [1, 0.82, 1.14, 0.9, 1.18, 0.76, 1.06, 0.88, 1.2];
+const HERO_COLUMN_COUNT = 6;
 const COLS = 4;
 
 const escapeCssUrl = (value) => String(value).replace(/[\\"]/g, '\\$&');
@@ -240,7 +241,7 @@ const GalleryPage = () => {
   // Isi latar satu foto: gambar bila ada url, jika tidak gradien fallback.
   const fillOf = (s) => (s.url ? `background:url("${s.url}") center/cover no-repeat` : `background:${s.grad}`);
 
-  const heroCols = useMemo(() => Array.from({ length: 5 }).map((_, c) => {
+  const heroCols = useMemo(() => Array.from({ length: HERO_COLUMN_COUNT }).map((_, c) => {
     const base = Array.from({ length: 9 }).map((__, t) => {
       const g = (c * 7 + t * 3) % 8;
       const photo = heroPhotos.length > 0 ? heroPhotos[(c * 7 + t * 3) % heroPhotos.length] : null;
@@ -336,6 +337,7 @@ const GalleryPage = () => {
 
   const vals = {
     heroCols,
+    heroColumnCount: heroCols.length,
     heroStats: [
       { n: galleryMetric.value, status: galleryMetric.status, suf: '', label: 'foto terkumpul' },
       { n: galleryMonths, status: galleryMetric.status, suf: ' bulan', label: 'dokumentasi berjalan' },
