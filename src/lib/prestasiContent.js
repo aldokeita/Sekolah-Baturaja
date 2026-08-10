@@ -1,4 +1,8 @@
-import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
+import {
+  announceWebsiteContentUpdate,
+  fetchWebsiteContentMap,
+  saveWebsiteContentItem,
+} from '@/lib/publicContentAdapters';
 
 /**
  * Isi halaman Prestasi yang dapat disunting pembeli.
@@ -36,36 +40,42 @@ export const DEFAULT_PRESTASI_CONTENT = Object.freeze({
       tahun: '2026', judul: 'Lomba Kebersihan Sekolah', tingkat: 'Kecamatan', peringkat: 'Juara 1',
       oleh: 'Seluruh warga sekolah', bidang: 'Lingkungan',
       cerita: 'Contoh catatan prestasi. Ganti dengan prestasi sekolah Anda dari menu Konten → Prestasi.',
+      foto_url: '',
       meta: [{ label: 'Penyelenggara', value: 'UPTD Kecamatan' }, { label: 'Lokasi', value: 'Kecamatan' }],
     },
     {
       tahun: '2026', judul: 'Olimpiade Sains tingkat Kabupaten', tingkat: 'Kabupaten', peringkat: 'Juara 2',
       oleh: 'Nama Murid, kelas V', bidang: 'Akademik',
       cerita: 'Contoh catatan prestasi. Ganti dengan prestasi sekolah Anda.',
+      foto_url: '',
       meta: [{ label: 'Penyelenggara', value: 'Dinas Pendidikan' }, { label: 'Lokasi', value: 'Kabupaten' }],
     },
     {
       tahun: '2025', judul: 'Festival Seni Tari', tingkat: 'Kabupaten', peringkat: 'Juara 1',
       oleh: 'Sanggar tari sekolah', bidang: 'Seni',
       cerita: 'Contoh catatan prestasi. Ganti dengan prestasi sekolah Anda.',
+      foto_url: '',
       meta: [{ label: 'Penyelenggara', value: 'Disdikbud' }, { label: 'Lokasi', value: 'Kabupaten' }],
     },
     {
       tahun: '2025', judul: 'O2SN cabang atletik', tingkat: 'Provinsi', peringkat: 'Juara 3',
       oleh: 'Nama Murid, kelas VI', bidang: 'Olahraga',
       cerita: 'Contoh catatan prestasi. Ganti dengan prestasi sekolah Anda.',
+      foto_url: '',
       meta: [{ label: 'Penyelenggara', value: 'Dinas Pendidikan' }, { label: 'Lokasi', value: 'Provinsi' }],
     },
     {
       tahun: '2024', judul: 'Lomba Cerdas Cermat', tingkat: 'Kecamatan', peringkat: 'Juara 1',
       oleh: 'Tim sekolah', bidang: 'Akademik',
       cerita: 'Contoh catatan prestasi. Ganti dengan prestasi sekolah Anda.',
+      foto_url: '',
       meta: [{ label: 'Penyelenggara', value: 'UPTD Kecamatan' }, { label: 'Lokasi', value: 'Kecamatan' }],
     },
     {
       tahun: '2023', judul: 'Akreditasi Sekolah', tingkat: 'Nasional', peringkat: 'Nilai A',
       oleh: 'Seluruh warga sekolah', bidang: 'Akademik',
       cerita: 'Contoh catatan prestasi. Ganti dengan hasil akreditasi sekolah Anda.',
+      foto_url: '',
       meta: [{ label: 'Penyelenggara', value: 'BAN-S/M' }, { label: 'Aspek dinilai', value: '8 standar' }],
     },
   ]),
@@ -99,6 +109,10 @@ const normalizeRecords = (rows) => {
       oleh: teks(row?.oleh),
       bidang: BIDANG_OPTIONS.includes(teks(row?.bidang)) ? teks(row.bidang) : 'Akademik',
       cerita: teks(row?.cerita),
+      // URL aset disimpan bersama catatan yang sama agar halaman Prestasi dan
+      // Profil selalu memakai foto yang identik. Terima beberapa nama lama
+      // supaya konten yang sudah pernah disimpan tetap kompatibel.
+      foto_url: teks(row?.foto_url || row?.fotoUrl || row?.image_url || row?.photo_url),
       meta,
     };
   }).filter(Boolean);
@@ -130,5 +144,6 @@ export const fetchPrestasiContent = async () => {
 export const savePrestasiContent = async (content) => {
   const normalized = normalizePrestasiContent(content);
   await saveWebsiteContentItem({ key: PRESTASI_CONTENT_KEY, content: normalized, isPublic: true });
+  announceWebsiteContentUpdate([PRESTASI_CONTENT_KEY]);
   return normalized;
 };

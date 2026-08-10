@@ -69,12 +69,14 @@ html[data-theme="dark"] body .sdnb.sdnb .sdnb-profil-mark {
   .sdnb-profil-hero { grid-template-columns: 1fr !important; min-height: 0 !important; }
   .sdnb-profil-hero > div:last-child { height: 420px !important; }
   .sdnb-profil-stats { grid-template-columns: repeat(2, 1fr) !important; }
+  .sdnb-profile-achievements { grid-template-columns: repeat(2, 1fr) !important; }
   .sdnb-profil-bottom { grid-template-columns: 1fr !important; }
   .sdnb-profil-fasilitas { grid-template-columns: repeat(2, 1fr) !important; }
 }
 @media (max-width: 640px) {
   .sdnb-profil-stats { grid-template-columns: 1fr !important; }
   .sdnb-profil-stats > div { border-bottom: 1px solid rgba(255, 255, 255, .6); }
+  .sdnb-profile-achievements { grid-template-columns: 1fr !important; }
   .sdnb-profil-fasilitas { grid-template-columns: 1fr !important; }
   .sdnb-profil-fasilitas > div { grid-column: span 1 !important; grid-row: span 1 !important; }
   .sdnb-profil-quote { flex-direction: column; }

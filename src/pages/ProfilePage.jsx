@@ -4,8 +4,13 @@ import { Link } from 'react-router-dom';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { fetchSantriCount } from '@/lib/dataMasterAdapters';
-import { fetchPublicTeachers } from '@/lib/publicContentAdapters';
+import {
+  WEBSITE_CONTENT_UPDATED_EVENT,
+  WEBSITE_CONTENT_UPDATED_STORAGE_KEY,
+  fetchPublicTeachers,
+} from '@/lib/publicContentAdapters';
 import { DEFAULT_PROFILE_CONTENT, fetchProfileContent } from '@/lib/profileContent';
+import { PRESTASI_CONTENT_KEY, fetchPrestasiContent, normalizePrestasiContent } from '@/lib/prestasiContent';
 import { inisialNama, sebutanStaf } from '@/lib/staf';
 import '@/styles/sdnb.css';
 import '@/styles/sdnb-profil.css';
@@ -68,6 +73,17 @@ const FASILITAS_GAYA = [
   ['linear-gradient(150deg,#ffd8ea,#e8b6f0)', 'span 1', 'span 1'],
   ['linear-gradient(150deg,#d7d2ff,#b4b8f8)', 'span 1', 'span 1'],
 ];
+
+const PRESTASI_GRADASI = {
+  Akademik: 'linear-gradient(150deg,#5967c9,#8d7be8 52%,#d39ad7)',
+  Seni: 'linear-gradient(150deg,#c85c9f,#925fd2 52%,#6f8ee8)',
+  Olahraga: 'linear-gradient(150deg,#3f8eb4,#5e73d2 52%,#c27fc4)',
+  Keagamaan: 'linear-gradient(150deg,#556bb3,#8e7ed0 52%,#b3a0ec)',
+  Lingkungan: 'linear-gradient(150deg,#378e83,#5aa56e 52%,#a0ca80)',
+  Kepramukaan: 'linear-gradient(150deg,#3e7fc1,#5c9ad4 52%,#8ed1bb)',
+};
+
+const prestasiGradasi = (bidang) => PRESTASI_GRADASI[bidang] || PRESTASI_GRADASI.Akademik;
 
 // Gradasi tiap simpul garis waktu riwayat.
 const RIWAYAT_GRADASI = [
@@ -173,6 +189,9 @@ const ProfilePage = () => {
   const [stafStatus, setStafStatus] = useState('loading');
   const [stafError, setStafError] = useState(null);
   const [jumlahMurid, setJumlahMurid] = useState({ status: 'loading', total: null, error: null });
+  const [prestasi, setPrestasi] = useState(() => normalizePrestasiContent({ records: [] }));
+  const [prestasiStatus, setPrestasiStatus] = useState('loading');
+  const [prestasiError, setPrestasiError] = useState(null);
   // Bawaan dipakai lebih dulu supaya halaman tidak kosong selagi menunggu server.
   const [isi, setIsi] = useState(DEFAULT_PROFILE_CONTENT);
   const vpRef = useRef(null);
@@ -186,6 +205,46 @@ const ProfilePage = () => {
       .then((tersimpan) => { if (aktif && tersimpan) setIsi(tersimpan); })
       .catch(() => { /* bawaan tetap tampil */ });
     return () => { aktif = false; };
+  }, []);
+
+  useEffect(() => {
+    let aktif = true;
+
+    const refresh = () => {
+      setPrestasiStatus((prev) => (prev === 'ready' || prev === 'empty' ? 'refreshing' : 'loading'));
+      fetchPrestasiContent()
+        .then((data) => {
+          if (!aktif || !data) return;
+          setPrestasi(data);
+          setPrestasiError(null);
+          setPrestasiStatus(data.records?.length ? 'ready' : 'empty');
+        })
+        .catch(() => {
+          if (!aktif) return;
+          setPrestasiStatus('error');
+          setPrestasiError('Capaian sekolah belum dapat dimuat.');
+        });
+    };
+    const shouldRefresh = (keys) => !Array.isArray(keys) || keys.length === 0 || keys.includes(PRESTASI_CONTENT_KEY);
+    const onContentUpdate = (event) => {
+      if (shouldRefresh(event.detail?.keys)) refresh();
+    };
+    const onStorage = (event) => {
+      if (event.key !== WEBSITE_CONTENT_UPDATED_STORAGE_KEY || !event.newValue) return;
+      try {
+        const signal = JSON.parse(event.newValue);
+        if (shouldRefresh(signal.keys)) refresh();
+      } catch { /* signal lintas-tab yang rusak diabaikan */ }
+    };
+
+    refresh();
+    window.addEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdate);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      aktif = false;
+      window.removeEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdate);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   const loadJumlahMurid = useCallback(async ({ initial = false } = {}) => {
@@ -358,6 +417,7 @@ const ProfilePage = () => {
         ? 'jumlah murid tidak tersedia'
         : isi.hero.badgeLabel;
   const kepalaAvatarUrl = String(isi.quoteAvatarUrl || kepalaSekolah?.foto || '').trim();
+  const capaianTeratas = (prestasi.records || []).slice(0, 3);
 
   return (
     <div className="sdnb-profil">
@@ -448,6 +508,58 @@ const ProfilePage = () => {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* ── CAPAIAN TERATAS ──────────────────────────────────────────────── */}
+      <section id="capaian" data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '76px 28px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
+          <div>
+            <div style={kicker}>Arsip sekolah</div>
+            <h2 style={h2}>Capaian <span style={GRAD_TEXT}>teratas</span></h2>
+          </div>
+          <p role={prestasiStatus === 'error' ? 'alert' : undefined} aria-live="polite" style={{ maxWidth: 370, margin: 0, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>
+            {prestasiStatus === 'loading' || prestasiStatus === 'refreshing'
+              ? 'Memuat catatan penghargaan…'
+              : prestasiStatus === 'error'
+                ? prestasiError
+                : capaianTeratas.length > 0
+                  ? 'Penghargaan terbaru yang dicatat sekolah, dengan foto perlombaan dari sumber yang sama.'
+                  : 'Belum ada catatan penghargaan yang ditampilkan.'}
+          </p>
+        </div>
+
+        {capaianTeratas.length > 0 ? (
+          <div className="sdnb-profile-achievements" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }}>
+            {capaianTeratas.map((capaian, i) => (
+              <article key={`${capaian.judul}-${i}`} style={{ position: 'relative', minHeight: 270, overflow: 'hidden', borderRadius: 24, background: prestasiGradasi(capaian.bidang), border: '1px solid rgba(255,255,255,.62)', boxShadow: '0 28px 58px -24px rgba(55,65,120,.62),inset 0 1px 0 rgba(255,255,255,.65)' }}>
+                {capaian.foto_url && (
+                  <img
+                    src={capaian.foto_url}
+                    alt={`Foto perlombaan ${capaian.judul}`}
+                    loading="lazy"
+                    onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                )}
+                <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(24,28,72,.1) 0%,rgba(24,28,72,.2) 32%,rgba(18,21,57,.88) 100%)' }} />
+                <div style={{ position: 'relative', display: 'flex', minHeight: 270, flexDirection: 'column', justifyContent: 'space-between', padding: 24, color: '#fff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <span style={{ padding: '7px 11px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', background: 'rgba(255,255,255,.2)', border: '1px solid rgba(255,255,255,.4)' }}>{capaian.tingkat}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: 'rgba(255,255,255,.84)' }}>{capaian.tahun}</span>
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 22, lineHeight: 1.2, letterSpacing: '-.025em', fontWeight: 800 }}>{capaian.judul}</h3>
+                    <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.55, color: 'rgba(255,255,255,.84)' }}>{capaian.peringkat}{capaian.oleh ? ` · ${capaian.oleh}` : ''}</div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div role={prestasiStatus === 'error' ? 'alert' : undefined} aria-busy={prestasiStatus === 'loading'} style={{ ...glass, marginTop: 28, padding: '24px 26px', borderRadius: 20, color: '#5b6082', fontSize: 14 }}>
+            {prestasiStatus === 'loading' || prestasiStatus === 'refreshing' ? 'Catatan penghargaan sedang dimuat…' : prestasiStatus === 'error' ? prestasiError : 'Belum ada catatan penghargaan.'}
+          </div>
+        )}
       </section>
 
       {/* ── QUOTE ────────────────────────────────────────────────────────── */}

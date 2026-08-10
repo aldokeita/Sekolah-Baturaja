@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import PrestasiBody from '@/components/sdnb/generated/PrestasiBody';
-import { fetchPrestasiContent, normalizePrestasiContent } from '@/lib/prestasiContent';
+import {
+  PRESTASI_CONTENT_KEY,
+  fetchPrestasiContent,
+  normalizePrestasiContent,
+} from '@/lib/prestasiContent';
+import {
+  WEBSITE_CONTENT_UPDATED_EVENT,
+  WEBSITE_CONTENT_UPDATED_STORAGE_KEY,
+} from '@/lib/publicContentAdapters';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
 
@@ -43,19 +51,42 @@ const PrestasiPage = () => {
 
   useEffect(() => {
     let aktif = true;
-    fetchPrestasiContent()
-      .then((data) => { if (aktif && data) setContent(data); })
-      .catch(() => { /* biarkan bawaan; halaman tetap tampil */ });
-    return () => { aktif = false; };
+
+    const refresh = () => {
+      fetchPrestasiContent()
+        .then((data) => { if (aktif && data) setContent(data); })
+        .catch(() => { /* biarkan bawaan; halaman tetap tampil */ });
+    };
+    const shouldRefresh = (keys) => !Array.isArray(keys) || keys.length === 0 || keys.includes(PRESTASI_CONTENT_KEY);
+    const onContentUpdate = (event) => {
+      if (shouldRefresh(event.detail?.keys)) refresh();
+    };
+    const onStorage = (event) => {
+      if (event.key !== WEBSITE_CONTENT_UPDATED_STORAGE_KEY || !event.newValue) return;
+      try {
+        const signal = JSON.parse(event.newValue);
+        if (shouldRefresh(signal.keys)) refresh();
+      } catch { /* signal lintas-tab yang rusak diabaikan */ }
+    };
+
+    refresh();
+    window.addEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdate);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      aktif = false;
+      window.removeEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdate);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
-  const records = content.records || [];
+  const records = useMemo(() => content.records ?? [], [content.records]);
 
   // Bentuk tuple yang diharapkan PrestasiBody: [tahun, judul, tingkat, peringkat,
-  // oleh, bidang, cerita, [[label, value], ...]].
+  // oleh, bidang, cerita, [[label, value], ...], foto_url].
   const P = useMemo(() => records.map((r) => [
     r.tahun, r.judul, r.tingkat, r.peringkat, r.oleh, r.bidang, r.cerita,
     (r.meta || []).map((m) => [m.label, m.value]),
+    r.foto_url || '',
   ]), [records]);
 
   const items = useMemo(
@@ -118,6 +149,7 @@ const PrestasiPage = () => {
       tahun: p[0], judul: p[1], tingkat: p[2], peringkat: p[3], oleh: p[4],
       open: () => setIdx(i),
       foto: `background-image:${foto(p[5])}`,
+      fotoUrl: p[8],
       medali: `justify-self:start;padding:8px 14px;border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,${warna(p[2])});box-shadow:0 12px 26px -14px rgba(90,100,200,.9)`,
     })),
 
@@ -136,6 +168,7 @@ const PrestasiPage = () => {
       const tinggi = [300, 262, 234][k];
       return {
         no: `0${k + 1}`, judul: p[1], oleh: p[4], tahun: p[0], tingkat: p[2], peringkat: p[3],
+        fotoUrl: p[8],
         open: () => setIdx(k),
         card: `position:relative;overflow:hidden;cursor:pointer;min-height:${tinggi}px;padding:30px 30px 28px;border-radius:28px;background:linear-gradient(150deg,${warna(p[2])});border:1px solid rgba(255,255,255,.28);box-shadow:0 34px 74px -28px rgba(60,70,160,.7)`,
       };
@@ -145,8 +178,9 @@ const PrestasiPage = () => {
     detil: d ? {
       tahun: d[0], judul: d[1], tingkat: d[2], peringkat: d[3], cerita: d[6],
       meta: d[7].map(([k, v]) => ({ k, v })),
+      fotoUrl: d[8],
       top: `position:relative;overflow:hidden;padding:34px 34px 30px;background:linear-gradient(150deg,${warna(d[2])})`,
-    } : { tahun: '', judul: '', tingkat: '', peringkat: '', cerita: '', meta: [], top: '' },
+    } : { tahun: '', judul: '', tingkat: '', peringkat: '', cerita: '', meta: [], fotoUrl: '', top: '' },
     sebelum: () => geser(-1),
     sesudah: () => geser(1),
     tutup: () => setIdx(-1),
