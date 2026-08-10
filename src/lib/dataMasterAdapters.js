@@ -238,6 +238,10 @@ export const fetchSantriCount = async () => {
   return publicFetch('/api/santri/count');
 };
 
+export const fetchClassCount = async () => {
+  return publicFetch('/api/classes/count');
+};
+
 export const bulkInsertSantri = async (payloads) => {
   const data = await apiClient.post('/api/santri/bulk', payloads);
   return (data || []).map(mapSantriForLegacyUi);

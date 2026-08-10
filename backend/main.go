@@ -76,6 +76,7 @@ func main() {
 	// ── Public: counts (homepage stats) ──────────────────────────────────────
 	r.Get("/api/santri/count", santriHandler.Count)
 	r.Get("/api/guru/count", guruHandler.Count)
+	r.Get("/api/classes/count", classesHandler.Count)
 
 	// ── Public: kalender akademik (hanya event is_public = true) ─────────────
 	// Situs sekolah menampilkan agenda/hari libur tanpa login. Endpoint ini

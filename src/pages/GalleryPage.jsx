@@ -2,7 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import GaleriBody from '@/components/sdnb/generated/GaleriBody';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
+import { fetchClassCount, fetchSantriCount } from '@/lib/dataMasterAdapters';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
+import { deriveGalleryAlbums, normalizeGalleryAlbums, normalizeGalleryPhotos, resolveGalleryAlbumPhotos } from '@/lib/galleryContent';
 import '@/styles/sdnb.css';
 
 /**
@@ -10,7 +13,7 @@ import '@/styles/sdnb.css';
  * tools/dc-convert.mjs (see components/sdnb/generated/GaleriBody.jsx). This
  * file reproduces the mockup's logic class: state (`kat`, `view`, `idx`), the
  * category filter, the mosaic/sinema switch, the lightbox with keyboard
- * navigation, the pointer glow, and the parallax scroll handler.
+ * navigation, and the parallax scroll handler.
  *
  * Backend fill-in: when the CMS has gallery photos they replace the mockup's
  * gradient placeholders (caption + image), keeping every layout span intact.
@@ -50,13 +53,6 @@ const PHOTO_GRAD = [
   'linear-gradient(150deg,#ffd8ea,#e8b6f0)', 'linear-gradient(150deg,#d7d2ff,#b4b8f8)',
 ];
 
-const ALBUM = [
-  ['Pentas seni 2025', 42, '#ffc9dc', '#f2a9c8', '#c6b6f6'],
-  ['Pramuka & atletik', 31, '#bbf7d0', '#86efac', '#9fc4f8'],
-  ['Kebun sekolah', 26, '#ffe0b3', '#ffc39c', '#b6f0e0'],
-  ['Wisuda kelas VI', 55, '#c8b6ff', '#9fb6f8', '#ffd8ea'],
-];
-
 const HERO_GRADS = [
   'linear-gradient(150deg,#c6b6f6,#9fc4f8)', 'linear-gradient(150deg,#ffc9dc,#f2a9c8)',
   'linear-gradient(150deg,#a9eede,#8fd8ec)', 'linear-gradient(150deg,#ffe0b3,#ffc39c)',
@@ -67,42 +63,88 @@ const HEIGHTS = [104, 138, 92, 124, 110, 150, 118, 132];
 const COLS = 4;
 
 const GalleryPage = () => {
+  const schoolIdentity = useSchoolIdentity();
   const [kat, setKat] = useState('Semua');
   const [view, setView] = useState('mosaic');
   const [idx, setIdx] = useState(-1);
   const [cmsPhotos, setCmsPhotos] = useState([]);
-
-  useSdnbMotion([]);
+  const [cmsAlbums, setCmsAlbums] = useState([]);
+  const [albumPhotoIds, setAlbumPhotoIds] = useState(null);
+  const [galleryRequest, setGalleryRequest] = useState(0);
+  const [galleryState, setGalleryState] = useState({ status: 'loading', error: null });
+  const [statsRequest, setStatsRequest] = useState(0);
+  const [studentMetric, setStudentMetric] = useState({ status: 'loading', value: null, error: null });
+  const [classMetric, setClassMetric] = useState({ status: 'loading', value: null, error: null });
 
   useEffect(() => {
     let mounted = true;
-    fetchWebsiteContentMap({ keys: ['galleryPhotos'], publicOnly: true })
-      .then((map) => { if (mounted && Array.isArray(map.galleryPhotos)) setCmsPhotos(map.galleryPhotos); })
-      .catch(() => {});
+    setGalleryState({ status: 'loading', error: null });
+    fetchWebsiteContentMap({ keys: ['galleryPhotos', 'galleryAlbums'], publicOnly: true })
+      .then((map) => {
+        if (!mounted) return;
+        setCmsPhotos(normalizeGalleryPhotos(map.galleryPhotos));
+        setCmsAlbums(normalizeGalleryAlbums(map.galleryAlbums));
+        setGalleryState({ status: 'ready', error: null });
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setGalleryState({ status: 'error', error: 'Data Galeri Kegiatan belum dapat dimuat.' });
+      });
     return () => { mounted = false; };
-  }, []);
+  }, [galleryRequest]);
+
+  useEffect(() => {
+    let mounted = true;
+    setStudentMetric({ status: 'loading', value: null, error: null });
+    setClassMetric({ status: 'loading', value: null, error: null });
+
+    Promise.allSettled([fetchSantriCount(), fetchClassCount()]).then(([studentResult, classResult]) => {
+      if (!mounted) return;
+      const parseMetric = (result, label) => {
+        if (result.status === 'rejected') return { status: 'error', value: null, error: `${label} belum dapat dimuat.` };
+        const total = Number(result.value?.total);
+        if (!Number.isInteger(total) || total < 0) return { status: 'error', value: null, error: `${label} belum dapat dimuat.` };
+        return { status: total === 0 ? 'empty' : 'ready', value: total, error: null };
+      };
+      setStudentMetric(parseMetric(studentResult, 'Jumlah murid'));
+      setClassMetric(parseMetric(classResult, 'Jumlah rombongan belajar'));
+    });
+
+    return () => { mounted = false; };
+  }, [statsRequest]);
+
+  const managedPhotos = useMemo(() => normalizeGalleryPhotos(cmsPhotos), [cmsPhotos]);
 
   // Foto dari CMS bila ada (jumlah bebas), jika kosong pakai contoh bawaan FOTO.
   // Span mosaik & gradien fallback dipilih otomatis dari urutan.
   const source = useMemo(() => {
-    if (Array.isArray(cmsPhotos) && cmsPhotos.length > 0) {
-      return cmsPhotos.map((p, i) => ({
+    if (managedPhotos.length > 0) {
+      return managedPhotos.map((p, i) => ({
+        id: String(p.id),
         nama: p.caption || p.name || `Foto ${i + 1}`,
         kat: KAT_ITEM.includes(p.kategori) ? p.kategori : 'Belajar',
         ket: p.keterangan || '',
         tanggal: p.tanggal || '',
-        url: p.url || p.image_url || '',
+        url: p.url || '',
         grad: PHOTO_GRAD[i % PHOTO_GRAD.length],
         col: SPAN[i % SPAN.length][0],
         row: SPAN[i % SPAN.length][1],
       }));
     }
-    return FOTO.map((f) => ({ nama: f[0], kat: f[1], ket: f[2], tanggal: f[3], url: '', grad: f[4], col: f[5], row: f[6] }));
-  }, [cmsPhotos]);
+    return FOTO.map((f, i) => ({ id: `fallback-gallery-${i + 1}`, nama: f[0], kat: f[1], ket: f[2], tanggal: f[3], url: '', grad: f[4], col: f[5], row: f[6] }));
+  }, [managedPhotos]);
+
+  const activeAlbumPhotoIds = useMemo(
+    () => (albumPhotoIds ? new Set(albumPhotoIds.map((id) => String(id))) : null),
+    [albumPhotoIds],
+  );
 
   const items = useMemo(
-    () => source.map((s, i) => ({ s, i })).filter((o) => kat === 'Semua' || o.s.kat === kat),
-    [source, kat],
+    () => source.map((s, i) => ({ s, i })).filter((o) => (
+      (!activeAlbumPhotoIds || activeAlbumPhotoIds.has(String(o.s.id)))
+      && (kat === 'Semua' || o.s.kat === kat)
+    )),
+    [source, kat, activeAlbumPhotoIds],
   );
 
   const move = useCallback((dir) => {
@@ -145,22 +187,6 @@ const GalleryPage = () => {
     return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
   }, [view, kat]);
 
-  // pointer glow over the mosaic (verbatim hookGlow)
-  useEffect(() => {
-    const wrap = document.getElementById('mos-wrap');
-    const glow = document.getElementById('mos-glow');
-    if (!wrap || !glow) return undefined;
-    const onMove = (e) => {
-      const r = wrap.getBoundingClientRect();
-      glow.style.transform = `translate3d(${e.clientX - r.left}px,${e.clientY - r.top}px,0)`;
-      glow.style.opacity = '1';
-    };
-    const onLeave = () => { glow.style.opacity = '0'; };
-    wrap.addEventListener('pointermove', onMove);
-    wrap.addEventListener('pointerleave', onLeave);
-    return () => { wrap.removeEventListener('pointermove', onMove); wrap.removeEventListener('pointerleave', onLeave); };
-  }, [view, kat]);
-
   const scrollCine = (dir) => {
     const el = document.getElementById('cine');
     if (el) el.scrollBy({ left: dir * Math.min(760, el.clientWidth * 0.72), behavior: 'smooth' });
@@ -177,21 +203,101 @@ const GalleryPage = () => {
     return { tiles: base.concat(base), cls: c % 2 ? 'dcol rev' : 'dcol', style: `animation-duration:${38 + c * 7}s` };
   }), []);
 
+  const galleryMetric = useMemo(() => ({
+    status: galleryState.status === 'ready'
+      ? (managedPhotos.length === 0 ? 'empty' : 'ready')
+      : galleryState.status,
+    value: managedPhotos.length,
+    error: galleryState.error,
+  }), [galleryState, managedPhotos.length]);
+
+  const albumSource = useMemo(
+    () => (galleryState.status === 'ready' ? managedPhotos : []),
+    [galleryState.status, managedPhotos],
+  );
+  const albumDefinitions = useMemo(() => {
+    const configured = normalizeGalleryAlbums(cmsAlbums)
+      .map((album) => ({ ...album, photos: resolveGalleryAlbumPhotos(album, source) }))
+      .filter((album) => album.photos.length > 0);
+    if (configured.length > 0) return configured;
+    if (galleryState.status !== 'ready') return [];
+    return deriveGalleryAlbums(albumSource)
+      .map((album) => ({ ...album, photos: resolveGalleryAlbumPhotos(album, source) }))
+      .filter((album) => album.photos.length > 0);
+  }, [albumSource, cmsAlbums, galleryState.status, source]);
+
+  const albumEntries = useMemo(() => albumDefinitions.map((album) => {
+    const cover = album.photos[0];
+    const photoIds = album.photos.map((photo) => String(photo.id));
+    const firstIndex = source.findIndex((photo) => String(photo.id) === String(photoIds[0]));
+    const layerFill = fillOf(cover);
+    return {
+      nama: album.title,
+      n: album.photos.length,
+      open: () => {
+        setAlbumPhotoIds(photoIds);
+        setKat('Semua');
+        setIdx(firstIndex);
+      },
+      l1: `position:absolute;inset:0;border-radius:24px;${layerFill};border:1px solid rgba(255,255,255,.7);box-shadow:0 20px 42px -20px rgba(55,65,120,.5)`,
+      l2: `position:absolute;inset:0;border-radius:24px;${layerFill};border:1px solid rgba(255,255,255,.7);box-shadow:0 20px 42px -20px rgba(55,65,120,.5)`,
+      l3: `position:relative;height:250px;border-radius:24px;overflow:hidden;${layerFill};border:1px solid rgba(255,255,255,.78);box-shadow:0 30px 62px -24px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.85)`,
+    };
+  }), [albumDefinitions, source]);
+
+  const galleryMonths = useMemo(
+    () => new Set(managedPhotos.map((photo) => String(photo.tanggal || '').trim()).filter(Boolean)).size,
+    [managedPhotos],
+  );
+  const galleryActivities = useMemo(
+    () => new Set(managedPhotos.map((photo) => String(photo.caption || photo.name || '').trim()).filter(Boolean)).size,
+    [managedPhotos],
+  );
+  const metrics = [galleryMetric, studentMetric, classMetric];
+  const bandStatsBusy = metrics.some((metric) => metric.status === 'loading');
+  const bandStatsHasError = metrics.some((metric) => metric.status === 'error');
+  const bandStatsHasEmpty = metrics.some((metric) => metric.status === 'empty');
+  const bandStatsNotice = bandStatsBusy
+    ? 'Memuat statistik Galeri…'
+    : bandStatsHasError
+      ? 'Sebagian statistik belum dapat dimuat.'
+      : bandStatsHasEmpty
+        ? 'Belum ada data pada sebagian statistik.'
+        : '';
+  const retryStats = () => {
+    setGalleryRequest((request) => request + 1);
+    setStatsRequest((request) => request + 1);
+  };
+  const academicYear = String(schoolIdentity?.academicYear || '').trim();
+  const academicYearLabel = academicYear ? `Tahun ajaran ${academicYear}` : 'Tahun ajaran';
+  const albumMessage = galleryState.status === 'loading'
+    ? 'Memuat album dari Galeri Kegiatan…'
+    : galleryState.status === 'error'
+      ? 'Album belum dapat dimuat. Coba lagi.'
+      : 'Belum ada album. Tambahkan album dari foto Galeri Kegiatan melalui Manajemen Konten Website.';
+
+  useSdnbMotion([galleryState.status, studentMetric.status, classMetric.status, source.length, albumEntries.length]);
+
   const cur = idx >= 0 ? source[idx] : null;
   const at = items.findIndex((o) => o.i === idx);
 
   const vals = {
     heroCols,
     heroStats: [
-      { n: 428, suf: '', label: 'foto terkumpul' },
-      { n: 12, suf: ' bulan', label: 'dokumentasi berjalan' },
-      { n: 9, suf: '', label: 'album kegiatan' },
+      { n: galleryMetric.value, status: galleryMetric.status, suf: '', label: 'foto terkumpul' },
+      { n: galleryMonths, status: galleryMetric.status, suf: ' bulan', label: 'dokumentasi berjalan' },
+      { n: albumEntries.length, status: galleryMetric.status, suf: '', label: 'album kegiatan' },
     ],
     bandStats: [
-      { n: 624, suf: '', label: 'murid dalam bingkai' },
-      { n: 38, suf: '', label: 'kegiatan terdokumentasi' },
-      { n: 18, suf: '', label: 'rombongan belajar' },
+      { n: studentMetric.value, status: studentMetric.status, suf: '', label: 'murid dalam bingkai' },
+      { n: galleryActivities, status: galleryMetric.status, suf: '', label: 'kegiatan terdokumentasi' },
+      { n: classMetric.value, status: classMetric.status, suf: '', label: 'rombongan belajar' },
     ],
+    academicYearLabel,
+    bandStatsNotice,
+    bandStatsBusy,
+    retryBandStats: retryStats,
+    albumMessage,
 
     kategori: KAT.map((k) => {
       const n = k === 'Semua' ? source.length : source.filter((s) => s.kat === k).length;
@@ -199,7 +305,7 @@ const GalleryPage = () => {
       return {
         label: k,
         n,
-        pick: () => { setKat(k); setIdx(-1); },
+        pick: () => { setKat(k); setAlbumPhotoIds(null); setIdx(-1); },
         style: 'display:inline-flex;align-items:center;gap:8px;padding:11px 15px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;transition:background .3s ease,color .3s ease,box-shadow .3s ease,transform .3s cubic-bezier(.4,1.3,.4,1);' + (on
           ? 'border:0;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung));box-shadow:0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(-1px)'
           : 'border:1px solid rgba(255,255,255,.85);color:#3d4166;background:rgba(255,255,255,.5)'),
@@ -235,14 +341,7 @@ const GalleryPage = () => {
     cinePrev: () => scrollCine(-1),
     cineNext: () => scrollCine(1),
 
-    album: ALBUM.map((a) => ({
-      nama: a[0],
-      n: a[1],
-      open: () => { setKat('Semua'); setIdx(0); },
-      l1: `position:absolute;inset:0;border-radius:24px;background:linear-gradient(150deg,${a[2]},${a[4]});border:1px solid rgba(255,255,255,.7);box-shadow:0 20px 42px -20px rgba(55,65,120,.5)`,
-      l2: `position:absolute;inset:0;border-radius:24px;background:linear-gradient(150deg,${a[3]},${a[2]});border:1px solid rgba(255,255,255,.7);box-shadow:0 20px 42px -20px rgba(55,65,120,.5)`,
-      l3: `position:relative;height:250px;border-radius:24px;overflow:hidden;background:linear-gradient(150deg,${a[2]},${a[3]} 60%,${a[4]});border:1px solid rgba(255,255,255,.78);box-shadow:0 30px 62px -24px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.85)`,
-    })),
+    album: albumEntries,
 
     lightOpen: idx >= 0,
     cur: cur ? {
@@ -259,7 +358,7 @@ const GalleryPage = () => {
     })),
     prev: () => move(-1),
     next: () => move(1),
-    close: () => setIdx(-1),
+    close: () => { setIdx(-1); setAlbumPhotoIds(null); },
     stop: (e) => e.stopPropagation(),
   };
 

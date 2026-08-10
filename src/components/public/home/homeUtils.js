@@ -22,6 +22,7 @@ export const defaultContent = {
   quotas: OFFICIAL_QUOTAS,
   facilities: OFFICIAL_FACILITIES,
   galleryPhotos: OFFICIAL_GALLERY,
+  galleryAlbums: [],
   proofPoints: INSTITUTION_PROOF_POINTS,
   schedules: OFFICIAL_SCHEDULES,
   faqs: OFFICIAL_FAQS,

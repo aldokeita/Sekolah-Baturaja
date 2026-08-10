@@ -20,7 +20,9 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-galeri.css';
 
 const GaleriBody = (vals = {}) => {
-  const { album, bandStats, cineNext, cinePrev, close, cur, foto, heroCols, heroStats, isMosaic, isSinema, kategori, lightOpen, mosStyle, next, prev, stop, thumbs, views } = vals;
+  const { academicYearLabel, album, albumMessage, bandStats, bandStatsBusy, bandStatsNotice, cineNext, cinePrev, close, cur, foto, heroCols, heroStats, isMosaic, isSinema, kategori, lightOpen, mosStyle, next, prev, retryBandStats, stop, thumbs, views } = vals;
+  const metricReady = (stat) => stat?.status !== 'loading' && stat?.status !== 'empty' && stat?.status !== 'error';
+  const metricText = (stat) => (metricReady(stat) ? '0' : stat?.status === 'loading' ? '…' : '—');
   return (
     <>
 <section style={{ position: "relative", minHeight: "82vh", display: "flex", alignItems: "center", overflow: "hidden", padding: "40px 0 20px" }}>
@@ -47,7 +49,7 @@ const GaleriBody = (vals = {}) => {
           <div style={{ marginTop: "28px", display: "flex", flexWrap: "wrap", gap: "22px 34px", alignItems: "flex-end" }}>
             {(heroStats || []).map((s, $index) => (<React.Fragment key={$index}>
               <div>
-                <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", fontWeight: "800", letterSpacing: "-.035em", color: "#1d1f33" }}><span data-count={s.n} data-plain="1">0</span><span style={{ fontSize: "20px", color: "#7c81a4" }}>{s.suf}</span></div>
+                <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", fontWeight: "800", letterSpacing: "-.035em", color: "#1d1f33" }}><span {...(metricReady(s) ? { 'data-count': s.n, 'data-plain': '1' } : {})}>{metricText(s)}</span><span style={{ fontSize: "20px", color: "#7c81a4" }}>{s.suf}</span></div>
                 <div style={{ marginTop: "3px", fontSize: "12.5px", color: "#6d7192" }}>{s.label}</div>
               </div>
             </React.Fragment>))}
@@ -75,7 +77,6 @@ const GaleriBody = (vals = {}) => {
 
       {(isMosaic) && (<>
         <div id="mos-wrap" style={{ position: "relative", marginTop: "26px", padding: "4px 0 70px" }}>
-          <div id="mos-glow" style={{ position: "absolute", width: "520px", height: "520px", left: "0", top: "0", margin: "-260px 0 0 -260px", borderRadius: "50%", pointerEvents: "none", opacity: "0", transition: "opacity .5s ease", background: "radial-gradient(circle at 50% 50%,rgba(130,145,255,.4),rgba(240,150,196,.18) 45%,rgba(255,255,255,0) 70%)", filter: "blur(12px)", zIndex: "0" }}></div>
           <div className="mos" style={__dcs(mosStyle)}>
             {(foto || []).map((f, $index) => (<React.Fragment key={$index}>
               <div className="gcell" onClick={f.open} style={__dcs(f.cell)}>
@@ -133,17 +134,21 @@ const GaleriBody = (vals = {}) => {
             <div style={{ width: "170px", height: "210px", borderRadius: "24px", background: "linear-gradient(150deg,#ffffff66,#ffffff11)", transform: "rotate(8deg)" }}></div>
           </div>
           <div style={{ position: "relative", padding: "64px 44px 60px", maxWidth: "760px" }}>
-            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "rgba(255,255,255,.8)" }}>Tahun ajaran 2025/2026</div>
+            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "rgba(255,255,255,.8)" }}>{academicYearLabel || 'Tahun ajaran'}</div>
             <h2 style={{ margin: "16px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "46px", lineHeight: "1.06", letterSpacing: "-.038em", fontWeight: "800", color: "#fff", textWrap: "pretty" }}>Sekolah ini paling ramai pada pukul tujuh pagi.</h2>
             <p style={{ margin: "18px 0 0", maxWidth: "560px", fontSize: "16px", lineHeight: "1.66", color: "rgba(255,255,255,.9)" }}>Foto-foto di halaman ini dipilih dari arsip dokumentasi guru sepanjang tahun. Setiap kegiatan diambil apa adanya, tanpa pengaturan ulang.</p>
             <div style={{ marginTop: "34px", display: "flex", flexWrap: "wrap", gap: "16px" }}>
               {(bandStats || []).map((b, $index) => (<React.Fragment key={$index}>
                 <div style={{ minWidth: "172px", padding: "18px 20px", borderRadius: "20px", background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.4)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
-                  <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "30px", fontWeight: "800", letterSpacing: "-.03em", color: "#fff" }}><span data-count={b.n}>0</span>{b.suf}</div>
+                  <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "30px", fontWeight: "800", letterSpacing: "-.03em", color: "#fff" }}><span {...(metricReady(b) ? { 'data-count': b.n } : {})}>{metricText(b)}</span>{b.suf}</div>
                   <div style={{ marginTop: "4px", fontSize: "12.5px", color: "rgba(255,255,255,.85)" }}>{b.label}</div>
                 </div>
               </React.Fragment>))}
             </div>
+            {bandStatsNotice && (<div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px", marginTop: "18px", fontSize: "12px", color: "rgba(255,255,255,.78)" }}>
+              <span>{bandStatsNotice}</span>
+              {retryBandStats && <button type="button" onClick={retryBandStats} disabled={bandStatsBusy} style={{ padding: "6px 10px", borderRadius: "9px", cursor: bandStatsBusy ? "wait" : "pointer", border: "1px solid rgba(255,255,255,.36)", background: "rgba(255,255,255,.14)", color: "#fff", font: "inherit", fontWeight: "700" }}>{bandStatsBusy ? 'Memuat…' : 'Coba lagi'}</button>}
+            </div>)}
           </div>
         </div>
       </div>
@@ -158,7 +163,7 @@ const GaleriBody = (vals = {}) => {
       </div>
 
       <div style={{ marginTop: "44px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "26px" }}>
-        {(album || []).map((a, $index) => (<React.Fragment key={$index}>
+        {(album || []).length > 0 ? (album || []).map((a, $index) => (<React.Fragment key={$index}>
           <div className="stk" onClick={a.open}>
             <div className="lyr l1" style={__dcs(a.l1)}></div>
             <div className="lyr l2" style={__dcs(a.l2)}></div>
@@ -171,7 +176,7 @@ const GaleriBody = (vals = {}) => {
               </div>
             </div>
           </div>
-        </React.Fragment>))}
+        </React.Fragment>)) : <div role="status" style={{ gridColumn: "1 / -1", padding: "28px", borderRadius: "22px", border: "1px dashed rgba(110,115,170,.3)", color: "#6d7192", fontSize: "14px" }}>{albumMessage || 'Belum ada album.'}</div>}
       </div>
     </section>
 {(lightOpen) && (<>
@@ -192,10 +197,6 @@ const GaleriBody = (vals = {}) => {
         </button>
         <div style={__dcs(cur.frame)}>
           <div style={{ position: "absolute", inset: "0", background: "radial-gradient(115% 75% at 22% 10%,rgba(255,255,255,.45),rgba(255,255,255,0) 58%)" }}></div>
-          <div style={{ position: "absolute", inset: "0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "10px", color: "rgba(45,40,80,.4)", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase" }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="16" rx="3"></rect><circle cx="8.5" cy="9.5" r="1.8"></circle><path d="m4 17 5-5 4.5 4.5L17 13l3 3"></path></svg>
-            Foto dokumentasi
-          </div>
           <div style={{ position: "absolute", left: "0", right: "0", bottom: "0", padding: "28px 30px 24px", background: "linear-gradient(to top,rgba(24,28,60,.72),rgba(24,28,60,0))" }}>
             <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "26px", lineHeight: "1.16", letterSpacing: "-.028em", fontWeight: "800", color: "#fff" }}>{cur.nama}</div>
             <div style={{ marginTop: "8px", maxWidth: "640px", fontSize: "13.5px", lineHeight: "1.6", color: "rgba(255,255,255,.88)" }}>{cur.tanggal} &middot; {cur.ket}</div>
