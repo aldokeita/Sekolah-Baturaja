@@ -60,7 +60,7 @@ const HERO_GRADS = [
   'linear-gradient(150deg,#ffd8ea,#e8b6f0)', 'linear-gradient(150deg,#c9e8ff,#a5c8f5)',
 ];
 const HEIGHTS = [104, 138, 92, 124, 110, 150, 118, 132];
-const HERO_TILE_HEIGHT_SCALES = [1, 0.82, 1.14, 0.9, 1.18, 0.76, 1.06, 0.88, 1.2];
+const HERO_TILE_HEIGHT_SCALES = [1.08, 0.9, 1.23, 0.97, 1.27, 0.82, 1.14, 0.95, 1.3];
 const HERO_COLUMN_COUNT = 5;
 const COLS = 4;
 
@@ -250,7 +250,7 @@ const GalleryPage = () => {
         ? `background-image:url("${escapeCssUrl(photo.url)}"),${HERO_GRADS[g]};background-size:cover,cover;background-position:center,center;background-repeat:no-repeat,no-repeat`
         : `background:${HERO_GRADS[g]}`;
       const dimensions = photo
-        ? `width:100%;height:auto;min-height:78px;max-height:220px;aspect-ratio:${getGalleryHeroAspectRatio(photo, heightScale)}`
+        ? `width:100%;height:auto;min-height:78px;max-height:238px;aspect-ratio:${getGalleryHeroAspectRatio(photo, heightScale)}`
         : `width:100%;height:${HEIGHTS[(c + t) % HEIGHTS.length]}px`;
       return { style: `flex:none;${dimensions};border-radius:16px;${background};border:1px solid rgba(255,255,255,.75);box-shadow:0 16px 34px -18px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.85)` };
     });
