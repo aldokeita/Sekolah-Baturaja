@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import EkskulBody from '@/components/sdnb/generated/EkskulBody';
 import { EKSKUL_CONTENT_KEY, fetchEkskulContent, normalizeEkskulContent } from '@/lib/ekskulContent';
 import {
+  fetchPublicTeachers,
   getPublicContentErrorMessage,
   WEBSITE_CONTENT_UPDATED_EVENT,
   WEBSITE_CONTENT_UPDATED_STORAGE_KEY,
@@ -14,7 +15,7 @@ import '@/styles/sdnb.css';
  * Ekstrakurikuler — markup dari mockup (EkskulBody), datanya kini bersumber dari
  * Konten → Ekstrakurikuler (`website_content` kunci `ekskul_content`). Nama
  * pembina karangan yang dulu ditanam di kode sudah dihapus. Warna kartu dipilih
- * otomatis dari GRADIEN berdasarkan urutan, jadi pembeli hanya mengurus teks.
+ * otomatis dari GRADIEN berdasarkan urutan; peserta dan pembina berasal dari master.
  */
 
 const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
@@ -40,6 +41,7 @@ const GRADIEN = [
 
 const EkstrakurikulerPage = () => {
   const [content, setContent] = useState(() => normalizeEkskulContent(undefined));
+  const [publicTeachers, setPublicTeachers] = useState([]);
   const [aktif, setAktif] = useState(0);
   const [tick, setTick] = useState(0);
   const [contentStatus, setContentStatus] = useState('loading');
@@ -63,6 +65,11 @@ const EkstrakurikulerPage = () => {
         setContentError(getPublicContentErrorMessage(error));
         setContentStatus('error');
       });
+    fetchPublicTeachers()
+      .then((teachers) => {
+        if (hidup && Array.isArray(teachers)) setPublicTeachers(teachers);
+      })
+      .catch(() => { /* snapshot nama pembina tetap menjadi fallback */ });
     return () => { hidup = false; };
   }, [reloadToken]);
 
@@ -90,12 +97,18 @@ const EkstrakurikulerPage = () => {
     };
   }, []);
 
+  const teacherNameById = useMemo(() => new Map(
+    publicTeachers
+      .filter((teacher) => teacher?.id && teacher?.nama)
+      .map((teacher) => [String(teacher.id), teacher.nama]),
+  ), [publicTeachers]);
+
   // Bentuk tuple yang diharapkan EkskulBody: [nama, bidang, hari, jam, pembina,
-  // tempat, terisi, kuota, kelas, cerita, gradien, foto]. Gradien dari palet by index.
+  // tempat, terisi, kuota, kelas, cerita, gradien, foto, pembinaId].
   const E = useMemo(() => (content.records || []).map((r, i) => [
-    r.nama, r.bidang, r.hari, r.jam, r.pembina, r.tempat, r.terisi, r.kuota, r.kelas, r.cerita,
-    GRADIEN[i % GRADIEN.length], r.foto_url,
-  ]), [content.records]);
+    r.nama, r.bidang, r.hari, r.jam, teacherNameById.get(String(r.pembina_id)) || r.pembina, r.tempat, r.terisi, r.kuota, r.kelas, r.cerita,
+    GRADIEN[i % GRADIEN.length], r.foto_url, r.pembina_id,
+  ]), [content.records, teacherNameById]);
 
   const pilih = (i) => { setAktif(i); setTick((t) => t + 1); };
 
@@ -104,7 +117,7 @@ const EkstrakurikulerPage = () => {
   const no = String(idxAktif + 1).padStart(2, '0');
 
   const muridTerdaftar = E.reduce((t, e) => t + (Number(e[6]) || 0), 0);
-  const pembinaUnik = new Set(E.map((e) => String(e[4] || '').trim()).filter(Boolean)).size;
+  const pembinaUnik = new Set(E.map((e) => String(e[12] || e[4] || '').trim()).filter(Boolean)).size;
 
   const vals = {
     heroKicker: content.hero?.kicker || '',

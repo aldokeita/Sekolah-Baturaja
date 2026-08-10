@@ -1,19 +1,99 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, Plus, RotateCcw, Save, Sparkles, Trash2, Upload, X } from 'lucide-react';
+import { Check, ChevronsUpDown, Loader2, Plus, RotateCcw, Save, Sparkles, Trash2, Upload, Users, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/use-toast';
 import { DEFAULT_EKSKUL_CONTENT, HARI_OPTIONS, fetchEkskulContent, saveEkskulContent } from '@/lib/ekskulContent';
+import { fetchAllSantri, fetchGuruList } from '@/lib/dataMasterAdapters';
 import { getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
 import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
 
 const salinBawaan = () => JSON.parse(JSON.stringify({ hero: DEFAULT_EKSKUL_CONTENT.hero, records: DEFAULT_EKSKUL_CONTENT.records }));
 
 const RECORD_KOSONG = {
-  nama: '', bidang: '', hari: 'Senin', jam: '', pembina: '', tempat: '', terisi: 0, kuota: 0, kelas: '', cerita: '', foto_url: '',
+  nama: '', bidang: '', hari: 'Senin', jam: '', pembina: '', pembina_id: '', tempat: '', terisi: 0, participant_source: 'master', santri_ids: [], kuota: 0, kelas: '', cerita: '', foto_url: '',
+};
+
+const MasterStudentPicker = ({ selectedIds = [], students = [], onChange, disabled = false, isLoading = false, error = '' }) => {
+  const [open, setOpen] = useState(false);
+  const ids = selectedIds.map((id) => String(id));
+  const selectedSet = new Set(ids);
+  const visibleSelected = students.filter((student) => selectedSet.has(String(student.id)));
+  const summary = ids.length === 0
+    ? 'Pilih murid dari data master'
+    : `${ids.length} murid dipilih${visibleSelected.length < ids.length ? ` (${ids.length - visibleSelected.length} tidak aktif/tidak ditemukan)` : ''}`;
+
+  const toggleStudent = (id) => {
+    const key = String(id);
+    const next = selectedSet.has(key)
+      ? ids.filter((selectedId) => selectedId !== key)
+      : [...ids, key];
+    onChange(Array.from(new Set(next)));
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled || isLoading}
+          className="w-full justify-between font-normal"
+        >
+          <span className="flex min-w-0 items-center gap-2 truncate text-left">
+            <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="truncate">{isLoading ? 'Memuat data murid…' : summary}</span>
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[min(420px,calc(100vw-2rem))] p-0">
+        <Command>
+          <CommandInput placeholder="Cari nama atau NIS…" />
+          <CommandList>
+            {error ? (
+              <div className="p-4 text-xs text-destructive" role="alert">{error}</div>
+            ) : (
+              <>
+                <CommandEmpty>{students.length ? 'Murid tidak ditemukan.' : 'Belum ada murid aktif.'}</CommandEmpty>
+                <CommandGroup heading={`${ids.length} murid terpilih`}>
+                  {students.map((student) => {
+                    const key = String(student.id);
+                    const selected = selectedSet.has(key);
+                    const name = student.nama_lengkap || 'Murid tanpa nama';
+                    const identifier = student.nis || student.nisn || '';
+                    return (
+                      <CommandItem
+                        key={key}
+                        value={[name, identifier, key].filter(Boolean).join(' ')}
+                        onSelect={() => toggleStudent(key)}
+                        className="items-start py-2"
+                      >
+                        <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${selected ? 'border-primary bg-primary text-primary-foreground' : 'border-input'}`}>
+                          {selected && <Check className="h-3.5 w-3.5" />}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{name}</span>
+                          {identifier && <span className="block truncate text-xs text-muted-foreground">{identifier}</span>}
+                        </span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 };
 
 const EkskulContentSettings = () => {
@@ -22,12 +102,18 @@ const EkskulContentSettings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [uploadingRecord, setUploadingRecord] = useState(null);
+  const [masterData, setMasterData] = useState({
+    students: [],
+    teachers: [],
+    status: 'loading',
+    error: '',
+  });
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const stored = await fetchEkskulContent();
+        const stored = await fetchEkskulContent({ publicOnly: false });
         if (active) setIsi(stored);
       } catch (error) {
         if (active) setLoadError(getPublicContentErrorMessage(error));
@@ -35,6 +121,29 @@ const EkskulContentSettings = () => {
         if (active) setIsLoading(false);
       }
     })();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      fetchAllSantri({ status: 'Aktif', notDeleted: true, order: 'nama_lengkap' }),
+      fetchGuruList(),
+    ]).then(([studentsResult, teachersResult]) => {
+      if (!active) return;
+      const students = studentsResult.status === 'fulfilled' ? (studentsResult.value || []) : [];
+      const teachers = teachersResult.status === 'fulfilled' ? (teachersResult.value || []) : [];
+      const errors = [
+        studentsResult.status === 'rejected' ? `Murid: ${getPublicContentErrorMessage(studentsResult.reason)}` : '',
+        teachersResult.status === 'rejected' ? `Guru: ${getPublicContentErrorMessage(teachersResult.reason)}` : '',
+      ].filter(Boolean);
+      setMasterData({
+        students: [...students].sort((a, b) => (a.nama_lengkap || '').localeCompare(b.nama_lengkap || '', 'id')),
+        teachers: [...teachers].sort((a, b) => (a.nama || '').localeCompare(b.nama || '', 'id')),
+        status: errors.length ? 'error' : 'ready',
+        error: errors.join(' '),
+      });
+    });
     return () => { active = false; };
   }, []);
 
@@ -47,6 +156,26 @@ const EkskulContentSettings = () => {
     ...prev,
     records: prev.records.map((r, i) => (i === index ? { ...r, [field]: value } : r)),
   }));
+  const ubahMurid = (index, nextIds) => {
+    const santriIds = Array.from(new Set((nextIds || []).map((id) => String(id || '').trim()).filter(Boolean)));
+    setIsi((prev) => ({
+      ...prev,
+      records: prev.records.map((r, i) => (i === index ? {
+        ...r,
+        santri_ids: santriIds,
+        participant_source: 'master',
+        terisi: santriIds.length,
+      } : r)),
+    }));
+  };
+  const ubahGuru = (index, value) => {
+    const pembinaId = value === 'none' ? '' : value;
+    const guru = masterData.teachers.find((item) => String(item.id) === String(pembinaId));
+    setIsi((prev) => ({
+      ...prev,
+      records: prev.records.map((r, i) => (i === index ? { ...r, pembina_id: pembinaId, pembina: guru?.nama || '' } : r)),
+    }));
+  };
   const tambah = () => setIsi((prev) => ({ ...prev, records: [...prev.records, { ...RECORD_KOSONG }] }));
   const hapus = (index) => setIsi((prev) => ({ ...prev, records: prev.records.filter((_, i) => i !== index) }));
 
@@ -166,8 +295,16 @@ const EkskulContentSettings = () => {
         </div>
       </div>
 
-      <div className="admin-error-state" role="note">
-        <p className="text-sm font-medium">Nama pembina pada kegiatan contoh sengaja dikosongkan — isi dengan guru pembina sesungguhnya.</p>
+      <div className="rounded-lg border bg-muted/20 p-3 text-xs" role={masterData.status === 'error' ? 'alert' : 'status'} aria-live="polite">
+        {masterData.status === 'loading' && <p className="text-muted-foreground">Memuat data master murid dan guru…</p>}
+        {masterData.status === 'error' && (
+          <>
+            <p className="font-semibold text-destructive">Data master belum seluruhnya dapat dimuat.</p>
+            <p className="mt-1 text-muted-foreground">{masterData.error}</p>
+            <p className="mt-1 text-muted-foreground">Data lama tetap dipertahankan. Coba buka ulang tab ini sebelum memilih data baru.</p>
+          </>
+        )}
+        {masterData.status === 'ready' && <p className="text-muted-foreground">Data master siap: {masterData.students.length} murid aktif dan {masterData.teachers.length} guru tersedia. Statistik peserta dihitung dari murid yang dipilih.</p>}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -205,9 +342,26 @@ const EkskulContentSettings = () => {
               <label htmlFor={`e-jam-${i}`}>Jam</label>
               <Input id={`e-jam-${i}`} value={r.jam} placeholder="15.00–16.30" onChange={(e) => ubah(i, 'jam', e.target.value)} />
             </div>
-            <div className="admin-edit-field">
-              <label htmlFor={`e-terisi-${i}`}>Murid terdaftar</label>
-              <Input id={`e-terisi-${i}`} type="number" min="0" value={r.terisi} onChange={(e) => ubah(i, 'terisi', e.target.value)} />
+            <div className="admin-edit-field lg:col-span-2">
+              <label htmlFor={`e-terisi-${i}`}>Murid terdaftar (data master)</label>
+              {r.participant_source === 'legacy' ? (
+                <div className="space-y-2">
+                  <Input id={`e-terisi-${i}`} type="number" min="0" value={r.terisi} onChange={(e) => ubah(i, 'terisi', e.target.value)} />
+                  <Button type="button" size="sm" variant="outline" onClick={() => ubahMurid(i, [])}>Mulai pilih dari master</Button>
+                  <p className="text-xs text-muted-foreground">Jumlah lama dipertahankan sementara. Pilih murid master agar angka mengikuti daftar aktual.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <MasterStudentPicker
+                    selectedIds={r.santri_ids || []}
+                    students={masterData.students}
+                    onChange={(ids) => ubahMurid(i, ids)}
+                    isLoading={masterData.status === 'loading'}
+                    error={masterData.status === 'error' ? masterData.error : ''}
+                  />
+                  <p className="text-xs text-muted-foreground">{(r.santri_ids || []).length} murid terdaftar dari data master.</p>
+                </div>
+              )}
             </div>
             <div className="admin-edit-field">
               <label htmlFor={`e-kuota-${i}`}>Kuota</label>
@@ -216,8 +370,20 @@ const EkskulContentSettings = () => {
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="admin-edit-field">
-              <label htmlFor={`e-pembina-${i}`}>Guru pembina</label>
-              <Input id={`e-pembina-${i}`} value={r.pembina} placeholder="Nama pembina" onChange={(e) => ubah(i, 'pembina', e.target.value)} />
+              <label htmlFor={`e-pembina-${i}`}>Guru pembina (data master)</label>
+              <Select
+                value={r.pembina_id || (r.pembina ? '__legacy__' : 'none')}
+                onValueChange={(value) => ubahGuru(i, value)}
+                disabled={masterData.status === 'loading' || masterData.teachers.length === 0}
+              >
+                <SelectTrigger id={`e-pembina-${i}`}><SelectValue placeholder="Pilih guru pembina" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Belum ditentukan</SelectItem>
+                  {r.pembina && !r.pembina_id && <SelectItem value="__legacy__" disabled>{r.pembina} (data lama)</SelectItem>}
+                  {r.pembina_id && !masterData.teachers.some((guru) => String(guru.id) === String(r.pembina_id)) && <SelectItem value={String(r.pembina_id)} disabled>{r.pembina || 'Guru tersimpan'} (data tersimpan)</SelectItem>}
+                  {masterData.teachers.map((guru) => <SelectItem key={guru.id} value={String(guru.id)}>{guru.nama}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="admin-edit-field">
               <label htmlFor={`e-tempat-${i}`}>Tempat</label>
