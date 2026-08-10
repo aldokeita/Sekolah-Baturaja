@@ -91,6 +91,7 @@ const PrestasiContentSettings = () => {
   }));
 
   const handleSave = async () => {
+    if (isSaving || uploadingRecord !== null) return;
     setIsSaving(true);
     try {
       const tersimpan = await savePrestasiContent(isi);
@@ -128,8 +129,8 @@ const PrestasiContentSettings = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4" /> Kembalikan bawaan</Button>
-          <Button type="button" onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" /> {isSaving ? 'Menyimpan…' : 'Simpan Prestasi'}</Button>
+          <Button type="button" variant="outline" onClick={handleReset} disabled={isSaving || uploadingRecord !== null}><RotateCcw className="mr-2 h-4 w-4" /> Kembalikan bawaan</Button>
+          <Button type="button" onClick={handleSave} disabled={isSaving || uploadingRecord !== null}><Save className="mr-2 h-4 w-4" /> {uploadingRecord !== null ? 'Menunggu upload…' : isSaving ? 'Menyimpan…' : 'Simpan Prestasi'}</Button>
         </div>
       </div>
 

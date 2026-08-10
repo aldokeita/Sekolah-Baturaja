@@ -23,6 +23,7 @@ import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import HafalanDisplay from '@/components/dashboard/shared/HafalanDisplay';
 import { createHafalanItem, deactivateHafalanItem, fetchHafalanItems, getAcademicErrorMessage, updateHafalanItem, HAFALAN_SCOPE_PER_KELAS, HAFALAN_SCOPE_PER_JUZ } from '@/lib/academicAdapters';
 import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
+import { buildGlobalContentSaveItems } from '@/lib/contentManagementSave';
 import { defaultContent, mergeHomepageContent } from '@/components/public/home/homeUtils';
 import { DEFAULT_GALLERY_HERO_MOSAIC, GALLERY_HERO_MOSAIC_KEY, normalizeGalleryAlbums, normalizeGalleryHeroMosaic, normalizeGalleryPhotos } from '@/lib/galleryContent';
 import {
@@ -338,10 +339,7 @@ const ContentManagement = () => {
 
   const handleSaveAll = async () => {
     if (isSaving) return;
-    const excludedKeys = new Set(['news', 'announcements']);
-    const dataToUpsert = Object.keys(content)
-      .filter(key => !excludedKeys.has(key))
-      .map(key => ({ key, content: content[key], is_public: true }));
+    const dataToUpsert = buildGlobalContentSaveItems(content);
     setIsSaving(true);
     setSaveState('saving');
     try {
