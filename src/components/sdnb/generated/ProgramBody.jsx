@@ -21,7 +21,7 @@ import '@/styles/sdnb-program.css';
 
 const ProgramBody = (vals = {}) => {
   const {
-    angka, bebanTampil, detil, detilAda, fotoHeader, gridProgram, headerStatus, jam,
+    angka, bebanTampil, detil, detilAda, gridProgram, headerStatus, jam,
     judulHero, judulHeroAksen, judulProgram, pintas, program, ringkasProgram,
     sebelum, sesudah, stop, totalJpLabel, tutup, urutan,
   } = vals;
@@ -35,8 +35,6 @@ const ProgramBody = (vals = {}) => {
       </div>
 
       <div style={{ position: "relative", marginTop: "24px", overflow: "hidden", borderRadius: "36px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(28px) saturate(190%)", WebkitBackdropFilter: "blur(28px) saturate(190%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 36px 78px -30px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}>
-        {fotoHeader && <img src={fotoHeader} alt="Foto kegiatan Program sekolah" onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ position: "absolute", inset: "0", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", opacity: ".2", mixBlendMode: "multiply" }} />}
-        {fotoHeader && <div aria-hidden="true" style={{ position: "absolute", inset: "0", background: "linear-gradient(110deg,rgba(255,255,255,.82),rgba(255,255,255,.5) 55%,rgba(255,255,255,.72))" }}></div>}
         <div aria-hidden="true" style={{ position: "absolute", right: "-6%", top: "-30%", width: "520px", height: "520px", borderRadius: "50%", background: "conic-gradient(from 210deg,rgba(100,112,255,.36),rgba(229,143,196,.34),rgba(160,240,225,.32),rgba(100,112,255,.36))", filter: "blur(34px)", animation: "floaty 19s ease-in-out infinite" }}></div>
         <div style={{ position: "relative", padding: "52px 48px 46px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "11px", padding: "9px 16px", borderRadius: "999px", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)", fontSize: "11.5px", fontWeight: "800", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Kurikulum Merdeka &middot; 2025/2026</div>
@@ -74,6 +72,7 @@ const ProgramBody = (vals = {}) => {
         {(program || []).map((p, $index) => (<React.Fragment key={$index}>
           <div className="prog" onClick={p.open} style={__dcs(p.card)}>
             <div className="pf" style={__dcs(p.fill)}></div>
+            {p.foto && <img src={p.foto} alt="" aria-hidden="true" loading="lazy" onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ position: "absolute", inset: "0", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />}
             <div style={{ position: "absolute", inset: "0", background: "radial-gradient(120% 80% at 20% 6%,rgba(255,255,255,.4),rgba(255,255,255,0) 58%)" }}></div>
             <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(24,28,62,.8),rgba(24,28,62,.08) 62%)" }}></div>
             <div style={{ position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", padding: "26px 26px 24px" }}>
@@ -147,6 +146,7 @@ const ProgramBody = (vals = {}) => {
     <div onClick={tutup} style={{ position: "fixed", inset: "0", zIndex: "90", display: "flex", alignItems: "center", justifyContent: "center", padding: "28px", background: "rgba(24,30,60,.62)", backdropFilter: "blur(18px) saturate(140%)", WebkitBackdropFilter: "blur(18px) saturate(140%)", animation: "fadeup .28s ease both" }}>
       <div onClick={stop} style={{ position: "relative", width: "min(780px,100%)", maxHeight: "86vh", overflow: "auto", borderRadius: "30px", background: "rgba(255,255,255,.9)", backdropFilter: "blur(30px) saturate(190%)", WebkitBackdropFilter: "blur(30px) saturate(190%)", border: "1px solid rgba(255,255,255,.95)", boxShadow: "0 54px 110px -34px rgba(28,34,90,.72)", animation: "swapin .45s cubic-bezier(.2,.9,.25,1) both" }}>
         <div style={__dcs(detil.hero)}>
+          {detil.foto && <img src={detil.foto} alt="" aria-hidden="true" onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ position: "absolute", inset: "0", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} />}
           <div style={{ position: "absolute", inset: "0", background: "radial-gradient(120% 80% at 20% 8%,rgba(255,255,255,.42),rgba(255,255,255,0) 58%)" }}></div>
           <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(24,28,62,.75),rgba(24,28,62,0) 62%)" }}></div>
           <button onClick={tutup} style={{ position: "absolute", right: "16px", top: "16px", width: "42px", height: "42px", borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "1px solid rgba(255,255,255,.5)", background: "rgba(255,255,255,.22)" }} aria-label="Tutup">

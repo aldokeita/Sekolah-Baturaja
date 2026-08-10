@@ -79,10 +79,10 @@ const ProgramPage = () => {
     };
   }, []);
 
-  // Tuple program: [nama, jenis, kelas, waktu, gradien, ringkas, cerita, meta].
+  // Tuple program: [nama, jenis, kelas, waktu, gradien, ringkas, cerita, meta, foto].
   const P = useMemo(() => (content.programs || []).map((p, i) => [
     p.nama, p.jenis, p.kelas, p.waktu, GRADIEN[i % GRADIEN.length], p.ringkas, p.cerita,
-    (p.meta || []).map((m) => [m.label, m.value]),
+    (p.meta || []).map((m) => [m.label, m.value]), p.foto_url,
   ]), [content.programs]);
 
   const JAM = useMemo(() => (content.jam || []).map((j) => [j.mapel, j.jp]), [content.jam]);
@@ -109,10 +109,9 @@ const ProgramPage = () => {
 
   const vals = {
     bebanTampil: JAM.length > 0,
-    judulProgram: `${P.length} program`,
+    judulProgram: 'Program Utama',
     judulHero: content.hero?.title || '',
     judulHeroAksen: content.hero?.accent || '',
-    fotoHeader: content.hero?.photo_url || '',
     ringkasProgram: content.hero?.description || '',
     headerStatus: {
       state: contentStatus,
@@ -143,6 +142,7 @@ const ProgramPage = () => {
 
     program: P.map((p, i) => ({
       nama: p[0], jenis: p[1], kelas: p[2], waktu: p[3], ringkas: p[5],
+      foto: p[8],
       no: String(i + 1).padStart(2, '0'),
       open: () => setIdx(i),
       card: 'position:relative;overflow:hidden;cursor:pointer;min-height:320px;border-radius:28px;border:1px solid rgba(255,255,255,.5);box-shadow:0 30px 64px -26px rgba(55,65,120,.55)',
@@ -165,8 +165,9 @@ const ProgramPage = () => {
     detil: d ? {
       nama: d[0], jenis: d[1], cerita: d[6],
       meta: d[7].map(([k, v]) => ({ k, v })),
+      foto: d[8],
       hero: `position:relative;height:236px;overflow:hidden;background:linear-gradient(145deg,${d[4]})`,
-    } : { nama: '', jenis: '', cerita: '', meta: [], hero: '' },
+    } : { nama: '', jenis: '', cerita: '', meta: [], foto: '', hero: '' },
     sebelum: () => geser(-1),
     sesudah: () => geser(1),
     tutup: () => setIdx(-1),
