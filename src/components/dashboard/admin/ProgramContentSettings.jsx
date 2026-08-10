@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { GraduationCap, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
+import { GraduationCap, Loader2, Plus, RotateCcw, Save, Trash2, Upload, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/use-toast';
 import { DEFAULT_PROGRAM_CONTENT, fetchProgramContent, saveProgramContent } from '@/lib/programContent';
 import { getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
+import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
 
 const salinBawaan = () => JSON.parse(JSON.stringify({
+  hero: DEFAULT_PROGRAM_CONTENT.hero,
   stats: DEFAULT_PROGRAM_CONTENT.stats,
   programs: DEFAULT_PROGRAM_CONTENT.programs,
   jam: DEFAULT_PROGRAM_CONTENT.jam,
@@ -22,6 +24,7 @@ const ProgramContentSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -38,6 +41,7 @@ const ProgramContentSettings = () => {
     return () => { active = false; };
   }, []);
 
+  const ubahHero = (field, value) => setIsi((prev) => ({ ...prev, hero: { ...prev.hero, [field]: value } }));
   const ubahStat = (f, v) => setIsi((p) => ({ ...p, stats: { ...p.stats, [f]: v } }));
   const ubahList = (blok, i, f, v) => setIsi((p) => ({ ...p, [blok]: p[blok].map((row, j) => (j === i ? { ...row, [f]: v } : row)) }));
   const tambahList = (blok, kosong) => setIsi((p) => ({ ...p, [blok]: [...p[blok], kosong] }));
@@ -53,12 +57,35 @@ const ProgramContentSettings = () => {
     ...p, programs: p.programs.map((r, i) => (i === pi ? { ...r, meta: r.meta.filter((_, j) => j !== mi) } : r)),
   }));
 
+  const handlePhotoUpload = async (event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    setUploadingPhoto(true);
+    try {
+      const { publicUrl } = await uploadWebsiteAsset({ folder: 'program-images', file });
+      if (!publicUrl) throw new Error('URL foto Program tidak tersedia setelah upload.');
+      ubahHero('photo_url', publicUrl);
+      toast({
+        title: 'Foto siap disimpan',
+        description: 'Foto sudah diunggah. Tekan Simpan Program untuk menerapkannya pada halaman publik.',
+      });
+    } catch (error) {
+      toast({ title: 'Gagal mengunggah foto', description: getStorageErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setUploadingPhoto(false);
+      input.value = '';
+    }
+  };
+
   const handleSave = async () => {
+    if (isSaving || uploadingPhoto) return;
     setIsSaving(true);
     try {
       const tersimpan = await saveProgramContent(isi);
       setIsi(tersimpan);
-      toast({ title: 'Tersimpan', description: 'Halaman Program diperbarui. Muat ulang halaman publik untuk melihatnya.' });
+      toast({ title: 'Tersimpan', description: 'Halaman Program diperbarui.' });
     } catch (error) {
       toast({ title: 'Gagal menyimpan', description: getPublicContentErrorMessage(error), variant: 'destructive' });
     } finally {
@@ -93,8 +120,8 @@ const ProgramContentSettings = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4" /> Kembalikan bawaan</Button>
-          <Button type="button" onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" /> {isSaving ? 'Menyimpan…' : 'Simpan Program'}</Button>
+          <Button type="button" variant="outline" onClick={handleReset} disabled={isSaving || uploadingPhoto}><RotateCcw className="mr-2 h-4 w-4" /> Kembalikan bawaan</Button>
+          <Button type="button" onClick={handleSave} disabled={isSaving || uploadingPhoto}><Save className="mr-2 h-4 w-4" /> {uploadingPhoto ? 'Menunggu upload…' : isSaving ? 'Menyimpan…' : 'Simpan Program'}</Button>
         </div>
       </div>
 
@@ -104,6 +131,54 @@ const ProgramContentSettings = () => {
           <p className="text-xs">Yang tampil adalah bawaan. Menyimpan akan menimpanya.</p>
         </div>
       )}
+
+      <div className="space-y-4 border-t pt-6">
+        <div>
+          <h5 className="font-bold text-foreground">Header halaman Program</h5>
+          <p className="mt-1 text-xs text-muted-foreground">Judul, teks pendukung, dan foto ini tampil pada panel pembuka halaman Program publik.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="space-y-4">
+            <div className="admin-edit-field">
+              <label htmlFor="program-hero-title">Judul utama</label>
+              <Textarea id="program-hero-title" rows={2} value={isi.hero?.title || ''} placeholder={'Program belajar yang\ndijalankan setiap hari,'} onChange={(e) => ubahHero('title', e.target.value)} />
+              <p className="text-xs text-muted-foreground">Gunakan baris baru bila judul ingin dibuat menjadi dua baris.</p>
+            </div>
+            <div className="admin-edit-field">
+              <label htmlFor="program-hero-accent">Aksen judul</label>
+              <Input id="program-hero-accent" value={isi.hero?.accent || ''} placeholder="bukan hanya tertulis." onChange={(e) => ubahHero('accent', e.target.value)} />
+            </div>
+            <div className="admin-edit-field">
+              <label htmlFor="program-hero-description">Teks pendukung</label>
+              <Textarea id="program-hero-description" rows={4} value={isi.hero?.description || ''} placeholder="Ringkasan singkat tentang program sekolah." onChange={(e) => ubahHero('description', e.target.value)} />
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <label htmlFor="program-hero-photo" className="text-sm font-semibold text-foreground">Foto Program (opsional)</label>
+                <p className="mt-1 text-xs text-muted-foreground">Foto dipakai sebagai latar lembut pada header. Jika belum ada, tampilan bawaan tetap digunakan.</p>
+              </div>
+              <label htmlFor="program-hero-photo" className="inline-flex cursor-pointer items-center rounded-md border bg-background px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-accent has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                {uploadingPhoto ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                {uploadingPhoto ? 'Mengunggah…' : isi.hero?.photo_url ? 'Ganti foto' : 'Unggah foto'}
+                <input id="program-hero-photo" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={uploadingPhoto} onChange={handlePhotoUpload} />
+              </label>
+            </div>
+            {isi.hero?.photo_url ? (
+              <div className="relative overflow-hidden rounded-lg border bg-background">
+                <img src={isi.hero.photo_url} alt="Pratinjau foto Program" className="h-48 w-full object-cover" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
+                <Button type="button" variant="secondary" size="sm" className="absolute right-2 top-2 bg-background/90" onClick={() => ubahHero('photo_url', '')}>
+                  <X className="mr-1 h-3.5 w-3.5" /> Lepas foto
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Belum ada foto. Header publik akan memakai latar visual bawaan.</p>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="admin-edit-field">
