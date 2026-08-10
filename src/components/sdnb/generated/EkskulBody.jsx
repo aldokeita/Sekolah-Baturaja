@@ -46,9 +46,9 @@ const EkskulBody = (vals = {}) => {
           </React.Fragment>))}
         </div>
       </div>
-      <div style={{ position: "relative", height: "470px" }}>
+      <div className="hero-label-stage">
         {(stiker || []).map((s, $index) => (<React.Fragment key={$index}>
-          <div className="stiker" style={__dcs(s.style)}>{s.nama}</div>
+          <div className="stiker" data-index={$index} style={__dcs(s.style)}>{s.nama}</div>
         </React.Fragment>))}
       </div>
     </section>

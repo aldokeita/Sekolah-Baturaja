@@ -19,11 +19,7 @@ import '@/styles/sdnb.css';
  */
 
 const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
-const ROT = [-7, 5, -3, 8, -5, 4, -8, 6];
-const POS = [
-  [2, 6, null, null], [40, null, 0, null], [null, 4, 22, null], [6, null, null, 24],
-  [null, 0, 46, null], [30, null, null, 6], [null, 22, 68, null], [0, null, 92, null],
-];
+const ROT = [-2, 3, -2, 3, -3, 2, -2, 3];
 // Palet warna kartu, dipilih berdasarkan urutan kegiatan. Pembeli tidak
 // menyunting warna — hanya teks. (Pola sama seperti PROGRAM_STYLE/FASILITAS_GAYA.)
 const GRADIEN = [
@@ -144,14 +140,9 @@ const EkstrakurikulerPage = () => {
     ].map((a) => ({ ...a, state: contentStatus })),
 
     stiker: E.slice(0, 8).map((e, i) => {
-      const [l, t, r, b] = POS[i];
       return {
         nama: e[0].split(' ')[0],
-        style: 'position:absolute;'
-          + (l !== null ? `left:${l}%;` : '') + (t !== null ? `top:${t}%;` : '')
-          + (r !== null ? `right:${r}%;` : '') + (b !== null ? `bottom:${b}%;` : '')
-          + `--rot:${ROT[i]}deg;transform:rotate(${ROT[i]}deg);animation-delay:${(i * 0.55).toFixed(2)}s;`
-          + `padding:14px 20px;border-radius:18px;font-family:'Plus Jakarta Sans','Archivo',system-ui,sans-serif;font-size:${15 + (i % 3) * 3}px;font-weight:800;letter-spacing:-.02em;color:#fff;background:linear-gradient(135deg,${e[10]});box-shadow:0 22px 44px -18px rgba(70,80,170,.75),inset 0 1px 0 rgba(255,255,255,.5)`,
+        style: `--stiker-index:${i};--stiker-rot:${ROT[i]}deg;--stiker-delay:${(i * 0.06).toFixed(2)}s;`,
       };
     }),
 
