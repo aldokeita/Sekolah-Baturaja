@@ -61,7 +61,7 @@ const HERO_GRADS = [
 ];
 const HEIGHTS = [104, 138, 92, 124, 110, 150, 118, 132];
 const HERO_TILE_HEIGHT_SCALES = [1, 0.82, 1.14, 0.9, 1.18, 0.76, 1.06, 0.88, 1.2];
-const HERO_COLUMN_COUNT = 6;
+const HERO_COLUMN_COUNT = 5;
 const COLS = 4;
 
 const escapeCssUrl = (value) => String(value).replace(/[\\"]/g, '\\$&');

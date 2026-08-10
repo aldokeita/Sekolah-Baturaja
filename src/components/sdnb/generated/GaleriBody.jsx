@@ -25,8 +25,8 @@ const GaleriBody = (vals = {}) => {
   return (
     <>
 <section style={{ position: "relative", minHeight: "82vh", display: "flex", alignItems: "center", overflow: "hidden", padding: "40px 0 20px" }}>
-      <div aria-hidden="true" style={{ position: "absolute", inset: "0 -6%", zIndex: "0", overflow: "hidden", opacity: ".62", perspective: "1400px", WebkitMaskImage: "radial-gradient(120% 90% at 50% 45%,#000 30%,transparent 78%)", maskImage: "radial-gradient(120% 90% at 50% 45%,#000 30%,transparent 78%)" }}>
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${heroColumnCount || 6},minmax(0,1fr))`, gap: "10px", transform: "rotateX(14deg) rotateZ(-8deg) scale(1.04)", transformStyle: "preserve-3d" }}>
+      <div aria-hidden="true" style={{ position: "absolute", inset: "0 -14%", zIndex: "0", overflow: "hidden", opacity: ".62", perspective: "1400px", WebkitMaskImage: "radial-gradient(120% 90% at 50% 45%,#000 30%,transparent 78%)", maskImage: "radial-gradient(120% 90% at 50% 45%,#000 30%,transparent 78%)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${heroColumnCount || 5},minmax(0,1fr))`, gap: "10px", transform: "translateX(10%) rotateX(14deg) rotateZ(-4deg) scale(1.04)", transformStyle: "preserve-3d" }}>
           {(heroCols || []).map((c, $index) => (<React.Fragment key={$index}>
             <div className={`${c.cls}`} style={__dcs(c.style)}>
               {(c.tiles || []).map((t, $index) => (<React.Fragment key={$index}>
