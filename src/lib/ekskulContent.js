@@ -1,4 +1,8 @@
-import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicContentAdapters';
+import {
+  announceWebsiteContentUpdate,
+  fetchWebsiteContentMap,
+  saveWebsiteContentItem,
+} from '@/lib/publicContentAdapters';
 
 /**
  * Isi halaman Ekstrakurikuler yang dapat disunting pembeli.
@@ -21,11 +25,25 @@ export const EKSKUL_CONTENT_KEY = 'ekskul_content';
 
 export const HARI_OPTIONS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
+const DEFAULT_EKSKUL_HERO = Object.freeze({
+  kicker: 'Sepulang sekolah',
+  yearLabel: 'Tahun ajaran 2025/2026',
+  title: 'kegiatan',
+  suffix: 'satu halaman.',
+  description: 'Setiap murid mengikuti sedikitnya satu kegiatan setiap tahun ajaran. Latihan berlangsung sore hari di lingkungan sekolah, gratis, dan dibimbing guru pembina.',
+  stats: Object.freeze({
+    activities: 'kegiatan aktif',
+    students: 'murid terdaftar',
+    mentors: 'guru pembina',
+  }),
+});
+
 const R = (nama, bidang, hari, jam, tempat, terisi, kuota, kelas, cerita) => ({
-  nama, bidang, hari, jam, pembina: '', tempat, terisi, kuota, kelas, cerita,
+  nama, bidang, hari, jam, pembina: '', tempat, terisi, kuota, kelas, cerita, foto_url: '',
 });
 
 export const DEFAULT_EKSKUL_CONTENT = Object.freeze({
+  hero: DEFAULT_EKSKUL_HERO,
   records: Object.freeze([
     R('Pramuka Siaga & Penggalang', 'Kepramukaan', 'Jumat', '15.00–16.30', 'Halaman belakang', 68, 80, 'Kelas III–VI', 'Regu berlatih tali-temali, sandi morse, dan pertolongan pertama. Setiap semester diadakan perkemahan satu malam di halaman sekolah.'),
     R('Atletik', 'Olahraga', 'Selasa', '15.30–16.30', 'Lapangan sekolah', 24, 30, 'Kelas IV–VI', 'Latihan lari jarak pendek, lompat jauh, dan lempar bola. Murid menonjol disiapkan untuk seleksi O2SN tingkat kecamatan.'),
@@ -49,6 +67,23 @@ const angka = (nilai) => {
 
 const salinBawaan = () => JSON.parse(JSON.stringify(DEFAULT_EKSKUL_CONTENT.records));
 
+const normalizeHero = (stored) => {
+  const source = stored && typeof stored === 'object' ? stored : {};
+  const stats = source.stats && typeof source.stats === 'object' ? source.stats : {};
+  return {
+    kicker: teks(source.kicker) || DEFAULT_EKSKUL_HERO.kicker,
+    yearLabel: teks(source.yearLabel || source.year_label) || DEFAULT_EKSKUL_HERO.yearLabel,
+    title: teks(source.title) || DEFAULT_EKSKUL_HERO.title,
+    suffix: teks(source.suffix || source.titleSuffix || source.title_suffix) || DEFAULT_EKSKUL_HERO.suffix,
+    description: teks(source.description) || DEFAULT_EKSKUL_HERO.description,
+    stats: {
+      activities: teks(stats.activities || stats.kegiatan) || DEFAULT_EKSKUL_HERO.stats.activities,
+      students: teks(stats.students || stats.murid) || DEFAULT_EKSKUL_HERO.stats.students,
+      mentors: teks(stats.mentors || stats.pembina) || DEFAULT_EKSKUL_HERO.stats.mentors,
+    },
+  };
+};
+
 const normalizeRecords = (rows) => {
   if (!Array.isArray(rows)) return salinBawaan();
   return rows.map((row) => {
@@ -65,6 +100,7 @@ const normalizeRecords = (rows) => {
       kuota: Math.max(angka(row?.kuota), angka(row?.terisi)),
       kelas: teks(row?.kelas),
       cerita: teks(row?.cerita),
+      foto_url: teks(row?.foto_url || row?.fotoUrl || row?.image_url || row?.imageUrl),
     };
   }).filter(Boolean);
 };
@@ -72,7 +108,7 @@ const normalizeRecords = (rows) => {
 export const normalizeEkskulContent = (stored) => {
   const source = stored && typeof stored === 'object' ? stored : {};
   const records = source.records === undefined ? salinBawaan() : normalizeRecords(source.records);
-  return { records };
+  return { hero: normalizeHero(source.hero), records };
 };
 
 export const fetchEkskulContent = async () => {
@@ -83,5 +119,6 @@ export const fetchEkskulContent = async () => {
 export const saveEkskulContent = async (content) => {
   const normalized = normalizeEkskulContent(content);
   await saveWebsiteContentItem({ key: EKSKUL_CONTENT_KEY, content: normalized, isPublic: true });
+  announceWebsiteContentUpdate([EKSKUL_CONTENT_KEY]);
   return normalized;
 };

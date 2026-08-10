@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sparkles, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
+import { Loader2, Plus, RotateCcw, Save, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/use-toast';
 import { DEFAULT_EKSKUL_CONTENT, HARI_OPTIONS, fetchEkskulContent, saveEkskulContent } from '@/lib/ekskulContent';
 import { getPublicContentErrorMessage } from '@/lib/publicContentAdapters';
+import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
 
-const salinBawaan = () => JSON.parse(JSON.stringify({ records: DEFAULT_EKSKUL_CONTENT.records }));
+const salinBawaan = () => JSON.parse(JSON.stringify({ hero: DEFAULT_EKSKUL_CONTENT.hero, records: DEFAULT_EKSKUL_CONTENT.records }));
 
 const RECORD_KOSONG = {
-  nama: '', bidang: '', hari: 'Senin', jam: '', pembina: '', tempat: '', terisi: 0, kuota: 0, kelas: '', cerita: '',
+  nama: '', bidang: '', hari: 'Senin', jam: '', pembina: '', tempat: '', terisi: 0, kuota: 0, kelas: '', cerita: '', foto_url: '',
 };
 
 const EkskulContentSettings = () => {
@@ -20,6 +21,7 @@ const EkskulContentSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [uploadingRecord, setUploadingRecord] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -36,6 +38,11 @@ const EkskulContentSettings = () => {
     return () => { active = false; };
   }, []);
 
+  const ubahHero = (field, value) => setIsi((prev) => ({ ...prev, hero: { ...prev.hero, [field]: value } }));
+  const ubahHeroStat = (field, value) => setIsi((prev) => ({
+    ...prev,
+    hero: { ...prev.hero, stats: { ...prev.hero?.stats, [field]: value } },
+  }));
   const ubah = (index, field, value) => setIsi((prev) => ({
     ...prev,
     records: prev.records.map((r, i) => (i === index ? { ...r, [field]: value } : r)),
@@ -43,12 +50,35 @@ const EkskulContentSettings = () => {
   const tambah = () => setIsi((prev) => ({ ...prev, records: [...prev.records, { ...RECORD_KOSONG }] }));
   const hapus = (index) => setIsi((prev) => ({ ...prev, records: prev.records.filter((_, i) => i !== index) }));
 
+  const handleFotoUpload = async (index, event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    setUploadingRecord(index);
+    try {
+      const { publicUrl } = await uploadWebsiteAsset({ folder: 'ekskul-images', file });
+      if (!publicUrl) throw new Error('URL foto ekstrakurikuler tidak tersedia setelah upload.');
+      ubah(index, 'foto_url', publicUrl);
+      toast({
+        title: 'Foto siap disimpan',
+        description: 'Foto sudah diunggah. Tekan Simpan Ekstrakurikuler untuk menerapkannya pada kegiatan terkait.',
+      });
+    } catch (error) {
+      toast({ title: 'Gagal mengunggah foto', description: getStorageErrorMessage(error), variant: 'destructive' });
+    } finally {
+      setUploadingRecord(null);
+      input.value = '';
+    }
+  };
+
   const handleSave = async () => {
+    if (isSaving || uploadingRecord !== null) return;
     setIsSaving(true);
     try {
       const tersimpan = await saveEkskulContent(isi);
       setIsi(tersimpan);
-      toast({ title: 'Tersimpan', description: 'Halaman Ekstrakurikuler diperbarui. Muat ulang halaman publik untuk melihatnya.' });
+      toast({ title: 'Tersimpan', description: 'Halaman Ekstrakurikuler diperbarui.' });
     } catch (error) {
       toast({ title: 'Gagal menyimpan', description: getPublicContentErrorMessage(error), variant: 'destructive' });
     } finally {
@@ -81,8 +111,8 @@ const EkskulContentSettings = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={handleReset} disabled={isSaving}><RotateCcw className="mr-2 h-4 w-4" /> Kembalikan bawaan</Button>
-          <Button type="button" onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" /> {isSaving ? 'Menyimpan…' : 'Simpan Ekstrakurikuler'}</Button>
+          <Button type="button" variant="outline" onClick={handleReset} disabled={isSaving || uploadingRecord !== null}><RotateCcw className="mr-2 h-4 w-4" /> Kembalikan bawaan</Button>
+          <Button type="button" onClick={handleSave} disabled={isSaving || uploadingRecord !== null}><Save className="mr-2 h-4 w-4" /> {uploadingRecord !== null ? 'Menunggu upload…' : isSaving ? 'Menyimpan…' : 'Simpan Ekstrakurikuler'}</Button>
         </div>
       </div>
 
@@ -92,6 +122,49 @@ const EkskulContentSettings = () => {
           <p className="text-xs">Yang tampil adalah bawaan. Menyimpan akan menimpanya.</p>
         </div>
       )}
+
+      <div className="space-y-4 border-t pt-6">
+        <div>
+          <h5 className="font-bold text-foreground">Header halaman Ekstrakurikuler</h5>
+          <p className="mt-1 text-xs text-muted-foreground">Semua teks pembuka dapat disunting di sini. Angka jumlah kegiatan tetap dihitung otomatis dari daftar di bawah.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="admin-edit-field">
+            <label htmlFor="ekskul-hero-kicker">Label kecil</label>
+            <Input id="ekskul-hero-kicker" value={isi.hero?.kicker || ''} placeholder="Sepulang sekolah" onChange={(e) => ubahHero('kicker', e.target.value)} />
+          </div>
+          <div className="admin-edit-field">
+            <label htmlFor="ekskul-hero-year">Teks tahun ajaran</label>
+            <Input id="ekskul-hero-year" value={isi.hero?.yearLabel || ''} placeholder="Tahun ajaran 2025/2026" onChange={(e) => ubahHero('yearLabel', e.target.value)} />
+          </div>
+          <div className="admin-edit-field">
+            <label htmlFor="ekskul-hero-title">Judul utama</label>
+            <Input id="ekskul-hero-title" value={isi.hero?.title || ''} placeholder="kegiatan" onChange={(e) => ubahHero('title', e.target.value)} />
+          </div>
+          <div className="admin-edit-field">
+            <label htmlFor="ekskul-hero-suffix">Kalimat penutup judul</label>
+            <Input id="ekskul-hero-suffix" value={isi.hero?.suffix || ''} placeholder="satu halaman." onChange={(e) => ubahHero('suffix', e.target.value)} />
+          </div>
+        </div>
+        <div className="admin-edit-field max-w-3xl">
+          <label htmlFor="ekskul-hero-description">Deskripsi pendukung</label>
+          <Textarea id="ekskul-hero-description" rows={3} value={isi.hero?.description || ''} placeholder="Ringkasan kegiatan ekstrakurikuler sekolah." onChange={(e) => ubahHero('description', e.target.value)} />
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="admin-edit-field">
+            <label htmlFor="ekskul-stat-activities">Label statistik kegiatan</label>
+            <Input id="ekskul-stat-activities" value={isi.hero?.stats?.activities || ''} placeholder="kegiatan aktif" onChange={(e) => ubahHeroStat('activities', e.target.value)} />
+          </div>
+          <div className="admin-edit-field">
+            <label htmlFor="ekskul-stat-students">Label statistik murid</label>
+            <Input id="ekskul-stat-students" value={isi.hero?.stats?.students || ''} placeholder="murid terdaftar" onChange={(e) => ubahHeroStat('students', e.target.value)} />
+          </div>
+          <div className="admin-edit-field">
+            <label htmlFor="ekskul-stat-mentors">Label statistik pembina</label>
+            <Input id="ekskul-stat-mentors" value={isi.hero?.stats?.mentors || ''} placeholder="guru pembina" onChange={(e) => ubahHeroStat('mentors', e.target.value)} />
+          </div>
+        </div>
+      </div>
 
       <div className="admin-error-state" role="note">
         <p className="text-sm font-medium">Nama pembina pada kegiatan contoh sengaja dikosongkan — isi dengan guru pembina sesungguhnya.</p>
@@ -158,6 +231,29 @@ const EkskulContentSettings = () => {
           <div className="admin-edit-field">
             <label htmlFor={`e-cerita-${i}`}>Keterangan</label>
             <Textarea id={`e-cerita-${i}`} rows={2} value={r.cerita} onChange={(e) => ubah(i, 'cerita', e.target.value)} />
+          </div>
+          <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <label htmlFor={`e-foto-${i}`} className="text-sm font-semibold text-foreground">Foto kegiatan (opsional)</label>
+                <p className="mt-1 text-xs text-muted-foreground">Foto ini tampil pada indeks dan panel kegiatan yang sedang diedit.</p>
+              </div>
+              <label htmlFor={`e-foto-${i}`} className="inline-flex cursor-pointer items-center rounded-md border bg-background px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-accent has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60">
+                {uploadingRecord === i ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                {uploadingRecord === i ? 'Mengunggah…' : r.foto_url ? 'Ganti foto' : 'Unggah foto'}
+                <input id={`e-foto-${i}`} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={uploadingRecord !== null} onChange={(event) => handleFotoUpload(i, event)} />
+              </label>
+            </div>
+            {r.foto_url ? (
+              <div className="relative overflow-hidden rounded-lg border bg-background">
+                <img src={r.foto_url} alt={`Pratinjau foto ${r.nama || `kegiatan ${i + 1}`}`} className="h-40 w-full object-cover" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
+                <Button type="button" variant="secondary" size="sm" className="absolute right-2 top-2 bg-background/90" onClick={() => ubah(i, 'foto_url', '')}>
+                  <X className="mr-1 h-3.5 w-3.5" /> Lepas foto
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Belum ada foto. Tampilan publik akan menggunakan latar warna bawaan.</p>
+            )}
           </div>
         </div>
       ))}
