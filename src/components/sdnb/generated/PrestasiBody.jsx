@@ -174,7 +174,7 @@ const PrestasiBody = (vals = {}) => {
 {(detilAda) && (<>
     <div onClick={tutup} style={{ position: "fixed", inset: "0", zIndex: "90", display: "flex", alignItems: "center", justifyContent: "center", overflowY: "auto", boxSizing: "border-box", padding: "clamp(16px,3vw,40px)", background: "rgba(16,19,45,.7)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", animation: "fadeup .28s ease both" }}>
       <div onClick={stop} role="dialog" aria-modal="true" aria-labelledby="prestasi-modal-title" style={{ position: "relative", width: "min(1000px,100%)", maxHeight: "min(90vh,900px)", overflow: "auto", borderRadius: "clamp(22px,3vw,30px)", background: "#20233f", border: "1px solid rgba(255,255,255,.16)", boxShadow: "0 54px 110px -34px rgba(10,14,50,.85)", animation: "rise .42s cubic-bezier(.2,.9,.25,1) both" }}>
-        <div style={{ ...__dcs(detil.top), minHeight: "clamp(280px,32vw,380px)", padding: "clamp(28px,4vw,46px) clamp(24px,4vw,48px) clamp(28px,3vw,36px)" }}>
+        <div style={{ ...__dcs(detil.top), minHeight: "clamp(300px,34vw,420px)", padding: "clamp(28px,4vw,46px) clamp(24px,4vw,48px) clamp(28px,3vw,36px)" }}>
           {detil.fotoUrl && (
             <img
               src={detil.fotoUrl}
