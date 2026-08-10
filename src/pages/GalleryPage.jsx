@@ -5,7 +5,7 @@ import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { fetchClassCount, fetchSantriCount } from '@/lib/dataMasterAdapters';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
-import { deriveGalleryAlbums, normalizeGalleryAlbums, normalizeGalleryPhotos, resolveGalleryAlbumPhotos } from '@/lib/galleryContent';
+import { deriveGalleryAlbums, normalizeGalleryAlbums, normalizeGalleryPhotos, resolveGalleryAlbumPhotos, selectGalleryHeroPhotos } from '@/lib/galleryContent';
 import '@/styles/sdnb.css';
 
 /**
@@ -62,6 +62,8 @@ const HERO_GRADS = [
 const HEIGHTS = [104, 138, 92, 124, 110, 150, 118, 132];
 const COLS = 4;
 
+const escapeCssUrl = (value) => String(value).replace(/[\\"]/g, '\\$&');
+
 const GalleryPage = () => {
   const schoolIdentity = useSchoolIdentity();
   const [kat, setKat] = useState('Semua');
@@ -114,6 +116,39 @@ const GalleryPage = () => {
   }, [statsRequest]);
 
   const managedPhotos = useMemo(() => normalizeGalleryPhotos(cmsPhotos), [cmsPhotos]);
+  const heroPhotoCandidates = useMemo(
+    () => selectGalleryHeroPhotos(managedPhotos),
+    [managedPhotos],
+  );
+  const [heroPhotos, setHeroPhotos] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    setHeroPhotos([]);
+    if (heroPhotoCandidates.length === 0 || typeof window === 'undefined' || typeof window.Image !== 'function') {
+      return () => { active = false; };
+    }
+
+    const loaded = new Set();
+    heroPhotoCandidates.forEach((photo, index) => {
+      const image = new window.Image();
+      image.decoding = 'async';
+      if ('fetchPriority' in image) image.fetchPriority = 'low';
+      const settle = (isValid) => {
+        if (!active || !isValid || loaded.has(index)) return;
+        loaded.add(index);
+        setHeroPhotos((current) => {
+          const next = heroPhotoCandidates.filter((_, candidateIndex) => loaded.has(candidateIndex));
+          return next.length === current.length ? current : next;
+        });
+      };
+      image.onload = () => settle(true);
+      image.onerror = () => settle(false);
+      image.src = photo.url;
+    });
+
+    return () => { active = false; };
+  }, [heroPhotoCandidates]);
 
   // Foto dari CMS bila ada (jumlah bebas), jika kosong pakai contoh bawaan FOTO.
   // Span mosaik & gradien fallback dipilih otomatis dari urutan.
@@ -198,10 +233,14 @@ const GalleryPage = () => {
   const heroCols = useMemo(() => Array.from({ length: 5 }).map((_, c) => {
     const base = Array.from({ length: 9 }).map((__, t) => {
       const g = (c * 7 + t * 3) % 8;
-      return { style: `flex:none;height:${HEIGHTS[(c + t) % HEIGHTS.length]}px;border-radius:16px;background:${HERO_GRADS[g]};border:1px solid rgba(255,255,255,.75);box-shadow:0 16px 34px -18px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.85)` };
+      const photo = heroPhotos.length > 0 ? heroPhotos[(c * 7 + t * 3) % heroPhotos.length] : null;
+      const background = photo
+        ? `background-image:url("${escapeCssUrl(photo.url)}"),${HERO_GRADS[g]};background-size:cover,cover;background-position:center,center;background-repeat:no-repeat,no-repeat`
+        : `background:${HERO_GRADS[g]}`;
+      return { style: `flex:none;height:${HEIGHTS[(c + t) % HEIGHTS.length]}px;border-radius:16px;${background};border:1px solid rgba(255,255,255,.75);box-shadow:0 16px 34px -18px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.85)` };
     });
     return { tiles: base.concat(base), cls: c % 2 ? 'dcol rev' : 'dcol', style: `animation-duration:${38 + c * 7}s` };
-  }), []);
+  }), [heroPhotos]);
 
   const galleryMetric = useMemo(() => ({
     status: galleryState.status === 'ready'

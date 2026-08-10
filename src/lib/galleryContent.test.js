@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   deriveGalleryAlbums,
+  selectGalleryHeroPhotos,
   normalizeGalleryAlbums,
   normalizeGalleryPhotos,
   resolveGalleryAlbumPhotos,
@@ -47,5 +48,21 @@ describe('gallery content model', () => {
       expect.objectContaining({ title: 'Belajar', photo_ids: ['a', 'b'] }),
       expect.objectContaining({ title: 'Prestasi', photo_ids: ['c'] }),
     ]);
+  });
+
+  it('keeps a bounded pool of valid photos and prioritizes WebP', () => {
+    const photos = selectGalleryHeroPhotos([
+      { id: 'jpg-1', url: '/gallery/one.jpg' },
+      { id: 'invalid', url: 'javascript:alert(1)' },
+      { id: 'webp-1', url: '/gallery/one.webp' },
+      ...Array.from({ length: 10 }, (_, index) => ({
+        id: `jpg-${index + 2}`,
+        url: `/gallery/${index + 2}.jpg`,
+      })),
+    ]);
+
+    expect(photos).toHaveLength(10);
+    expect(photos[0]).toEqual(expect.objectContaining({ id: 'webp-1' }));
+    expect(photos.some((photo) => photo.id === 'invalid')).toBe(false);
   });
 });

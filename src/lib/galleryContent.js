@@ -26,6 +26,52 @@ export const normalizeGalleryPhotos = (rows) => (
     })
 );
 
+export const GALLERY_HERO_POOL_LIMIT = 10;
+
+const isUsableImageUrl = (value) => {
+  const url = asText(value);
+  if (!url || typeof globalThis.URL !== 'function') return false;
+  try {
+    const parsed = new globalThis.URL(url, 'https://gallery.invalid');
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+const isWebpPhoto = (photo) => {
+  const declaredType = asText(
+    photo?.mime_type || photo?.mimeType || photo?.contentType || photo?.format,
+  ).toLowerCase().split(';')[0];
+  if (declaredType === 'image/webp' || declaredType === 'webp') return true;
+  try {
+    return new globalThis.URL(photo.url, 'https://gallery.invalid').pathname.toLowerCase().endsWith('.webp');
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Selects a small, stable set of valid CMS photos for the decorative Gallery
+ * header. WebP is preferred when the stored MIME type or URL identifies it;
+ * the original order remains stable within each format group.
+ */
+export const selectGalleryHeroPhotos = (rows, limit = GALLERY_HERO_POOL_LIMIT) => {
+  const max = Math.min(
+    GALLERY_HERO_POOL_LIMIT,
+    Number.isInteger(limit) && limit > 0 ? limit : GALLERY_HERO_POOL_LIMIT,
+  );
+  const seenUrls = new Set();
+  const photos = normalizeGalleryPhotos(rows).filter((photo) => {
+    if (!isUsableImageUrl(photo.url) || seenUrls.has(photo.url)) return false;
+    seenUrls.add(photo.url);
+    return true;
+  });
+  const webp = photos.filter(isWebpPhoto);
+  const other = photos.filter((photo) => !isWebpPhoto(photo));
+  return [...webp, ...other].slice(0, max);
+};
+
 export const normalizeGalleryAlbums = (rows) => (
   (Array.isArray(rows) ? rows : [])
     .filter((row) => row && typeof row === 'object')
