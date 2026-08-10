@@ -425,7 +425,7 @@ html[data-theme="dark"] body .sdnb.sdnb [style*="background-color: rgb(255"] {
 }
 
 /* White highlight strips are decorative light-mode treatment, not content. */
-html[data-theme="dark"] body .sdnb.sdnb [style*="linear-gradient"][style*="rgba(255"] {
+html[data-theme="dark"] body .sdnb.sdnb [style*="linear-gradient"][style*="rgba(255"]:not(.gallery-hero-mosaic-tile) {
   background: transparent !important;
 }
 

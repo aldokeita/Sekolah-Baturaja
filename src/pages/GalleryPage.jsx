@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import GaleriBody from '@/components/sdnb/generated/GaleriBody';
-import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
+import { fetchWebsiteContentMap, WEBSITE_CONTENT_UPDATED_EVENT, WEBSITE_CONTENT_UPDATED_STORAGE_KEY } from '@/lib/publicContentAdapters';
 import { fetchClassCount, fetchSantriCount } from '@/lib/dataMasterAdapters';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
-import { deriveGalleryAlbums, getGalleryHeroAspectRatio, normalizeGalleryAlbums, normalizeGalleryPhotos, resolveGalleryAlbumPhotos, selectGalleryHeroPhotos } from '@/lib/galleryContent';
+import { deriveGalleryAlbums, GALLERY_HERO_MOSAIC_KEY, getGalleryHeroAspectRatio, normalizeGalleryAlbums, normalizeGalleryHeroMosaic, normalizeGalleryPhotos, resolveGalleryAlbumPhotos, resolveGalleryHeroPhotos } from '@/lib/galleryContent';
 import '@/styles/sdnb.css';
 
 /**
@@ -73,6 +73,7 @@ const GalleryPage = () => {
   const [idx, setIdx] = useState(-1);
   const [cmsPhotos, setCmsPhotos] = useState([]);
   const [cmsAlbums, setCmsAlbums] = useState([]);
+  const [cmsHeroMosaic, setCmsHeroMosaic] = useState(null);
   const [albumPhotoIds, setAlbumPhotoIds] = useState(null);
   const [galleryRequest, setGalleryRequest] = useState(0);
   const [galleryState, setGalleryState] = useState({ status: 'loading', error: null });
@@ -83,11 +84,12 @@ const GalleryPage = () => {
   useEffect(() => {
     let mounted = true;
     setGalleryState({ status: 'loading', error: null });
-    fetchWebsiteContentMap({ keys: ['galleryPhotos', 'galleryAlbums'], publicOnly: true })
+    fetchWebsiteContentMap({ keys: ['galleryPhotos', 'galleryAlbums', GALLERY_HERO_MOSAIC_KEY], publicOnly: true })
       .then((map) => {
         if (!mounted) return;
         setCmsPhotos(normalizeGalleryPhotos(map.galleryPhotos));
         setCmsAlbums(normalizeGalleryAlbums(map.galleryAlbums));
+        setCmsHeroMosaic(normalizeGalleryHeroMosaic(map.galleryHeroMosaic));
         setGalleryState({ status: 'ready', error: null });
       })
       .catch(() => {
@@ -96,6 +98,31 @@ const GalleryPage = () => {
       });
     return () => { mounted = false; };
   }, [galleryRequest]);
+
+  useEffect(() => {
+    const relevantKeys = new Set(['galleryPhotos', 'galleryAlbums', GALLERY_HERO_MOSAIC_KEY]);
+    const shouldRefresh = (keys) => (
+      !Array.isArray(keys) || keys.some((key) => relevantKeys.has(String(key)))
+    );
+    const onContentUpdated = (event) => {
+      if (shouldRefresh(event?.detail?.keys)) setGalleryRequest((request) => request + 1);
+    };
+    const onStorage = (event) => {
+      if (event.key !== WEBSITE_CONTENT_UPDATED_STORAGE_KEY || !event.newValue) return;
+      try {
+        const payload = JSON.parse(event.newValue);
+        if (shouldRefresh(payload?.keys)) setGalleryRequest((request) => request + 1);
+      } catch {
+        setGalleryRequest((request) => request + 1);
+      }
+    };
+    window.addEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdated);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(WEBSITE_CONTENT_UPDATED_EVENT, onContentUpdated);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -118,9 +145,10 @@ const GalleryPage = () => {
   }, [statsRequest]);
 
   const managedPhotos = useMemo(() => normalizeGalleryPhotos(cmsPhotos), [cmsPhotos]);
+  const heroMosaic = useMemo(() => normalizeGalleryHeroMosaic(cmsHeroMosaic), [cmsHeroMosaic]);
   const heroPhotoCandidates = useMemo(
-    () => selectGalleryHeroPhotos(managedPhotos),
-    [managedPhotos],
+    () => resolveGalleryHeroPhotos(heroMosaic, managedPhotos),
+    [heroMosaic, managedPhotos],
   );
   const [heroPhotos, setHeroPhotos] = useState([]);
 
@@ -241,7 +269,9 @@ const GalleryPage = () => {
   // Isi latar satu foto: gambar bila ada url, jika tidak gradien fallback.
   const fillOf = (s) => (s.url ? `background:url("${s.url}") center/cover no-repeat` : `background:${s.grad}`);
 
-  const heroCols = useMemo(() => Array.from({ length: HERO_COLUMN_COUNT }).map((_, c) => {
+  const heroCols = useMemo(() => {
+    if (!heroMosaic.enabled) return [];
+    return Array.from({ length: HERO_COLUMN_COUNT }).map((_, c) => {
     const base = Array.from({ length: 9 }).map((__, t) => {
       const g = (c * 7 + t * 3) % 8;
       const photo = heroPhotos.length > 0 ? heroPhotos[(c * 7 + t * 3) % heroPhotos.length] : null;
@@ -255,7 +285,13 @@ const GalleryPage = () => {
       return { style: `flex:none;${dimensions};border-radius:16px;${background};border:1px solid rgba(255,255,255,.75);box-shadow:0 16px 34px -18px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.85)` };
     });
     return { tiles: base.concat(base), cls: c % 2 ? 'dcol rev' : 'dcol', style: `animation-duration:${38 + c * 7}s` };
-  }), [heroPhotos]);
+    });
+  }, [heroMosaic.enabled, heroPhotos]);
+
+  const heroMosaicTransform = useMemo(
+    () => `translateX(${heroMosaic.offset_x}%) translateY(${heroMosaic.offset_y}px) rotateX(14deg) rotateZ(-4deg) scale(${(1.04 * heroMosaic.scale).toFixed(3)})`,
+    [heroMosaic.offset_x, heroMosaic.offset_y, heroMosaic.scale],
+  );
 
   const galleryMetric = useMemo(() => ({
     status: galleryState.status === 'ready'
@@ -330,7 +366,7 @@ const GalleryPage = () => {
       ? 'Album belum dapat dimuat. Coba lagi.'
       : 'Belum ada album. Tambahkan album dari foto Galeri Kegiatan melalui Manajemen Konten Website.';
 
-  useSdnbMotion([galleryState.status, studentMetric.status, classMetric.status, source.length, albumEntries.length]);
+  useSdnbMotion([galleryState.status, studentMetric.status, classMetric.status, source.length, albumEntries.length, heroMosaic.enabled]);
 
   const cur = idx >= 0 ? source[idx] : null;
   const at = items.findIndex((o) => o.i === idx);
@@ -338,6 +374,7 @@ const GalleryPage = () => {
   const vals = {
     heroCols,
     heroColumnCount: heroCols.length,
+    heroMosaicTransform,
     heroStats: [
       { n: galleryMetric.value, status: galleryMetric.status, suf: '', label: 'foto terkumpul' },
       { n: galleryMonths, status: galleryMetric.status, suf: ' bulan', label: 'dokumentasi berjalan' },

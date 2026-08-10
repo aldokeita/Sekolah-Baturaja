@@ -61,6 +61,29 @@ export const fetchWebsiteContentMap = async ({ keys, publicOnly = true } = {}) =
   return data || {};
 };
 
+export const WEBSITE_CONTENT_UPDATED_EVENT = 'sdnb:website-content-updated';
+export const WEBSITE_CONTENT_UPDATED_STORAGE_KEY = 'sdnb:website-content-updated';
+
+/**
+ * Lets an already-open public tab refresh the small slice of CMS content it
+ * displays after an admin saves. The payload contains no content or user data;
+ * localStorage is only used as a cross-tab signal.
+ */
+export const announceWebsiteContentUpdate = (keys = []) => {
+  if (typeof window === 'undefined') return;
+  const normalizedKeys = Array.isArray(keys)
+    ? keys.map((key) => String(key || '').trim()).filter(Boolean)
+    : [];
+  const detail = { keys: normalizedKeys };
+  window.dispatchEvent(new CustomEvent(WEBSITE_CONTENT_UPDATED_EVENT, { detail }));
+  try {
+    window.localStorage.setItem(WEBSITE_CONTENT_UPDATED_STORAGE_KEY, JSON.stringify({ ...detail, at: Date.now() }));
+  } catch {
+    // Storage can be disabled in a private or embedded context. The in-tab
+    // CustomEvent above still keeps the current page responsive.
+  }
+};
+
 export const normalizeWebsiteContentValue = (value) => {
   if (value === undefined || value === null) return {};
   if (typeof value === 'string') return value.trim();

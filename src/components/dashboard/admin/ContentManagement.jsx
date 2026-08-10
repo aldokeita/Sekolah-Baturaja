@@ -17,13 +17,14 @@ import PrestasiContentSettings from '@/components/dashboard/admin/PrestasiConten
 import EkskulContentSettings from '@/components/dashboard/admin/EkskulContentSettings';
 import ProgramContentSettings from '@/components/dashboard/admin/ProgramContentSettings';
 import SchoolInfoSettings from '@/components/dashboard/admin/SchoolInfoSettings';
+import GalleryHeroMosaicSettings from '@/components/dashboard/admin/GalleryHeroMosaicSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolIdentity } from '@/lib/schoolIdentity';
 import HafalanDisplay from '@/components/dashboard/shared/HafalanDisplay';
 import { createHafalanItem, deactivateHafalanItem, fetchHafalanItems, getAcademicErrorMessage, updateHafalanItem, HAFALAN_SCOPE_PER_KELAS, HAFALAN_SCOPE_PER_JUZ } from '@/lib/academicAdapters';
 import { getStorageErrorMessage, uploadWebsiteAsset } from '@/lib/storageAdapters';
 import { defaultContent, mergeHomepageContent } from '@/components/public/home/homeUtils';
-import { normalizeGalleryAlbums, normalizeGalleryPhotos } from '@/lib/galleryContent';
+import { DEFAULT_GALLERY_HERO_MOSAIC, GALLERY_HERO_MOSAIC_KEY, normalizeGalleryAlbums, normalizeGalleryHeroMosaic, normalizeGalleryPhotos } from '@/lib/galleryContent';
 import {
   archiveAnnouncement,
   archiveNews,
@@ -33,6 +34,7 @@ import {
   fetchAdminNews,
   fetchWebsiteContentMap,
   getPublicContentErrorMessage,
+  announceWebsiteContentUpdate,
   assertNonEmptyWebsiteContentString,
   saveAnnouncement,
   saveNews,
@@ -248,7 +250,7 @@ const ContentManagement = () => {
    * Perubahan" akan menimpa isi tersimpan pembeli dengan kekosongan; dibiarkan,
    * data lama tetap utuh sampai ada keputusan memakainya lagi. */
   const [content, setContent] = useState({
-    ...defaultContent, schoolBuildingPhoto: '', brochures: [], pustaka: [], news: [], announcements: [], qiroatiVideos: [], hafalanVideos: [], waliDiscussions: [], santriOfTheMonth: [], guruOfTheMonth: null, leaderboard: [], parentingArticles: [], galleryAlbums: [], model3dSettings: { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 }
+    ...defaultContent, schoolBuildingPhoto: '', brochures: [], pustaka: [], news: [], announcements: [], qiroatiVideos: [], hafalanVideos: [], waliDiscussions: [], santriOfTheMonth: [], guruOfTheMonth: null, leaderboard: [], parentingArticles: [], galleryAlbums: [], [GALLERY_HERO_MOSAIC_KEY]: { ...DEFAULT_GALLERY_HERO_MOSAIC }, model3dSettings: { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 }
   });
 
   const [feedbacks, setFeedbacks] = useState([]);
@@ -269,6 +271,8 @@ const ContentManagement = () => {
   });
   const [assetUploadType, setAssetUploadType] = useState(null);
   const [buildingPhotoPreviewError, setBuildingPhotoPreviewError] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveState, setSaveState] = useState('idle');
 
   useEffect(() => { fetchContent(); fetchSantriAndGuru(); fetchFeedbacks(); }, []);
 
@@ -319,6 +323,7 @@ const ContentManagement = () => {
     Object.assign(newContent, mergeHomepageContent(newContent));
     newContent.galleryPhotos = normalizeGalleryPhotos(newContent.galleryPhotos);
     newContent.galleryAlbums = normalizeGalleryAlbums(newContent.galleryAlbums);
+    newContent[GALLERY_HERO_MOSAIC_KEY] = normalizeGalleryHeroMosaic(newContent[GALLERY_HERO_MOSAIC_KEY]);
     if(!newContent.model3dSettings || typeof newContent.model3dSettings !== 'object' || Array.isArray(newContent.model3dSettings)) {
       newContent.model3dSettings = { autoRotate: false, autoRotateSpeed: 0.34, rotationX: 0, rotationY: 0, rotationZ: 0 };
     }
@@ -332,15 +337,23 @@ const ContentManagement = () => {
   };
 
   const handleSaveAll = async () => {
+    if (isSaving) return;
     const excludedKeys = new Set(['news', 'announcements']);
     const dataToUpsert = Object.keys(content)
       .filter(key => !excludedKeys.has(key))
       .map(key => ({ key, content: content[key], is_public: true }));
+    setIsSaving(true);
+    setSaveState('saving');
     try {
       await saveWebsiteContentItems(dataToUpsert);
+      announceWebsiteContentUpdate(dataToUpsert.map((item) => item.key));
+      setSaveState('success');
       toast({ title: "Konten Disimpan!", description: `Semua perubahan telah berhasil disimpan.` });
     } catch (error) {
+      setSaveState('error');
       toast({ title: "Gagal Menyimpan!", description: getPublicContentErrorMessage(error), variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -647,6 +660,15 @@ const ContentManagement = () => {
                 </div>
               </div>
             </div>
+            <GalleryHeroMosaicSettings
+              photos={content.galleryPhotos}
+              value={content.galleryHeroMosaic}
+              saveState={saveState}
+              onChange={(galleryHeroMosaic) => {
+                setSaveState('idle');
+                setContent((previous) => ({ ...previous, galleryHeroMosaic }));
+              }}
+            />
             <div className="col-span-full"><ContentSection title="Galeri Kegiatan" modalType="galleryPhotos" data={content.galleryPhotos} icon={<ImageIcon />} renderItem={item => <div className="flex items-center gap-2"><img src={item.url} alt="" className="w-12 h-12 object-cover rounded-md" /><p className="truncate">{item.caption}</p></div>} /></div>
             <div className="col-span-full"><ContentSection title="Album" modalType="galleryAlbums" data={content.galleryAlbums} icon={<BookMarked />} renderItem={item => <div className="min-w-0"><p className="truncate font-medium">{item.title || item.name}</p><p className="text-xs text-muted-foreground">{(item.photo_ids || item.photoIds || []).length} foto dari Galeri Kegiatan</p></div>} /></div>
             <div className="admin-card p-4 space-y-4"><h3 className="font-bold text-xl flex items-center gap-2"><FileText /> Brosur Pendaftaran</h3><Input type="file" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(e, 'brochures')} /><div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">{content.brochures.map(file => (<div key={file.id} className="flex justify-between items-center p-2 border rounded-lg bg-background"><span>{file.name}</span><Button variant="ghost" size="icon" onClick={() => handleDeleteItem('brochures', file.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div>))}</div></div>
@@ -709,8 +731,8 @@ const ContentManagement = () => {
           </div>
         </div>
         <div className="admin-panel-header-actions">
-          <button onClick={handleSaveAll} className="admin-panel-primary-btn">
-            <Save className="w-4 h-4" /> Simpan Semua Perubahan
+          <button onClick={handleSaveAll} className="admin-panel-primary-btn" disabled={isSaving} aria-busy={isSaving}>
+            <Save className="w-4 h-4" /> {isSaving ? 'Menyimpan…' : 'Simpan Semua Perubahan'}
           </button>
         </div>
       </div>

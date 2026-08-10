@@ -19,18 +19,18 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-galeri.css';
 
 const GaleriBody = (vals = {}) => {
-  const { academicYearLabel, album, albumMessage, bandStats, bandStatsBusy, bandStatsNotice, cineNext, cinePrev, close, cur, foto, heroCols, heroColumnCount, heroStats, isMosaic, isSinema, kategori, lightOpen, mosStyle, next, prev, retryBandStats, stop, thumbs, views } = vals;
+  const { academicYearLabel, album, albumMessage, bandStats, bandStatsBusy, bandStatsNotice, cineNext, cinePrev, close, cur, foto, heroCols, heroColumnCount, heroMosaicTransform, heroStats, isMosaic, isSinema, kategori, lightOpen, mosStyle, next, prev, retryBandStats, stop, thumbs, views } = vals;
   const metricReady = (stat) => stat?.status !== 'loading' && stat?.status !== 'empty' && stat?.status !== 'error';
   const metricText = (stat) => (metricReady(stat) ? '0' : stat?.status === 'loading' ? '…' : '—');
   return (
     <>
 <section style={{ position: "relative", minHeight: "82vh", display: "flex", alignItems: "center", overflow: "hidden", padding: "40px 0 20px" }}>
       <div aria-hidden="true" style={{ position: "absolute", inset: "0 -18%", zIndex: "0", overflow: "hidden", opacity: ".62", perspective: "1400px", WebkitMaskImage: "radial-gradient(120% 90% at 50% 45%,#000 30%,transparent 78%)", maskImage: "radial-gradient(120% 90% at 50% 45%,#000 30%,transparent 78%)" }}>
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${heroColumnCount || 5},minmax(0,1fr))`, gap: "10px", transform: "translateX(10%) rotateX(14deg) rotateZ(-4deg) scale(1.04)", transformStyle: "preserve-3d" }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${heroColumnCount || 5},minmax(0,1fr))`, gap: "10px", transform: heroMosaicTransform || "translateX(10%) rotateX(14deg) rotateZ(-4deg) scale(1.04)", transformStyle: "preserve-3d" }}>
           {(heroCols || []).map((c, $index) => (<React.Fragment key={$index}>
             <div className={`${c.cls}`} style={__dcs(c.style)}>
               {(c.tiles || []).map((t, $index) => (<React.Fragment key={$index}>
-                <div style={__dcs(t.style)}></div>
+                <div className="gallery-hero-mosaic-tile" style={__dcs(t.style)}></div>
               </React.Fragment>))}
             </div>
           </React.Fragment>))}

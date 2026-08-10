@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   deriveGalleryAlbums,
+  DEFAULT_GALLERY_HERO_MOSAIC,
   getGalleryHeroAspectRatio,
+  normalizeGalleryHeroMosaic,
   selectGalleryHeroPhotos,
   normalizeGalleryAlbums,
   normalizeGalleryPhotos,
   resolveGalleryAlbumPhotos,
+  resolveGalleryHeroPhotos,
 } from './galleryContent';
 
 describe('gallery content model', () => {
@@ -71,5 +74,35 @@ describe('gallery content model', () => {
     expect(getGalleryHeroAspectRatio({ naturalWidth: 1600, naturalHeight: 800 })).toBe(1.75);
     expect(getGalleryHeroAspectRatio({ naturalWidth: 800, naturalHeight: 1600 }, 1.2)).toBe(0.62);
     expect(getGalleryHeroAspectRatio({ naturalWidth: 1200, naturalHeight: 800 }, 1.2)).toBe(1.25);
+  });
+
+  it('normalizes mosaic settings without breaking the default behaviour', () => {
+    expect(normalizeGalleryHeroMosaic(null)).toEqual(DEFAULT_GALLERY_HERO_MOSAIC);
+    expect(normalizeGalleryHeroMosaic({
+      enabled: false,
+      selectedPhotoIds: [3, '3', '4'],
+      offsetX: 99,
+      offsetY: -999,
+      scale: 0.1,
+    })).toEqual({
+      enabled: false,
+      photo_ids: ['3', '4'],
+      offset_x: 24,
+      offset_y: -120,
+      scale: 0.82,
+    });
+  });
+
+  it('keeps the configured photo order and falls back when a selection disappears', () => {
+    const photos = [
+      { id: 'a', url: '/gallery/a.jpg' },
+      { id: 'b', url: '/gallery/b.webp' },
+      { id: 'c', url: '/gallery/c.jpg' },
+    ];
+
+    expect(resolveGalleryHeroPhotos({ photo_ids: ['c', 'a'] }, photos).map((photo) => photo.id))
+      .toEqual(['c', 'a']);
+    expect(resolveGalleryHeroPhotos({ photo_ids: ['missing'] }, photos).map((photo) => photo.id))
+      .toEqual(['b', 'a', 'c']);
   });
 });
