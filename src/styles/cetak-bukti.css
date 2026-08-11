@@ -1,0 +1,72 @@
+/* ============================================================================
+   cetak-bukti.css — aturan cetak untuk lembar bukti dan lembar rekap.
+   ============================================================================
+
+   Berkas terpisah dengan sengaja. Aturan ini semula ada di `sdnb.css`, dan itu
+   salah: `sdnb.css` hanya dimuat halaman publik, sedangkan lembar rekap dicetak
+   dari DASHBOARD. Akibatnya menekan Cetak di dashboard akan mencetak seluruh
+   dashboard — bilah menu, kartu statistik, dan daftar pendaftaran ikut terbawa.
+
+   Dipakai di tiga tempat:
+     - layar konfirmasi formulir pendaftaran (PpdbBody)
+     - halaman cek status pendaftaran (CekPendaftaranPage)
+     - lembar rekap SPMB di panel Pendaftaran (PpdbRegistrations)
+
+   Cara kerjanya: sembunyikan SEMUANYA, lalu tampilkan kembali hanya blok
+   `.bukti-cetak` beserta isinya. `visibility` dipakai alih-alih `display` supaya
+   tata letak di dalamnya tidak runtuh ketika bloknya dipindah ke pojok kiri atas
+   kertas. */
+
+@media print {
+  body * { visibility: hidden !important; }
+
+  .bukti-cetak,
+  .bukti-cetak * { visibility: visible !important; }
+
+  .bukti-cetak {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    color: #000 !important;
+    overflow: visible !important;
+  }
+
+  /* Kepala surat hanya berguna di kertas: di layar, nama sekolah sudah ada di
+     bilah navigasi, tapi di kertas tidak ada apa pun yang menyebutnya. */
+  .bukti-kepala {
+    display: block !important;
+    margin-bottom: 14px !important;
+    padding-bottom: 10px !important;
+    border-bottom: 1px solid #000 !important;
+  }
+
+  /* Tombol Cetak, Tutup, dan judul dialog jangan ikut tercetak. */
+  .bukti-sembunyi-cetak { display: none !important; }
+
+  /* Latar bergradasi menghabiskan tinta dan membuat teksnya sulit dibaca. */
+  .sdnb-bg,
+  .sdnb-orb,
+  .sdnb-dash__bg,
+  .sdnb-dash__orb { display: none !important; }
+
+  /* Dialog Radix membatasi tingginya dan menggulung isinya; di kertas itu
+     memotong tabel rekap yang panjang. */
+  [role="dialog"] {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  /* Tabel rekap jangan terpotong di tengah baris. */
+  .bukti-cetak tr { break-inside: avoid; }
+  .bukti-cetak table { width: 100% !important; }
+}

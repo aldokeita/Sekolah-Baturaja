@@ -1,0 +1,415 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Palet aksen sekolah — nilai bawaan.
+ *
+ * Yang berlaku sehari-hari adalah nilai yang dipasang applySchoolIdentity ke
+ * elemen <html> dari warna pilihan pembeli (lihat turunkanPalet di
+ * src/lib/schoolIdentity.js). Blok ini bawaannya, dan ia bukan hiasan: tanpa
+ * ini, cat pertama sebelum JavaScript selesai akan merender `var(--sekolah-…)`
+ * tanpa nilai, sehingga tombol dan judul kehilangan warnanya sekejap.
+ *
+ * Nilai di bawah SAMA PERSIS dengan hasil turunkanPalet dari kedua warna bawaan
+ * ('#6470ff' → '#e58fc4'). Kalau mengubah STOP_PALET, samakan juga daftar ini —
+ * uji pertama di schoolIdentity.test.js mengunci nilainya. */
+:root {
+  --sekolah-aksen: #6470ff;
+  --sekolah-aksen-pekat: #5b6cff;
+  --sekolah-aksen-tengah: #8a6cf0;
+  --sekolah-aksen-tengah-2: #a06cf0;
+  --sekolah-aksen-ujung: #e58fc4;
+  --sekolah-aksen-hangat: #f06cbd;
+  --sekolah-aksen-muda: #a5b4fc;
+  --sekolah-aksen-samar: #c7d2fe;
+  --sekolah-aksen-rgb: 100 112 255;
+}
+
+@layer base {
+  :root {
+    --background: 215 50% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 221 83% 24%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 221 83% 24%;
+
+    --primary: 217 91% 54%; /* Vibrant Royal Blue #2563EB */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 221 83% 24%; /* Deep Navy Blue #1E3A8A */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 214 32% 93%;
+    --muted-foreground: 221 83% 24%;
+
+    --accent: 46 65% 52%; /* Gold #D4AF37 */
+    --accent-foreground: 221 83% 24%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 84%;
+    --input: 214 32% 84%;
+    --ring: 217 91% 54%;
+
+    --radius: 0.75rem;
+
+    /* Glassmorphism Tokens */
+    --glass-bg: 0 0% 100%;
+    --glass-border: 0 0% 100%;
+    --glass-shadow: 221 83% 24%;
+
+    /* Status & Attendance Colors (HSL format) */
+    --status-good: 217 91% 54%;      /* Blue */
+    --status-moderate: 38 92% 50%;   /* Yellow */
+    --status-poor: 0 84% 60%;        /* Red */
+
+    --status-hadir: 217 91% 54%;
+    --status-terlambat: 38 92% 50%;
+    --status-tidak-hadir: 0 84% 60%;
+
+    /* MMQ Status Colors */
+    --mmq-hadir: 217 91% 54%;
+    --mmq-terlambat: 38 92% 50%;
+    --mmq-tidak-hadir: 0 84% 60%;
+
+    /* Islamic Royal Blue TV Display Theme */
+    --islamic-green-primary: 221 83% 40%;   /* #1D4ED8 */
+    --islamic-green-secondary: 224 76% 25%; /* #1E3A8A */
+    --islamic-green-accent: 217 91% 60%;    /* #3B82F6 */
+    --islamic-green-light: 214 100% 97%;     /* #F0F7FF */
+  }
+
+  .dark {
+    --background: 222 47% 11%; /* Dark Royal Navy Background */
+    --foreground: 213 31% 91%;
+
+    --card: 222 47% 15%;
+    --card-foreground: 213 31% 91%;
+
+    --popover: 222 47% 15%;
+    --popover-foreground: 213 31% 91%;
+
+    --primary: 217 91% 60%; /* Bright Blue #3B82F6 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 221 83% 30%; /* Deep Blue #1D4ED8 */
+    --secondary-foreground: 213 31% 91%;
+
+    --muted: 222 47% 20%;
+    --muted-foreground: 215 20% 70%;
+
+    --accent: 46 65% 52%; /* Gold #D4AF37 */
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 213 31% 91%;
+
+    --border: 222 47% 20%;
+    --input: 222 47% 20%;
+    --ring: 217 91% 60%;
+
+    /* Glassmorphism Tokens */
+    --glass-bg: 222 47% 11%;
+    --glass-border: 213 31% 91%;
+    --glass-shadow: 222 47% 5%;
+
+    /* Status & Attendance Colors (HSL format) */
+    --status-good: 217 91% 60%;
+    --status-moderate: 38 92% 40%;
+    --status-poor: 0 84% 50%;
+
+    --status-hadir: 217 91% 60%;
+    --status-terlambat: 38 92% 40%;
+    --status-tidak-hadir: 0 84% 50%;
+
+    /* MMQ Status Colors */
+    --mmq-hadir: 217 91% 60%;
+    --mmq-terlambat: 38 92% 40%;
+    --mmq-tidak-hadir: 0 84% 50%;
+  }
+
+  .dark .school-dialog-surface {
+    --background: 222 30% 7%;
+    --card: 222 24% 11%;
+    --secondary: 222 18% 16%;
+    --muted: 222 16% 17%;
+    --muted-foreground: 215 15% 67%;
+    --accent: 222 16% 18%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Archivo', system-ui, sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+    font-weight: 800;
+  }
+
+  .font-cinzel {
+    font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  }
+
+  .font-outfit {
+    font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  }
+
+  .font-poppins {
+    font-family: 'Archivo', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .school-shine-button {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .school-shine-button::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: 2;
+    border-radius: inherit;
+    background: linear-gradient(112deg, transparent 20%, rgb(255 255 255 / 0.08) 36%, rgb(255 255 255 / 0.62) 49%, rgb(255 178 214 / 0.22) 58%, transparent 76%);
+    background-position: 125% center;
+    background-size: 230% 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: background-position 620ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease;
+  }
+
+  .school-shine-button:hover::after,
+  .school-shine-button:focus-visible::after {
+    background-position: -35% center;
+    opacity: 1;
+  }
+
+  .school-shine-button:disabled::after {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .school-shine-button::after {
+      transition: opacity 160ms ease;
+    }
+
+    .school-shine-button:hover::after,
+    .school-shine-button:focus-visible::after {
+      background-position: center;
+    }
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .interactive-element {
+    @apply transition-all duration-200 active:scale-95 hover:opacity-90 cursor-pointer;
+  }
+
+  /* --- PREMIUM GLASSMORPHISM --- */
+  .glass-card {
+    background: hsl(var(--glass-bg) / 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--glass-border) / 0.2);
+    box-shadow: 0 8px 32px hsl(var(--glass-shadow) / 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .dark .glass-card {
+    background: hsl(var(--glass-bg) / 0.2);
+    border: 1px solid hsl(var(--glass-border) / 0.05);
+    box-shadow: 0 8px 32px hsl(var(--glass-shadow) / 0.3);
+  }
+
+  .glass-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 12px 40px hsl(var(--glass-shadow) / 0.15);
+  }
+
+  .dark .glass-card:hover {
+    box-shadow: 0 12px 40px hsl(var(--glass-shadow) / 0.4);
+  }
+
+  .premium-shadow {
+    box-shadow: 0 10px 30px -10px hsl(var(--glass-shadow) / 0.3);
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* --- GAMIFICATION VISUALS --- */
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px var(--glow-color), inset 0 0 10px var(--glow-color); }
+    50% { box-shadow: 0 0 50px var(--glow-color), inset 0 0 20px var(--glow-color); }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s infinite;
+  }
+
+  .gradient-text {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-current via-white to-current;
+    background-size: 200% auto;
+    animation: gradient-move 3s linear infinite;
+  }
+
+  @keyframes gradient-move {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+
+  .animate-shine {
+    background: linear-gradient(to right, #b8860b 20%, #ffd700 40%, #ffd700 60%, #b8860b 80%);
+    background-size: 200% auto;
+    color: #000;
+    background-clip: text;
+    text-fill-color: transparent;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shine 3s linear infinite;
+  }
+
+  @keyframes shine {
+    to {
+      background-position: 200% center;
+    }
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+      display: none;
+  }
+  .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+  }
+}
+
+@layer components {
+  /* --- TABLE & REPORT STYLES --- */
+  .rapor-table-container {
+    @apply w-full overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900;
+  }
+
+  .rapor-table {
+    @apply w-full text-sm text-left border-collapse;
+  }
+
+  .rapor-th {
+    @apply px-4 py-3 bg-slate-100 dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700;
+  }
+
+  .rapor-td {
+    @apply px-4 py-3 border-b border-slate-100 dark:border-slate-800/50 align-middle;
+  }
+
+  .rapor-row {
+    @apply transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/30;
+  }
+
+  /* Status Badges for Tables */
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  .status-badge-good {
+    @apply bg-[hsl(var(--status-good)_/_0.15)] text-[hsl(var(--status-good))];
+  }
+
+  .status-badge-moderate {
+    @apply bg-[hsl(var(--status-moderate)_/_0.15)] text-[hsl(var(--status-moderate))];
+  }
+
+  .status-badge-poor {
+    @apply bg-[hsl(var(--status-poor)_/_0.15)] text-[hsl(var(--status-poor))];
+  }
+
+  .attendance-icon {
+    @apply transition-all duration-200 transform-gpu hover:-translate-y-[2px];
+  }
+  .attendance-icon:hover {
+    @apply shadow-md brightness-110;
+  }
+
+  .mmq-status-hadir {
+    @apply bg-[hsl(var(--mmq-hadir))] text-white;
+  }
+  .mmq-status-terlambat {
+    @apply bg-[hsl(var(--mmq-terlambat))] text-white;
+  }
+  .mmq-status-tidak-hadir {
+    @apply bg-[hsl(var(--mmq-tidak-hadir))] text-white;
+  }
+  .mmq-table-row {
+    @apply hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-100 dark:border-slate-800;
+  }
+}
+
+/* --- PRINT OPTIMIZATIONS --- */
+@media print {
+  body {
+    @apply bg-white text-black;
+  }
+
+  .print-hide {
+    display: none !important;
+  }
+
+  .print-break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .rapor-table-container {
+    @apply border-gray-300 shadow-none bg-white;
+    page-break-inside: auto;
+  }
+
+  .rapor-table {
+    page-break-inside: auto;
+  }
+
+  .rapor-row {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .rapor-th {
+    @apply bg-gray-100 text-gray-900 border-gray-300;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .status-badge-good, .status-badge-moderate, .status-badge-poor {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    border: 1px solid currentColor;
+  }
+}

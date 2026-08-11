@@ -1,0 +1,85 @@
+/* ============================================================================
+   sdnb-profil.css — page-specific rules ported VERBATIM from the
+   <helmet><style> block of `Profil Sekolah.dc.html` (lines 15–72).
+
+   The shared base (nav, dropdown, shine, theme, keyframes floaty/sheen/marquee)
+   already lives in sdnb.css. This file adds only what Profil declares on top.
+
+   IMPORTANT: `.mq-track` and `.gtile` exist in both Beranda and Profil with
+   DIFFERENT values, so Profil's versions are scoped under `.sdnb-profil` to
+   keep each page exactly as its mockup specifies.
+   ========================================================================== */
+
+@keyframes fadeup { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes popin { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+
+.lift { transition: transform .35s cubic-bezier(.22, .8, .28, 1), box-shadow .35s ease; }
+.lift:hover { transform: translateY(-6px); box-shadow: 0 40px 76px -24px rgba(55, 65, 120, .62); }
+
+.tilt { transition: transform .5s cubic-bezier(.22, .8, .28, 1), box-shadow .5s ease; }
+.tilt:hover { transform: rotate(0deg) scale(1.03) !important; z-index: 5; }
+
+.tabpane { animation: fadeup .45s cubic-bezier(.22, .85, .28, 1) both; }
+
+/* Decorative page label remains an outline in both themes. The dark-mode
+   overrides in sdnb.css intentionally normalize inline light text, so this
+   class owns the outline explicitly and keeps the interior transparent. */
+.sdnb-profil-mark {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.5px rgba(90, 105, 190, .28);
+  paint-order: stroke fill;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-profil-mark {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  -webkit-text-stroke: 1.5px rgba(187, 196, 255, .58) !important;
+}
+
+/* timeline */
+.tl-row { display: grid; grid-template-columns: repeat(4, 1fr); position: relative; }
+.tl-col { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 10px; }
+.tl-up .tl-card { margin-bottom: 26px; }
+.tl-dn .tl-card { margin-top: 26px; }
+.tl-dn { flex-direction: column-reverse; justify-content: flex-end; }
+@media (max-width: 900px) {
+  .tl-row { grid-template-columns: 1fr; gap: 26px; }
+  .tl-axis { display: none; }
+  .tl-col { align-items: stretch; }
+  .tl-dn { flex-direction: column; }
+  .tl-up .tl-card, .tl-dn .tl-card { margin: 0; }
+}
+
+/* Profil's marquee is faster and tighter than Beranda's */
+.sdnb-profil .mq-track { gap: 14px; animation-duration: 38s; }
+
+/* Profil's gallery tile hover differs slightly from Beranda's */
+.sdnb-profil .gtile { transition: transform .5s cubic-bezier(.22, .8, .28, 1), box-shadow .5s ease; }
+.sdnb-profil .gtile:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 40px 78px -26px rgba(55, 65, 120, .7); }
+.sdnb-profil .gtile .gfill { transition: transform .8s cubic-bezier(.22, .8, .28, 1); }
+.sdnb-profil .gtile:hover .gfill { transform: scale(1.12); }
+
+/* hover utility used by the guru carousel's previous button
+   (style-hover="background:rgba(255,255,255,.92)") */
+.h-glass92:hover { background: rgba(255, 255, 255, .92); }
+
+/* Responsive fallbacks for the ported inline grids (DESIGN.md §11). */
+@media (max-width: 1000px) {
+  .sdnb-profil-hero { grid-template-columns: 1fr !important; min-height: 0 !important; }
+  .sdnb-profil-hero > div:last-child { height: 420px !important; }
+  .sdnb-profil-stats { grid-template-columns: repeat(2, 1fr) !important; }
+  .sdnb-profile-achievements { grid-template-columns: repeat(2, 1fr) !important; }
+  .sdnb-profil-bottom { grid-template-columns: 1fr !important; }
+  .sdnb-profil-fasilitas { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 640px) {
+  .sdnb-profil-stats { grid-template-columns: 1fr !important; }
+  .sdnb-profil-stats > div { border-bottom: 1px solid rgba(255, 255, 255, .6); }
+  .sdnb-profile-achievements { grid-template-columns: 1fr !important; }
+  .sdnb-profil-fasilitas { grid-template-columns: 1fr !important; }
+  .sdnb-profil-fasilitas > div { grid-column: span 1 !important; grid-row: span 1 !important; }
+  .sdnb-profil-quote { flex-direction: column; }
+  .sdnb-profil-misi { grid-template-columns: 1fr !important; }
+  .sdnb-person-modal { grid-template-columns: 1fr !important; }
+}

@@ -1,0 +1,13 @@
+## Pages
+- [SDN Baturaja](/): Website resmi sekolah, berita, program, dan informasi layanan.
+- [Profil Sekolah - SDN Baturaja](/profil): Profil, visi, misi, dan perjalanan SDN Baturaja.
+- [Galeri Sekolah - SDN Baturaja](/profil/galeri): Dokumentasi kegiatan dan lingkungan sekolah.
+- [Berita - SDN Baturaja](/berita): Berita dan pengumuman terbaru sekolah.
+- [Program - SDN Baturaja](/program): Program pembelajaran dan kegiatan sekolah.
+- [Prestasi - SDN Baturaja](/prestasi): Prestasi dan capaian murid sekolah.
+- [Ekstrakurikuler - SDN Baturaja](/ekstrakurikuler): Pilihan kegiatan pengembangan minat dan bakat murid.
+- [Fasilitas - SDN Baturaja](/fasilitas): Fasilitas pendukung pembelajaran di sekolah.
+- [SPMB - SDN Baturaja](/pendaftaran): Informasi dan formulir Sistem Penerimaan Murid Baru.
+- [Cek Pendaftaran - SDN Baturaja](/cek-pendaftaran): Cek status pendaftaran murid baru.
+- [Kontak - SDN Baturaja](/kontak): Alamat, telepon, email, dan lokasi sekolah.
+- [Login - SDN Baturaja](/login): Portal masuk warga sekolah.

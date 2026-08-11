@@ -1,0 +1,364 @@
+/* Login shell — public entry point, separate from the generated form rules. */
+.sdnb.sdnb-login {
+  --login-bg: #e9edf6;
+  --login-stage-bg: linear-gradient(160deg, #eef1f8 0%, #e7edf7 42%, #f4eef4 100%);
+  --login-card: rgba(255, 255, 255, .78);
+  --login-card-border: rgba(255, 255, 255, .92);
+  --login-field: rgba(255, 255, 255, .72);
+  --login-field-border: rgba(120, 132, 200, .28);
+  --login-text: #171827;
+  --login-muted: #565b7d;
+  --login-subtle: #6d7192;
+  --login-label: #3d4166;
+  --login-accent-soft: rgba(91, 108, 255, .14);
+  --login-shadow: 0 30px 70px -30px rgba(55, 65, 120, .5);
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--login-bg);
+}
+
+.sdnb.sdnb-login .th-root {
+  min-height: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+.sdnb.sdnb-login .login-stage {
+  min-height: calc(100vh - 104px) !important;
+  padding-top: 0 !important;
+  overflow: visible !important;
+  background: var(--login-stage-bg) !important;
+}
+
+.sdnb.sdnb-login .login-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 520px) !important;
+  justify-content: center;
+  align-items: center;
+  gap: 0 !important;
+  min-height: calc(100vh - 104px);
+  max-width: 1240px !important;
+  padding: 44px 28px 70px !important;
+}
+
+.sdnb.sdnb-login .login-card {
+  width: 100%;
+  padding: 38px 40px 34px !important;
+  border: 1px solid var(--login-card-border) !important;
+  border-radius: 28px !important;
+  background: var(--login-card) !important;
+  box-shadow: var(--login-shadow), inset 0 1px 0 rgba(255, 255, 255, .95) !important;
+  backdrop-filter: blur(26px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(170%) !important;
+}
+
+.sdnb.sdnb-login .login-card > [aria-hidden="true"] {
+  background: linear-gradient(90deg, transparent, var(--sekolah-aksen) 24%, var(--sekolah-aksen-ujung) 76%, transparent) !important;
+  opacity: .8;
+}
+
+.sdnb.sdnb-login .login-kicker {
+  color: var(--sekolah-aksen-pekat) !important;
+}
+
+.sdnb.sdnb-login .login-title {
+  color: var(--login-text) !important;
+}
+
+.sdnb.sdnb-login .login-description {
+  color: var(--login-muted) !important;
+}
+
+.sdnb.sdnb-login .login-link {
+  color: var(--sekolah-aksen-pekat) !important;
+}
+
+.sdnb.sdnb-login .login-link:hover {
+  color: var(--sekolah-aksen-pekat) !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sdnb.sdnb-login .login-role-tabs {
+  background: rgba(120, 132, 200, .1) !important;
+  border-color: rgba(120, 132, 200, .22) !important;
+}
+
+.sdnb.sdnb-login .login-role-tab {
+  min-height: 44px;
+  color: var(--login-muted) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.sdnb.sdnb-login .login-role-tab[data-active="1"] {
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--sekolah-aksen), var(--sekolah-aksen-tengah) 55%, var(--sekolah-aksen-ujung)) !important;
+  box-shadow: 0 14px 30px -14px rgba(95, 105, 235, .8) !important;
+}
+
+.sdnb.sdnb-login .login-field-label {
+  color: var(--login-label) !important;
+}
+
+.sdnb.sdnb-login .login-input {
+  min-height: 52px;
+  color: var(--login-text) !important;
+  background: var(--login-field) !important;
+  border: 1px solid var(--login-field-border) !important;
+  box-shadow: none !important;
+}
+
+.sdnb.sdnb-login .login-input::placeholder {
+  color: var(--login-subtle) !important;
+}
+
+.sdnb.sdnb-login .login-input:hover {
+  border-color: rgba(91, 108, 255, .46) !important;
+  background: #fff !important;
+}
+
+.sdnb.sdnb-login .login-input:focus {
+  border-color: var(--sekolah-aksen) !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 4px var(--login-accent-soft) !important;
+}
+
+.sdnb.sdnb-login .login-password-toggle {
+  background: rgba(120, 132, 200, .1) !important;
+}
+
+.sdnb.sdnb-login .login-password-toggle:hover {
+  background: rgba(91, 108, 255, .16) !important;
+}
+
+.sdnb.sdnb-login .login-password-toggle svg {
+  stroke: var(--login-muted) !important;
+}
+
+.sdnb.sdnb-login .login-meta {
+  color: var(--login-muted);
+}
+
+.sdnb.sdnb-login .login-remember-label,
+.sdnb.sdnb-login .login-status {
+  color: var(--login-muted) !important;
+}
+
+.sdnb.sdnb-login .login-remember-box {
+  flex: none;
+}
+
+.sdnb.sdnb-login .login-remember-box[data-checked="1"] {
+  background: linear-gradient(140deg, #8ee0b8, #a9b2ff) !important;
+  border-color: rgba(255, 255, 255, .6) !important;
+}
+
+.sdnb.sdnb-login .login-remember-box[data-checked="0"] {
+  background: var(--login-field) !important;
+  border-color: var(--login-field-border) !important;
+}
+
+.sdnb.sdnb-login .login-remember-box svg {
+  stroke: #15204a !important;
+}
+
+.sdnb.sdnb-login .login-remember:focus-visible,
+.sdnb.sdnb-login .login-role-tab:focus-visible,
+.sdnb.sdnb-login .login-password-toggle:focus-visible,
+.sdnb.sdnb-login .login-submit:focus-visible {
+  outline: 2px solid var(--sekolah-aksen) !important;
+  outline-offset: 3px;
+}
+
+.sdnb.sdnb-login .login-submit {
+  margin-top: 18px !important;
+  min-height: 54px;
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--sekolah-aksen), var(--sekolah-aksen-tengah) 55%, var(--sekolah-aksen-ujung)) !important;
+  box-shadow: 0 20px 38px -18px rgba(95, 105, 235, .72) !important;
+}
+
+.sdnb.sdnb-login .login-submit:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.sdnb.sdnb-login .login-demo-section[data-empty="1"] {
+  display: none;
+}
+
+/* The shared navbar remains the only navigation on this page. */
+.sdnb.sdnb-login .site-nav {
+  position: relative !important;
+  flex: none;
+}
+
+@media (max-width: 940px) {
+  /* Login and the CTA live in the expanded public menu on compact screens. */
+  .sdnb.sdnb-login .site-nav .nav-login {
+    display: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .sdnb.sdnb-login .site-nav {
+    padding: 8px 12px !important;
+  }
+
+  .sdnb.sdnb-login .site-nav > div {
+    gap: 10px !important;
+    padding: 9px 10px 9px 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .sdnb.sdnb-login .site-nav > div > a:first-child {
+    min-width: 0;
+    gap: 9px !important;
+  }
+
+  .sdnb.sdnb-login .site-nav .nav-brandtitle {
+    max-width: 138px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sdnb.sdnb-login .site-nav-actions {
+    gap: 6px !important;
+  }
+
+  .sdnb.sdnb-login .site-nav .nav-cta {
+    display: none !important;
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+  }
+
+  .sdnb.sdnb-login .site-nav .nav-sheet {
+    background: #fff !important;
+    border-color: rgba(120, 132, 200, .22) !important;
+    box-shadow: 0 24px 52px -20px rgba(55, 65, 120, .42) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .sdnb.sdnb-login .login-stage,
+  .sdnb.sdnb-login .login-layout {
+    min-height: 0 !important;
+  }
+
+  .sdnb.sdnb-login .login-layout {
+    display: block;
+    padding: 26px 14px 48px !important;
+  }
+
+  .sdnb.sdnb-login .login-card {
+    padding: 30px 20px 28px !important;
+    border-radius: 24px !important;
+  }
+
+  .sdnb.sdnb-login .login-title {
+    font-size: 36px !important;
+  }
+
+  .sdnb.sdnb-login .login-role-tabs {
+    gap: 4px !important;
+    padding: 4px !important;
+  }
+
+  .sdnb.sdnb-login .login-role-tab {
+    padding: 11px 8px !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sdnb.sdnb-login .login-card,
+  .sdnb.sdnb-login .login-submit,
+  .sdnb.sdnb-login .login-role-tab {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Solid, quiet surfaces in the approved public dark theme. */
+html[data-theme="dark"] body .sdnb.sdnb-login {
+  --login-bg: #171827;
+  --login-stage-bg: #171827;
+  --login-card: #252637;
+  --login-card-border: #3b3e58;
+  --login-field: #1d1f33;
+  --login-field-border: #3b3e58;
+  --login-text: #f3f4fb;
+  --login-muted: #c1c4d5;
+  --login-subtle: #9499b2;
+  --login-label: #e1e4f1;
+  --login-accent-soft: rgba(124, 138, 255, .18);
+  --login-shadow: 0 24px 56px rgba(0, 0, 0, .32);
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .login-input:hover,
+html[data-theme="dark"] body .sdnb.sdnb-login .login-input:focus {
+  background: #24263d !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .login-role-tabs {
+  background: #1d1f33 !important;
+  border-color: #3b3e58 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .login-role-tab {
+  color: #c1c4d5 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .login-role-tab[data-active="1"] {
+  color: #fff !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .login-remember-box[data-checked="0"] {
+  background: #1d1f33 !important;
+  border-color: #3b3e58 !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .login-remember-box[data-checked="1"] {
+  background: linear-gradient(140deg, #8ee0b8, #a9b2ff) !important;
+  border-color: rgba(255, 255, 255, .6) !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .login-input:-webkit-autofill,
+html[data-theme="dark"] body .sdnb.sdnb-login .login-input:-webkit-autofill:hover,
+html[data-theme="dark"] body .sdnb.sdnb-login .login-input:-webkit-autofill:focus {
+  background-color: #1d1f33 !important;
+  -webkit-box-shadow: 0 0 0 1000px #1d1f33 inset !important;
+  -webkit-text-fill-color: #f3f4fb !important;
+  caret-color: #f3f4fb;
+}
+
+html[data-theme="light"] body .sdnb.sdnb-login .login-input:-webkit-autofill,
+html[data-theme="light"] body .sdnb.sdnb-login .login-input:-webkit-autofill:hover,
+html[data-theme="light"] body .sdnb.sdnb-login .login-input:-webkit-autofill:focus {
+  background-color: #fff !important;
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+  -webkit-text-fill-color: #171827 !important;
+  caret-color: #171827;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .site-nav .nav-sheet {
+  background: #2b2d45 !important;
+  border-color: #3b3e58 !important;
+  box-shadow: 0 24px 52px rgba(0, 0, 0, .38) !important;
+}
+
+/* Legacy generated theme rules target `.th-il` with higher specificity. Keep
+   them from reintroducing the old dark filter or gradient on this shell. */
+html body .sdnb.sdnb-login .th-il.login-stage {
+  background: var(--login-stage-bg) !important;
+  background-image: var(--login-stage-bg) !important;
+  filter: none !important;
+}
+
+html[data-theme="dark"] body .sdnb.sdnb-login .th-il.login-stage.login-stage {
+  background: #171827 !important;
+  background-image: none !important;
+  filter: none !important;
+}

@@ -1,0 +1,4 @@
+.gocache/
+.gocache
+*.env.local
+server

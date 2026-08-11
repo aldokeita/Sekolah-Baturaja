@@ -1,0 +1,76 @@
+/* Shared fallback surface for dashboards that do not use DashboardWorkspace.
+   It deliberately mirrors the public site's typography and quiet surfaces. */
+.school-dashboard-surface {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background: #e9edf6;
+  color: #171827;
+  font-family: 'Archivo', system-ui, sans-serif;
+}
+
+.school-dashboard-surface > * {
+  position: relative;
+  z-index: 1;
+}
+
+.school-dashboard-surface h1,
+.school-dashboard-surface h2,
+.school-dashboard-surface h3 {
+  font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.school-dashboard-surface .rounded-xl,
+.school-dashboard-surface .rounded-2xl {
+  scroll-margin-top: 6rem;
+}
+
+.school-dashboard-surface input,
+.school-dashboard-surface textarea,
+.school-dashboard-surface select {
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.school-dashboard-surface input:focus,
+.school-dashboard-surface textarea:focus,
+.school-dashboard-surface select:focus {
+  box-shadow: 0 0 0 4px rgba(91, 108, 255, .16);
+}
+
+.school-dashboard-surface .no-scrollbar {
+  mask-image: linear-gradient(to right, transparent, black 1.5rem, black calc(100% - 1.5rem), transparent);
+}
+
+.school-dashboard-surface [role="tablist"] { row-gap: .35rem; }
+.school-dashboard-surface [role="tab"] { min-height: 2.25rem; }
+
+.dark .school-dashboard-surface {
+  background: #171827;
+  color: #f4f5ff;
+}
+
+.dark .school-dashboard-surface .bg-white,
+.dark .school-dashboard-surface .bg-slate-50,
+.dark .school-dashboard-surface .bg-gray-50 {
+  background-color: #23264a !important;
+  border-color: rgba(255, 255, 255, .12);
+}
+
+.dark .school-dashboard-surface input,
+.dark .school-dashboard-surface textarea,
+.dark .school-dashboard-surface select {
+  background-color: #1d2040;
+  border-color: rgba(255, 255, 255, .14);
+  color: #f4f5ff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .school-dashboard-surface *,
+  .school-dashboard-surface *::before,
+  .school-dashboard-surface *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

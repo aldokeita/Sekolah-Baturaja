@@ -1,0 +1,819 @@
+/* ============================================================================
+   sdnb-dashboard.css — dashboard adaptation of the SDN Baturaja public system
+   Source: docs/design-reference/DESIGN.md and src/styles/sdnb.css.
+
+   admin-dashboard.css is fully token-driven (`--admin-*` HSL triplets), so the
+   whole surface — including all 36 admin panels — re-skins by remapping those
+   tokens inside `.sdnb-dash`. Only the shell (background wash, floating orbs,
+   heading font, nav pills, stat cards) needs explicit rules on top.
+
+   Palette is the same one the mockups use:
+     var(--sekolah-aksen-pekat)  hsl(234 100% 68%)   accent 1
+     var(--sekolah-aksen-tengah-2)  hsl(261  82% 68%)   accent 2
+     var(--sekolah-aksen-ujung)  hsl(340  80% 70%)   accent 3
+   ========================================================================== */
+
+.sdnb-dash {
+  /* ── surfaces ─────────────────────────────────────────────────────────── */
+  --admin-bg: 222 42% 94%;              /* #e9edf6 */
+  --admin-surface: 0 0% 100%;
+  --admin-surface-raised: 0 0% 100%;
+  --admin-surface-sunken: 226 40% 96%;
+  --admin-border: 230 40% 89%;
+  --admin-border-subtle: 230 40% 93%;
+
+  /* ── text ─────────────────────────────────────────────────────────────── */
+  --admin-text-primary: 236 26% 12%;    /* #171827 */
+  --admin-text-secondary: 232 18% 40%;  /* #535878 */
+  --admin-text-muted: 233 15% 50%;      /* #6d7192 */
+
+  /* ── accents ──────────────────────────────────────────────────────────── */
+  --admin-accent: 234 100% 68%;         /* var(--sekolah-aksen-pekat) */
+  --admin-accent-muted: 234 70% 60%;
+  --admin-accent-soft: 232 100% 96%;
+  --admin-accent-secondary: 340 80% 70%; /* public rose */
+  --admin-accent-violet: 261 82% 68%;   /* var(--sekolah-aksen-tengah-2) */
+  --admin-accent-amber: 38 92% 50%;     /* semantic warning */
+
+  --admin-nav-active-bg: 234 100% 68%;
+  --admin-nav-active-fg: 0 0% 100%;
+  --admin-nav-hover-bg: 232 100% 96%;
+  --admin-nav-indicator: 234 100% 68%;
+  --admin-glow: 234 100% 68%;
+  --admin-shadow-color: 232 30% 60%;
+
+  position: relative;
+  min-height: 100vh;
+  font-family: 'Archivo', system-ui, sans-serif;
+  color: #1b1c28;
+}
+
+/* Headings adopt the display face used across the public site. */
+.sdnb-dash h1,
+.sdnb-dash h2,
+.sdnb-dash h3,
+.sdnb-dash .admin-page-header h1,
+.sdnb-dash .admin-stat-card__value,
+.sdnb-dash .admin-stat-card-value {
+  font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ── background wash + floating orbs (same as the public shell) ──────────── */
+.sdnb-dash__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(160deg, #eef1f8 0%, #e7edf7 40%, #f4eef4 100%);
+}
+.sdnb-dash__orb {
+  position: fixed;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  animation: floaty 16s ease-in-out infinite;
+}
+.sdnb-dash__orb--a { top: -180px; left: -140px; width: 600px; height: 600px; background: radial-gradient(circle at 35% 35%, rgba(150, 170, 255, .55), rgba(150, 170, 255, 0) 68%); filter: blur(22px); }
+.sdnb-dash__orb--b { top: 90px; right: -200px; width: 620px; height: 620px; background: radial-gradient(circle at 50% 50%, rgba(255, 178, 214, .5), rgba(255, 178, 214, 0) 68%); filter: blur(22px); animation-duration: 19s; animation-direction: reverse; }
+.sdnb-dash__orb--c { bottom: -260px; left: 28%; width: 680px; height: 680px; background: radial-gradient(circle at 50% 50%, rgba(160, 240, 225, .45), rgba(160, 240, 225, 0) 66%); filter: blur(26px); animation-duration: 23s; }
+.sdnb-dash__content { position: relative; z-index: 1; }
+
+html[data-theme="dark"] .sdnb-dash__bg { background: #171827; }
+html[data-theme="dark"] .sdnb-dash__orb { display: none; }
+
+/* ── public-site surfaces ────────────────────────────────────────────────── */
+.sdnb-dash .admin-panel,
+.sdnb-dash .admin-table-shell,
+.sdnb-dash .admin-section,
+.sdnb-dash .admin-filter-bar,
+.sdnb-dash .admin-form-section {
+  background: rgba(255, 255, 255, .55) !important;
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, .8) !important;
+  box-shadow: 0 26px 56px -24px rgba(55, 65, 120, .5), inset 0 1px 0 rgba(255, 255, 255, .95) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-panel,
+html[data-theme="dark"] .sdnb-dash .admin-table-shell,
+html[data-theme="dark"] .sdnb-dash .admin-section,
+html[data-theme="dark"] .sdnb-dash .admin-filter-bar,
+html[data-theme="dark"] .sdnb-dash .admin-form-section {
+  background: hsl(var(--admin-surface)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: 0 1px 2px hsl(var(--admin-shadow-color) / 0.34) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ── module navigation pills ─────────────────────────────────────────────── */
+.sdnb-dash .admin-module-nav {
+  background: rgba(255, 255, 255, .5);
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, .78);
+  border-radius: 22px;
+  box-shadow: 0 20px 46px -22px rgba(55, 65, 120, .5), inset 0 1px 0 rgba(255, 255, 255, .95);
+  padding: 8px;
+}
+.sdnb-dash .admin-nav-pill {
+  border-radius: 12px;
+  font-weight: 600;
+  color: #2c2f45;
+  transition: background .25s ease, color .25s ease;
+}
+.sdnb-dash .admin-nav-pill:hover { background: rgba(255, 255, 255, .7); color: #4a58e0; }
+.sdnb-dash .admin-nav-pill.active { color: #fff; font-weight: 700; }
+.sdnb-dash .admin-nav-pill-indicator {
+  background: linear-gradient(135deg, var(--sekolah-aksen), var(--sekolah-aksen-tengah) 55%, var(--sekolah-aksen-ujung));
+  border-radius: 12px;
+  box-shadow: 0 14px 30px -12px rgba(95, 105, 235, .95), inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+.sdnb-dash .admin-nav-group-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #8a8ea8;
+}
+.sdnb-dash .admin-nav-group-separator { background: rgba(120, 132, 200, .22); }
+
+/* ── stat cards ──────────────────────────────────────────────────────────── */
+.sdnb-dash .admin-stat-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .55) !important;
+  backdrop-filter: blur(26px) saturate(185%);
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, .8) !important;
+  box-shadow: 0 26px 56px -22px rgba(55, 65, 120, .55), inset 0 1px 0 rgba(255, 255, 255, .95) !important;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.sdnb-dash .admin-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(166deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.sdnb-dash .admin-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 36px 70px -22px rgba(55, 65, 120, .6), inset 0 1px 0 rgba(255, 255, 255, .95) !important;
+}
+.sdnb-dash .admin-stat-card__icon { border-radius: 16px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85); }
+
+/* ── primary buttons ─────────────────────────────────────────────────────── */
+.sdnb-dash .admin-panel-primary-btn,
+.sdnb-dash .attendance-header__action-btn {
+  border-radius: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--sekolah-aksen), var(--sekolah-aksen-tengah) 55%, var(--sekolah-aksen-ujung));
+  border: 0;
+  box-shadow: 0 14px 30px -12px rgba(95, 105, 235, .95), inset 0 1px 0 rgba(255, 255, 255, .6);
+  transition: filter .25s ease;
+}
+.sdnb-dash .admin-panel-primary-btn:hover,
+.sdnb-dash .attendance-header__action-btn:hover { filter: brightness(1.07); }
+
+/* Dashboard actions stay tactile through contrast and focus, not a sheen sweep. */
+.sdnb-dash .school-shine-button::after { display: none; }
+
+.sdnb-dash .admin-action-cluster-btn {
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .62);
+  border: 1px solid rgba(255, 255, 255, .9);
+  color: #33375a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95);
+}
+.sdnb-dash .admin-action-cluster-btn:hover { background: rgba(255, 255, 255, .92); color: #4a4fd0; }
+
+/* ── segmented sub-tabs ─────────────────────────────────────────────────── */
+.sdnb-dash .admin-glass-tab-list {
+  background: rgba(255, 255, 255, .55);
+  border: 1px solid rgba(255, 255, 255, .85);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 14px 30px -18px rgba(60, 70, 120, .6);
+}
+.sdnb-dash .admin-glass-tab-indicator {
+  background: linear-gradient(135deg, var(--sekolah-aksen), var(--sekolah-aksen-tengah-2) 60%, var(--sekolah-aksen-ujung));
+  box-shadow: 0 14px 28px -12px rgba(95, 105, 235, .95), inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+.sdnb-dash .admin-glass-tab-button.text-primary,
+.sdnb-dash .admin-glass-tab-button[aria-selected="true"] { color: #fff !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sdnb-dash__orb { animation: none; }
+}
+
+/* ============================================================================
+   SOLID DARK ADMIN THEME
+
+   Light mode adopts the public site's soft surfaces. Dark mode intentionally
+   uses a solid foundation, layered ink surfaces, indigo focus states, and
+   readable separators. This block is scoped to the back-office shell so the
+   public pages keep their existing visual language.
+   ========================================================================== */
+
+html[data-theme="dark"] .sdnb-dash {
+  --admin-bg: 235 30% 10%;
+  --admin-surface: 235 24% 14%;
+  --admin-surface-raised: 235 20% 18%;
+  --admin-surface-sunken: 235 31% 9%;
+  --admin-border: 235 16% 28%;
+  --admin-border-subtle: 235 15% 22%;
+  --admin-text-primary: 230 30% 96%;
+  --admin-text-secondary: 230 16% 76%;
+  --admin-text-muted: 230 13% 60%;
+  --admin-accent: 234 100% 72%;
+  --admin-accent-muted: 234 70% 62%;
+  --admin-accent-soft: 234 30% 18%;
+  --admin-accent-secondary: 340 72% 72%;
+  --admin-accent-violet: 261 76% 74%;
+  --admin-accent-amber: 38 88% 58%;
+  --admin-nav-active-bg: 234 100% 68%;
+  --admin-nav-active-fg: 0 0% 100%;
+  --admin-nav-hover-bg: 235 19% 21%;
+  --admin-nav-indicator: 234 100% 68%;
+  --admin-glow: 234 100% 72%;
+  --admin-shadow-color: 235 36% 5%;
+
+  --background: var(--admin-bg);
+  --foreground: var(--admin-text-primary);
+  --card: var(--admin-surface);
+  --card-foreground: var(--admin-text-primary);
+  --popover: var(--admin-surface-raised);
+  --popover-foreground: var(--admin-text-primary);
+  --muted: var(--admin-surface-sunken);
+  --muted-foreground: var(--admin-text-muted);
+  --border: var(--admin-border);
+  --input: var(--admin-border);
+  --ring: var(--admin-accent);
+  --primary: var(--admin-accent);
+  --primary-foreground: 0 0% 100%;
+}
+
+html[data-theme="dark"] body.school-admin-context {
+  --admin-bg: 235 30% 10%;
+  --admin-surface: 235 24% 14%;
+  --admin-surface-raised: 235 20% 18%;
+  --admin-surface-sunken: 235 31% 9%;
+  --admin-border: 235 16% 28%;
+  --admin-border-subtle: 235 15% 22%;
+  --admin-text-primary: 230 30% 96%;
+  --admin-text-secondary: 230 16% 76%;
+  --admin-text-muted: 230 13% 60%;
+  --admin-accent: 234 100% 72%;
+  --admin-accent-muted: 234 70% 62%;
+  --admin-accent-soft: 234 30% 18%;
+  --admin-accent-secondary: 340 72% 72%;
+  --admin-accent-violet: 261 76% 74%;
+  --admin-accent-amber: 38 88% 58%;
+  --admin-nav-active-bg: 234 100% 68%;
+  --admin-nav-active-fg: 0 0% 100%;
+  --admin-nav-hover-bg: 235 19% 21%;
+  --admin-nav-indicator: 234 100% 68%;
+  --admin-glow: 234 100% 72%;
+  --admin-shadow-color: 235 36% 5%;
+
+  background-color: #171827 !important;
+}
+
+html[data-theme="dark"] .sdnb-dash,
+html[data-theme="dark"] .sdnb-dash__bg {
+  background-color: #171827;
+  background-image: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+html[data-theme="dark"] .sdnb-dash__orb {
+  display: none !important;
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+/* Shared solid surfaces: panels, cards, tables, filters, and form sections. */
+html[data-theme="dark"] .sdnb-dash .admin-panel,
+html[data-theme="dark"] .sdnb-dash .admin-card,
+html[data-theme="dark"] .sdnb-dash .admin-table-container,
+html[data-theme="dark"] .sdnb-dash .admin-table-shell,
+html[data-theme="dark"] .sdnb-dash .admin-section,
+html[data-theme="dark"] .sdnb-dash .admin-filter-bar,
+html[data-theme="dark"] .sdnb-dash .admin-form-section,
+html[data-theme="dark"] .sdnb-dash .admin-panel-header,
+html[data-theme="dark"] .sdnb-dash [class*="bg-card"] {
+  background: hsl(var(--admin-surface)) !important;
+  background-image: none !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: 0 1px 2px hsl(var(--admin-shadow-color) / 0.34) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-panel-header::before {
+  height: 2px;
+  background: hsl(var(--admin-accent)) !important;
+  background-image: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-panel-header-icon {
+  background: hsl(var(--admin-accent) / 0.14) !important;
+  color: hsl(var(--admin-accent)) !important;
+  box-shadow: none !important;
+}
+
+/* Make neutral utility surfaces agree with the shared dark tokens. */
+html[data-theme="dark"] .sdnb-dash [class~="bg-white"],
+html[data-theme="dark"] .sdnb-dash [class~="bg-slate-50"],
+html[data-theme="dark"] .sdnb-dash [class~="bg-slate-100"],
+html[data-theme="dark"] .sdnb-dash [class~="bg-gray-50"],
+html[data-theme="dark"] .sdnb-dash [class~="bg-gray-100"],
+html[data-theme="dark"] .sdnb-dash [class~="bg-background"],
+html[data-theme="dark"] .sdnb-dash [class*="bg-white/"],
+html[data-theme="dark"] .sdnb-dash [class*="bg-slate-950"],
+html[data-theme="dark"] .sdnb-dash [class*="bg-slate-900"],
+html[data-theme="dark"] .sdnb-dash [class*="bg-slate-800"] {
+  background-color: hsl(var(--admin-surface-raised)) !important;
+  background-image: none !important;
+}
+
+/* Neutral text remains readable without recoloring semantic status colors. */
+html[data-theme="dark"] .sdnb-dash [class~="text-slate-950"],
+html[data-theme="dark"] .sdnb-dash [class~="text-slate-900"],
+html[data-theme="dark"] .sdnb-dash [class~="text-slate-800"],
+html[data-theme="dark"] .sdnb-dash [class~="text-gray-900"],
+html[data-theme="dark"] .sdnb-dash [class~="text-gray-800"] {
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash [class~="text-slate-700"],
+html[data-theme="dark"] .sdnb-dash [class~="text-gray-700"],
+html[data-theme="dark"] .sdnb-dash [class~="text-slate-600"],
+html[data-theme="dark"] .sdnb-dash [class~="text-gray-600"] {
+  color: hsl(var(--admin-text-secondary)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash [class~="text-slate-500"],
+html[data-theme="dark"] .sdnb-dash [class~="text-slate-400"],
+html[data-theme="dark"] .sdnb-dash [class~="text-gray-500"],
+html[data-theme="dark"] .sdnb-dash [class~="text-gray-400"] {
+  color: hsl(var(--admin-text-muted)) !important;
+}
+
+/* Tables and dividers use quiet lines instead of translucent white borders. */
+html[data-theme="dark"] .sdnb-dash .admin-table-shell thead th,
+html[data-theme="dark"] .sdnb-dash .admin-table-container thead th {
+  background: hsl(var(--admin-surface-sunken)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-muted)) !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-table-shell tbody tr,
+html[data-theme="dark"] .sdnb-dash .admin-table-container tbody tr {
+  background-color: transparent !important;
+  border-color: hsl(var(--admin-border-subtle)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-table-shell tbody tr:hover,
+html[data-theme="dark"] .sdnb-dash .admin-table-container tbody tr:hover {
+  background-color: hsl(var(--admin-accent-soft)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-table-shell tbody td,
+html[data-theme="dark"] .sdnb-dash .admin-table-container tbody td {
+  color: hsl(var(--admin-text-primary));
+}
+
+html[data-theme="dark"] .sdnb-dash hr,
+html[data-theme="dark"] .sdnb-dash .admin-form-section-title,
+html[data-theme="dark"] .sdnb-dash .admin-edit-section-header {
+  border-color: hsl(var(--admin-border-subtle)) !important;
+}
+
+/* Inputs, textareas, native selects, and Radix select triggers. */
+html[data-theme="dark"] .sdnb-dash input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-theme="dark"] .sdnb-dash textarea,
+html[data-theme="dark"] .sdnb-dash select,
+html[data-theme="dark"] .sdnb-dash button[role="combobox"],
+html[data-theme="dark"] .sdnb-dash [data-radix-select-trigger],
+html[data-theme="dark"] .sdnb-dash [data-slot="select-trigger"] {
+  background-color: hsl(var(--admin-surface-sunken)) !important;
+  background-image: none !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash input::placeholder,
+html[data-theme="dark"] .sdnb-dash textarea::placeholder {
+  color: hsl(var(--admin-text-muted)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash input:focus,
+html[data-theme="dark"] .sdnb-dash textarea:focus,
+html[data-theme="dark"] .sdnb-dash select:focus,
+html[data-theme="dark"] .sdnb-dash button[role="combobox"]:focus,
+html[data-theme="dark"] .sdnb-dash [data-radix-select-trigger]:focus-visible {
+  border-color: hsl(var(--admin-accent) / 0.72) !important;
+  box-shadow: 0 0 0 3px hsl(var(--admin-accent) / 0.16) !important;
+  outline: none !important;
+}
+
+/* Search gets a named surface so its open, loading, and empty states match. */
+html[data-theme="dark"] .sdnb-dash .admin-global-search__field {
+  background: hsl(var(--admin-surface)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: 0 1px 2px hsl(var(--admin-shadow-color) / 0.34) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-global-search__field:focus-within {
+  border-color: hsl(var(--admin-accent) / 0.72) !important;
+  box-shadow: 0 0 0 3px hsl(var(--admin-accent) / 0.14) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-global-search input {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-search-dropdown {
+  background: hsl(var(--admin-surface)) !important;
+  background-image: none !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: 0 14px 32px hsl(var(--admin-shadow-color) / 0.48) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Solid buttons and tabs: contrast comes from tone and border, not glow. */
+html[data-theme="dark"] .sdnb-dash .admin-panel-primary-btn,
+html[data-theme="dark"] .sdnb-dash .admin-btn-primary,
+html[data-theme="dark"] .sdnb-dash .admin-btn-action--emerald,
+html[data-theme="dark"] .sdnb-dash .admin-btn-action--secondary,
+html[data-theme="dark"] .sdnb-dash .admin-btn-action--amber,
+html[data-theme="dark"] .sdnb-dash .attendance-header__action-btn {
+  background: hsl(var(--admin-accent)) !important;
+  background-image: none !important;
+  border-color: hsl(var(--admin-accent)) !important;
+  color: hsl(0 0% 100%) !important;
+  box-shadow: 0 2px 6px hsl(var(--admin-shadow-color) / 0.38) !important;
+  filter: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-panel-primary-btn:hover,
+html[data-theme="dark"] .sdnb-dash .admin-btn-primary:hover,
+html[data-theme="dark"] .sdnb-dash .admin-btn-action--emerald:hover,
+html[data-theme="dark"] .sdnb-dash .admin-btn-action--secondary:hover,
+html[data-theme="dark"] .sdnb-dash .admin-btn-action--amber:hover,
+html[data-theme="dark"] .sdnb-dash .attendance-header__action-btn:hover {
+  background: hsl(var(--admin-accent-muted)) !important;
+  background-image: none !important;
+  filter: none !important;
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] .sdnb-dash .attendance-header__action-btn::before,
+html[data-theme="dark"] .sdnb-dash .school-shine-button::after {
+  display: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-btn-secondary,
+html[data-theme="dark"] .sdnb-dash .admin-action-cluster-btn,
+html[data-theme="dark"] .sdnb-dash .admin-btn-ghost {
+  background: hsl(var(--admin-surface-raised)) !important;
+  background-image: none !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-secondary)) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-btn-secondary:hover,
+html[data-theme="dark"] .sdnb-dash .admin-action-cluster-btn:hover,
+html[data-theme="dark"] .sdnb-dash .admin-btn-ghost:hover {
+  background: hsl(var(--admin-nav-hover-bg)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-module-nav > div,
+html[data-theme="dark"] .sdnb-dash .admin-glass-tab-list,
+html[data-theme="dark"] .sdnb-dash .admin-segmented-control {
+  background: hsl(var(--admin-surface-raised)) !important;
+  background-image: none !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: 0 1px 2px hsl(var(--admin-shadow-color) / 0.34) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-module-nav {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-nav-pill {
+  color: hsl(var(--admin-text-secondary)) !important;
+  border-color: transparent !important;
+  background: transparent !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-nav-group-label {
+  color: hsl(var(--admin-text-muted)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-nav-pill:hover,
+html[data-theme="dark"] .sdnb-dash .admin-glass-tab-button:hover,
+html[data-theme="dark"] .sdnb-dash .admin-segmented-control-item:hover {
+  background: hsl(var(--admin-nav-hover-bg)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+  transform: none;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-nav-pill-indicator,
+html[data-theme="dark"] .sdnb-dash .admin-glass-tab-indicator,
+html[data-theme="dark"] .sdnb-dash .admin-segmented-control-indicator {
+  background: hsl(var(--admin-accent)) !important;
+  background-image: none !important;
+  border-color: hsl(var(--admin-accent)) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-nav-pill.active,
+html[data-theme="dark"] .sdnb-dash .admin-glass-tab-button[aria-selected="true"],
+html[data-theme="dark"] .sdnb-dash .admin-segmented-control-item.active,
+html[data-theme="dark"] .sdnb-dash .admin-segmented-control-item[data-state="active"] {
+  color: hsl(0 0% 100%) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
+  background-color: hsl(var(--admin-border)) !important;
+}
+
+/* Stat cards use the public palette on one solid, readable surface. */
+html[data-theme="dark"] .sdnb-dash .admin-stat-card,
+html[data-theme="dark"] .sdnb-dash .admin-stat-card:hover {
+  background: hsl(var(--admin-surface-raised)) !important;
+  background-image: none !important;
+  border: 1px solid hsl(var(--admin-border)) !important;
+  box-shadow: 0 2px 6px hsl(var(--admin-shadow-color) / 0.34) !important;
+  transform: none;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-stat-card::before {
+  display: none !important;
+  background: none !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-stat-card-icon {
+  opacity: 0.36;
+  filter: none;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-stat-card:hover .admin-stat-card-icon,
+html[data-theme="dark"] .sdnb-dash .admin-stat-card:hover .admin-stat-card__icon {
+  opacity: 0.36;
+  transform: none;
+}
+
+/* Radix portals escape `.sdnb-dash`; keep their dark surfaces solid too. */
+html[data-theme="dark"] body.school-admin-context [data-radix-dialog-content],
+html[data-theme="dark"] body.school-admin-context [role="dialog"],
+html[data-theme="dark"] body.school-admin-context [data-radix-select-content],
+html[data-theme="dark"] body.school-admin-context [role="listbox"],
+html[data-theme="dark"] body.school-admin-context [data-radix-popper-content-wrapper],
+html[data-theme="dark"] body.school-admin-context [data-radix-dropdown-menu-content],
+html[data-theme="dark"] body.school-admin-context [data-radix-popover-content] {
+  background: hsl(var(--admin-surface)) !important;
+  background-image: none !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+  box-shadow: 0 14px 32px hsl(var(--admin-shadow-color) / 0.48) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context [data-radix-select-trigger],
+html[data-theme="dark"] body.school-admin-context button[role="combobox"],
+html[data-theme="dark"] body.school-admin-context input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-theme="dark"] body.school-admin-context textarea,
+html[data-theme="dark"] body.school-admin-context select {
+  background-color: hsl(var(--admin-surface-sunken)) !important;
+  background-image: none !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context [data-radix-select-item],
+html[data-theme="dark"] body.school-admin-context [role="option"],
+html[data-theme="dark"] body.school-admin-context [data-radix-dropdown-menu-item] {
+  color: hsl(var(--admin-text-secondary)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context [data-radix-select-item][data-highlighted],
+html[data-theme="dark"] body.school-admin-context [role="option"]:hover,
+html[data-theme="dark"] body.school-admin-context [data-radix-dropdown-menu-item][data-highlighted] {
+  background: hsl(var(--admin-nav-hover-bg)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+/* Pendaftaran and Media settings retain the dashboard's solid hierarchy in
+   dark mode. The Media dialog is portalled beneath <body>, while PPDB uses
+   utility classes that otherwise keep the older global dark palette. */
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel {
+  background: hsl(var(--admin-surface-raised)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-primary));
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel .text-foreground {
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel .text-muted-foreground,
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel .admin-edit-field label {
+  color: hsl(var(--admin-text-muted)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel [class~="border-b"],
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel [class~="border-t"] {
+  border-color: hsl(var(--admin-border-subtle)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel table thead {
+  background: hsl(var(--admin-surface-sunken));
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel table tbody tr {
+  border-color: hsl(var(--admin-border-subtle)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel table tbody tr:hover {
+  background: hsl(var(--admin-accent-soft));
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel [class*="bg-background/"] {
+  background-color: hsl(var(--admin-surface-sunken)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button[class*="bg-background"] {
+  background-color: hsl(var(--admin-surface-raised)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-secondary)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button[class*="bg-background"]:hover:not(:disabled) {
+  background-color: hsl(var(--admin-nav-hover-bg)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button[class*="bg-primary"] {
+  background-color: hsl(var(--admin-accent)) !important;
+  border-color: hsl(var(--admin-accent)) !important;
+  color: hsl(0 0% 100%) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button[class*="bg-primary"]:hover:not(:disabled) {
+  background-color: hsl(var(--admin-accent-muted)) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel .admin-card[aria-pressed="true"] {
+  border-color: hsl(var(--admin-accent)) !important;
+  box-shadow: 0 0 0 2px hsl(var(--admin-accent) / 0.45) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-ppdb-panel button:focus-visible {
+  outline: 2px solid hsl(var(--admin-accent));
+  outline-offset: 2px;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass {
+  --background: var(--admin-surface);
+  --foreground: var(--admin-text-primary);
+  --card: var(--admin-surface-raised);
+  --card-foreground: var(--admin-text-primary);
+  --muted: var(--admin-surface-sunken);
+  --muted-foreground: var(--admin-text-muted);
+  --border: var(--admin-border);
+  --input: var(--admin-border);
+  --ring: var(--admin-accent);
+  background: hsl(var(--admin-surface)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: 0 14px 32px hsl(var(--admin-shadow-color) / 0.48) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tabs,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__panel,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__playlist,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track {
+  background: hsl(var(--admin-surface-raised)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track:hover {
+  background: hsl(var(--admin-nav-hover-bg)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass input {
+  background: hsl(var(--admin-surface-sunken)) !important;
+  border-color: hsl(var(--admin-border)) !important;
+  color: hsl(var(--admin-text-primary)) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass input::placeholder {
+  color: hsl(var(--admin-text-muted)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass label,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass .text-muted-foreground {
+  color: hsl(var(--admin-text-muted)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tab {
+  color: hsl(var(--admin-text-secondary)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tab:hover {
+  color: hsl(var(--admin-text-primary)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tab:focus-visible,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass button:focus-visible,
+html[data-theme="dark"] body.school-admin-context .media-settings-glass input:focus-visible {
+  outline: 2px solid hsl(var(--admin-accent));
+  outline-offset: 2px;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__tab-pill {
+  background: hsl(var(--admin-accent)) !important;
+  border-color: hsl(var(--admin-accent)) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__panel [data-slot="card-content"] > div > button:not([role="switch"]),
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track button {
+  background-color: hsl(var(--admin-accent)) !important;
+  border-color: hsl(var(--admin-accent)) !important;
+  color: hsl(0 0% 100%) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__panel [data-slot="card-content"] > div > button:not([role="switch"]):hover:not(:disabled) {
+  background-color: hsl(var(--admin-accent-muted)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track button {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: hsl(0 84% 72%) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track button:hover:not(:disabled) {
+  background-color: hsl(0 72% 45% / 0.16) !important;
+  color: hsl(0 84% 82%) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass button[role="switch"][data-state="unchecked"] {
+  background-color: hsl(var(--admin-surface-sunken)) !important;
+  border: 1px solid hsl(var(--admin-border));
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass button[role="switch"][data-state="checked"] {
+  background-color: hsl(var(--admin-accent)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__track-icon {
+  background: hsl(var(--admin-accent-soft)) !important;
+  border-color: hsl(var(--admin-accent) / 0.36) !important;
+  color: hsl(var(--admin-accent)) !important;
+}
+
+html[data-theme="dark"] body.school-admin-context .media-settings-glass__note {
+  background: hsl(38 70% 16%) !important;
+  border-color: hsl(var(--admin-accent-amber) / 0.42) !important;
+  color: hsl(42 94% 82%) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

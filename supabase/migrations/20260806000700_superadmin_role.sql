@@ -1,0 +1,12 @@
+-- Peran superadmin: pemilik/penjual template.
+--
+-- Aplikasi ini template yang dijual. Pembeli menerima peran `admin` dan bebas
+-- mengelola seluruh konten administrasi sekolah. Identitas website — logo,
+-- ikon, nama sekolah, aksen warna — hanya boleh diubah `superadmin`.
+--
+-- `app_role` adalah enum, jadi nilai baru harus ditambahkan lewat ALTER TYPE.
+-- IF NOT EXISTS membuat migrasi ini idempoten. Di PostgreSQL 12+ nilai baru
+-- boleh langsung dipakai selama tidak dalam transaksi yang sama; berkas ini
+-- dijalankan psql tanpa BEGIN eksplisit, jadi tiap pernyataan punya transaksi
+-- sendiri dan aman.
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'superadmin';
