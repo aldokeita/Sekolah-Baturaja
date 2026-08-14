@@ -420,7 +420,7 @@
   font-weight: 800;
   color: hsl(var(--admin-text-primary));
   line-height: 1.2;
-  font-family: 'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -6568,7 +6568,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
 .dashboard-topbar__name {
   overflow: hidden;
   color: #1b1c28;
-  font-family: 'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: -.01em;
@@ -6580,7 +6580,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   margin-top: 2px;
   overflow: hidden;
   color: #6c718f;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 11px;
   font-weight: 500;
   text-overflow: ellipsis;
@@ -6632,7 +6632,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   border-radius: 12px;
   color: #2c2f45;
   background: transparent;
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 13.5px;
   font-weight: 600;
   line-height: 1.2;
@@ -6684,7 +6684,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   box-shadow:
     0 10px 24px -12px rgb(60 70 120 / 0.6),
     inset 0 1px 0 rgb(255 255 255 / 0.95);
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 13.5px;
   font-weight: 700;
   text-decoration: none;
@@ -7277,7 +7277,7 @@ html[data-theme="dark"] .dashboard-public-nav .ddlink:focus-visible {
    PUBLIC TYPOGRAPHY PARITY — shared dashboard type system
 
    The public shell provides Plus Jakarta Sans for display text. This dashboard
-   variant uses Manrope for interface copy while keeping the public heading
+   variant uses DM Sans for interface copy while keeping the public heading
    face, so dense admin work stays softer without changing the public pages.
 
    Technical values intentionally keep their existing font-mono treatment
@@ -7285,8 +7285,8 @@ html[data-theme="dark"] .dashboard-public-nav .ddlink:focus-visible {
    ========================================================================== */
 
 body.school-admin-context {
-  --sdnb-font-body: 'Manrope', system-ui, sans-serif;
-  --sdnb-font-display: 'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif;
+  --sdnb-font-body: 'DM Sans', system-ui, sans-serif;
+  --sdnb-font-display: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
   --sdnb-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   font-family: var(--sdnb-font-body);
   -webkit-font-smoothing: antialiased;
