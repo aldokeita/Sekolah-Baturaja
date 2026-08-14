@@ -123,7 +123,7 @@ html[data-theme="dark"] .sdnb-dash .admin-form-section {
 }
 .sdnb-dash .admin-nav-pill {
   border-radius: 12px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: #2c2f45;
   transition: background .25s ease, color .25s ease;
@@ -136,7 +136,7 @@ html[data-theme="dark"] .sdnb-dash .admin-form-section {
   box-shadow: 0 14px 30px -12px rgba(95, 105, 235, .95), inset 0 1px 0 rgba(255, 255, 255, .5);
 }
 .sdnb-dash .admin-nav-group-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;

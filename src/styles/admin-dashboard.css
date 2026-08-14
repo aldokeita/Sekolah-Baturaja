@@ -6761,7 +6761,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   border-radius: 12px;
   color: #2c2f45;
   background: transparent !important;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.2;
   transition: background .25s ease, border-color .25s ease, color .25s ease;
@@ -6795,7 +6795,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
 
 .sdnb-dash .admin-nav-group-label {
   color: #8a8ea8;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: .12em;
 }
@@ -6945,7 +6945,7 @@ html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
   .sdnb-dash .admin-nav-pill {
     padding-left: 10px;
     padding-right: 10px;
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 
