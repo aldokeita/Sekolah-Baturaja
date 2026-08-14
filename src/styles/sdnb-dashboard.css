@@ -124,7 +124,7 @@ html[data-theme="dark"] .sdnb-dash .admin-form-section {
 .sdnb-dash .admin-nav-pill {
   border-radius: 12px;
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 500;
   color: #2c2f45;
   transition: background .25s ease, color .25s ease;
 }
