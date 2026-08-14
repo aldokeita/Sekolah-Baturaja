@@ -6734,7 +6734,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   width: 100%;
   max-width: 1240px;
   margin: 0 auto;
