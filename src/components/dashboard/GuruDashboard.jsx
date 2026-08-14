@@ -48,6 +48,7 @@ import StudentTransferModal from '@/components/dashboard/guru/StudentTransferMod
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
+import { labelStafRole } from '@/lib/staf';
 
 const ProfileConstellationScene = lazy(() => import('@/components/dashboard/santri/SantriLevelScene'));
 
@@ -475,7 +476,7 @@ const GuruDashboard = () => {
                 <div className="guru-profile-card__eyebrow"><Sparkles className="h-3.5 w-3.5" /> Profil pengajar</div>
                 <div>
                   <h2 className="guru-profile-card__name">{guruData.nama}</h2>
-                  <p className="guru-profile-card__role">{guruData.jabatan}</p>
+                  <p className="guru-profile-card__role">{labelStafRole(guruData.jabatan)}</p>
                 </div>
                 <div className="guru-profile-card__metrics" aria-label="Ringkasan profil guru">
                   <span className="guru-profile-card__metric"><Users className="h-4 w-4" /><strong>{myClasses.length}</strong> kelas</span>
