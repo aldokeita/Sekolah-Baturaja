@@ -38,7 +38,18 @@ import {
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 const monthOptions = getMonthOptions();
-const defaultFilterDate = getLocalDateString();
+const getCurrentMonthFilter = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    return {
+        year,
+        month: month + 1,
+        dateFrom: getLocalDateString(new Date(year, month, 1)),
+        dateTo: getLocalDateString(new Date(year, month + 1, 0)),
+        search: ''
+    };
+};
 
 const emptyForm = () => ({
     tanggal_pengeluaran: getLocalDateString(),
@@ -67,7 +78,7 @@ const ExpenseManagement = () => {
     const [editingExpense, setEditingExpense] = useState(null);
     const [formData, setFormData] = useState(emptyForm);
     const [formError, setFormError] = useState('');
-    const [filter, setFilter] = useState({ year: currentYear, month: new Date().getMonth() + 1, dateFrom: defaultFilterDate, dateTo: defaultFilterDate, search: '' });
+    const [filter, setFilter] = useState(getCurrentMonthFilter);
     const [deletingExpense, setDeletingExpense] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
