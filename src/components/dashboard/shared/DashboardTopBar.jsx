@@ -27,16 +27,22 @@ const LABEL_PERAN = {
   santri: 'Murid',
 };
 
-const PUBLIC_NAV_ITEMS = [
-  { label: 'Beranda', to: '/' },
-  { label: 'Profil', to: '/profil' },
-  { label: 'Berita', to: '/berita' },
-  { label: 'Kontak', to: '/kontak' },
+const ARROW = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12h14" />
+    <path d="m13 6 6 6-6 6" />
+  </svg>
+);
+
+const PROFILE_LINKS = [
+  { label: 'Tentang kami', to: '/profil' },
+  { label: 'Galeri', to: '/profil/galeri' },
+  { label: 'Prestasi', to: '/prestasi' },
+  { label: 'Program', to: '/program' },
+  { label: 'Ekstrakurikuler', to: '/ekstrakurikuler' },
+  { label: 'Fasilitas', to: '/fasilitas' },
 ];
 
-const isPublicNavActive = (pathname, to) => (
-  to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(to + '/')
-);
 
 const DashboardTopBar = () => {
   const { role, signOut } = useAuth();
@@ -44,6 +50,9 @@ const DashboardTopBar = () => {
   const sekolah = useSchoolIdentity();
   const location = useLocation();
   const navigate = useNavigate();
+  const isHome = location.pathname === '/';
+  const isProfileGroup = PROFILE_LINKS.some(({ to }) => location.pathname.startsWith(to));
+  const at = (path) => location.pathname.startsWith(path);
 
   const handleLogout = async () => {
     await signOut();
@@ -66,20 +75,35 @@ const DashboardTopBar = () => {
           Dashboard
         </span>
 
-        <nav className="dashboard-public-nav" aria-label="Navigasi halaman publik">
-          {PUBLIC_NAV_ITEMS.map(({ label, to }) => {
-            const isActive = isPublicNavActive(location.pathname, to);
-            return (
-              <Link
-                key={to}
-                to={to}
-                className={isActive ? 'dashboard-public-nav__link is-active' : 'dashboard-public-nav__link'}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {label}
-              </Link>
-            );
-          })}
+        <nav className="dashboard-public-nav nav-links" aria-label="Navigasi halaman publik">
+          <Link to="/" className={'dashboard-public-nav__link ' + (isHome ? 'is-active' : 'h-navlink')} aria-current={isHome ? 'page' : undefined}>Beranda</Link>
+
+          <div className="navdd">
+            <Link
+              to="/profil"
+              className={'dashboard-public-nav__link ' + (isProfileGroup ? 'is-active' : 'h-navlink')}
+              aria-current={isProfileGroup ? 'page' : undefined}
+              aria-haspopup="menu"
+            >
+              Profil
+              <svg className="ddcaret" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6-6 6" />
+              </svg>
+            </Link>
+            <div className="ddmenu">
+              <div className="ddpanel" role="menu" aria-label="Submenu Profil">
+                {PROFILE_LINKS.map(({ label, to }) => (
+                  <Link key={to} to={to} className="ddlink" role="menuitem">
+                    {label}
+                    {ARROW}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <Link to="/berita" className={'dashboard-public-nav__link ' + (at('/berita') ? 'is-active' : 'h-navlink')} aria-current={at('/berita') ? 'page' : undefined}>Berita</Link>
+          <Link to="/kontak" className={'dashboard-public-nav__link ' + (at('/kontak') ? 'is-active' : 'h-navlink')} aria-current={at('/kontak') ? 'page' : undefined}>Kontak</Link>
         </nav>
 
         <div className="dashboard-topbar__spacer" />
