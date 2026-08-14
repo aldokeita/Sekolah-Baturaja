@@ -123,21 +123,21 @@ html[data-theme="dark"] .sdnb-dash .admin-form-section {
 }
 .sdnb-dash .admin-nav-pill {
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 400;
   color: #2c2f45;
   transition: background .25s ease, color .25s ease;
 }
 .sdnb-dash .admin-nav-pill:hover { background: rgba(255, 255, 255, .7); color: #4a58e0; }
-.sdnb-dash .admin-nav-pill.active { color: #fff; font-weight: 600; }
+.sdnb-dash .admin-nav-pill.active { color: #fff; font-weight: 500; }
 .sdnb-dash .admin-nav-pill-indicator {
   background: linear-gradient(135deg, var(--sekolah-aksen), var(--sekolah-aksen-tengah) 55%, var(--sekolah-aksen-ujung));
   border-radius: 12px;
   box-shadow: 0 14px 30px -12px rgba(95, 105, 235, .95), inset 0 1px 0 rgba(255, 255, 255, .5);
 }
 .sdnb-dash .admin-nav-group-label {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 600;
   letter-spacing: .12em;
   text-transform: uppercase;
   color: #8a8ea8;
