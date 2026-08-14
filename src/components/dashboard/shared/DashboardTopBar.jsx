@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ExternalLink, LogOut, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -27,10 +27,22 @@ const LABEL_PERAN = {
   santri: 'Murid',
 };
 
+const PUBLIC_NAV_ITEMS = [
+  { label: 'Beranda', to: '/' },
+  { label: 'Profil', to: '/profil' },
+  { label: 'Berita', to: '/berita' },
+  { label: 'Kontak', to: '/kontak' },
+];
+
+const isPublicNavActive = (pathname, to) => (
+  to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(to + '/')
+);
+
 const DashboardTopBar = () => {
   const { role, signOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const sekolah = useSchoolIdentity();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -53,6 +65,22 @@ const DashboardTopBar = () => {
           <span className="dashboard-topbar__context-dot" aria-hidden="true" />
           Dashboard
         </span>
+
+        <nav className="dashboard-public-nav" aria-label="Navigasi halaman publik">
+          {PUBLIC_NAV_ITEMS.map(({ label, to }) => {
+            const isActive = isPublicNavActive(location.pathname, to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={isActive ? 'dashboard-public-nav__link is-active' : 'dashboard-public-nav__link'}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
 
         <div className="dashboard-topbar__spacer" />
 
