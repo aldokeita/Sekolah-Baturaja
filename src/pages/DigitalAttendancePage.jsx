@@ -9,6 +9,7 @@ import {
 } from '@/lib/guruAttendance';
 import { fetchHafalanProgress, fetchSantriCharacterStrengths } from '@/lib/academicAdapters';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
+
 import { incrementSantriPoints } from '@/lib/gamificationAdapters';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -405,12 +406,13 @@ const DigitalAttendancePage = () => {
       setIsLoading(true);
       setLastScan({ type: 'scanning' });
 
+      let user = null, userRole = '';
       try {
         await new Promise(resolve => setTimeout(resolve, 300));
         const todayDate = new Date();
         const todayStr = getLocalDateString(todayDate);
 
-        let user = null, userRole = '', sesiUser = '', kategori = '', guruClasses = [], guruLessonSchedule = null, isPentashih = false;
+        let sesiUser = '', kategori = '', guruClasses = [], guruLessonSchedule = null, isPentashih = false;
         let guruData = await fetchGuruByRfid(tag).catch(() => null);
 
         // School attendance is driven by the school lesson schedule.
@@ -993,19 +995,6 @@ const DigitalAttendancePage = () => {
             showSuccessBadge={scan.type === 'success'}
             isPentashih={isPentashih}
           />
-          {/* Pentashih success: extra info grid */}
-          {scan.type === 'success' && isPentashih && scan.name && (
-            <div className="attendance-stats-row mt-4">
-              <div className="attendance-stat-item">
-                <span className="attendance-stat-item__value">{scan.name}</span>
-                <span className="attendance-stat-item__label">Nama</span>
-              </div>
-              <div className="attendance-stat-item attendance-stat-item--amber">
-                <span className="attendance-stat-item__value">{scan.jabatan || '-'}</span>
-                <span className="attendance-stat-item__label">Jabatan</span>
-              </div>
-            </div>
-          )}
         </motion.div>
       );
     }
