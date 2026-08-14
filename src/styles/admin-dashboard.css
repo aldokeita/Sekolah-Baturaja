@@ -7272,3 +7272,172 @@ html[data-theme="dark"] .dashboard-public-nav .ddlink:focus-visible {
 .dashboard-topbar .dashboard-public-nav {
   display: flex;
 }
+
+/* ============================================================================
+   PUBLIC TYPOGRAPHY PARITY — shared dashboard type system
+
+   The public shell already loads Archivo for interface copy and Plus Jakarta
+   Sans for display text. Keep those same faces at the dashboard boundary so
+   headings, controls, tables, forms, and portal-rendered feedback do not fall
+   back to Tailwind's generic sans/serif utilities.
+
+   Technical values intentionally keep their existing font-mono treatment
+   (IDs, timestamps, codes, and machine-readable input) for scanability.
+   ========================================================================== */
+
+body.school-admin-context {
+  --sdnb-font-body: 'Archivo', system-ui, sans-serif;
+  --sdnb-font-display: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  --sdnb-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-family: var(--sdnb-font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body.school-admin-context .dashboard-topbar,
+body.school-admin-context .sdnb-dash {
+  font-family: var(--sdnb-font-body);
+}
+
+/* Normalize legacy utility faces without touching intentional monospace data. */
+body.school-admin-context .font-sans:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+body.school-admin-context .font-serif:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+body.school-admin-context .font-poppins {
+  font-family: var(--sdnb-font-body);
+}
+
+body.school-admin-context .font-mono {
+  font-family: var(--sdnb-font-mono);
+}
+
+/* Display face for every semantic heading, including dialog titles rendered in portals. */
+body.school-admin-context :is(h1, h2, h3, h4, h5, h6),
+body.school-admin-context [role="heading"] {
+  font-family: var(--sdnb-font-display);
+}
+
+body.school-admin-context h1 {
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+body.school-admin-context h2 {
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+body.school-admin-context :is(h3, h4, h5, h6) {
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.012em;
+}
+
+/* Dashboard interface copy: buttons, navigation, forms, tables, and states. */
+body.school-admin-context :is(
+  button,
+  input,
+  textarea,
+  select,
+  option,
+  optgroup,
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  label,
+  [role="button"],
+  [role="tab"],
+  [role="option"],
+  [role="alert"],
+  [role="status"]
+):not(.font-mono) {
+  font-family: var(--sdnb-font-body);
+}
+
+body.school-admin-context :is(
+  input,
+  textarea,
+  select,
+  button[role="combobox"],
+  [data-radix-select-trigger],
+  [data-slot="select-trigger"]
+):not(.font-mono) {
+  line-height: 1.45;
+}
+
+body.school-admin-context :is(input, textarea):not(.font-mono)::placeholder {
+  font-family: var(--sdnb-font-body);
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+body.school-admin-context :is(
+  .admin-btn,
+  .admin-btn-action,
+  .admin-nav-pill,
+  .admin-segmented-control-item,
+  .admin-action-cluster-btn,
+  .admin-panel-primary-btn,
+  .attendance-header__action-btn,
+  .dashboard-public-nav__link,
+  .dashboard-nav-button,
+  .dashboard-nav-icon-button
+) {
+  font-family: var(--sdnb-font-body);
+  line-height: 1.25;
+}
+
+/* Keep the public display face and numeric rhythm for dashboard metrics. */
+body.school-admin-context :is(.admin-stat-card-value, .admin-stat-card__value) {
+  font-family: var(--sdnb-font-display);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+body.school-admin-context :is(
+  .admin-stat-card-label,
+  .admin-section-title,
+  .admin-form-label,
+  .admin-edit-field label,
+  .admin-nav-group-label
+) {
+  font-family: var(--sdnb-font-body);
+  line-height: 1.35;
+}
+
+body.school-admin-context .admin-stat-card-label {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+body.school-admin-context :is(.admin-table-shell, .admin-table-container) :is(th, td) {
+  line-height: 1.45;
+}
+
+body.school-admin-context :is(
+  .admin-panel-header-text h2,
+  .admin-form-section-title,
+  .admin-edit-section-header,
+  .admin-empty-state-title,
+  .admin-loading-title
+) {
+  font-family: var(--sdnb-font-display);
+}
+
+/* Toasts, alerts, dialogs, and other portal content inherit the same system. */
+body.school-admin-context :is(
+  [data-radix-toast-viewport],
+  [data-radix-toast],
+  [data-sonner-toaster],
+  [data-sonner-toast],
+  [role="alert"],
+  [role="status"]
+) {
+  font-family: var(--sdnb-font-body);
+  line-height: 1.45;
+}
