@@ -44,19 +44,23 @@
 
   position: relative;
   min-height: 100vh;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Poppins', system-ui, sans-serif;
   color: #1b1c28;
 }
 
 /* Headings adopt the display face used across the public site. */
 .sdnb-dash h1,
 .sdnb-dash h2,
-.sdnb-dash h3,
 .sdnb-dash .admin-page-header h1,
 .sdnb-dash .admin-stat-card__value,
 .sdnb-dash .admin-stat-card-value {
-  font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Poppins', system-ui, sans-serif;
   letter-spacing: -0.02em;
+}
+
+/* Smaller dashboard headings use the editorial utility face. */
+.sdnb-dash :is(h3, h4, h5, h6) {
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
 }
 
 /* ── background wash + floating orbs (same as the public shell) ──────────── */
