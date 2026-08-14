@@ -44,7 +44,7 @@
 
   position: relative;
   min-height: 100vh;
-  font-family: 'Archivo', system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   color: #1b1c28;
 }
 
@@ -55,7 +55,7 @@
 .sdnb-dash .admin-page-header h1,
 .sdnb-dash .admin-stat-card__value,
 .sdnb-dash .admin-stat-card-value {
-  font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif;
   letter-spacing: -0.02em;
 }
 
