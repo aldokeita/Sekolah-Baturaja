@@ -8,7 +8,7 @@ import { toast } from '@/components/ui/use-toast';
 
 import SantriManagement from '../admin/SantriManagement';
 import GuruManagement from '../admin/GuruManagement';
-import MMQManagement from '../admin/MMQManagement';
+import RapatGuruManagement from '../admin/RapatGuruManagement';
 import TahfizhConfiguration from '../admin/TahfizhConfiguration';
 import PaymentSystem from '../admin/PaymentSystem';
 import PaymentRecap from '../admin/PaymentRecap';
@@ -47,7 +47,7 @@ const renderModule = (value) => {
     case 'ppdb': return <PpdbRegistrations />;
     case 'kelas': return <ClassManagement />;
     case 'jadwal-pelajaran': return <JadwalPelajaran />;
-    case 'rapat-guru': return <MMQManagement />;
+    case 'rapat-guru': return <RapatGuruManagement />;
     case 'metode-mengaji': return <TahfizhConfiguration />;
     case 'guru': return <GuruManagement />;
     case 'rekap-absensi': return <AttendanceRecap />;

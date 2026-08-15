@@ -8,17 +8,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trash2, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  createMmqAttendance,
-  createMmqNotulensi,
-  deleteMmqNotulensi,
-  fetchGuruForMmq,
-  fetchMmqAttendance,
-  fetchMmqNotulensi,
-  fetchMmqSchedules,
+  createRapatGuruAttendance,
+  createRapatGuruNotulensi,
+  deleteRapatGuruNotulensi,
+  fetchGuruForRapatGuru,
+  fetchRapatGuruAttendance,
+  fetchRapatGuruNotulensi,
+  fetchRapatGuruSchedules,
   findGuruByRfid,
-  getMmqErrorMessage,
+  getRapatGuruErrorMessage,
   pickScheduleForToday,
-} from '@/lib/mmqAdapters';
+} from '@/lib/rapatGuruAdapters';
 
 const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -29,7 +29,7 @@ const formatScheduleLabel = (schedule) => {
   return `${DAYS[schedule.day_of_week]} ${start}${end} WIB, ${schedule.location || 'Lokasi belum diatur'}`;
 };
 
-const MmqSection = ({ open, onOpenChange, guru }) => {
+const RapatGuruSection = ({ open, onOpenChange, guru }) => {
   const { role: currentUserRole } = useAuth();
   const [rfidInput, setRfidInput] = useState('');
   const [notulenTitle, setNotulenTitle] = useState('');
@@ -48,10 +48,10 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
     setIsLoading(true);
     try {
       const [scheduleData, historyData, notulenData, guruData] = await Promise.all([
-        fetchMmqSchedules(),
-        fetchMmqAttendance(),
-        fetchMmqNotulensi(),
-        currentUserRole === 'admin' ? fetchGuruForMmq() : Promise.resolve([]),
+        fetchRapatGuruSchedules(),
+        fetchRapatGuruAttendance(),
+        fetchRapatGuruNotulensi(),
+        currentUserRole === 'admin' ? fetchGuruForRapatGuru() : Promise.resolve([]),
       ]);
 
       setSchedules(scheduleData);
@@ -59,7 +59,7 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
       setNotulenList(notulenData);
       setAllGuru(guruData);
     } catch (error) {
-      toast({ title: 'Gagal memuat rapat guru', description: getMmqErrorMessage(error), variant: 'destructive' });
+      toast({ title: 'Gagal memuat rapat guru', description: getRapatGuruErrorMessage(error), variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -88,11 +88,11 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
 
   const submitAttendance = async (guruId, guruName, status = 'Hadir') => {
     try {
-      await createMmqAttendance(buildAttendancePayload(guruId, status));
+      await createRapatGuruAttendance(buildAttendancePayload(guruId, status));
       toast({ title: 'Absen Berhasil', description: `Kehadiran ${guruName} tercatat.` });
       await loadData();
     } catch (error) {
-      toast({ title: 'Absen Gagal', description: getMmqErrorMessage(error), variant: 'destructive' });
+      toast({ title: 'Absen Gagal', description: getRapatGuruErrorMessage(error), variant: 'destructive' });
     }
   };
 
@@ -115,7 +115,7 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
 
       await submitAttendance(targetGuru.id, targetGuru.nama);
     } catch (error) {
-      toast({ title: 'Absen Gagal', description: getMmqErrorMessage(error), variant: 'destructive' });
+      toast({ title: 'Absen Gagal', description: getRapatGuruErrorMessage(error), variant: 'destructive' });
     } finally {
       setRfidInput('');
     }
@@ -141,7 +141,7 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
     }
 
     try {
-      await createMmqNotulensi({
+      await createRapatGuruNotulensi({
         schedule_id: activeSchedule.id,
         tanggal: new Date().toLocaleDateString('en-CA'),
         judul: notulenTitle.trim(),
@@ -153,7 +153,7 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
       setNotulenTitle('');
       await loadData();
     } catch (error) {
-      toast({ title: 'Gagal Menyimpan', description: getMmqErrorMessage(error), variant: 'destructive' });
+      toast({ title: 'Gagal Menyimpan', description: getRapatGuruErrorMessage(error), variant: 'destructive' });
     }
   };
 
@@ -161,12 +161,12 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
     if (currentUserRole !== 'admin') return;
     if (window.confirm('Anda yakin ingin menghapus notulensi ini?')) {
       try {
-        await deleteMmqNotulensi(notulenId);
+        await deleteRapatGuruNotulensi(notulenId);
         toast({ title: 'Berhasil', description: 'Notulensi telah dihapus.' });
         await loadData();
         setSelectedNotulen(null);
       } catch (error) {
-        toast({ title: 'Gagal Menghapus', description: getMmqErrorMessage(error), variant: 'destructive' });
+        toast({ title: 'Gagal Menghapus', description: getRapatGuruErrorMessage(error), variant: 'destructive' });
       }
     }
   };
@@ -288,4 +288,4 @@ const MmqSection = ({ open, onOpenChange, guru }) => {
   );
 };
 
-export default MmqSection;
+export default RapatGuruSection;

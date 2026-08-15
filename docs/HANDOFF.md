@@ -1575,6 +1575,64 @@ sudah dinilai di tempat, bukan masuk antrean `menunggu` seperti pengajuan murid.
 
 **Belum diverifikasi:** tampilan di browser, karena alasan yang sama seperti fitur sebelumnya.
 
+### 6. Normalisasi Rapat Guru — **Tuntas**
+
+Fitur **dipertahankan** sebagai rapat internal sekolah, sesuai keputusan mengikat di bagian
+"Keputusan yang mengikat". Yang dirapikan hanya istilah dan penamaan.
+
+**Garis pemisahnya: apa yang boleh berubah, apa yang tidak.**
+
+| Lapisan | Tindakan | Alasan |
+|---|---|---|
+| Tabel `mmq_schedule`, `mmq_attendance`, `mmq_notulensi` | **TIDAK diganti** | data rapat yang sudah tersimpan harus tetap terbaca |
+| Rute `/api/mmq/*` | **TIDAK diganti** | kontrak backend; mengganti berarti memutus klien yang ada |
+| Nama constraint `mmq_attendance_status_check` | **TIDAK diganti** | dicocokkan apa adanya oleh penerjemah pesan galat |
+| Berkas & pengenal frontend | **Diganti** | inilah yang dibaca dan dirawat orang |
+| Tulisan yang dilihat pengguna | **Diganti** | istilah sekolah umum |
+| Dokumentasi teknis (`AGENTS.md`) | **Diperbarui** | tabelnya menunjuk berkas yang sudah tidak ada |
+
+**Berkas yang diganti nama** (lewat `git mv`, jadi riwayatnya tetap tersambung):
+
+```
+src/lib/mmqAdapters.js                          -> src/lib/rapatGuruAdapters.js
+src/hooks/useMMQAttendance.js                   -> src/hooks/useRapatGuruAttendance.js
+src/components/dashboard/guru/MmqSection.jsx    -> .../guru/RapatGuruSection.jsx
+src/components/dashboard/admin/MMQManagement.jsx     -> .../admin/RapatGuruManagement.jsx
+src/components/dashboard/admin/MMQScheduleForm.jsx   -> .../admin/RapatGuruScheduleForm.jsx
+src/components/dashboard/admin/MMQAttendanceModal.jsx -> .../admin/RapatGuruAttendanceModal.jsx
+```
+
+Seluruh pengenal `MMQ`/`Mmq` di dalamnya ikut berubah, **kecuali** string `/api/mmq` dan
+`mmq_` yang sengaja dilindungi selama penggantian lalu dikembalikan utuh.
+
+**Tulisan yang diperbaiki.** Penggantian mekanis sempat menghasilkan "RapatGuru" tanpa spasi
+di kalimat — semuanya dirapikan jadi "Rapat Guru":
+
+- `GuruManagement.jsx` — "Jadikan sebagai Notulen MMQ" → "Jadikan sebagai Notulen Rapat Guru"
+- `RapatGuruAttendanceModal.jsx` — "Edit Absensi MMQ" → "Edit Absensi Rapat Guru"
+- `rapatGuruAdapters.js` — lima pesan galat, dari "fitur MMQ" jadi "fitur Rapat Guru"
+- `guruAttendance.js` + berkas ujinya — komentar "MMQ-only branch" jadi "meeting-only branch"
+
+Judul dialog guru (`Rapat Guru`), tab `Absensi`/`Notulensi`/`Riwayat`, dan kunci rute
+`rapat-guru` **sudah benar sejak sebelumnya** dan tidak disentuh.
+
+**Bukti uji.** Setelah penggantian, ketiga endpoint diminta ulang dengan akun admin dan data
+lamanya masih terbaca:
+
+| Endpoint | Hasil |
+|---|---|
+| `GET /api/mmq/schedules` | 200, 1 baris |
+| `GET /api/mmq/attendance` | 200, 1 baris |
+| `GET /api/mmq/notulensi` | 200, 1 baris |
+
+`npm run lint` dan `npm run build` bersih.
+
+**Sisa yang sengaja tidak disentuh.** Empat berkas coret-coretan menumpuk di `src/`:
+`inspect_mmq_constraint.sql`, `fix_mmq_rls_policies.sql`, `inspect_database.sql`, dan
+`rls_audit_report.md`. Semuanya artefak penelusuran lama yang tidak diimpor siapa pun dan
+tidak ikut build. Membersihkannya di luar lingkup permintaan ini, tetapi **layak dihapus**
+pada rapikan berikutnya.
+
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.
 

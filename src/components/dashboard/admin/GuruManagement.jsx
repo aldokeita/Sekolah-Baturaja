@@ -518,7 +518,7 @@ const GuruManagement = () => {
               </div>
               )}
 
-              <div className="flex items-center space-x-2 pt-2"><Checkbox id="is_notulen" checked={formData.is_notulen} onCheckedChange={handleCheckboxChange} /><label htmlFor="is_notulen" className="text-sm font-medium cursor-pointer">Jadikan sebagai Notulen MMQ</label></div>
+              <div className="flex items-center space-x-2 pt-2"><Checkbox id="is_notulen" checked={formData.is_notulen} onCheckedChange={handleCheckboxChange} /><label htmlFor="is_notulen" className="text-sm font-medium cursor-pointer">Jadikan sebagai Notulen Rapat Guru</label></div>
               <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Menyimpan...' : (editingGuru ? 'Simpan Perubahan' : 'Tambah Guru')}</Button></DialogFooter>
             </form>
         </DialogContent>

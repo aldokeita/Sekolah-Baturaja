@@ -47,12 +47,17 @@ Tidak ada subdirektori. Setiap `.jsx` file adalah satu panel admin yang di-rende
 | Performa Kelas | `ClassPerformanceModal.jsx` | Modal statistik performa kelas |
 | Performa Guru | `GuruPerformanceSummary.jsx` | Ringkasan performa guru |
 
-### MMQ & Lainnya
+### Rapat Guru & Lainnya
+
+Tabel dan rute masih berawalan `mmq_` / `/api/mmq` — nama lama dari produk sebelumnya,
+sengaja **tidak** diganti agar data rapat yang sudah tersimpan tetap terbaca. Hanya berkas,
+pengenal frontend, dan tulisan yang dilihat orang yang memakai istilah sekolah umum.
+
 | Panel | File | Fungsi |
 |-------|------|--------|
-| MMQ | `MMQManagement.jsx` | Majlis Mudzakarah Qiroati |
-| MMQ Absensi | `MMQAttendanceModal.jsx` | Absensi peserta MMQ |
-| MMQ Jadwal | `MMQScheduleForm.jsx` | Form jadwal MMQ |
+| Rapat Guru | `RapatGuruManagement.jsx` | Jadwal, absensi, dan notulensi rapat guru |
+| Rapat Guru Absensi | `RapatGuruAttendanceModal.jsx` | Absensi peserta rapat |
+| Rapat Guru Jadwal | `RapatGuruScheduleForm.jsx` | Form jadwal rapat |
 | Konten | `ContentManagement.jsx` | Kelola konten website publik |
 | Media Player | `MediaPlayerSettings.jsx` | Setting audio player |
 | Game Config | `GameConfiguration.jsx` | Konfigurasi fitur game |

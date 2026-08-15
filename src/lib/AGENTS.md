@@ -25,7 +25,7 @@ Komponen **TIDAK BOLEH** memanggil API langsung. Semua request harus melalui ada
 | `gamificationAdapters.js` | Poin & reward santri | `/api/gamification/*` |
 | `loginSecurityAdapters.js` | Log login & rate limit | `/api/auth/login-logs/*` |
 | `mediaPlayerAdapters.js` | Musik/media player | `/api/media/*` |
-| `mmqAdapters.js` | MMQ (Majlis Mudzakarah Qiroati) | `/api/mmq/*` |
+| `rapatGuruAdapters.js` | Rapat guru (absensi, notulensi, jadwal) | `/api/mmq/*` |
 | `paymentAdapters.js` | Pembayaran SPP | `/api/payments/*` |
 | `publicContentAdapters.js` | Konten publik website | `/api/content/*` |
 | `santriArchiveAdapters.js` | Arsip santri non-aktif | `/api/santri/archive/*` |

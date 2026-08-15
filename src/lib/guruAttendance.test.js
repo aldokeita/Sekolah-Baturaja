@@ -12,7 +12,7 @@ const CLASS_ID = 'b2fa7a20-0000-0000-0000-000000000001';
 const SUBJECT_ID = '9af0d035-0b40-4d78-84e4-524dc78c6fea';
 
 describe('absensi guru berbasis jadwal pelajaran sekolah', () => {
-  it('menerima UUID PostgreSQL jadwal sekolah tanpa aturan versi UUID MMQ', () => {
+  it('menerima UUID PostgreSQL jadwal sekolah tanpa aturan versi UUID rapat guru', () => {
     expect(isValidSchoolScheduleId(SCHOOL_SCHEDULE_ID)).toBe(true);
     expect(isValidSchoolScheduleId('bukan-id-jadwal')).toBe(false);
   });

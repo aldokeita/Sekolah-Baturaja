@@ -17,7 +17,7 @@ const DAYS = [
     { value: '0', label: 'Minggu' }
 ];
 
-const MMQScheduleForm = ({ initialData, onSave, onCancel, isSaving }) => {
+const RapatGuruScheduleForm = ({ initialData, onSave, onCancel, isSaving }) => {
     const { toast } = useToast();
     const [formData, setFormData] = useState({
         day_of_week: '5',
@@ -139,4 +139,4 @@ const MMQScheduleForm = ({ initialData, onSave, onCancel, isSaving }) => {
     );
 };
 
-export default MMQScheduleForm;
+export default RapatGuruScheduleForm;

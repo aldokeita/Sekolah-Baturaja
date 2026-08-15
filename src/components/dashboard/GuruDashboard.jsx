@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 import SantriDetailModal from '@/components/dashboard/shared/SantriDetailModal';
-import MmqSection from '@/components/dashboard/guru/MmqSection';
+import RapatGuruSection from '@/components/dashboard/guru/RapatGuruSection';
 import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import GuruAttendanceRecap from '@/components/dashboard/admin/GuruAttendanceRecap';
 import AttendanceDetailsModal from '@/components/dashboard/shared/AttendanceDetailsModal';
@@ -171,7 +171,7 @@ const GuruDashboard = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const [guruData, setGuruData] = useState(null);
-  const [isMmqOpen, setIsMmqOpen] = useState(false);
+  const [isRapatGuruOpen, setIsRapatGuruOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isRecapOpen, setIsRecapOpen] = useState(false);
   const [myClasses, setMyClasses] = useState([]);
@@ -525,7 +525,7 @@ const GuruDashboard = () => {
               </div>
               <div className="guru-profile-card__actions">
                 <Button onClick={() => setIsEditProfileOpen(true)} variant="outline" className="guru-profile-card__button"><Edit className="mr-2 h-4 w-4" /> Edit Profil</Button>
-                <div className="guru-profile-card__action-pair"><Button onClick={() => setIsMmqOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Rapat Guru</Button><Button onClick={() => setIsRecapOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Absensi</Button></div>
+                <div className="guru-profile-card__action-pair"><Button onClick={() => setIsRapatGuruOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Rapat Guru</Button><Button onClick={() => setIsRecapOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Absensi</Button></div>
                 <Button onClick={() => setIsMurojaahOpen(true)} size="sm" className="guru-profile-card__button guru-profile-card__button--accent"><Mic className="mr-2 h-4 w-4"/> Setoran Muroja'ah{pendingSubmissionsCount > 0 && <span className="guru-profile-card__notification-dot" aria-label={`${pendingSubmissionsCount} setoran menunggu peninjauan`}></span>}</Button>
               </div>
             </div>
@@ -850,7 +850,7 @@ const GuruDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      <MmqSection open={isMmqOpen} onOpenChange={setIsMmqOpen} guru={guruData} />
+      <RapatGuruSection open={isRapatGuruOpen} onOpenChange={setIsRapatGuruOpen} guru={guruData} />
       {guruData && <EditGuruProfileModal isOpen={isEditProfileOpen} onOpenChange={setIsEditProfileOpen} guruData={guruData} onProfileUpdate={fetchGuruData} themeColor={themeGradient} />}
       <Dialog open={isRecapOpen} onOpenChange={setIsRecapOpen}><DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto"><DialogHeader><DialogTitle>Rekap Absensi Guru</DialogTitle></DialogHeader><div className="mt-4"><GuruAttendanceRecap isReadOnly={true} /></div></DialogContent></Dialog>
       <AttendanceDetailsModal isOpen={isAttendanceModalOpen} onClose={() => { setIsAttendanceModalOpen(false); setAttendanceDetails(null); }} details={attendanceDetails} onSuccess={fetchGuruData} />

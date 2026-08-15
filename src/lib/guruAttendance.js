@@ -8,7 +8,7 @@ import {
 
 // PostgreSQL accepts any hexadecimal UUID in the canonical 8-4-4-4-12 shape.
 // Do not apply the RFC version/variant restriction that belonged to the old
-// MMQ-only branch: legacy school schedule IDs may use another valid variant.
+// meeting-only branch: legacy school schedule IDs may use another valid variant.
 const SCHOOL_SCHEDULE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SESSION_BY_START_HOUR = [
