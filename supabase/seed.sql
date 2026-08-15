@@ -9,20 +9,23 @@
 -- yang berisi akun login tiap peran. Yang di sini isinya murid, kelas, dan
 -- catatan contoh.
 
+-- JUMLAH MURID CONTOH DIBATASI. Pembeli menerima TIGA murid contoh saja: dua di
+-- berkas ini, dan Naila Rahmadani di backend/init/03_dummy_accounts.sql yang
+-- memegang akun login murid. Sebelumnya berkas ini menyemai delapan murid, jadi
+-- pembeli mewarisi sembilan baris contoh yang harus dihapus satu per satu
+-- sebelum data sekolahnya sendiri masuk.
+--
+-- Tiga sudah cukup untuk memperagakan setiap panel: satu kelas berisi murid,
+-- satu kelas berisi murid lain, dan satu kelas kosong untuk menunjukkan tampilan
+-- kelas yang belum terisi.
 insert into public.user_profiles (id, role, display_name, email, status)
 values
   ('a1fa7a10-0000-0000-0000-000000000001', 'admin', 'Admin Demo', 'admin-demo@example.invalid', 'active'),
   ('a1fa7a10-0000-0000-0000-000000000002', 'guru', 'Guru Demo A', 'guru-a-demo@example.invalid', 'active'),
   ('a1fa7a10-0000-0000-0000-000000000003', 'guru', 'Guru Demo B', 'guru-b-demo@example.invalid', 'active'),
   ('a1fa7a10-0000-0000-0000-000000000004', 'pentashih', 'Wakasek Demo', 'wakasek-demo@example.invalid', 'active'),
-  ('a1fa7a10-0000-0000-0000-000000000101', 'santri', 'Santri Demo A1', null, 'active'),
-  ('a1fa7a10-0000-0000-0000-000000000102', 'santri', 'Santri Demo A2', null, 'active'),
-  ('a1fa7a10-0000-0000-0000-000000000103', 'santri', 'Santri Demo A3', null, 'active'),
-  ('a1fa7a10-0000-0000-0000-000000000201', 'santri', 'Santri Demo B1', null, 'active'),
-  ('a1fa7a10-0000-0000-0000-000000000202', 'santri', 'Santri Demo B2', null, 'active'),
-  ('a1fa7a10-0000-0000-0000-000000000301', 'santri', 'Santri Demo C1', null, 'active'),
-  ('a1fa7a10-0000-0000-0000-000000000302', 'santri', 'Santri Demo C2', null, 'active'),
-  ('a1fa7a10-0000-0000-0000-000000000303', 'santri', 'Santri Demo C3', null, 'active')
+  ('a1fa7a10-0000-0000-0000-000000000101', 'santri', 'Murid Contoh Satu', null, 'active'),
+  ('a1fa7a10-0000-0000-0000-000000000102', 'santri', 'Murid Contoh Dua', null, 'active')
 on conflict (id) do nothing;
 
 insert into public.guru (id, nama, email, jabatan, roles, is_notulen, status)
@@ -40,26 +43,14 @@ on conflict (id) do nothing;
 -- sebagai cadangan login bagi data lama.
 insert into public.santri (id, nisn, nis, nomor_induk, nama_lengkap, kategori, status, avatar_path)
 values
-  ('a1fa7a10-0000-0000-0000-000000000101', '9100000101', '26101', '26101', 'Santri Demo A1', 'Anak', 'Aktif', 'santri/a1fa7a10-0000-0000-0000-000000000101/profile.webp'),
-  ('a1fa7a10-0000-0000-0000-000000000102', '9100000102', '26102', '26102', 'Santri Demo A2', 'Anak', 'Aktif', 'santri/a1fa7a10-0000-0000-0000-000000000102/profile.webp'),
-  ('a1fa7a10-0000-0000-0000-000000000103', '9100000103', '26103', '26103', 'Santri Demo A3', 'Anak', 'Aktif', 'santri/a1fa7a10-0000-0000-0000-000000000103/profile.webp'),
-  ('a1fa7a10-0000-0000-0000-000000000201', '9100000201', '26201', '26201', 'Santri Demo B1', 'Anak', 'Aktif', 'santri/a1fa7a10-0000-0000-0000-000000000201/profile.webp'),
-  ('a1fa7a10-0000-0000-0000-000000000202', '9100000202', '26202', '26202', 'Santri Demo B2', 'Anak', 'Aktif', 'santri/a1fa7a10-0000-0000-0000-000000000202/profile.webp'),
-  ('a1fa7a10-0000-0000-0000-000000000301', '9100000301', '26301', '26301', 'Santri Demo C1', 'Anak', 'Aktif', null),
-  ('a1fa7a10-0000-0000-0000-000000000302', '9100000302', '26302', '26302', 'Santri Demo C2', 'Anak', 'Aktif', null),
-  ('a1fa7a10-0000-0000-0000-000000000303', '9100000303', '26303', '26303', 'Santri Demo C3', 'Anak', 'Aktif', null)
+  ('a1fa7a10-0000-0000-0000-000000000101', '9100000101', '26101', '26101', 'Murid Contoh Satu', 'Anak', 'Aktif', null),
+  ('a1fa7a10-0000-0000-0000-000000000102', '9100000102', '26102', '26102', 'Murid Contoh Dua', 'Anak', 'Aktif', null)
 on conflict (id) do nothing;
 
 insert into public.auth_login_aliases (auth_user_id, alias_value, normalized_alias, internal_email)
 values
   ('a1fa7a10-0000-0000-0000-000000000101', '26101', '26101', 'santri+a1fa7a10-0000-0000-0000-000000000101@auth.sekolah.local'),
-  ('a1fa7a10-0000-0000-0000-000000000102', '26102', '26102', 'santri+a1fa7a10-0000-0000-0000-000000000102@auth.sekolah.local'),
-  ('a1fa7a10-0000-0000-0000-000000000103', '26103', '26103', 'santri+a1fa7a10-0000-0000-0000-000000000103@auth.sekolah.local'),
-  ('a1fa7a10-0000-0000-0000-000000000201', '26201', '26201', 'santri+a1fa7a10-0000-0000-0000-000000000201@auth.sekolah.local'),
-  ('a1fa7a10-0000-0000-0000-000000000202', '26202', '26202', 'santri+a1fa7a10-0000-0000-0000-000000000202@auth.sekolah.local'),
-  ('a1fa7a10-0000-0000-0000-000000000301', '26301', '26301', 'santri+a1fa7a10-0000-0000-0000-000000000301@auth.sekolah.local'),
-  ('a1fa7a10-0000-0000-0000-000000000302', '26302', '26302', 'santri+a1fa7a10-0000-0000-0000-000000000302@auth.sekolah.local'),
-  ('a1fa7a10-0000-0000-0000-000000000303', '26303', '26303', 'santri+a1fa7a10-0000-0000-0000-000000000303@auth.sekolah.local')
+  ('a1fa7a10-0000-0000-0000-000000000102', '26102', '26102', 'santri+a1fa7a10-0000-0000-0000-000000000102@auth.sekolah.local')
 -- `on conflict do nothing` tanpa target, bukan `(alias_type, normalized_alias)`:
 -- ada pula batasan unik satu alias aktif per pengguna, dan menjalankan ulang
 -- seed setelah nilai aliasnya berubah akan menabrak batasan itu, bukan yang
@@ -78,56 +69,37 @@ values
   ('b2fa7a20-0000-0000-0000-000000000003', 'Kelas 3A', 'a1fa7a10-0000-0000-0000-000000000002', 'Pagi', 'Anak', 3)
 on conflict (id) do nothing;
 
+-- Kolom `jilid` dan `sesi_mengaji` hanya terisi bila sekolah menjalankan program
+-- tahfizh opsional (VITE_ENABLE_TAHFIZH). Demo SD tidak memakainya, jadi kedua
+-- murid ini cukup ditempatkan ke kelasnya. Kelas 3A dibiarkan kosong dengan
+-- sengaja, supaya pembeli melihat tampilan kelas yang belum terisi.
 update public.santri
-set current_class_id = case
-  when id in ('a1fa7a10-0000-0000-0000-000000000101', 'a1fa7a10-0000-0000-0000-000000000102', 'a1fa7a10-0000-0000-0000-000000000103') then 'b2fa7a20-0000-0000-0000-000000000001'::uuid
-  else 'b2fa7a20-0000-0000-0000-000000000002'::uuid
-end
+set current_class_id = 'b2fa7a20-0000-0000-0000-000000000001'::uuid
 where id in (
   'a1fa7a10-0000-0000-0000-000000000101',
-  'a1fa7a10-0000-0000-0000-000000000102',
-  'a1fa7a10-0000-0000-0000-000000000103',
-  'a1fa7a10-0000-0000-0000-000000000201',
-  'a1fa7a10-0000-0000-0000-000000000202'
-);
-
--- Kolom `jilid` dan `sesi_mengaji` hanya terisi bila sekolah menjalankan program
--- tahfizh opsional (VITE_ENABLE_TAHFIZH). Demo SD dasar tidak memakainya, jadi
--- ketiga murid ini hanya ditempatkan ke kelasnya.
-update public.santri
-set current_class_id = 'b2fa7a20-0000-0000-0000-000000000003'::uuid
-where id in (
-  'a1fa7a10-0000-0000-0000-000000000301',
-  'a1fa7a10-0000-0000-0000-000000000302',
-  'a1fa7a10-0000-0000-0000-000000000303'
+  'a1fa7a10-0000-0000-0000-000000000102'
 );
 
 insert into public.class_memberships (santri_id, class_id, start_date, status, order_in_class)
 values
   ('a1fa7a10-0000-0000-0000-000000000101', 'b2fa7a20-0000-0000-0000-000000000001', current_date, 'active', 1),
-  ('a1fa7a10-0000-0000-0000-000000000102', 'b2fa7a20-0000-0000-0000-000000000001', current_date, 'active', 2),
-  ('a1fa7a10-0000-0000-0000-000000000103', 'b2fa7a20-0000-0000-0000-000000000001', current_date, 'active', 3),
-  ('a1fa7a10-0000-0000-0000-000000000201', 'b2fa7a20-0000-0000-0000-000000000002', current_date, 'active', 1),
-  ('a1fa7a10-0000-0000-0000-000000000202', 'b2fa7a20-0000-0000-0000-000000000002', current_date, 'active', 2),
-  ('a1fa7a10-0000-0000-0000-000000000301', 'b2fa7a20-0000-0000-0000-000000000003', current_date, 'active', 1),
-  ('a1fa7a10-0000-0000-0000-000000000302', 'b2fa7a20-0000-0000-0000-000000000003', current_date, 'active', 2),
-  ('a1fa7a10-0000-0000-0000-000000000303', 'b2fa7a20-0000-0000-0000-000000000003', current_date, 'active', 3)
+  ('a1fa7a10-0000-0000-0000-000000000102', 'b2fa7a20-0000-0000-0000-000000000001', current_date, 'active', 2)
 on conflict do nothing;
 
 insert into public.pentashih_class_assignments (pentashih_id, class_id, scope, is_active)
 values ('a1fa7a10-0000-0000-0000-000000000004', 'b2fa7a20-0000-0000-0000-000000000001', 'class', true)
 on conflict do nothing;
 
+-- Satu baris kehadiran dan satu baris pembayaran: cukup untuk memperagakan
+-- rekap dan riwayat tanpa menitipkan angka keuangan palsu ke laporan pembeli.
 insert into public.attendance (user_id, role, attendance_date, class_id, sesi, status, source)
 values
-  ('a1fa7a10-0000-0000-0000-000000000101', 'santri', current_date, 'b2fa7a20-0000-0000-0000-000000000001', 'Pagi', 'Hadir', 'manual'),
-  ('a1fa7a10-0000-0000-0000-000000000201', 'santri', current_date, 'b2fa7a20-0000-0000-0000-000000000002', 'Pagi', 'Hadir', 'manual')
+  ('a1fa7a10-0000-0000-0000-000000000101', 'santri', current_date, 'b2fa7a20-0000-0000-0000-000000000001', 'Pagi', 'Hadir', 'manual')
 on conflict do nothing;
 
 insert into public.payments (id, santri_id, bulan, tahun, jumlah, tanggal_pembayaran, metode_pembayaran, status)
 values
-  ('d4fa7a40-0000-0000-0000-000000000001', 'a1fa7a10-0000-0000-0000-000000000101', 1, 2026, 10000, current_date, 'Tunai', 'paid'),
-  ('d4fa7a40-0000-0000-0000-000000000002', 'a1fa7a10-0000-0000-0000-000000000201', 1, 2026, 10000, current_date, 'Tunai', 'paid')
+  ('d4fa7a40-0000-0000-0000-000000000001', 'a1fa7a10-0000-0000-0000-000000000101', 1, 2026, 10000, current_date, 'Tunai', 'paid')
 on conflict (id) do nothing;
 
 insert into public.expenses (id, tanggal_pengeluaran, kategori, deskripsi, jumlah)

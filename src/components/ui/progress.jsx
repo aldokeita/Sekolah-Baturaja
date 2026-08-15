@@ -2,14 +2,18 @@ import React from 'react';
 import * as ProgressPrimitive from "@radix-ui/react-progress";
 import { cn } from "@/lib/utils";
 
-const Progress = React.forwardRef(({ className, value, ...props }, ref) => (
+// indicatorClassName mewarnai bilah dalamnya, bukan wadahnya. Tanpa prop ini
+// pemanggil yang mengirimnya justru menyalurkannya ke elemen DOM lewat {...props}:
+// warnanya tak pernah berlaku dan React memperingatkan "does not recognize the
+// indicatorClassName prop" pada setiap render.
+const Progress = React.forwardRef(({ className, value, indicatorClassName, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
     className={cn("relative h-4 w-full overflow-hidden rounded-full bg-secondary", className)}
     {...props}
   >
     <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-primary transition-all"
+      className={cn("h-full w-full flex-1 bg-primary transition-all", indicatorClassName)}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </ProgressPrimitive.Root>

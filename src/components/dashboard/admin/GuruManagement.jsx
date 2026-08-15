@@ -33,6 +33,25 @@ const AVAILABLE_ROLES = ['Pengajar', 'Pentashih', 'Staff Operasional', 'Tata Usa
 // dan data guru lama bergantung padanya. Yang berubah hanya labelnya.
 const ROLE_LABELS = { Pentashih: 'Wakil Kepala Sekolah' };
 
+// Sertifikasi pendidik hanya berlaku bagi orang yang mengajar. Administrator dan
+// Tata Usaha bukan guru, jadi menandai mereka "Belum Bersertifikat" bukan sekadar
+// label yang keliru — pembaca menyimpulkan ada berkas yang belum diurus padahal
+// pertanyaannya tidak berlaku untuk mereka.
+const PERAN_MENGAJAR = ['Pengajar', 'Pentashih'];
+const mengajar = (guru) => (Array.isArray(guru?.roles) ? guru.roles : []).some((r) => PERAN_MENGAJAR.includes(r));
+
+// Kolom `status_guru` sempat menampung dua kosakata sekaligus: sertifikasi
+// ('Bersertifikat'/'Belum Bersertifikat') dan keaktifan ('Aktif'/'Nonaktif').
+// Keaktifan sudah punya kolomnya sendiri, yaitu `guru.status`, jadi nilai lama
+// itu tidak mengatakan apa pun tentang sertifikasi dan tidak boleh dibaca
+// seolah-olah mengatakannya. Nilai di luar kosakata sertifikasi dianggap belum
+// terdata, bukan diterjemahkan menjadi "Belum Bersertifikat".
+const SERTIFIKASI_SAH = ['Bersertifikat', 'Belum Bersertifikat'];
+const labelSertifikasi = (guru) => {
+  if (!mengajar(guru)) return '—';
+  return SERTIFIKASI_SAH.includes(guru?.status_guru) ? guru.status_guru : 'Belum terdata';
+};
+
 const GuruManagement = () => {
   const { role } = useAuth();
   // Account & role provisioning (create/delete accounts, assign app-roles,
@@ -84,7 +103,7 @@ const GuruManagement = () => {
   const resetForm = () => {
     setFormData({
       nama: '', jabatan: '', email: '', no_hp: '', alamat: '', rfid_tag: '', is_notulen: false, foto_url: '', avatar_path: '', password: '',
-      roles: [], jenis_kelamin: 'Laki-laki', status_guru: 'Belum Bersertifikat', nuptk: '', tanggal_lahir: ''
+      roles: [], jenis_kelamin: 'Laki-laki', status_guru: '', nuptk: '', tanggal_lahir: ''
     });
     setEditingGuru(null);
   };
@@ -99,7 +118,7 @@ const GuruManagement = () => {
         password: '',
         roles: guru.roles || [],
         jenis_kelamin: guru.jenis_kelamin || 'Laki-laki',
-        status_guru: guru.status_guru || 'Belum Bersertifikat',
+        status_guru: SERTIFIKASI_SAH.includes(guru.status_guru) ? guru.status_guru : '',
         nuptk: guru.nuptk || '',
         tanggal_lahir: guru.tanggal_lahir || ''
     });
@@ -137,7 +156,7 @@ const GuruManagement = () => {
             'No Telepon': guru.no_hp || '-',
             'Alamat': guru.alamat || '-',
             'Tanggal Bergabung': guru.created_at ? new Date(guru.created_at).toLocaleDateString('id-ID') : '-',
-            'Status': guru.status_guru || 'Belum Bersertifikat',
+            'Sertifikasi': labelSertifikasi(guru),
             'Jabatan': labelStafRole(guru.jabatan || '-'),
             'Role': guru.roles && guru.roles.length > 0 ? guru.roles.map((item) => ROLE_LABELS[item] || item).join(', ') : '-',
             'NUPTK': guru.nuptk || '-',
@@ -363,7 +382,7 @@ const GuruManagement = () => {
               <th className="p-3 text-left w-12 text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>No.</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Nama</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>No. Induk</th>
-              <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Status Guru</th>
+              <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Sertifikasi</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Role</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Kontak</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>RFID</th>
@@ -384,8 +403,8 @@ const GuruManagement = () => {
                 </td>
                 <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--admin-text-secondary))' }}>{guru.nuptk || '-'}</td>
                 <td className="p-3">
-                    <span className={guru.status_guru === 'Bersertifikat' ? 'admin-status-badge admin-status-badge--success' : 'admin-status-badge admin-status-badge--neutral'}>
-                        {guru.status_guru || 'Belum Bersertifikat'}
+                    <span className={guru.status_guru === 'Bersertifikat' && mengajar(guru) ? 'admin-status-badge admin-status-badge--success' : 'admin-status-badge admin-status-badge--neutral'}>
+                        {labelSertifikasi(guru)}
                     </span>
                 </td>
                 <td className="p-3">
@@ -451,12 +470,18 @@ const GuruManagement = () => {
 
                  <div className="space-y-1.5"><label htmlFor="tanggal_lahir" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3"/> Tanggal Lahir</label><Input id="tanggal_lahir" type="date" value={formData.tanggal_lahir || ''} onChange={handleInputChange} /></div>
 
+                 {/* Hanya untuk peran yang mengajar. Nilai bawaannya dikosongkan,
+                     bukan dipaksa 'Belum Bersertifikat': baris lama menyimpan
+                     'Aktif' di kolom ini, dan menampilkannya sebagai "Belum
+                     Bersertifikat" akan mengubah data hanya karena formnya dibuka. */}
+                 {mengajar(formData) && (
                  <div className="space-y-1.5"><label className="text-xs font-medium uppercase text-muted-foreground">Status Sertifikasi</label>
-                    <Select value={formData.status_guru || 'Belum Bersertifikat'} onValueChange={val => setFormData(prev => ({...prev, status_guru: val}))}>
-                        <SelectTrigger><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                    <Select value={SERTIFIKASI_SAH.includes(formData.status_guru) ? formData.status_guru : ''} onValueChange={val => setFormData(prev => ({...prev, status_guru: val}))}>
+                        <SelectTrigger><SelectValue placeholder="Belum terdata" /></SelectTrigger>
                         <SelectContent><SelectItem value="Bersertifikat">Bersertifikat</SelectItem><SelectItem value="Belum Bersertifikat">Belum Bersertifikat</SelectItem></SelectContent>
                     </Select>
                  </div>
+                 )}
 
                  <div className="col-span-full space-y-1.5"><label htmlFor="alamat" className="text-xs font-medium uppercase text-muted-foreground">Alamat</label><Textarea id="alamat" value={formData.alamat || ''} onChange={handleInputChange} /></div>
 

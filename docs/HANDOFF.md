@@ -463,6 +463,52 @@ Ikutan yang ditemukan bersamaan: `paymentItemsList` di berkas yang sama masih me
 sementara Sarpras dan LKS yang benar-benar dipakai justru tidak terdaftar. Daftar itu harus sejalan
 dengan `paymentItems` di `PaymentSystem.jsx`.
 
+### Pembeli hanya menerima TIGA murid contoh
+
+Dulu `supabase/seed.sql` menyemai delapan murid dan `backend/init/03_dummy_accounts.sql` satu lagi,
+jadi setiap pemasangan baru memberi pembeli sembilan baris contoh yang harus dihapus satu per satu.
+
+Sekarang tepat tiga: dua dari seed (`Murid Contoh Satu`, `Murid Contoh Dua`, keduanya di Kelas 1A)
+dan `Naila Rahmadani` dari `03_dummy_accounts.sql`, yang memegang akun login murid dan ditempatkan
+ke Kelas 2A. Kelas 3A dibiarkan kosong dengan sengaja supaya pembeli melihat tampilan kelas yang
+belum terisi.
+
+Tiga hal yang harus ikut berubah bila jumlahnya diubah lagi:
+
+1. Daftar stub `auth.users` di `backend/init/01_migrate.sh` — ini FK target bagi `user_profiles`,
+   `guru`, dan `santri`. Stub yang tertinggal menyisakan baris `auth.users` tanpa pemilik.
+2. `auth_login_aliases`, `class_memberships`, `attendance`, dan `payments` di seed — semuanya
+   menyebut id murid secara harfiah.
+3. Penempatan Naila ada di `03_dummy_accounts.sql`, BUKAN di seed: seed jalan lebih dulu dan tidak
+   bisa menyebut baris yang belum dibuat. Penempatannya dibungkus `if exists (... classes ...)`
+   supaya pemasangan tanpa seed tetap lolos.
+
+Diverifikasi pada basis data kosong dengan urutan lengkap
+(`00_bootstrap` → migrasi → stub auth → `seed.sql` → `02_auth_columns` → `03_dummy_accounts`):
+tiga murid, semuanya punya kelas, nol baris `auth.users` tanpa pemilik.
+
+### `status_guru` menampung dua kosakata sekaligus
+
+Kolom ini berisi campuran `'Bersertifikat'`/`'Belum Bersertifikat'` (sertifikasi pendidik) DAN
+`'Aktif'`/`'Nonaktif'` (keaktifan kerja) — padahal keaktifan sudah punya kolomnya sendiri,
+`guru.status`. Panel lalu membaca apa pun yang bukan `'Bersertifikat'` sebagai "Belum
+Bersertifikat", sehingga guru bernilai `'Aktif'` tampak belum bersertifikat, dan Administrator serta
+Tata Usaha — yang bukan guru — ikut diberi label itu.
+
+Sekarang: kolom bernama **Sertifikasi**, peran non-mengajar menampilkan `—`, dan nilai di luar
+kosakata sertifikasi tampil `Belum terdata` alih-alih ditebak. Form sertifikasi hanya muncul untuk
+peran `Pengajar`/`Pentashih`, dan nilai bawaannya kosong supaya membuka form tidak mengubah data.
+
+Nilai lama tidak dinormalkan lewat migrasi dengan sengaja: `'Aktif'` tidak memuat informasi
+sertifikasi apa pun, jadi tidak ada yang bisa dipulihkan — sekolah mengisinya sendiri.
+
+### `Progress` mengabaikan `indicatorClassName`
+
+`src/components/ui/progress.jsx` tidak menerima prop itu, jadi `{...props}` menyalurkannya ke elemen
+DOM: warna bilah tidak pernah berlaku dan React memperingatkan setiap render. Satu-satunya pemanggil
+adalah `GuruAttendanceRecap`, yang memakainya untuk mewarnai bilah menurut persentase kehadiran —
+jadi bilahnya selalu berwarna bawaan. Prop-nya sekarang diterima dan digabung ke `Indicator`.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

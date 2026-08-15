@@ -130,9 +130,16 @@ end $$;
 -- ── Student account (santri + user_profiles) ─────────────────────────────────
 -- Logs in with the student number, matching the "Nomor induk murid" field on
 -- the login screen.
+--
+-- This is the THIRD and last sample student a buyer receives; the other two come
+-- from supabase/seed.sql. Naila is placed into Kelas 2A here rather than in the
+-- seed because the seed runs first and cannot reference a row this file creates.
+-- Without the placement she shows up under "Murid Belum Masuk Kelas", which
+-- reads like a defect on a fresh install.
 do $$
 declare
   sid uuid := 'a1fa7a10-0000-0000-0000-000000000014';
+  cls uuid := 'b2fa7a20-0000-0000-0000-000000000002';
   hashed text := extensions.crypt('santri123', extensions.gen_salt('bf', 12));
 begin
   insert into auth.users (id, email)
@@ -155,6 +162,17 @@ begin
     role         = excluded.role,
     display_name = excluded.display_name,
     status       = 'active';
+
+  -- Kelas 2A hanya ada bila supabase/seed.sql sudah jalan. Pemasangan yang
+  -- melewatkan seed (misalnya basis data produksi yang diisi manual) tetap harus
+  -- lolos, jadi penempatannya dilewati saja kalau kelasnya tidak ada.
+  if exists (select 1 from public.classes where id = cls) then
+    update public.santri set current_class_id = cls where id = sid;
+
+    insert into public.class_memberships (santri_id, class_id, start_date, status, order_in_class)
+    values (sid, cls, current_date, 'active', 1)
+    on conflict do nothing;
+  end if;
 end $$;
 
 -- ── Report ───────────────────────────────────────────────────────────────────
