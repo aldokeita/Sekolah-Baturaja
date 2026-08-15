@@ -1970,6 +1970,32 @@ Pada basis data kerja, setelah migrasi diterapkan dan backend dikompilasi ulang:
 **Catatan galat uji, bukan cacat migrasi.** Percobaan pertama gagal karena `02_auth_columns.sql`
 terlewat dari urutan uji — urutan sebenarnya `00 → 01 (migrasi + seed) → 02 → 03`.
 
+#### Verifikasi panel Data Guru di browser
+
+Diuji sebagai admin di `localhost:3000`, dan inilah bukti bug NUPTK benar-benar tertutup:
+
+| Langkah | Hasil |
+|---|---|
+| Buka Edit "Andi Pratama, S.Pd." | field `#nuptk` ada, kosong |
+| Isi `1987031420091001`, Simpan Perubahan | tersimpan; basis data memuatnya |
+| **Muat ulang halaman penuh, buka Data Guru** | kolom NO. INDUK menampilkan `1987031420091001` |
+| Cari `19870314` di kotak pencarian | 1 hasil, Andi Pratama |
+| Buka panel Rapat Guru | data lama terbaca, tanpa galat setelah tabelnya berganti nama |
+
+Langkah ketiga yang menentukan: sebelum perbaikan, nilai itu hilang tanpa jejak setelah
+refresh meski notifikasi mengatakan berhasil.
+
+#### Dua sisa LPQ yang baru ketahuan saat verifikasi ini
+
+**Subjudul panel Rapat Guru masih "Majelis Mu'allimil Qur'an — Absensi & Jadwal Guru".**
+Lolos dari normalisasi fitur 6 karena pencarian waktu itu memakai kata "MMQ", bukan
+kepanjangannya. Diganti "Jadwal, absensi, dan notulensi rapat internal guru".
+
+**Satu baris `guru.status_guru` masih bernilai `'Non-Syahadah'`.** Itu sertifikasi guru
+Al-Qur'an, tidak berlaku di SD negeri. Kodenya sudah lama memakai "Belum Bersertifikat"; yang
+tertinggal hanya datanya. Diperbaiki menjadi "Belum Bersertifikat" — hanya data lokal, tidak
+ada perubahan kode.
+
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 
 Seluruh fitur 1–6 diperiksa langsung di `localhost:3000` dengan akun guru sungguhan, bukan

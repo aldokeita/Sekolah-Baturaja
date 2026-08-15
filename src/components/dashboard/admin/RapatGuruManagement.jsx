@@ -124,7 +124,7 @@ const RapatGuruManagement = () => {
                     </div>
                     <div className="admin-panel-header-text">
                         <h2>Rapat Guru</h2>
-                        <p>Majelis Mu'allimil Qur'an — Absensi & Jadwal Guru</p>
+                        <p>Jadwal, absensi, dan notulensi rapat internal guru</p>
                     </div>
                 </div>
                 <div className="admin-panel-header-actions">
