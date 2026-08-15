@@ -112,7 +112,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
     const transactionRef = getPaymentReceiptReference(receiptPayment);
     const isPaid = isPaymentPaid(receiptPayment?.status);
     const studentName = receiptPayment?.santri?.nama_lengkap || 'Murid';
-    const studentId = receiptPayment?.santri?.nomor_induk_qiroati || '-';
+    const studentId = receiptPayment?.santri?.nomor_induk || '-';
     const period = formatPaymentPeriod(receiptPayment?.bulan, receiptPayment?.tahun);
     const notes = receiptPayment?.catatan || 'Pembayaran Administrasi';
 

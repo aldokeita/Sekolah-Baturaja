@@ -117,13 +117,13 @@ type userRow struct {
 // fungsi ini, sehingga satu migrasi yang belum diterapkan menjatuhkan login
 // SEMUA peran — termasuk admin yang datanya tidak tersentuh.
 func (h *AuthHandler) resolveUser(ctx context.Context, username string) (id, role, hash string, err error) {
-	// Murid login pakai NISN atau NIS. nomor_induk_qiroati tetap diterima sebagai
+	// Murid login pakai NISN atau NIS. nomor_induk tetap diterima sebagai
 	// fallback agar murid lama tidak terkunci sebelum NISN mereka terisi.
 	var row userRow
 	santriErr := h.db.QueryRow(ctx, `
 		SELECT id, 'santri', COALESCE(password,'')
 		FROM santri
-		WHERE (nisn = $1 OR nis = $1 OR nomor_induk_qiroati = $1 OR LOWER(nama_panggilan) = LOWER($1))
+		WHERE (nisn = $1 OR nis = $1 OR nomor_induk = $1 OR LOWER(nama_panggilan) = LOWER($1))
 		  AND status = 'Aktif'
 		LIMIT 1
 	`, username).Scan(&row.id, &row.role, &row.hash)
@@ -210,7 +210,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if role == "santri" {
 		err = h.db.QueryRow(r.Context(),
-			`SELECT COALESCE(nama_lengkap,''), COALESCE(nomor_induk_qiroati,'') FROM santri WHERE id = $1`, userID,
+			`SELECT COALESCE(nama_lengkap,''), COALESCE(nomor_induk,'') FROM santri WHERE id = $1`, userID,
 		).Scan(&displayName, &email)
 	} else {
 		err = h.db.QueryRow(r.Context(),

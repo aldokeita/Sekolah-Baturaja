@@ -39,7 +39,7 @@ type guruLessonSchedule struct {
 }
 
 // validateGuruLessonAttendance is the server-side contract for the school
-// digital attendance flow. It intentionally never reads mmq_schedule: the
+// digital attendance flow. It intentionally never reads rapat_guru_jadwal: the
 // school schedule is the authority for teacher, class, subject, date, and
 // check-in time.
 func (h *AttendanceHandler) validateGuruLessonAttendance(

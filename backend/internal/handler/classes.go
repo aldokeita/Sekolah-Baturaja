@@ -208,7 +208,7 @@ func (h *ClassesHandler) activeSantriByClass(ctx context.Context, classIDs []str
 		return map[string][]map[string]any{}, nil
 	}
 	rows, err := h.db.Query(ctx, `
-		SELECT id, nama_lengkap, nama_panggilan, nomor_induk_qiroati, foto_url,
+		SELECT id, nama_lengkap, nama_panggilan, nomor_induk, foto_url,
 		       avatar_path, jilid, sesi_mengaji, kategori, points, jenis_kelamin,
 		       order_in_class, current_class_id
 		FROM santri
@@ -264,7 +264,7 @@ func (h *ClassesHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	if canSeeRoster(role) {
 		memberRows, err := h.db.Query(ctx, `
 			SELECT cm.id, cm.santri_id, cm.order_in_class, cm.status,
-			       s.nama_lengkap, s.nama_panggilan, s.nomor_induk_qiroati, s.foto_url
+			       s.nama_lengkap, s.nama_panggilan, s.nomor_induk, s.foto_url
 			FROM class_memberships cm
 			JOIN santri s ON s.id = cm.santri_id
 			WHERE cm.class_id = $1 AND cm.status = 'active'

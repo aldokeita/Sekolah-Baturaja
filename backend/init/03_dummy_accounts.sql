@@ -5,7 +5,7 @@
 -- Login rules enforced by the Go backend (internal/handler/auth.go):
 --   staff  -> guru.email + guru.password, needs guru.status='active'
 --             AND a matching user_profiles row with status='active'
---   santri -> santri.nomor_induk_qiroati (or nama_panggilan) + santri.password,
+--   santri -> santri.nomor_induk (or nama_panggilan) + santri.password,
 --             needs santri.status='Aktif'
 --
 -- Passwords are hashed with pgcrypto bcrypt ($2a$, cost 12), which is what
@@ -139,11 +139,11 @@ begin
   values (sid, 'murid@sdnbaturaja.sch.id')
   on conflict (id) do update set email = excluded.email;
 
-  insert into public.santri (id, nomor_induk_qiroati, nama_lengkap, nama_panggilan,
+  insert into public.santri (id, nomor_induk, nama_lengkap, nama_panggilan,
                              kategori, jenis_kelamin, status, password)
   values (sid, '2026041', 'Naila Rahmadani', 'Naila', 'Anak', 'Perempuan', 'Aktif', hashed)
   on conflict (id) do update set
-    nomor_induk_qiroati = excluded.nomor_induk_qiroati,
+    nomor_induk = excluded.nomor_induk,
     nama_lengkap        = excluded.nama_lengkap,
     nama_panggilan      = excluded.nama_panggilan,
     status              = 'Aktif',

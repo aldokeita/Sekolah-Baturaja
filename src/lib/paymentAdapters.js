@@ -45,7 +45,7 @@ export const PAYMENT_DETAIL_SELECT = `
     catatan,
     transaction_id,
     created_at,
-    santri:santri_id(id, nama_lengkap, nomor_induk_qiroati, kategori, no_hp_ortu)
+    santri:santri_id(id, nama_lengkap, nomor_induk, kategori, no_hp_ortu)
 `;
 
 export const PAYMENT_HISTORY_SELECT = `

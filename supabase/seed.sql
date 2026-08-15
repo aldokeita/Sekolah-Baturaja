@@ -36,10 +36,9 @@ values
 on conflict (id) do nothing;
 
 -- Nomor induk memakai NISN dan NIS, dua nomor yang benar-benar dipakai sekolah
--- dasar. Kolom `nomor_induk_qiroati` tetap diisi karena `auth.go` masih
--- menerimanya sebagai cadangan login bagi data lama; namanya warisan skema dan
--- hanya bisa diubah lewat migrasi tersendiri.
-insert into public.santri (id, nisn, nis, nomor_induk_qiroati, nama_lengkap, kategori, status, avatar_path)
+-- dasar. Kolom `nomor_induk` ikut diisi karena `auth.go` masih menerimanya
+-- sebagai cadangan login bagi data lama.
+insert into public.santri (id, nisn, nis, nomor_induk, nama_lengkap, kategori, status, avatar_path)
 values
   ('a1fa7a10-0000-0000-0000-000000000101', '9100000101', '26101', '26101', 'Santri Demo A1', 'Anak', 'Aktif', 'santri/a1fa7a10-0000-0000-0000-000000000101/profile.webp'),
   ('a1fa7a10-0000-0000-0000-000000000102', '9100000102', '26102', '26102', 'Santri Demo A2', 'Anak', 'Aktif', 'santri/a1fa7a10-0000-0000-0000-000000000102/profile.webp'),
@@ -150,15 +149,15 @@ on conflict (id) do nothing;
 -- Tabel `mmq_*` menyimpan rapat guru. Namanya warisan produk terdahulu dan
 -- sengaja TIDAK diganti agar data rapat yang sudah tersimpan tetap terbaca;
 -- lihat catatan normalisasi Rapat Guru di docs/HANDOFF.md.
-insert into public.mmq_schedule (id, day_of_week, start_time, end_time, location)
+insert into public.rapat_guru_jadwal (id, day_of_week, start_time, end_time, location)
 values ('c3fa7a30-0000-0000-0000-000000000001', 5, '13:00', '14:30', 'Ruang Guru')
 on conflict (id) do nothing;
 
-insert into public.mmq_attendance (id, schedule_id, guru_id, attendance_date, status)
+insert into public.rapat_guru_absensi (id, schedule_id, guru_id, attendance_date, status)
 values ('c3fa7a30-0000-0000-0000-000000000101', 'c3fa7a30-0000-0000-0000-000000000001', 'a1fa7a10-0000-0000-0000-000000000002', current_date, 'Hadir')
 on conflict (id) do nothing;
 
-insert into public.mmq_notulensi (id, schedule_id, tanggal, judul, isi, notulen_id)
+insert into public.rapat_guru_notulensi (id, schedule_id, tanggal, judul, isi, notulen_id)
 values ('c3fa7a30-0000-0000-0000-000000000201', 'c3fa7a30-0000-0000-0000-000000000001', current_date, 'Notulensi Rapat Guru', 'Isi notulensi contoh.', 'a1fa7a10-0000-0000-0000-000000000002')
 on conflict (id) do nothing;
 

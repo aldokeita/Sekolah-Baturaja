@@ -558,7 +558,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                             <div>
                                 <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Nama Murid</p>
                                 <p className="font-extrabold text-base text-slate-900 dark:text-slate-100">{santri.nama_lengkap}</p>
-                                <p className="text-xs text-muted-foreground font-mono">Nomor Induk: {santri.nomor_induk_qiroati || '-'}</p>
+                                <p className="text-xs text-muted-foreground font-mono">Nomor Induk: {santri.nomor_induk || '-'}</p>
                             </div>
                             <div>
                                 <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Kelas & Sesi</p>

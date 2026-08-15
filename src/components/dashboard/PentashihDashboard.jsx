@@ -170,7 +170,7 @@ const PentashihDashboard = () => {
       const search = khotimSearch.toLowerCase();
       return (
         s.nama_lengkap.toLowerCase().includes(search) ||
-        (s.nomor_induk_qiroati && s.nomor_induk_qiroati.toLowerCase().includes(search)) ||
+        (s.nomor_induk && s.nomor_induk.toLowerCase().includes(search)) ||
         s.className.toLowerCase().includes(search)
       );
     });
@@ -189,7 +189,7 @@ const PentashihDashboard = () => {
         const search = stagnantSearch.toLowerCase();
         return (
           s.nama_lengkap.toLowerCase().includes(search) ||
-          (s.nomor_induk_qiroati && s.nomor_induk_qiroati.toLowerCase().includes(search)) ||
+          (s.nomor_induk && s.nomor_induk.toLowerCase().includes(search)) ||
           s.className.toLowerCase().includes(search)
         );
       })
@@ -203,7 +203,7 @@ const PentashihDashboard = () => {
     try {
       const khotimData = khotimCandidates.map((s, idx) => ({
         'No': idx + 1,
-        'Nomor Induk Qiroati': s.nomor_induk_qiroati || '-',
+        'Nomor Induk Qiroati': s.nomor_induk || '-',
         'Nama Murid': s.nama_lengkap,
         'Nama Panggilan': s.nama_panggilan || '-',
         'Jilid Saat Ini': s.jilid || '-',
@@ -214,7 +214,7 @@ const PentashihDashboard = () => {
 
       const stagnantData = stagnantSantriList.map((s, idx) => ({
         'No': idx + 1,
-        'Nomor Induk': s.nomor_induk_qiroati || '-',
+        'Nomor Induk': s.nomor_induk || '-',
         'Nama Murid': s.nama_lengkap,
         'Jilid': s.jilid || '-',
         'Kelas': s.className,
@@ -507,7 +507,7 @@ const PentashihDashboard = () => {
                           </Avatar>
                           <div>
                             <p className="font-semibold leading-tight">{s.nama_lengkap}</p>
-                            <p className="text-[10px] text-muted-foreground font-mono">{s.nomor_induk_qiroati || '-'}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono">{s.nomor_induk || '-'}</p>
                           </div>
                         </div>
                       </td>

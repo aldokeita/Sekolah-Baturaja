@@ -13,9 +13,11 @@ export const getRapatGuruErrorMessage = (error) => {
   const message = error.message || '';
   if (error.code === '23505' || message.toLowerCase().includes('duplicate')) return 'Kehadiran rapat guru untuk guru, jadwal, dan tanggal tersebut sudah tercatat.';
   if (error.code === '42501' || message.toLowerCase().includes('row-level security')) return 'Akses Rapat Guru tidak diizinkan untuk akun ini.';
-  // Nama constraint basis data tetap berawalan `mmq_` — tabelnya tidak diganti
-  // nama demi kompatibilitas data lama. Hanya labelnya yang berbahasa sekolah.
-  if (message.includes('mmq_attendance_status_check')) return 'Status kehadiran rapat guru tidak sesuai aturan database.';
+  // Nama batasannya `..._status_not_blank`, BUKAN `..._status_check`. Baris ini
+  // dulu mencocokkan nama yang tidak pernah ada, jadi penerjemahannya tidak
+  // pernah aktif. Tabelnya kini bernama rapat_guru_absensi (migrasi
+  // 20260815000500), dan batasannya ikut berganti nama.
+  if (message.includes('rapat_guru_absensi_status_not_blank')) return 'Status kehadiran rapat guru tidak sesuai aturan database.';
   return message || 'Terjadi kesalahan pada fitur Rapat Guru.';
 };
 

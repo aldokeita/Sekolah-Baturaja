@@ -1901,9 +1901,74 @@ jilid, `website_content` hanya berisi kunci `profile`, dan staf berjabatan "Guru
 pengguna, sehingga menjalankan ulang seed setelah nilai aliasnya berubah menabrak batasan yang
 tidak disebut targetnya. Diganti `on conflict do nothing` tanpa target.
 
-**Sisa yang masih menyebut produk lama, di luar lingkup permintaan ini:** nama kolom
-`santri.nomor_induk_qiroati` dan tabel `mmq_*` — keduanya nama skema, hanya bisa diubah lewat
-migrasi tersendiri, dan sengaja dibiarkan demi kompatibilitas data lama.
+### Nama skema warisan madrasah dibuang — **Tuntas**
+
+Migrasi `20260815000500_rename_legacy_qiroati_and_mmq.sql` (**sudah diterapkan**):
+
+```
+santri.nomor_induk_qiroati  ->  santri.nomor_induk
+mmq_schedule                ->  rapat_guru_jadwal
+mmq_attendance              ->  rapat_guru_absensi
+mmq_notulensi               ->  rapat_guru_notulensi
+```
+
+`ALTER TABLE ... RENAME` mempertahankan seluruh data, indeks, batasan, dan foreign key —
+tidak ada baris yang disalin atau hilang. Migrasi ini **wajib paling akhir**: migrasi
+terdahulu menyebut nama lamanya dan tidak boleh disunting, jadi pada basis data baru semuanya
+berjalan lebih dulu lalu berkas ini mengganti namanya di penghujung.
+
+**Rute `/api/mmq/*` sengaja TIDAK diganti.** Itu kontrak antara frontend dan backend, bukan
+nama skema; menggantinya perkara terpisah.
+
+#### Dua bug lama yang ikut terbongkar
+
+**1. Field NUPTK di panel Data Guru tidak pernah tersimpan.** Formulir menulis ke
+`nomor_induk_qiroati` pada tabel `guru` — kolom yang **tidak pernah ada** di sana; hanya
+`santri` yang memilikinya. Nilainya disaring habis oleh allowlist `guruEditable`, jadi apa pun
+yang diketik admin hilang tanpa pesan dan kolomnya selamanya tampil "-".
+
+Diperbaiki menyeluruh: kolom `guru.nuptk` dibuat, ditambahkan ke `guruEditable` dan
+`guruSafeColumns`, diteruskan `pickGuruProfileFields` (yang juga tidak meneruskannya), dan
+formulirnya menunjuk `nuptk`. Terbukti lewat API: simpan `1987031420091001` lalu baca ulang —
+nilainya kembali utuh.
+
+**2. Penerjemah pesan galat rapat guru tidak pernah aktif.** `rapatGuruAdapters.js` mencocokkan
+nama batasan `mmq_attendance_status_check`. Batasan itu sebenarnya bernama
+`mmq_attendance_status_not_blank` — nama yang dicocokkan tidak pernah ada, jadi cabangnya mati.
+Ketahuan justru karena migrasi rename-nya gagal pada nama yang salah. Kini keduanya memakai
+`rapat_guru_absensi_status_not_blank`.
+
+#### Yang sengaja tidak disentuh
+
+`scripts/*` masih menyebut nama lama — **itu benar**. Semuanya perkakas era Supabase yang
+membaca skema produk terdahulu: `prepare-production-migration.mjs` memuat
+`backup-lpq-full-2026-07-21.json`, dan `validate-production-migration-local.ps1` menolak target
+selain Supabase lokal di port 55321. Nama lama di sana **mendeskripsikan basis data lama**;
+menggantinya justru merusak maksudnya. Begitu pula `supabase/functions/*` (dormant),
+`supabase/schema-production-backup.sql` (cuplikan), dan migrasi terdahulu.
+
+`scripts/validate-migration-order.ps1` juga dibiarkan: ia memeriksa **nama berkas migrasi**,
+bukan nama tabel hidup, dan penjaganya tetap sahih karena migrasi rename berada setelah
+`20260624001000_mmq_core.sql`.
+
+#### Bukti uji
+
+Rantai pemasangan penuh dijalankan di basis data kosong `renametest`:
+`00_bootstrap` → **67 migrasi** → stub `auth.users` → `seed.sql` → `02_auth_columns` →
+`03_dummy_accounts`. **Semua lolos**, ketiga tabel `rapat_guru_*` ada, `santri.nomor_induk`
+dan `guru.nuptk` ada. Basis data uji dihapus setelahnya.
+
+Pada basis data kerja, setelah migrasi diterapkan dan backend dikompilasi ulang:
+
+| Uji | Hasil |
+|---|---|
+| `GET /api/guru`, `/santri`, `/classes`, `/payments`, `/ppdb` | 200 semua |
+| `GET /api/mmq/schedules`, `/attendance`, `/notulensi` | 200, data lama terbaca |
+| **login murid lewat nomor induk** | **OK** — jalur `auth.go` yang kolomnya berganti nama |
+| simpan lalu baca NUPTK | tersimpan dan terbaca |
+
+**Catatan galat uji, bukan cacat migrasi.** Percobaan pertama gagal karena `02_auth_columns.sql`
+terlewat dari urutan uji — urutan sebenarnya `00 → 01 (migrasi + seed) → 02 → 03`.
 
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 

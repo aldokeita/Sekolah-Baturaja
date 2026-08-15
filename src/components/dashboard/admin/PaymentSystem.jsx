@@ -773,7 +773,7 @@ const PaymentSystem = () => {
       const templates = await fetchWhatsAppTemplates();
       const message = renderWhatsAppTemplate(templates.paymentReceipt, {
         nama_santri: santriNames,
-        nomor_induk: santriWithPhone.nomor_induk_qiroati || '-',
+        nomor_induk: santriWithPhone.nomor_induk || '-',
         rincian: itemsText,
         nominal: `Rp ${totalAmount.toLocaleString('id-ID')}`,
         tanggal: receiptData.timestamp.toLocaleDateString('id-ID'),
@@ -994,7 +994,7 @@ const PaymentSystem = () => {
                       <p className="text-[10px] font-semibold mb-0.5" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.recipientLabel}</p>
                       <p className="text-xs font-bold">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
                     </>}
-                    {receiptVisibility.studentId !== false && <p className="text-[10px] font-mono mt-1" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.studentIdLabel} {receiptData.santri.map(s => s.nomor_induk_qiroati || s.nis || s.nisn).filter(Boolean).join(', ') || '-'}</p>}
+                    {receiptVisibility.studentId !== false && <p className="text-[10px] font-mono mt-1" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.studentIdLabel} {receiptData.santri.map(s => s.nomor_induk || s.nis || s.nisn).filter(Boolean).join(', ') || '-'}</p>}
                   </div>
 
                   {isPaymentPaid(receiptData.status) && receiptVisibility.watermark !== false && (

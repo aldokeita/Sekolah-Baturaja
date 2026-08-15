@@ -977,7 +977,7 @@ func (h *PpdbHandler) Update(w http.ResponseWriter, r *http.Request) {
 // mencegah tabrakan yang paling sering.
 //
 // Ini USULAN, bukan jaminan. Penjaga sebenarnya indeks unik
-// `santri_nomor_induk_qiroati_unique`; dua petugas yang membuka dialog pada detik
+// `santri_nomor_induk_unique`; dua petugas yang membuka dialog pada detik
 // yang sama akan menerima usulan yang sama, dan yang kedua ditolak basis data.
 func (h *PpdbHandler) UsulanNomorInduk(w http.ResponseWriter, r *http.Request) {
 	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
@@ -1001,9 +1001,9 @@ func (h *PpdbHandler) UsulanNomorInduk(w http.ResponseWriter, r *http.Request) {
 	 * konversi ini gagal. */
 	var terpakai *int
 	err := h.db.QueryRow(r.Context(), `
-		SELECT max(substring(nomor_induk_qiroati from '^' || $1 || '(\d+)$')::int)
+		SELECT max(substring(nomor_induk from '^' || $1 || '(\d+)$')::int)
 		FROM santri
-		WHERE nomor_induk_qiroati ~ ('^' || $1 || '\d+$')
+		WHERE nomor_induk ~ ('^' || $1 || '\d+$')
 	`, prefiks).Scan(&terpakai)
 	if err != nil {
 		jsonError(w, "gagal menghitung nomor induk", http.StatusInternalServerError)
@@ -1403,7 +1403,7 @@ func (h *PpdbHandler) JadikanMurid(w http.ResponseWriter, r *http.Request) {
 
 	// Bentuk muatannya mengikuti pickSantriProfileFields di dataMasterAdapters.js.
 	profil := map[string]any{
-		"nomor_induk_qiroati": nomorInduk,
+		"nomor_induk": nomorInduk,
 		"nama_lengkap":        p.NamaLengkap,
 		"kategori":            "Anak",
 		"status":              "Aktif",
@@ -1457,7 +1457,7 @@ func (h *PpdbHandler) JadikanMurid(w http.ResponseWriter, r *http.Request) {
 	murid, err := insertSantriTx(ctx, tx, profil)
 	if err != nil {
 		pesan := err.Error()
-		if strings.Contains(pesan, "santri_nomor_induk_qiroati_unique") {
+		if strings.Contains(pesan, "santri_nomor_induk_unique") {
 			jsonError(w, "nomor induk "+nomorInduk+" sudah dipakai murid lain. Ganti nomornya.", http.StatusConflict)
 			return
 		}

@@ -60,10 +60,10 @@ export const validateDefaultSppAmount = (value) => {
 };
 
 export const pickSantriProfileFields = (input) => {
-  const nomorInduk = normalizeNomorIndukQiroati(input.nomor_induk_qiroati);
+  const nomorInduk = normalizeNomorIndukQiroati(input.nomor_induk);
 
   return {
-    nomor_induk_qiroati: nomorInduk,
+    nomor_induk: nomorInduk,
     nisn: input.nisn?.trim() || null,
     nis: input.nis?.trim() || null,
     angkatan: input.angkatan?.trim() || null,
@@ -143,6 +143,10 @@ export const pickGuruProfileFields = (input, role = 'guru') => ({
   jenis_kelamin: input.jenis_kelamin || null,
   tanggal_lahir: input.tanggal_lahir || null,
   status_guru: input.status_guru || null,
+  // Field NUPTK di panel Data Guru dulu tidak pernah sampai ke backend: ia
+  // menulis ke `nomor_induk_qiroati`, kolom yang tidak ada pada tabel guru, dan
+  // pemilih field ini pun tidak meneruskannya.
+  nuptk: input.nuptk || null,
   status: input.status || 'active',
 });
 

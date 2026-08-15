@@ -43,7 +43,7 @@ func (h *GuruHandler) Routes() chi.Router {
 // prevent bcrypt hashes from leaking to the client.
 const guruSafeColumns = `g.id, g.nama, g.email, g.no_hp, g.alamat, g.foto_url,
 	g.rfid_tag, g.jabatan, g.roles, g.is_notulen, g.jenis_kelamin,
-	g.tanggal_lahir, g.status_guru, g.status, g.created_at, g.updated_at,
+	g.tanggal_lahir, g.status_guru, g.status, g.nuptk, g.created_at, g.updated_at,
 	g.deleted_at, g.created_by, g.updated_by, g.avatar_path`
 
 // Columns a client may set/update on guru.
@@ -52,6 +52,12 @@ var guruEditable = map[string]bool{
 	"avatar_path": true, "rfid_tag": true, "jabatan": true, "roles": true,
 	"is_notulen": true, "jenis_kelamin": true, "tanggal_lahir": true,
 	"status_guru": true, "status": true, "password": true,
+	// Panel Data Guru sudah lama punya field "NUPTK", tetapi menuliskannya ke
+	// `nomor_induk_qiroati` — kolom yang tidak pernah ada pada tabel `guru`.
+	// Allowlist ini menyaringnya habis, jadi apa pun yang diketik admin hilang
+	// tanpa pesan dan kolomnya selamanya tampil "-". Kolom `nuptk` dibuat oleh
+	// migrasi 20260815000500 dan sekarang benar-benar tersimpan.
+	"nuptk": true,
 }
 
 // guruCreatable is guruEditable plus id, which Create supplies itself from the

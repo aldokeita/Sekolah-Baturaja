@@ -52,7 +52,7 @@ func (h *SantriHandler) Routes() chi.Router {
 
 // Columns a client may set on create.
 var santriInsertable = map[string]bool{
-	"nomor_induk_qiroati": true, "nama_lengkap": true, "nama_panggilan": true,
+	"nomor_induk": true, "nama_lengkap": true, "nama_panggilan": true,
 	"kategori": true, "jenis_kelamin": true, "tanggal_lahir": true, "tempat_lahir": true,
 	"alamat": true, "no_hp_ortu": true, "foto_url": true, "avatar_path": true,
 	"rfid_tag": true, "current_class_id": true, "sesi_mengaji": true, "jilid": true,
@@ -144,7 +144,7 @@ func (h *SantriHandler) List(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "%"+search+"%")
 		i := len(args)
 		where = append(where, fmt.Sprintf(
-			"(s.nama_lengkap ILIKE $%d OR s.nisn ILIKE $%d OR s.nis ILIKE $%d OR s.nomor_induk_qiroati ILIKE $%d "+
+			"(s.nama_lengkap ILIKE $%d OR s.nisn ILIKE $%d OR s.nis ILIKE $%d OR s.nomor_induk ILIKE $%d "+
 				"OR s.nama_panggilan ILIKE $%d OR s.nama_ayah ILIKE $%d "+
 				"OR s.rfid_tag ILIKE $%d)", i, i, i, i, i, i, i))
 	}
@@ -651,7 +651,7 @@ func insertSantriTx(ctx context.Context, tx pgx.Tx, body map[string]any) (map[st
 	// Murid login pakai NISN/NIS; jadikan salah satunya password awal supaya akun
 	// baru langsung bisa dipakai. Login self-heals hash-nya saat pertama dipakai.
 	if _, ok := profile["password"]; !ok {
-		for _, key := range []string{"nisn", "nis", "nomor_induk_qiroati"} {
+		for _, key := range []string{"nisn", "nis", "nomor_induk"} {
 			if v := strings.TrimSpace(asString(profile[key])); v != "" {
 				profile["password"] = v
 				break

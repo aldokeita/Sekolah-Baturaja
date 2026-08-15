@@ -337,7 +337,7 @@ export const generateRaporPDF = async (santriData, attendanceData, hafalanData, 
         doc.setFont('helvetica', 'normal');
 
         doc.text("Nomor Induk", 15, 66);
-        doc.text(`: ${santriData.nomor_induk_qiroati || '-'}`, 48, 66);
+        doc.text(`: ${santriData.nomor_induk || '-'}`, 48, 66);
 
         doc.text("Tingkat", 15, 72);
         doc.setFont('helvetica', 'bold');
@@ -772,7 +772,7 @@ export const generateRaporDOCX = async (santriData, attendanceData, hafalanData,
                         new TableRow({
                             children: [
                                 createCell("Nomor Induk", { bold: true, shadingColor: "F8FAFC" }),
-                                createCell(santriData.nomor_induk_qiroati || '-', { bold: true }),
+                                createCell(santriData.nomor_induk || '-', { bold: true }),
                                 createCell("Wali Murid (Ibu)", { bold: true, shadingColor: "F8FAFC" }),
                                 createCell(guardianName, { bold: true })
                             ]

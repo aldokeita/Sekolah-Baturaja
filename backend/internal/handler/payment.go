@@ -214,7 +214,7 @@ func (h *PaymentHandler) ResetPaymentItemSetting(w http.ResponseWriter, r *http.
 const paymentSelect = `
 	SELECT p.id, p.santri_id, p.bulan, p.tahun, p.jumlah, p.tanggal_pembayaran::text,
 	       p.metode_pembayaran, p.status, p.catatan, p.transaction_id, p.created_at::text,
-	       s.nama_lengkap, s.nomor_induk_qiroati, s.kategori, s.no_hp_ortu,
+	       s.nama_lengkap, s.nomor_induk, s.kategori, s.no_hp_ortu,
 	       s.jilid, s.sesi_mengaji, s.nama_ayah, s.nama_ibu, s.foto_url, s.avatar_path,
 	       c.nama_kelas, c.id_guru, g.nama AS guru_nama
 	FROM payments p
@@ -285,7 +285,7 @@ func scanPaymentRows(rows pgx.Rows) ([]paymentRow, error) {
 			p.Santri = map[string]any{
 				"id":                  p.SantriID,
 				"nama_lengkap":        p.NamaLengkap,
-				"nomor_induk_qiroati": p.NomorInduk,
+				"nomor_induk": p.NomorInduk,
 				"kategori":            p.Kategori,
 				"no_hp_ortu":          p.NoHpOrtu,
 				"jilid":               p.Jilid,
@@ -372,7 +372,7 @@ func (h *PaymentHandler) ListPayments(w http.ResponseWriter, r *http.Request) {
 		idx++
 	}
 	if search != "" {
-		base += fmt.Sprintf(" AND (s.nama_lengkap ILIKE $%d OR s.nomor_induk_qiroati ILIKE $%d)", idx, idx)
+		base += fmt.Sprintf(" AND (s.nama_lengkap ILIKE $%d OR s.nomor_induk ILIKE $%d)", idx, idx)
 		args = append(args, "%"+search+"%")
 		idx++
 	}

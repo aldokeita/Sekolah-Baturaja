@@ -46,7 +46,7 @@ const SearchResultItem = ({ item, category, onSelect, isSelected }) => {
     switch (category) {
       case 'santri':
         title = item.nama_lengkap || 'Data tidak lengkap';
-        subtitle = `NIQ: ${item.nomor_induk_qiroati || '-'} | Jilid: ${item.jilid || '-'}`;
+        subtitle = `NIQ: ${item.nomor_induk || '-'} | Jilid: ${item.jilid || '-'}`;
         status = item.status;
         avatarUrl = item.foto_url;
         fallback = title.charAt(0);

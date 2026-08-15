@@ -48,11 +48,11 @@ const SantriLevelScene = lazy(() => import('@/components/dashboard/santri/Santri
 /**
  * SANTRI AUTHENTICATION FLOW:
  *
- * 1. Login Trigger: Santri inputs `nomor_induk_qiroati` or `nama_panggilan` as username, plus their password.
+ * 1. Login Trigger: Santri inputs `nomor_induk` or `nama_panggilan` as username, plus their password.
  * 2. Auth Context: LoginPage calls `signInWithUsername(username, password)` from AuthContext.jsx.
  * 3. Auth Call: The context POSTs to `/api/auth/login` on the Go backend.
  * 4. Backend Logic (internal/handler/auth.go):
- *    - `resolveUser` checks the `santri` table by nomor_induk_qiroati or nama_panggilan (active only).
+ *    - `resolveUser` checks the `santri` table by nomor_induk or nama_panggilan (active only).
  *    - Falls back to `guru` + `user_profiles` by email for admin/guru/pentashih.
  *    - A santri whose password is still the plain nomor_induk self-heals to a bcrypt hash on first login.
  *    - On success it returns an access/refresh token pair carrying the user id and role.
@@ -327,7 +327,7 @@ const EditProfileDialog = ({ isOpen, onOpenChange, santri, onUpdate }) => {
 
     const handleSave = async () => {
         setIsSaving(true);
-        const { nama_panggilan, password, points, jilid, sesi_mengaji, nomor_induk_qiroati, class: classObj, id_kelas, ...allowedData } = formData;
+        const { nama_panggilan, password, points, jilid, sesi_mengaji, nomor_induk, class: classObj, id_kelas, ...allowedData } = formData;
         try {
             await updateSantri(santri.id, allowedData);
             toast({ title: "Berhasil", description: "Profil berhasil diperbarui." });

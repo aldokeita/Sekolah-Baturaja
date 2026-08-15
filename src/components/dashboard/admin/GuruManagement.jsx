@@ -84,7 +84,7 @@ const GuruManagement = () => {
   const resetForm = () => {
     setFormData({
       nama: '', jabatan: '', email: '', no_hp: '', alamat: '', rfid_tag: '', is_notulen: false, foto_url: '', avatar_path: '', password: '',
-      roles: [], jenis_kelamin: 'Laki-laki', status_guru: 'Belum Bersertifikat', nomor_induk_qiroati: '', tanggal_lahir: ''
+      roles: [], jenis_kelamin: 'Laki-laki', status_guru: 'Belum Bersertifikat', nuptk: '', tanggal_lahir: ''
     });
     setEditingGuru(null);
   };
@@ -100,7 +100,7 @@ const GuruManagement = () => {
         roles: guru.roles || [],
         jenis_kelamin: guru.jenis_kelamin || 'Laki-laki',
         status_guru: guru.status_guru || 'Belum Bersertifikat',
-        nomor_induk_qiroati: guru.nomor_induk_qiroati || '',
+        nuptk: guru.nuptk || '',
         tanggal_lahir: guru.tanggal_lahir || ''
     });
     setIsDialogOpen(true);
@@ -140,7 +140,7 @@ const GuruManagement = () => {
             'Status': guru.status_guru || 'Belum Bersertifikat',
             'Jabatan': labelStafRole(guru.jabatan || '-'),
             'Role': guru.roles && guru.roles.length > 0 ? guru.roles.map((item) => ROLE_LABELS[item] || item).join(', ') : '-',
-            'NUPTK': guru.nomor_induk_qiroati || '-',
+            'NUPTK': guru.nuptk || '-',
             'Jenis Kelamin': guru.jenis_kelamin || '-',
             'Tanggal Lahir': guru.tanggal_lahir ? new Date(guru.tanggal_lahir).toLocaleDateString('id-ID') : '-',
         }));
@@ -283,7 +283,7 @@ const GuruManagement = () => {
             guru.nama.toLowerCase().includes(filters.search.toLowerCase()) ||
             (guru.email && guru.email.toLowerCase().includes(filters.search.toLowerCase())) ||
             (guru.rfid_tag && guru.rfid_tag.includes(filters.search)) ||
-            (guru.nomor_induk_qiroati && guru.nomor_induk_qiroati.includes(filters.search));
+            (guru.nuptk && guru.nuptk.includes(filters.search));
 
         const notulenMatch = filters.isNotulen === 'all' || (filters.isNotulen === 'yes' && guru.is_notulen) || (filters.isNotulen === 'no' && !guru.is_notulen);
         const rfidMatch = filters.rfidStatus === 'all' || (filters.rfidStatus === 'assigned' && guru.rfid_tag) || (filters.rfidStatus === 'unassigned' && !guru.rfid_tag);
@@ -382,7 +382,7 @@ const GuruManagement = () => {
                         <span className="font-medium" style={{ color: 'hsl(var(--admin-text-primary))' }}>{guru.nama}</span>
                     </div>
                 </td>
-                <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--admin-text-secondary))' }}>{guru.nomor_induk_qiroati || '-'}</td>
+                <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--admin-text-secondary))' }}>{guru.nuptk || '-'}</td>
                 <td className="p-3">
                     <span className={guru.status_guru === 'Bersertifikat' ? 'admin-status-badge admin-status-badge--success' : 'admin-status-badge admin-status-badge--neutral'}>
                         {guru.status_guru || 'Belum Bersertifikat'}
@@ -438,7 +438,7 @@ const GuruManagement = () => {
                  <div className="col-span-full font-semibold text-lg border-b pb-2 text-primary">Informasi Pribadi</div>
 
                  <div className="space-y-1.5"><label htmlFor="nama" className="text-xs font-medium uppercase text-muted-foreground">Nama Lengkap</label><Input id="nama" value={formData.nama || ''} onChange={handleInputChange} required /></div>
-                 <div className="space-y-1.5"><label htmlFor="nomor_induk_qiroati" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3"/> NUPTK</label><Input id="nomor_induk_qiroati" value={formData.nomor_induk_qiroati || ''} onChange={handleInputChange} placeholder="Contoh: 123456789" /></div>
+                 <div className="space-y-1.5"><label htmlFor="nuptk" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3"/> NUPTK</label><Input id="nuptk" value={formData.nuptk || ''} onChange={handleInputChange} placeholder="Contoh: 123456789" /></div>
                  <div className="space-y-1.5"><label htmlFor="jabatan" className="text-xs font-medium uppercase text-muted-foreground">Jabatan Utama (Display)</label><Input id="jabatan" value={formData.jabatan || ''} onChange={handleInputChange} /></div>
 
                  <div className="space-y-1.5"><label htmlFor="no_hp" className="text-xs font-medium uppercase text-muted-foreground">No. HP</label><Input id="no_hp" value={formData.no_hp || ''} onChange={handleInputChange} /></div>
