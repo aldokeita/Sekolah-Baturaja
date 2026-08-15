@@ -1693,6 +1693,45 @@ Tombolnya kini **dimatikan** bila guru bukan wali kelas, dengan tooltip "Hanya w
 yang dapat memindahkan murid". Penjagaan backend tidak diubah — yang diperbaiki hanya
 menawarkan aksi yang mustahil lalu berbohong soal sebabnya.
 
+#### Rekap Absensi & Rapat Guru — hasil pemeriksaan
+
+**Rekap Kinerja membocorkan daftar guru (PELANGGARAN, sudah diperbaiki).**
+Tab "Rekap Kinerja" punya dropdown **PILIH GURU PENGAJAR** berisi **seluruh 12 guru**. Seorang
+guru dapat memilih rekannya — bertentangan langsung dengan aturan pemilik: *"Guru hanya dapat
+melihat kinerjanya sendiri dan tidak boleh memilih atau membuka data guru lain."* Ini lolos
+dari audit fitur 1 karena `GuruPerformanceSummary` sama sekali tidak mengenal peran.
+
+Datanya sendiri sebenarnya sudah tertutup — penyaring pada `attendance.List`, `classes.List`,
+dan `santri.List` mengembalikan kosong untuk guru lain. Tetapi membiarkan dropdownnya terisi
+tetap salah dua kali: **membocorkan daftar nama seluruh guru**, dan hasil kosongnya terbaca
+seperti *"guru ini tidak pernah hadir"* padahal artinya *"Anda tidak berhak melihat"*.
+
+Kini bagi peran `guru` dropdownnya **dihapus sama sekali** — bukan diisi satu nama, supaya
+tidak terkesan pembatasan sementara — diganti label "Kinerja Mengajar Anda" dan namanya
+sebagai teks biasa. Terverifikasi di browser: hanya Bulan dan Tahun yang tersisa sebagai
+pilihan.
+
+**Rapat Guru — sehat.** Judul "Rapat Guru", keterangan "Sistem absensi dan notulensi untuk
+guru", jadwal lama termuat (`Jumat 16:00–17:00, Ruang Demo`), dan riwayat notulensi lama
+(`Notulensi Demo, 5/8/2026 oleh Guru Demo A`) tetap terbaca — bukti penggantian nama fitur 6
+tidak memutus data lama. Tab **Notulensi nonaktif** untuk Rina karena ia bukan notulen; itu
+perilaku yang benar.
+
+**Rekap Absensi kosong untuk guru mata pelajaran — BELUM diperbaiki, perlu keputusan.**
+`GuruAttendanceRecap` menurunkan sesi wajib seorang guru dari `classes.filter(c => c.id_guru
+=== guru.id)` — **kelas yang diwalikannya**, memakai model sesi lama (Pagi/Siang/Sore). Guru
+mata pelajaran tidak mewalikan kelas mana pun, jadi `assignedSessions` kosong dan seluruh
+rekapnya hilang dengan pesan "Tidak ada data guru atau jadwal mengajar ditemukan".
+
+Ini **bukan** akibat penyempitan cakupan kelas di atas — bahkan saat kelima kelas terlihat,
+tidak satu pun ber-`id_guru` miliknya.
+
+Akar masalahnya sebuah ketidaksesuaian model: sejak `2a362b6` absensi guru dicatat lewat
+**jadwal pelajaran**, sementara rekapnya masih mengukur **sesi kelas perwalian**. Memperbaiki
+berarti menurunkan sesi wajib dari `jadwal_pelajaran` (lewat `getTeacherLessonSession`) untuk
+guru yang punya jadwal — perubahan berarti pada panel admin, bukan tambalan kecil. Sengaja
+tidak dikerjakan tanpa persetujuan.
+
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 
 Seluruh fitur 1–6 diperiksa langsung di `localhost:3000` dengan akun guru sungguhan, bukan
