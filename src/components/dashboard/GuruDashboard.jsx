@@ -15,8 +15,8 @@ import MmqSection from '@/components/dashboard/guru/MmqSection';
 import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import GuruAttendanceRecap from '@/components/dashboard/admin/GuruAttendanceRecap';
 import AttendanceDetailsModal from '@/components/dashboard/shared/AttendanceDetailsModal';
-import AbsensiSaya from '@/components/dashboard/shared/AbsensiSaya';
 import ModulNilai from '@/components/dashboard/shared/ModulNilai';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AttendanceStatusIcon from '@/components/dashboard/shared/AttendanceStatusIcon';
 import { fetchGuruDetail, updateGuru, updateSantriJilid } from '@/lib/dataMasterAdapters';
 import { fetchAttendance } from '@/lib/attendanceAdapters';
@@ -493,26 +493,6 @@ const GuruDashboard = () => {
             </div>
           </section>
         )}
-        {/* Jadwal mengajar. Sumbernya endpoint yang sama dengan panel admin,
-            disaring guru_id, dan hanya bisa dibaca — penyuntingan tetap di admin. */}
-        <JadwalSaya
-          guruId={guruData?.id}
-          title="Jadwal Mengajar Saya"
-          emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
-        />
-
-        {/* Absensi pribadi, baca saja. Pencatatan tetap satu pintu lewat kartu
-            RFID di halaman Absensi Digital; koreksi tetap wewenang admin. */}
-        <div className="mt-6">
-          <AbsensiSaya userId={guruData?.id} />
-        </div>
-
-        {/* Nilai asesmen. Kelas & mapel diturunkan dari jadwal mengajar; backend
-            menolak kombinasi yang tidak diampu, bukan sekadar disembunyikan. */}
-        <div className="mt-6">
-          <ModulNilai guruId={guruData?.id} />
-        </div>
-
         <div className="mt-6 space-y-8 md:mt-8">
             {myClasses.map(cls => (
                 <Card key={cls.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-border/50">
@@ -624,6 +604,31 @@ const GuruDashboard = () => {
                 </Card>
             ))}
         </div>
+
+        {/* Jadwal dan nilai dipindah ke subtab supaya tabel data murid tetap
+            jadi yang pertama terlihat, bukan terdorong ke bawah dua panel. */}
+        <Tabs defaultValue="jadwal" className="mt-6 md:mt-8">
+          <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
+            <TabsTrigger value="jadwal">Jadwal Mengajar</TabsTrigger>
+            <TabsTrigger value="nilai">Nilai Asesmen</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="jadwal" className="mt-4">
+            {/* Sumbernya endpoint yang sama dengan panel admin, disaring guru_id,
+                dan hanya bisa dibaca — penyuntingan tetap di admin. */}
+            <JadwalSaya
+              guruId={guruData?.id}
+              title="Jadwal Mengajar Saya"
+              emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
+            />
+          </TabsContent>
+
+          <TabsContent value="nilai" className="mt-4">
+            {/* Kelas & mapel diturunkan dari jadwal mengajar; backend menolak
+                kombinasi yang tidak diampu, bukan sekadar disembunyikan. */}
+            <ModulNilai guruId={guruData?.id} />
+          </TabsContent>
+        </Tabs>
       </div>
       <Dialog open={Boolean(previewAvatar)} onOpenChange={(open) => { if (!open) setPreviewAvatar(null); }}>
         <DialogContent className="max-w-md overflow-hidden p-0">

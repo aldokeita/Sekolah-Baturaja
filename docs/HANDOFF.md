@@ -1352,6 +1352,27 @@ basis data pengembangan lokal.
 
 **Belum diverifikasi:** tampilan panel di browser, karena alasan yang sama seperti fitur 1.
 
+### Tata letak dashboard guru — subtab, dan panel absensi dinonaktifkan
+
+Permintaan pemilik: **tabel data murid harus yang pertama terlihat.** Sebelumnya tiga panel
+(jadwal, absensi, nilai) menumpuk di atas tabel dan mendorongnya jauh ke bawah.
+
+- **Jadwal Mengajar** dan **Nilai Asesmen** dipindah ke `Tabs`, ditaruh **di bawah** tabel
+  kelas. Isinya tidak berubah, hanya letak dan pembungkusnya.
+- **Panel `AbsensiSaya` dinonaktifkan** — komponennya masih ada di
+  `src/components/dashboard/shared/AbsensiSaya.jsx` dan tidak dihapus, hanya tidak lagi
+  dirender di `GuruDashboard`. Mengaktifkannya kembali cukup dengan mengimpor dan
+  memasangnya lagi sebagai subtab ketiga.
+
+**Penting — yang TIDAK ikut dinonaktifkan:** seluruh penjagaan backend dari fitur 1 tetap
+berlaku. `Update` dan `MarkAbsent` tetap dijaga `CanManage`, `List` tetap disaring per akun,
+dan `AttendanceDetailsModal` tetap memakai `canManageRole`. Itu perbaikan keamanan, bukan
+fitur tampilan, jadi mematikannya akan membuka kembali lubang yang memungkinkan santri
+mengubah baris absensi mana pun.
+
+Tombol **Absensi** di kartu profil guru (membuka `GuruAttendanceRecap` mode baca) sudah ada
+sejak sebelum rangkaian ini dan tetap dibiarkan.
+
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.
 
