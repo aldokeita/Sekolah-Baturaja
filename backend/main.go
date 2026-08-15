@@ -236,6 +236,11 @@ func corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		// Tanpa baris ini browser menyembunyikan X-Total-Count dari JavaScript,
+		// meski servernya mengirim. Setiap panel berhalaman lalu membaca total 0,
+		// sehingga tombol "Berikutnya" mati dan baris di halaman kedua dan
+		// seterusnya tidak pernah bisa dibuka.
+		w.Header().Set("Access-Control-Expose-Headers", "X-Total-Count")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return

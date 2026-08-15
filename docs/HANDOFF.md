@@ -372,6 +372,69 @@ restart dev server manual.
 
 ## 4. Jebakan yang sudah ditemukan
 
+### `X-Total-Count` tidak di-expose CORS — seluruh paginasi lumpuh — SUDAH DIPERBAIKI
+
+Backend mengirim `X-Total-Count`, tapi `corsMiddleware` tidak menyertakan
+`Access-Control-Expose-Headers`. Browser menyembunyikan header itu dari JavaScript, jadi
+`res.headers.get('X-Total-Count')` selalu `null`.
+
+Di `apiClient.js` penjagaannya memperburuk keadaan: `Number(null)` menghasilkan `0`, dan `0` lolos
+`Number.isFinite`, sehingga fallback panjang array **tidak pernah terpakai**. Setiap panel
+berhalaman melaporkan `total = 0`, `totalPages` jatuh ke 1, dan tombol **Berikutnya mati permanen**.
+Baris di halaman kedua ke atas tidak bisa dibuka sama sekali — murid ke-11 benar-benar hilang dari
+panel Data Murid meski ada di basis data.
+
+Terkena: Data Murid, Rekap Absensi Murid, Riwayat Bayar, Pendaftaran SPMB, Log Login.
+
+Dua perbaikan, keduanya diperlukan:
+
+- `backend/main.go` — `Access-Control-Expose-Headers: X-Total-Count`.
+- `src/lib/apiClient.js` — bedakan header hilang dari header bernilai `"0"`; periksa string
+  mentahnya, bukan hasil `Number()`-nya.
+
+Polanya layak diingat: **header respons kustom tidak terbaca lintas asal kecuali di-expose**, dan
+`Number.isFinite` bukan alat untuk mendeteksi nilai yang tidak ada.
+
+### `fetchClassList()` tanpa `includeGuru` mengosongkan kolom guru
+
+`/api/classes` hanya menyertakan data guru bila diminta `include_guru=true`. `SantriManagement`
+memanggilnya tanpa argumen, jadi `cls.guru` selalu `undefined` dan kolom **GURU PENGAMPU** berbunyi
+"Belum ada guru" untuk seluruh murid — padahal wali kelasnya terisi dan Manajemen Kelas
+menampilkannya dengan benar.
+
+Gejalanya menipu karena terlihat seperti data yang belum diisi, bukan permintaan yang kurang lengkap.
+
+### Panel Log Aktivitas Login tidak pernah mencatat apa pun — SUDAH DIPERBAIKI
+
+`recordLoginAttempt` di `src/lib/loginSecurityAdapters.js` diekspor lengkap dengan rate limit di
+sisi backend, tetapi **tidak dipanggil satu berkas pun**. Panelnya hidup dan endpointnya bekerja;
+yang hilang hanya pemanggilnya. Efeknya panel keamanan yang tampak berfungsi padahal isinya beku.
+
+Sekarang `AuthContext.signInWithUsername` memanggilnya di dua cabang: gagal (sebelum melempar error)
+dan berhasil (setelah `apiClient.setTokens`, supaya backend bisa membaca `user_id` dan `role` dari
+Bearer token, bukan dari badan permintaan).
+
+Ikutannya: constraint `login_logs_role_check` hanya mengenal admin/guru/santri/pentashih, sehingga
+sesi `tata_usaha` dan `superadmin` tersimpan dengan role NULL dan tampil "Peran: N/A". Diperluas
+oleh `20260815000700_login_logs_role_lengkap.sql`; daftar di `loginRoleAllowed` (loginlogs.go) harus
+tetap sama persis dengan constraint tersebut.
+
+### Kalender akademik kosong membuat rekap kehadiran salah hitung
+
+`academic_calendar` tidak berisi satu baris pun, jadi 17 Agustus tampil sebagai Hari Efektif.
+Dampaknya bukan kosmetik: `GuruAttendanceRecap` dan Rekap Absensi Murid menurunkan hari efektif dari
+kalender, sehingga setiap libur yang tidak tercatat menaikkan penyebut dan menurunkan persentase
+kehadiran semua orang.
+
+`20260815000800_libur_nasional_tanggal_tetap.sql` menyemai lima libur **bertanggal tetap** untuk
+2026–2030: Tahun Baru Masehi, Hari Buruh, Hari Lahir Pancasila, Hari Kemerdekaan, dan Natal.
+
+Yang **sengaja tidak disemai**: libur yang tanggalnya ditetapkan SKB 3 Menteri tiap tahun — Idul
+Fitri, Idul Adha, Tahun Baru Islam, Maulid Nabi, Isra Mikraj, Imlek, Nyepi, Waisak, Wafat Isa
+Almasih, Kenaikan Isa Almasih, dan seluruh cuti bersama. Tanggalnya mengikuti kalender
+lunar/lunisolar dan baru pasti setelah SKB terbit; menebaknya di migrasi menanam tanggal salah yang
+sulit ditemukan. Sekolah memasukkannya lewat panel Kalender.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

@@ -533,7 +533,10 @@ const SantriManagement = () => {
 
       const [santriRes, classes, birthdayPool] = await Promise.all([
         fetchSantriPage(santriFilters),
-        fetchClassList(),
+        // includeGuru wajib: tanpanya `classes` tidak membawa objek guru sama
+        // sekali, dan kolom GURU PENGAMPU jatuh ke "Belum ada guru" untuk
+        // seluruh murid meski wali kelasnya sudah terisi.
+        fetchClassList({ includeGuru: true }),
         fetchSantriList({ activeOnly: true, notDeleted: true, limit: 200 }),
       ]);
 
@@ -1098,7 +1101,7 @@ const SantriManagement = () => {
             setSelectedSantri(new Set());
             setCurrentPage(page);
           }}
-          itemLabel="santri"
+          itemLabel="murid"
         />
       </div>
 

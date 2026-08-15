@@ -132,10 +132,13 @@ func (h *LoginLogsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 // check (status in ('success', 'failed')).
 var loginStatusAllowed = map[string]bool{"success": true, "failed": true}
 
-// allowed values for login_logs.role — constraint login_logs_role_check
-// check (role is null or role in ('admin', 'guru', 'santri', 'pentashih')).
+// allowed values for login_logs.role — constraint login_logs_role_check,
+// diperluas oleh 20260815000700_login_logs_role_lengkap.sql. Daftar ini harus
+// tetap sama persis dengan constraint tersebut: role di luar daftar akan
+// disimpan sebagai NULL dan tampil "N/A" di panel, bukan menggagalkan insert.
 var loginRoleAllowed = map[string]bool{
-	"admin": true, "guru": true, "santri": true, "pentashih": true,
+	"admin": true, "superadmin": true, "tata_usaha": true,
+	"guru": true, "santri": true, "pentashih": true,
 }
 
 // device has no CHECK constraint on the table, but the original RPC narrowed it
