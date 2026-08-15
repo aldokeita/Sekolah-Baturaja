@@ -1813,6 +1813,50 @@ mengembalikan satu baris, dan `NULL < TIME` bukan TRUE, jadi kelas **tanpa jadwa
 **Terverifikasi di browser:** rekap Rina yang tadinya menulis "Sore" untuk pelajaran pukul
 07.00 kini menulis **"Pagi"**.
 
+### Nama kelas jadi pola SD — **Tuntas**
+
+Nama kelas demo (Purnama, Cendekia, Harmoni, Pelita, Tunas) lebih mirip nama kelompok
+mengaji daripada rombel sekolah dasar. Diganti ke pola **angka tingkat + huruf rombel**, yang
+lazim di SD negeri dan langsung siap bila sekolah punya kelas paralel (1A dan 1B).
+
+| Sebelum | Sesudah |
+|---|---|
+| Kelas Cendekia | **Kelas 1A** |
+| Kelas Harmoni | **Kelas 2A** |
+| Kelas Pelita | **Kelas 3A** |
+| Kelas Purnama | **Kelas 4A** |
+| Kelas Tunas | **Kelas 5A** |
+| — | **Kelas 6A** (baru, kosong) |
+
+Tingkat enam ditambahkan supaya demo punya enam tingkat lengkap seperti SD sungguhan.
+
+**Tiga kelas demo nonaktif dihapus:** `Kelas Demo A`, `Kelas Demo B`, dan
+`Kelas Tahfizh PTPT Demo`.
+
+**Dua penemuan saat menghapusnya.** `classes` dirujuk sembilan tabel, dan tiga di antaranya
+memakai `NO ACTION`, bukan `CASCADE`:
+
+- `santri.current_class_id` — delapan murid demo nonaktif harus dilepas dulu
+  (`current_class_id = NULL`), tidak dihapus
+- `attendance.class_id` — dua baris absensi seed ikut dibuang
+- `class_mutations.from_class_id` / `to_class_id` — **ini yang menggagalkan percobaan
+  pertama**; ada satu baris riwayat mutasi murid demo antar kelas demo. Transaksi
+  ter-*rollback* utuh, tidak ada kerusakan separuh jalan. Baris itu ikut dihapus karena kelas
+  yang dirujuknya memang dibuang.
+
+**Yang benar-benar dikirim ke pembeli adalah `supabase/seed.sql`, bukan data lokal ini.**
+Kelima kelas berjuluk indah itu ternyata **tidak ada di repositori** — data sisa sesi
+pengembangan terdahulu. Yang di-*seed* justru tiga kelas demo tadi, dan itulah yang dilihat
+pembeli pada instalasi baru. `seed.sql` sudah dirapikan: nama kelas jadi Kelas 1A/2A/3A, shift
+`'Sore'` jadi `'Pagi'`, dan tiga murid berkategori `PTPT` beserta `jilid` "Juz 30/29/28" jadi
+murid biasa berkategori `Anak` — kolom jilid dan sesi mengaji hanya relevan bila program
+tahfizh opsional dinyalakan.
+
+**Sisa yang belum disentuh di `seed.sql`:** `nomor_induk_qiroati` masih dipakai sebagai nomor
+induk, alias login memakai domain `@auth.lpqalfathmaulana.local`, `site_name` masih
+"LPQ Al-Fath Maulana", dan kategori hafalan bernama "Doa Demo"/"Surat Demo". Semuanya warisan
+produk lama yang layak dirapikan pada putaran berikutnya.
+
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 
 Seluruh fitur 1–6 diperiksa langsung di `localhost:3000` dengan akun guru sungguhan, bukan
