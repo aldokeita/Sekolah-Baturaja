@@ -1627,11 +1627,13 @@ lamanya masih terbaca:
 
 `npm run lint` dan `npm run build` bersih.
 
-**Sisa yang sengaja tidak disentuh.** Empat berkas coret-coretan menumpuk di `src/`:
-`inspect_mmq_constraint.sql`, `fix_mmq_rls_policies.sql`, `inspect_database.sql`, dan
-`rls_audit_report.md`. Semuanya artefak penelusuran lama yang tidak diimpor siapa pun dan
-tidak ikut build. Membersihkannya di luar lingkup permintaan ini, tetapi **layak dihapus**
-pada rapikan berikutnya.
+**Berkas coret-coretan dihapus.** Empat artefak penelusuran era Supabase menumpuk di `src/`
+dan sudah dibuang: `inspect_mmq_constraint.sql`, `fix_mmq_rls_policies.sql`,
+`inspect_database.sql`, dan `rls_audit_report.md`. Semuanya berisi kueri diagnostik untuk
+"Supabase SQL Editor" — perkakas yang tidak lagi dipakai aplikasi ini — tidak diimpor kode
+mana pun, dan tidak ikut build. Sebutan atasnya masih tertinggal di
+`docs/13-phase-1-5-baseline-result.md` dan `docs/migration/authz-spec.md` sebagai catatan
+sejarah; keduanya memang dokumen arsip, jadi dibiarkan.
 
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.
