@@ -126,11 +126,8 @@ const TvDisplayPage = () => {
         const guruData = await fetchGuruByRfid(tag).catch(() => null);
         if (guruData) {
             user = guruData; userRole = 'guru';
-            const hour = new Date().getHours();
-            if (hour < 12) sesiUser = 'Pagi';
-            else if (hour < 15) sesiUser = 'Siang';
-            else if (hour < 18) sesiUser = 'Sore';
-            else sesiUser = 'Malam';
+            // Dua shift saja: masuk pagi dan masuk siang.
+            sesiUser = new Date().getHours() < 12 ? 'Pagi' : 'Siang';
         } else {
             const santriData = await apiClient.get(`/api/santri/by-rfid/${encodeURIComponent(tag)}`).catch(() => null);
             if (santriData) {

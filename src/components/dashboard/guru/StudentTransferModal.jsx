@@ -82,7 +82,7 @@ const StudentTransferModal = ({ isOpen, onClose, santri, onTransferSuccess }) =>
     const selectedClassData = classes.find(c => c.id === selectedClassId);
 
     // Group and sort classes
-    const sessionOrder = { 'Pagi': 1, 'Siang': 2, 'Sore': 3 };
+    const sessionOrder = { 'Pagi': 1, 'Siang': 2 };
     const getSessionOrder = (sesi) => sessionOrder[sesi] || 99;
 
     const sortedClasses = [...classes].sort((a, b) => {
@@ -96,7 +96,6 @@ const StudentTransferModal = ({ isOpen, onClose, santri, onTransferSuccess }) =>
         switch(sesi) {
             case 'Pagi': return 'bg-sky-100 text-sky-800';
             case 'Siang': return 'bg-amber-100 text-amber-800';
-            case 'Sore': return 'bg-orange-100 text-orange-800';
             default: return 'bg-slate-100 text-slate-800';
         }
     };

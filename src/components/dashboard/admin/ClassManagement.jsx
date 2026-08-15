@@ -422,7 +422,9 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const [formData, setFormData] = useState({ nama_kelas: '', sesi: '', id_guru: null, notes: '', kategori });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', description: '', onConfirm: () => {} });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [sessionTimes, setSessionTimes] = useState({ 'Pagi': '08:00', 'Siang': '14:00', 'Sore': '16:00' });
+  // Dua shift masuk sekolah dasar. Daftarnya tetap bisa disunting pembeli lewat
+  // "Konfigurasi Waktu Sesi"; ini hanya keadaan awal.
+  const [sessionTimes, setSessionTimes] = useState({ 'Pagi': '07:00', 'Siang': '12:30' });
   const [sessionFilters, setSessionFilters] = useState(Object.keys(sessionTimes));
 
   const fetchAllData = useCallback(async () => {
@@ -715,8 +717,9 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Tolak nama kelas duplikat dalam sesi yang sama (abaikan kelas yang sedang
-    // diedit). Nama sama di sesi berbeda dibolehkan (mis. "Kelas 1A" pagi & sore).
+    // Tolak nama kelas duplikat dalam shift yang sama (abaikan kelas yang sedang
+    // diedit). Nama sama di shift berbeda dibolehkan — sekolah dua shift memang
+    // lazim punya "Kelas 1A" pagi dan "Kelas 1A" siang.
     const namaBaru = (formData.nama_kelas || '').trim().toLowerCase();
     const isDuplicate = classes.some(c =>
       c.id !== editingClass?.id &&

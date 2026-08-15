@@ -569,7 +569,7 @@ const DigitalAttendancePage = () => {
                   else break;
               }
               if (totalMonthAttendance > 0) streak++;
-              const timeMap = { 'Pagi': 8, 'Siang': 14, 'Sore': 16, 'Malam': 18 };
+              const timeMap = { 'Pagi': 7, 'Siang': 12 };
               const sortedSessions = uniqueSessions.sort((a, b) => (timeMap[a] || 0) - (timeMap[b] || 0));
               const currentHour = new Date().getHours();
               let nextSession = sortedSessions.find(s => (timeMap[s] || 0) > currentHour);

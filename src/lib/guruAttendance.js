@@ -11,10 +11,10 @@ import {
 // meeting-only branch: legacy school schedule IDs may use another valid variant.
 const SCHOOL_SCHEDULE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Sekolah dasar hanya mengenal dua shift masuk: pagi dan siang. Jam pelajaran
+// yang mulai sebelum pukul 12.00 masuk shift pagi, selebihnya shift siang.
 const SESSION_BY_START_HOUR = [
   [12, 'Pagi'],
-  [15, 'Siang'],
-  [18, 'Sore'],
 ];
 
 const toMinutes = (value) => {
@@ -36,7 +36,7 @@ const inferSessionFromStartTime = (startTime) => {
   if (minutes === null) return null;
   const hour = Math.floor(minutes / 60);
   const match = SESSION_BY_START_HOUR.find(([until]) => hour < until);
-  return match?.[1] || 'Malam';
+  return match?.[1] || 'Siang';
 };
 
 export const isValidSchoolScheduleId = (value) => (

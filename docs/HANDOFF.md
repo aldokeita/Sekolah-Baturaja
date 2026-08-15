@@ -26,6 +26,7 @@ dibongkar tanpa instruksi baru.
 | Modul | Keputusan | Alasan |
 |---|---|---|
 | MMQ | **Dialihfungsikan** jadi "Rapat Guru", bukan dihapus | Sekolah tetap butuh rapat internal guru |
+| **Shift masuk** | **Hanya Pagi & Siang.** Sore, Malam, dan "Pagi 2" dihapus | SD negeri masuk pagi; yang kekurangan ruang kelas membagi rombel jadi dua shift. Sore/Malam adalah jadwal madrasah, tidak pernah terjadi di SD |
 | Pentashih | **Dilabel ulang** jadi "Wakil Kepala Sekolah" | Alur persetujuannya tetap berguna |
 | Hafalan | **Dipertahankan**; rute publik Qiroati dicopot, tapi hafalan tetap hidup di dashboard guru & murid | Sebagian sekolah umum punya program tahfizh |
 | Jilid/Sesi di Data Murid | Filter & kolom dihapus, field tetap ada di balik flag | Jadi isian bebas, bukan dropdown Qiroati |
@@ -1765,6 +1766,52 @@ terbaca 100% untuk hari itu. Dicatat di komentar kode agar tidak terbaca sebagai
 
 Pembagi `2` benar: Senin aktif hingga 15 Agustus 2026 hanya tanggal 3 dan 10. Baris absensi
 ujinya sudah dihapus setelah verifikasi.
+
+### Shift masuk sekolah: dari sesi madrasah ke dua shift SD — **Tuntas**
+
+Pemilik bertanya apakah konsep "tiap kelas punya jadwal sendiri, ada yang masuk pagi dan ada
+yang masuk siang" sudah diterapkan. Pemeriksaan menunjukkan **rangkanya sudah benar**, yang
+keliru hanya kosakata dan jamnya:
+
+| Konsep | Sebelum |
+|---|---|
+| Tiap kelas punya jadwal mingguan sendiri | **sudah ada** — `jadwal_pelajaran` |
+| Absensi guru mengikuti jam pelajaran | **sudah** — lihat bagian rekap di atas |
+| Kelas ditempatkan di shift | **ada, tapi lima pilihan ala madrasah** |
+| Absensi murid pakai jendela shift kelasnya | **sudah jalan** — tapi jamnya jam mengaji |
+
+`DEFAULT_SESSION_TIMES` memuat Pagi 07.45, **Pagi 2** 10.00, Siang 13.45, **Sore** 15.45, dan
+**Malam** 18.30. Itu jadwal TPQ. Sekolah dasar negeri masuk pagi; sekolah yang kekurangan ruang
+kelas membagi rombelnya jadi shift pagi dan siang, dan berhenti di situ.
+
+**Yang diubah.** Kosakata dipangkas jadi **Pagi (07.00)** dan **Siang (12.30)** — tetap dapat
+disunting pembeli lewat "Konfigurasi Waktu Sesi", angka itu hanya bawaan. Ikut dirapikan:
+`SESSION_MAP` (nilai angka 0..4 jadi 0..1), `inferSessionFromStartTime` di `guruAttendance.js`
+(sebelum 12.00 → Pagi, selebihnya Siang), penebakan sesi di Mode TV, `timeMap` sesi berikutnya
+di halaman absensi, serta urutan dan warna shift di modal transfer murid.
+
+**Nama shift lama tetap terbaca.** `LEGACY_SESSION_ALIASES` memetakan `Pagi 2 → Pagi`,
+`Sore → Siang`, `Malam → Siang` saat dibaca, supaya baris lama tidak jatuh ke null dan merusak
+rekap.
+
+**Migrasi `20260815000400_shift_pagi_siang.sql`** (sudah diterapkan) menempatkan ulang kelas
+berdasarkan **jadwalnya sendiri**, bukan menebak dari nama lamanya: jam pelajaran paling awal
+sebelum 12.00 → Pagi, selebihnya Siang, dan kelas tanpa jadwal → Pagi. Kedelapan kelas demo
+yang semula berlabel "Sore" kini Pagi, cocok dengan jam pelajarannya yang memang 07.00–08.40.
+
+**Baris `attendance` sengaja TIDAK diubah.** Absensi adalah catatan peristiwa yang sudah
+terjadi; menulis ulang label sesinya berarti memalsukan arsip — rekap bulan lalu berubah
+angkanya tanpa ada yang benar-benar hadir atau absen. Empat baris bersesi "Sore" dibiarkan dan
+dibaca lewat alias.
+
+**Jebakan yang sempat terjadi saat menulis migrasinya.** Versi pertama memakai
+`COALESCE((SELECT CASE WHEN min(jam_mulai) < '12:00' ...), 'Pagi')`. Agregat selalu
+mengembalikan satu baris, dan `NULL < TIME` bukan TRUE, jadi kelas **tanpa jadwal** jatuh ke
+`ELSE` dan salah ditandai "Siang" — `COALESCE` tidak pernah kena. Diperbaiki dengan cabang
+`WHEN min(...) IS NULL THEN NULL` eksplisit. Lima kelas yang terlanjur salah sudah dibetulkan.
+
+**Terverifikasi di browser:** rekap Rina yang tadinya menulis "Sore" untuk pelajaran pukul
+07.00 kini menulis **"Pagi"**.
 
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 

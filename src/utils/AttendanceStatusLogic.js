@@ -1,20 +1,42 @@
 export const JAKARTA_TIME_ZONE = 'Asia/Jakarta';
 export const LATE_GRACE_MINUTES = 15;
 
+/**
+ * Shift masuk sekolah.
+ *
+ * Sekolah dasar negeri umumnya masuk satu shift pagi. Sekolah yang kekurangan
+ * ruang kelas membagi rombelnya jadi dua shift — pagi dan siang — dan itulah
+ * batas kewajarannya: TIDAK ADA shift sore atau malam di SD.
+ *
+ * Daftar sebelumnya memuat 'Pagi 2', 'Sore', dan 'Malam' dengan jam 15.45 dan
+ * 18.30. Itu jadwal madrasah/TPQ, warisan produk sebelumnya, dan tidak pernah
+ * terjadi di sekolah dasar.
+ *
+ * Jamnya tetap bisa diubah pembeli lewat pengaturan absensi; angka di sini hanya
+ * bawaan.
+ */
 export const DEFAULT_SESSION_TIMES = {
-  Pagi: { open: '06:00', start: '07:45', onTimeUntil: '08:00', end: '09:15', defaultQuota: 60 },
-  'Pagi 2': { open: '09:15', start: '10:00', onTimeUntil: '10:15', end: '11:30', defaultQuota: 60 },
-  Siang: { open: '12:00', start: '13:45', onTimeUntil: '14:00', end: '15:15', defaultQuota: 80 },
-  Sore: { open: '15:00', start: '15:45', onTimeUntil: '16:00', end: '17:15', defaultQuota: 80 },
-  Malam: { open: '17:45', start: '18:30', onTimeUntil: '18:45', end: '23:00', defaultQuota: 50 },
+  Pagi: { open: '05:30', start: '07:00', onTimeUntil: '07:15', end: '12:00', defaultQuota: 60 },
+  Siang: { open: '11:30', start: '12:30', onTimeUntil: '12:45', end: '17:00', defaultQuota: 60 },
 };
 
 const SESSION_NAME_BY_VALUE = {
   0: 'Pagi',
-  1: 'Pagi 2',
-  2: 'Siang',
-  3: 'Sore',
-  4: 'Malam',
+  1: 'Siang',
+};
+
+/**
+ * Nama shift lama yang masih tersimpan di baris absensi dan kelas terdahulu.
+ *
+ * Riwayat absensi TIDAK ditulis ulang — mengubah catatan kehadiran yang sudah
+ * terjadi berarti memalsukan arsip. Yang lama tetap tersimpan apa adanya dan
+ * dipetakan ke shift terdekat saat dibaca, supaya jendela waktunya tetap
+ * ketemu alih-alih jatuh ke null dan merusak rekap.
+ */
+const LEGACY_SESSION_ALIASES = {
+  'Pagi 2': 'Pagi',
+  Sore: 'Siang',
+  Malam: 'Siang',
 };
 
 const pad = (num) => String(num).padStart(2, '0');
@@ -45,8 +67,13 @@ export const buildJakartaTimestamp = (dateStr, timeStr) => {
 export const normalizeAttendanceSessionName = (sesiName) => {
   if (sesiName === null || sesiName === undefined || sesiName === '') return null;
   const raw = String(sesiName).trim();
-  return SESSION_NAME_BY_VALUE[raw] || raw;
+  const byValue = SESSION_NAME_BY_VALUE[raw];
+  if (byValue) return byValue;
+  return LEGACY_SESSION_ALIASES[raw] || raw;
 };
+
+/** Pilihan shift yang boleh dipilih saat menyusun kelas. */
+export const SHIFT_OPTIONS = Object.keys(DEFAULT_SESSION_TIMES);
 
 export const getSessionStartTime = (sesiName, sessionTimes = DEFAULT_SESSION_TIMES) =>
   sessionTimes?.[normalizeAttendanceSessionName(sesiName)]?.start || DEFAULT_SESSION_TIMES[normalizeAttendanceSessionName(sesiName)]?.start || null;
