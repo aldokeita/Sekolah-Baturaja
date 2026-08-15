@@ -1,0 +1,305 @@
+/*
+ * Lembar rapor. Dipakai dua kali: sebagai pratinjau di dalam dialog, dan sebagai
+ * halaman yang keluar dari printer.
+ *
+ * Warnanya TIDAK ditulis sebagai heks di sini. Seluruh sapuannya memakai
+ * `--sekolah-aksen*`, properti CSS yang dipasang applySchoolIdentity dari warna
+ * pilihan sekolah — jadi rapor ikut berganti warna begitu pembeli mengubah
+ * identitasnya, tanpa menyentuh berkas ini. Nilai cadangan di setiap var() menjaga
+ * lembar tetap terbaca bila identitas belum termuat.
+ */
+
+.rapor-lembar {
+  --rapor-aksen: var(--sekolah-aksen, #6470ff);
+  --rapor-aksen-pekat: var(--sekolah-aksen-pekat, #4a55d6);
+  --rapor-aksen-ujung: var(--sekolah-aksen-ujung, #e58fc4);
+  --rapor-garis: #d7dae8;
+  --rapor-teks: #1b1c2c;
+  --rapor-teks-lembut: #5c6180;
+
+  background: #fff;
+  color: var(--rapor-teks);
+  /* Lebar A4 dikurangi margin cetak, supaya pratinjau di layar memakai proporsi
+     yang sama dengan hasil cetaknya. */
+  width: 100%;
+  max-width: 190mm;
+  margin: 0 auto;
+  padding: 14mm 14mm 10mm;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+/* ── Kepala surat ──────────────────────────────────────────────────────────── */
+
+.rapor-kop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2.5px solid var(--rapor-aksen-pekat);
+}
+
+.rapor-kop__lambang {
+  flex: none;
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15pt;
+  letter-spacing: -0.02em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--rapor-aksen), var(--rapor-aksen-ujung));
+  /* print-color-adjust menjaga gradasi lambang tetap tercetak; tanpa ini banyak
+     browser membuang latar berwarna dan lambangnya jadi teks putih di kertas putih. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.rapor-kop__nama {
+  margin: 0;
+  font-size: 15pt;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.rapor-kop__alamat {
+  margin: 3px 0 0;
+  font-size: 8.5pt;
+  color: var(--rapor-teks-lembut);
+}
+
+.rapor-judul {
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+.rapor-judul__utama {
+  margin: 0;
+  font-size: 13pt;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rapor-judul__periode {
+  margin: 2px 0 0;
+  font-size: 9.5pt;
+  color: var(--rapor-teks-lembut);
+}
+
+/* ── Identitas murid ───────────────────────────────────────────────────────── */
+
+.rapor-identitas {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 20px;
+  font-size: 10pt;
+}
+
+.rapor-identitas__baris {
+  display: flex;
+  gap: 6px;
+}
+
+.rapor-identitas__label {
+  flex: none;
+  width: 92px;
+  color: var(--rapor-teks-lembut);
+}
+
+.rapor-identitas__nilai {
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── Tabel ─────────────────────────────────────────────────────────────────── */
+
+.rapor-bagian {
+  margin-top: 16px;
+}
+
+.rapor-bagian__judul {
+  margin: 0 0 6px;
+  font-size: 10pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--rapor-aksen-pekat);
+}
+
+.rapor-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+}
+
+.rapor-tabel th,
+.rapor-tabel td {
+  border: 1px solid var(--rapor-garis);
+  padding: 5px 7px;
+  vertical-align: top;
+}
+
+.rapor-tabel thead th {
+  background: #eef0fa;
+  font-weight: 700;
+  text-align: left;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.rapor-tabel .rapor-angka {
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rapor-tabel tfoot td {
+  font-weight: 800;
+  background: #f6f7fd;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.rapor-kosong {
+  border: 1px dashed var(--rapor-garis);
+  padding: 14px;
+  text-align: center;
+  font-size: 9.5pt;
+  color: var(--rapor-teks-lembut);
+}
+
+/* ── Kehadiran + catatan ───────────────────────────────────────────────────── */
+
+.rapor-dua-kolom {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.rapor-catatan__kotak {
+  border: 1px solid var(--rapor-garis);
+  border-radius: 4px;
+  min-height: 74px;
+  padding: 7px 9px;
+  font-size: 9.5pt;
+  white-space: pre-wrap;
+}
+
+/* ── Tanda tangan ──────────────────────────────────────────────────────────── */
+
+.rapor-ttd {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  text-align: center;
+  font-size: 9.5pt;
+  /* Blok tanda tangan tidak boleh terpotong dua halaman. */
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.rapor-ttd__peran {
+  margin: 0 0 42px;
+  color: var(--rapor-teks-lembut);
+}
+
+.rapor-ttd__nama {
+  margin: 0;
+  font-weight: 700;
+  border-top: 1px solid var(--rapor-teks);
+  padding-top: 3px;
+}
+
+.rapor-catatan-kaki {
+  margin-top: 14px;
+  font-size: 8pt;
+  color: var(--rapor-teks-lembut);
+  text-align: center;
+}
+
+/* ── Pratinjau di layar ────────────────────────────────────────────────────── */
+
+.rapor-pratinjau {
+  background: #eceef6;
+  padding: 16px;
+  overflow: auto;
+}
+
+.rapor-pratinjau .rapor-lembar {
+  box-shadow: 0 10px 30px -12px rgba(27, 28, 44, 0.35);
+}
+
+/* Salinan cetak menumpang di dalam #rapor-cetak-root sepanjang dialog terbuka,
+   tak terlihat di layar. Dipakai class, bukan style inline, supaya @media print
+   bisa membalikkannya tanpa perlu !important yang bertabrakan. */
+.rapor-hanya-cetak {
+  display: none;
+}
+
+/* ── Cetak ─────────────────────────────────────────────────────────────────── */
+
+@media print {
+  /* Margin halaman menggantikan padding lembar, yang dinolkan di bawah. 12mm cukup
+     lega untuk dilubangi map rapor tanpa memakan kolom tabel. */
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  /* Lembar rapor dirender lewat portal ke sebuah anak LANGSUNG dari body
+     (#rapor-cetak-root, lihat RaporCetak.jsx), bukan di dalam dialognya. Itu yang
+     membuat aturan cetak ini sesederhana satu baris: sembunyikan seluruh saudara
+     akar itu. Kalau lembarnya dibiarkan di dalam dialog, penyembunyiannya harus
+     menebak belasan tingkat pembungkus milik Radix. */
+  body > *:not(#rapor-cetak-root) {
+    display: none !important;
+  }
+
+  html,
+  body,
+  #rapor-cetak-root {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .rapor-hanya-cetak {
+    display: block !important;
+  }
+
+  .rapor-pratinjau {
+    background: #fff !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .rapor-lembar {
+    max-width: none;
+    padding: 0;
+    box-shadow: none !important;
+    font-size: 10pt;
+  }
+
+  .rapor-tabel {
+    break-inside: auto;
+  }
+
+  .rapor-tabel tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

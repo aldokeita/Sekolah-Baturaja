@@ -656,6 +656,28 @@ func (h *AttendanceHandler) Recap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Penjagaan hak akses. Endpoint ini dulu TIDAK memeriksa apa pun: siapa pun yang
+	// sudah masuk bisa mengirim user_id mana saja dan menerima seluruh riwayat
+	// kehadiran orang itu, termasuk murid yang membaca riwayat murid lain. Aturannya
+	// disamakan dengan List — back-office dan pengawas melihat semua, guru melihat
+	// murid yang diajarnya dan dirinya sendiri, sisanya hanya dirinya sendiri.
+	ctxUser := middleware.UserIDFromCtx(r.Context())
+	ctxRole := middleware.RoleFromCtx(r.Context())
+	if ctxUser == "" {
+		jsonError(w, "sesi tidak valid", http.StatusUnauthorized)
+		return
+	}
+	if !middleware.CanManage(ctxRole) && ctxRole != "pentashih" {
+		boleh := userID == ctxUser
+		if !boleh && ctxRole == "guru" {
+			boleh = guruTeachesSantri(r.Context(), h.db, ctxUser, userID)
+		}
+		if !boleh {
+			jsonError(w, "tidak berhak melihat rekap absensi ini", http.StatusForbidden)
+			return
+		}
+	}
+
 	where := []string{"user_id = $1"}
 	args := []any{userID}
 	idx := 2

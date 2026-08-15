@@ -38,6 +38,7 @@ import SantriArchiveDialog from '@/components/dashboard/admin/SantriArchiveDialo
 import DataPagination from '@/components/dashboard/shared/DataPagination';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
 import { enableTahfizh } from '@/lib/featureFlags';
+import RaporCetak from '@/components/dashboard/shared/RaporCetak';
 
 const PAGE_SIZE = 10;
 
@@ -494,6 +495,8 @@ const SantriManagement = () => {
   const [birthdayStudents, setBirthdayStudents] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalSantri, setTotalSantri] = useState(0);
+  // Murid yang rapornya sedang dibuka; null berarti dialognya tertutup.
+  const [raporSantriId, setRaporSantriId] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [formData, setFormData] = useState({
     nama_lengkap: '', nama_panggilan: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
@@ -1081,7 +1084,14 @@ const SantriManagement = () => {
                 <td className="p-3 text-sm font-medium text-foreground">{classGuruMap[santri.current_class_id || santri.id_kelas] || <span className="text-muted-foreground italic text-xs">Belum ada</span>}</td>
                 <td className="p-3"><Badge variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200">{santri.angkatan || '-'}</Badge></td>
                 <td className="p-3"><div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-900 border"><FileCheck className={`w-4 h-4 ${santri.berkas_foto && santri.berkas_akta && santri.berkas_kk && santri.berkas_form ? 'text-green-500' : 'text-slate-300'}`} /></div></td>
-                {canManage && <td className="p-3"><Button onClick={() => handleEdit(santri)} size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 rounded-full"><Edit className="w-4 h-4" /></Button></td>}
+                {canManage && (
+                  <td className="p-3">
+                    <div className="flex items-center gap-1">
+                      <Button onClick={() => handleEdit(santri)} size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 rounded-full" title="Sunting data murid"><Edit className="w-4 h-4" /></Button>
+                      <Button onClick={() => setRaporSantriId(santri.id)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-indigo-50 hover:text-indigo-600" title="Cetak rapor"><FileText className="w-4 h-4" /></Button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -1104,6 +1114,12 @@ const SantriManagement = () => {
           itemLabel="murid"
         />
       </div>
+
+      <RaporCetak
+        santriId={raporSantriId}
+        open={Boolean(raporSantriId)}
+        onOpenChange={(terbuka) => { if (!terbuka) setRaporSantriId(null); }}
+      />
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">

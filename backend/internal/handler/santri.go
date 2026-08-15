@@ -694,8 +694,16 @@ func insertSantriTx(ctx context.Context, tx pgx.Tx, body map[string]any) (map[st
 // keduanya akan membuat setiap guru mata pelajaran ikut dapat memindahkan murid
 // antar kelas hanya karena mengajar satu jam di sana.
 func (h *SantriHandler) guruTeachesSantri(ctx context.Context, guruID, santriID string) bool {
+	return guruTeachesSantri(ctx, h.db, guruID, santriID)
+}
+
+// guruTeachesSantri sebagai fungsi paket, supaya handler lain memakai aturan yang
+// SAMA dan bukan salinannya. Absensi memerlukannya untuk menjaga /recap, dan dua
+// salinan aturan "guru mana boleh melihat murid mana" akan berselisih begitu salah
+// satunya disunting.
+func guruTeachesSantri(ctx context.Context, db *pgxpool.Pool, guruID, santriID string) bool {
 	var exists bool
-	err := h.db.QueryRow(ctx, `
+	err := db.QueryRow(ctx, `
 		SELECT EXISTS (
 			SELECT 1 FROM santri s
 			WHERE s.id = $1 AND (

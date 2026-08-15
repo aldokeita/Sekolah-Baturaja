@@ -600,6 +600,51 @@ Ikutannya: `/api/attendance` membatasi satu permintaan pada 500 baris dan **tida
 sekali jalan. Rekap lintas sekolah wajib lewat `fetchAllAttendance`, yang menyusuri halaman sampai
 halaman pendek — bukan lewat `fetchAttendance` dengan limit besar.
 
+### Rapor dicetak dari HTML, bukan jsPDF
+
+Laporan lain di `src/utils/reportUtils.js` disusun dengan jsPDF. Rapor **tidak**, dan bedanya
+disengaja: rapor harus memakai identitas sekolah termasuk **warna** pilihan pembeli, dan warna itu
+hidup sebagai properti CSS (`--sekolah-aksen*`) yang dipasang `applySchoolIdentity`. Menyusunnya di
+jsPDF berarti menyalin palet ke JavaScript dan menjaga dua sumber warna tetap sama; dengan HTML rapor
+ikut berganti warna sendiri begitu pembeli mengubah identitasnya. Diperiksa di browser: gradasi
+lambang terbaca `linear-gradient(135deg, rgb(100,112,255), rgb(229,143,196))` — tepat
+`accentColor`/`accentColor2`, bukan heks yang ditulis di CSS.
+
+**Lembarnya dirender DUA kali, dan itu bukan kelalaian.** Satu di dalam dialog sebagai pratinjau,
+satu lewat portal ke anak LANGSUNG `body` (`#rapor-cetak-root`) sebagai salinan yang benar-benar
+dicetak. Alasannya: dialog Radix hidup di portalnya sendiri di akhir `body`, dan lembarnya belasan
+tingkat di dalamnya — aturan cetak harus menebak seluruh rantai pembungkus. Dengan akar sendiri di
+`body`, aturannya cukup satu baris: `body > *:not(#rapor-cetak-root) { display: none }`.
+
+Salinan cetak disembunyikan lewat class `.rapor-hanya-cetak`, **bukan** style inline: style inline
+mengalahkan `@media print` kecuali dipaksa `!important`.
+
+`print-color-adjust: exact` dipasang pada lambang dan latar baris tabel. Tanpa itu banyak browser
+membuang latar berwarna saat mencetak, dan lambang bergradasi menjadi teks putih di kertas putih.
+
+Angka yang tercetak diambil dari sumber yang menjadi acuannya — `nilai/summary` dan
+`attendance/recap` — bukan dari tabel rapor tersendiri. Menyalinnya berarti dua angka yang bisa
+berselisih, dan yang tercetak di rapor adalah yang paling tidak boleh salah.
+
+Dua hal yang masih pantas dijadikan pengaturan: rentang **predikat** (A/B/C/D) ada di `PREDIKAT` pada
+`raporAdapters.js` sebagai konstanta, padahal setiap sekolah menetapkan KKM-nya sendiri; dan
+**catatan wali kelas** hanya hidup di form, tidak tersimpan ke basis data.
+
+### `attendance/recap` tidak memeriksa hak akses apa pun — SUDAH DIPERBAIKI
+
+Endpoint ini menerima `user_id` mana pun dari siapa pun yang sudah masuk, lalu mengembalikan seluruh
+riwayat kehadiran orang itu. Seorang murid bisa membaca riwayat murid lain. Terlewat karena
+penjagaan lain di berkas yang sama (`List`, `Update`, `MarkAbsent`) sudah ada, sehingga `Recap`
+tampak ikut terjaga.
+
+Aturannya sekarang sama dengan `List`: back-office dan pengawas melihat semua, guru melihat murid
+yang diajarnya dan dirinya sendiri, sisanya hanya dirinya sendiri. Diuji: murid meminta rekap murid
+lain menerima **403**, rekapnya sendiri **200**.
+
+Ikutannya, `guruTeachesSantri` diangkat menjadi fungsi paket di `santri.go` dan metodenya sekarang
+memanggilnya. Dua salinan aturan "guru mana boleh melihat murid mana" akan berselisih begitu salah
+satunya disunting.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya
