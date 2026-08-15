@@ -15,6 +15,7 @@ import MmqSection from '@/components/dashboard/guru/MmqSection';
 import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import GuruAttendanceRecap from '@/components/dashboard/admin/GuruAttendanceRecap';
 import AttendanceDetailsModal from '@/components/dashboard/shared/AttendanceDetailsModal';
+import AbsensiSaya from '@/components/dashboard/shared/AbsensiSaya';
 import AttendanceStatusIcon from '@/components/dashboard/shared/AttendanceStatusIcon';
 import { fetchGuruDetail, updateGuru, updateSantriJilid } from '@/lib/dataMasterAdapters';
 import { fetchAttendance } from '@/lib/attendanceAdapters';
@@ -499,7 +500,13 @@ const GuruDashboard = () => {
           emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
         />
 
-        <div className="space-y-8">
+        {/* Absensi pribadi, baca saja. Pencatatan tetap satu pintu lewat kartu
+            RFID di halaman Absensi Digital; koreksi tetap wewenang admin. */}
+        <div className="mt-6">
+          <AbsensiSaya userId={guruData?.id} />
+        </div>
+
+        <div className="mt-6 space-y-8 md:mt-8">
             {myClasses.map(cls => (
                 <Card key={cls.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-border/50">
                     <CardHeader className={cn("p-4 rounded-t-lg border-b bg-gradient-to-r", headerGradient)}>

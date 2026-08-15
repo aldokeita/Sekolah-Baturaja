@@ -1,10 +1,9 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-09 · **Branch:** `feat/sederhanakan-tab-konten` · **HEAD:** `6a87a5d`
+**Diperbarui:** 2026-08-15 · **Branch:** `feat/vercel-ready`
 
-HEAD saat ini berada di `6a87a5d`, dua belas commit di atas `origin/feat/sederhanakan-tab-konten`
-(`60a0fd7`). Branch ini belum di-merge ke `master`; `master` tetap berada di commit `8c80e39`
-pada checkout lokal.
+Pekerjaan berjalan di `feat/vercel-ready`, dengan dua remote: `origin` (aldokeita) dan
+`upstream` (npdkdev). Branch ini belum di-merge ke `master`.
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -1221,6 +1220,68 @@ teks yang bisa berubah akan memecah satu jalur menjadi dua.
 Akibat wajar yang bukan kerusakan: pendaftaran hasil impor punya `jalur_label`
 ("Zonasi") tapi `jalur` kosong, jadi tidak terhitung ke kuota jalur mana pun. Nama
 jalur lama memang tidak punya padanan id yang sah.
+
+---
+
+## Dashboard Guru — rangkaian fitur bertahap
+
+Enam fitur diminta berurutan; tiap fitur diselesaikan, diuji, dan di-commit sendiri
+sebelum lanjut. Bagian ini mencatat yang sudah tuntas.
+
+### 1. Absensi terpusat, dashboard guru baca saja — **Tuntas**
+
+Aturannya: **satu pintu**. Semua absensi dicatat lewat halaman Absensi Digital dengan
+kartu RFID. Dashboard guru hanya menampilkan, tidak pernah menulis. Koreksi absensi
+adalah wewenang admin lewat panel rekap. Tidak ada tabel, endpoint, atau alur absensi
+baru yang dibuat.
+
+**Yang ditemukan rusak sebelum perbaikan.** Empat celah, semuanya di jalur absensi:
+
+| Endpoint | Sebelum | Akibat |
+|---|---|---|
+| `PUT /api/attendance/{id}` | tanpa otorisasi sama sekali | **siapa pun yang login, termasuk santri, bisa mengubah baris absensi mana pun** |
+| `PUT /api/attendance/{id}/absent` | `RequireRole("admin","guru","tata_usaha")` | guru bisa membatalkan kehadiran yang sudah tercatat |
+| `GET /api/attendance` | tanpa scoping | guru bisa membuka rekap guru lain cukup dengan mengganti `user_id` |
+| `AttendanceDetailsModal` | `role === 'guru' || isAdminRole(role)` | tombol koreksi muncul untuk guru |
+
+**Yang dikerjakan.**
+
+- `Update` dan `MarkAbsent` dijaga `middleware.CanManage` **di dalam handler**, bukan di
+  router, supaya `superadmin` ikut tercakup — `RequireRole` di rute lama tidak
+  menyebutkan `superadmin`.
+- `List` disaring berdasarkan akun pemanggil. Guru mendapat
+  `(user_id = $n OR role <> 'guru')`: baris absensi guru hanya miliknya sendiri, tapi
+  baris santri tetap terbaca karena daftar kelasnya membutuhkannya. Peran non-staf lain
+  dikunci ke `user_id` sendiri.
+- `Create` **sengaja dibiarkan terbuka** untuk peran operasional. Kios `/absensi-digital`
+  berjalan di bawah akun staf mana pun yang membukanya (`operationalDisplayRoles` di
+  `App.jsx` memuat `guru` dan `pentashih`), jadi mengunci `Create` akan mematikan absensi
+  pusat — hal yang justru dilarang.
+- `AttendanceDetailsModal` memakai `canManageRole`, cerminan `CanManage` di sisi Go.
+- Komponen baru `src/components/dashboard/shared/AbsensiSaya.jsx`: status hari ini, jam
+  check-in, sesi, rekap bulan berjalan, dan tujuh riwayat terakhir. Murni baca.
+
+**Beda "belum absen" dan "hari libur".** Panel membaca `fetchCalendarContext` dan
+memisahkan keduanya. Tanpa itu hari Minggu akan terbaca sebagai absensi yang terlewat.
+Hitungan "Tidak Hadir" memakai `getActiveCalendarDates` sampai **hari ini saja**, bukan
+seluruh bulan — sisa bulan belum terjadi.
+
+**Bukti uji.** Diuji dengan panggilan API sungguhan memakai akun guru sementara yang
+dibuat lewat API admin lalu dihapus beserta baris absensinya:
+
+| Uji | Hasil |
+|---|---|
+| guru `PUT /attendance/{id}` | 403 |
+| guru `PUT /attendance/{id}/absent` | 403 |
+| admin `PUT /attendance/{id}` | 200 |
+| admin `PUT /attendance/{id}/absent` | 200 |
+| guru minta `user_id` guru lain | 0 baris |
+| guru minta semua baris `role=guru` | hanya dirinya |
+| admin minta semua baris `role=guru` | 3 guru terlihat |
+| guru baca absensi santri | tetap bisa, tanpa regresi |
+
+**Belum diverifikasi:** tampilan panel di browser. Verifikasi itu butuh login dengan akun
+guru, dan agen tidak dapat mengisi field password.
 
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.

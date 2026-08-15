@@ -38,10 +38,13 @@ func NewAttendanceHandler(db *pgxpool.Pool) *AttendanceHandler {
 func (h *AttendanceHandler) Routes() chi.Router {
 	r := chi.NewRouter()
 
-	// Record
+	// Record. Create stays open to operational roles because the RFID kiosk runs
+	// under whichever staff account opened it. Correcting an existing row is a
+	// different act: only back-office roles may do it, enforced inside the
+	// handlers so superadmin is covered too.
 	r.Post("/", h.Create)
 	r.Put("/{id}", h.Update)
-	r.With(middleware.RequireRole("admin", "guru", "tata_usaha")).Put("/{id}/absent", h.MarkAbsent)
+	r.Put("/{id}/absent", h.MarkAbsent)
 
 	// Fetch
 	r.Get("/", h.List)
@@ -293,6 +296,13 @@ func (h *AttendanceHandler) insertAttendance(ctx context.Context, in attendanceI
 }
 
 func (h *AttendanceHandler) Update(w http.ResponseWriter, r *http.Request) {
+	// Correcting a recorded check-in is a back-office act. Without this the route
+	// was open to every authenticated user, so a santri could rewrite any row.
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
+		jsonError(w, "koreksi absensi hanya dapat dilakukan admin atau tata usaha", http.StatusForbidden)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		jsonError(w, "id wajib diisi", http.StatusBadRequest)
@@ -380,6 +390,13 @@ func (h *AttendanceHandler) Update(w http.ResponseWriter, r *http.Request) {
 // attendance_correction_reason_required mewajibkan alasan non-blank ketika
 // corrected_by terisi, jadi ada default bila klien tidak mengirimnya.
 func (h *AttendanceHandler) MarkAbsent(w http.ResponseWriter, r *http.Request) {
+	// Same rule as Update: guru used to hold this and could overturn a recorded
+	// check-in from their own dashboard.
+	if !middleware.CanManage(middleware.RoleFromCtx(r.Context())) {
+		jsonError(w, "koreksi absensi hanya dapat dilakukan admin atau tata usaha", http.StatusForbidden)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		jsonError(w, "id wajib diisi", http.StatusBadRequest)
@@ -482,6 +499,26 @@ func (h *AttendanceHandler) List(w http.ResponseWriter, r *http.Request) {
 	if v := q.Get("date_to"); v != "" {
 		where = append(where, "attendance_date <= $"+strconv.Itoa(idx))
 		args = append(args, v)
+		idx++
+	}
+
+	// Scope by caller. Back-office roles see everything; anyone else is pinned to
+	// their own rows, so a guru cannot read another guru's recap by passing an
+	// arbitrary user_id. Guru still needs santri rows for their class roster, so
+	// only guru-role rows are restricted for them.
+	ctxUser := middleware.UserIDFromCtx(r.Context())
+	ctxRole := middleware.RoleFromCtx(r.Context())
+	if !middleware.CanManage(ctxRole) {
+		if ctxUser == "" {
+			jsonError(w, "sesi tidak valid", http.StatusUnauthorized)
+			return
+		}
+		if ctxRole == "guru" {
+			where = append(where, "(user_id = $"+strconv.Itoa(idx)+" OR role <> 'guru')")
+		} else {
+			where = append(where, "user_id = $"+strconv.Itoa(idx))
+		}
+		args = append(args, ctxUser)
 		idx++
 	}
 
