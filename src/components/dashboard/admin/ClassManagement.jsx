@@ -38,6 +38,7 @@ import {
 } from '@/lib/dataMasterAdapters';
 import { resolveAvatarRecord, resolveAvatarRecords } from '@/lib/storageAdapters';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
+import { enableTahfizh } from '@/lib/featureFlags';
 
 const ItemTypes = {
   SANTRI: 'santri',
@@ -312,7 +313,10 @@ const DraggableSantri = ({ santri, index, moveSantri, onReorderEnd, hasAttended,
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-medium text-sm truncate">{santri.nama_lengkap}</p>
-          <p className="text-xs text-muted-foreground">{santri.jilid}</p>
+          {/* Jilid adalah tingkat program tahfizh opsional, bukan atribut murid
+              SD. Saat programnya mati, badge ini hanya menampilkan istilah asing
+              di bawah setiap nama murid. */}
+          {enableTahfizh && <p className="text-xs text-muted-foreground">{santri.jilid}</p>}
         </div>
       </div>
       <div className="flex items-center gap-1">
@@ -843,7 +847,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                             Kelas: cls.nama_kelas || '',
                             Guru: cls.guru?.nama || '-',
                             Murid: s.nama_lengkap || '-',
-                            Jilid: s.jilid || '-'
+                            ...(enableTahfizh ? { Jilid: s.jilid || '-' } : {}),
                         });
                     });
                 } else {
@@ -852,7 +856,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                         Kelas: cls.nama_kelas || '',
                         Guru: cls.guru?.nama || '-',
                         Murid: '(Kosong)',
-                        Jilid: '-'
+                        ...(enableTahfizh ? { Jilid: '-' } : {}),
                     });
                 }
             });
@@ -947,7 +951,9 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <DroppableColumn title="Murid Belum Masuk Kelas" onDrop={(item) => handleDropSantri(item, null)} icon={<UserPlus className="w-5 h-5"/>}>
-            <div className="p-2 space-y-2 sticky top-0 bg-background z-10"><Select value={unassignedFilterJilid} onValueChange={setUnassignedFilterJilid}><SelectTrigger className="h-9"><SelectValue placeholder="Filter Jilid"/></SelectTrigger><SelectContent><SelectItem value="all">Semua Jilid</SelectItem>{jilidOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select></div>
+            {enableTahfizh && (
+              <div className="p-2 space-y-2 sticky top-0 bg-background z-10"><Select value={unassignedFilterJilid} onValueChange={setUnassignedFilterJilid}><SelectTrigger className="h-9"><SelectValue placeholder="Filter Jilid"/></SelectTrigger><SelectContent><SelectItem value="all">Semua Jilid</SelectItem>{jilidOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select></div>
+            )}
             {filteredUnassignedSantri.map((santri, index) => <DraggableSantri key={santri.id} index={index} santri={santri} moveSantri={moveSantri} hasAttended={attendanceById.has(santri.id)} onViewDetails={handleViewSantriDetails} />)}
             {filteredUnassignedSantri.length === 0 && <p className="text-center py-8 text-sm text-muted-foreground">Tidak ada murid.</p>}
           </DroppableColumn>

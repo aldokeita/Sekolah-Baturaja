@@ -435,6 +435,34 @@ Almasih, Kenaikan Isa Almasih, dan seluruh cuti bersama. Tanggalnya mengikuti ka
 lunar/lunisolar dan baru pasti setelah SKB terbit; menebaknya di migrasi menanam tanggal salah yang
 sulit ditemukan. Sekolah memasukkannya lewat panel Kalender.
 
+### Tidak ada periode ajaran aktif — konsumen ketat diam-diam kosong
+
+Seluruh baris `periode_ajaran` berangkat dengan `is_active = false`. Panel Jadwal Pelajaran
+menutupi keadaan itu karena punya fallback ke periode pertama, jadi pengelola tidak pernah tahu ada
+yang kurang. Konsumen yang menyaring ketat justru kosong terus:
+
+- `TVDisplayPage` panel "Jadwal Hari Ini" mensyaratkan `p.is_active` tanpa fallback — layar lobi
+  selamanya menulis "Tidak ada jadwal untuk hari ini".
+- `ModulNilai`, `ModulKontenKelas`, dan `JadwalSaya` memilih periode aktif lebih dulu; tanpa penanda
+  itu ketiganya bergantung pada urutan baris.
+
+`20260815000900_aktifkan_periode_ajaran.sql` menyalakan satu periode bila belum ada yang aktif, dan
+panel Jadwal kini memasang peringatan bila keadaan itu terulang.
+
+Polanya: **fallback yang ramah di satu panel bisa menyembunyikan keadaan yang mematikan panel lain.**
+
+### Kolom Sesi di Rekap SPP membaca kolom warisan yang sudah dikosongkan
+
+`PaymentRecap` mengambil `santri.sesi_mengaji`. Sejak `20260815000600_santri_sesi_ikut_kelas.sql`
+kolom itu sengaja NULL untuk hampir semua murid, karena shift memang tinggal di kelasnya. Akibatnya
+kolom Sesi kosong melompong. Sekarang panel memuat daftar kelas dan menurunkan shift dari
+`class.sesi`, dengan `sesi_mengaji` tetap didahulukan bila baris muridnya memang mengisi.
+
+Ikutan yang ditemukan bersamaan: `paymentItemsList` di berkas yang sama masih memuat item Qiroati
+(Buku Jilid Pra TK, Buku Jilid 1-6, Gharib & Tajwid) yang tidak pernah lagi muncul di kasir,
+sementara Sarpras dan LKS yang benar-benar dipakai justru tidak terdaftar. Daftar itu harus sejalan
+dengan `paymentItems` di `PaymentSystem.jsx`.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

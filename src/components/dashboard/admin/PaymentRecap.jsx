@@ -18,13 +18,18 @@ import {
   selectedMonthToNumber,
 } from '@/lib/paymentAdapters';
 import { resolveAvatarRecords } from '@/lib/storageAdapters';
+import { fetchClassList } from '@/lib/dataMasterAdapters';
 
 const months = MONTH_NAMES;
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF19A3'];
 
+// Harus sejalan dengan `paymentItems` di PaymentSystem.jsx — itulah daftar yang
+// benar-benar bisa ditagihkan. Daftar lama di sini masih berisi item Qiroati
+// (Buku Jilid Pra TK, Buku Jilid 1-6, Gharib & Tajwid) yang tidak pernah lagi
+// muncul di kasir, jadi tab "Rekap per Item" menawarkan kategori yang mustahil
+// berisi data sekaligus menyembunyikan item yang benar-benar dipakai.
 const paymentItemsList = [
-  'SPP (100k)', 'SPP (50k)', 'Seragam', 'Tas Murid', 'ID Card Murid', 'Buku Prestasi', 'Buku Jilid Pra TK',
-  'Buku Jilid 1-6 - Jilid 1', 'Buku Jilid 1-6 - Jilid 2', 'Buku Jilid 1-6 - Jilid 3', 'Buku Jilid 1-6 - Jilid 4', 'Buku Jilid 1-6 - Jilid 5', 'Buku Jilid 1-6 - Jilid 6', 'Buku Gharib & Tajwid',
+  'SPP (100k)', 'SPP (50k)', 'Sarpras', 'Seragam', 'Tas Murid', 'ID Card Murid', 'Buku Paket', 'LKS',
 ];
 
 const renderActiveShape = (props) => {
@@ -60,6 +65,7 @@ const renderActiveShape = (props) => {
 const PaymentRecap = () => {
   const [allPayments, setAllPayments] = useState([]);
   const [allSantri, setAllSantri] = useState([]);
+  const [classSesiById, setClassSesiById] = useState({});
 
   const [recapData, setRecapData] = useState([]);
   const [filteredRecapData, setFilteredRecapData] = useState([]);
@@ -84,14 +90,19 @@ const PaymentRecap = () => {
       try {
         // This screen aggregates the whole paid history client-side, so walk
         // every page rather than taking only the first one.
-        const [paymentData, santriData] = await Promise.all([
+        const [paymentData, santriData, classData] = await Promise.all([
           fetchAllPayments({ status: 'paid' }),
           fetchAllSantri(),
+          fetchClassList({ limit: 200 }),
         ]);
 
         const resolvedSantri = await resolveAvatarRecords(santriData, { ownerType: 'santri' });
         setAllPayments(paymentData || []);
         setAllSantri(resolvedSantri);
+        setClassSesiById((classData || []).reduce((acc, cls) => {
+          if (cls?.id) acc[cls.id] = cls.sesi || '';
+          return acc;
+        }, {}));
 
         const years = [...new Set(paymentData.map(p => p.tahun || new Date(p.tanggal_pembayaran).getFullYear()))].filter(y => y).sort((a,b) => b-a);
         const currentYear = new Date().getFullYear();
@@ -109,6 +120,15 @@ const PaymentRecap = () => {
     fetchData();
   }, []);
 
+  // Shift murid tinggal di kelasnya, bukan di baris muridnya. `santri.sesi_mengaji`
+  // adalah kolom warisan yang sekarang kosong untuk hampir semua murid (lihat
+  // 20260815000600_santri_sesi_ikut_kelas.sql), jadi membacanya sendirian membuat
+  // kolom Sesi kosong melompong. Kelas didahulukan hanya bila baris muridnya
+  // memang tidak menyimpan apa-apa.
+  const resolveSesi = useMemo(() => (santri) => (
+    santri?.sesi_mengaji || classSesiById[santri?.current_class_id || santri?.id_kelas] || '-'
+  ), [classSesiById]);
+
   useEffect(() => {
     if (isLoading) return;
     const activeSantri = allSantri.filter(s => s.status === 'Aktif');
@@ -123,6 +143,7 @@ const PaymentRecap = () => {
         });
         return {
             ...santri,
+            sesi_mengaji: resolveSesi(santri),
             status_spp: sppPayment ? 'Sudah Bayar' : 'Belum Bayar',
             jumlah: sppPayment ? sppPayment.jumlah : 0,
             tanggal_pembayaran: sppPayment ? new Date(sppPayment.tanggal_pembayaran) : null,
@@ -131,7 +152,7 @@ const PaymentRecap = () => {
         };
     });
     setRecapData(statusData);
-  }, [allPayments, allSantri, selectedYear, selectedMonth, isLoading]);
+  }, [allPayments, allSantri, selectedYear, selectedMonth, isLoading, resolveSesi]);
 
   useEffect(() => {
     if (isLoading || !allPayments.length) return;
@@ -170,7 +191,7 @@ const PaymentRecap = () => {
           return {
             ...p,
             nama_lengkap: santri?.nama_lengkap || 'Murid Tidak Ditemukan',
-            sesi_mengaji: santri?.sesi_mengaji || '-',
+            sesi_mengaji: resolveSesi(santri),
             foto_url: santri?.foto_url || null,
             billing_year: p.tahun,
             billing_month: monthNumberToName(p.bulan),
@@ -182,7 +203,7 @@ const PaymentRecap = () => {
     } finally {
       setIsItemDataLoading(false);
     }
-  }, [allPayments, allSantri, selectedItem, isLoading]);
+  }, [allPayments, allSantri, selectedItem, isLoading, resolveSesi]);
 
   useEffect(() => {
     let sortedData = [...recapData];
