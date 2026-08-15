@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { inisialNama, isKepalaSekolah, labelStafRole, sebutanStaf, stafKe } from '@/lib/staf';
+import { getOperationalRoleFromGuruForm } from '@/lib/dataMasterAdapters';
 
 describe('sebutanStaf', () => {
   it('menerjemahkan label Pentashih lama secara case-insensitive', () => {
@@ -69,6 +70,26 @@ describe('isKepalaSekolah', () => {
     expect(isKepalaSekolah(null)).toBe(false);
     expect(isKepalaSekolah({})).toBe(false);
     expect(isKepalaSekolah({ roles: 'bukan array', jabatan: null })).toBe(false);
+  });
+});
+
+describe('getOperationalRoleFromGuruForm — kepala sekolah', () => {
+  it('memberi dashboard pengawasan yang sama dengan wakilnya', () => {
+    expect(getOperationalRoleFromGuruForm({ roles: ['Kepala Sekolah'] })).toBe('pentashih');
+    expect(getOperationalRoleFromGuruForm({ roles: ['Kepala Sekolah', 'Pengajar'] })).toBe('pentashih');
+  });
+
+  // Kepala sekolah yang juga memegang Admin atau Tata Usaha jelas menginginkan
+  // dashboard yang lebih luas; sebutannya tetap tidak berubah.
+  it('mengalah pada Admin dan Tata Usaha', () => {
+    expect(getOperationalRoleFromGuruForm({ roles: ['Kepala Sekolah', 'Admin'] })).toBe('admin');
+    expect(getOperationalRoleFromGuruForm({ roles: ['Kepala Sekolah', 'Tata Usaha'] })).toBe('tata_usaha');
+  });
+
+  it('tidak mengubah pemetaan peran lain', () => {
+    expect(getOperationalRoleFromGuruForm({ roles: ['Pengajar'] })).toBe('guru');
+    expect(getOperationalRoleFromGuruForm({ roles: ['Pentashih'] })).toBe('pentashih');
+    expect(getOperationalRoleFromGuruForm({ roles: [] })).toBe('guru');
   });
 });
 

@@ -206,20 +206,32 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var displayName, email string
+	var displayName, email, jabatan string
+	var roles []string
 	var err error
 	if role == "santri" {
 		err = h.db.QueryRow(r.Context(),
 			`SELECT COALESCE(nama_lengkap,''), COALESCE(nomor_induk,'') FROM santri WHERE id = $1`, userID,
 		).Scan(&displayName, &email)
 	} else {
+		// jabatan dan roles ikut dikirim supaya antarmuka bisa membedakan sebutan
+		// yang berbagi app_role yang sama. Kepala Sekolah dan Wakil Kepala Sekolah
+		// sama-sama memakai app_role `pentashih`; tanpa dua kolom ini bilah atas
+		// hanya bisa menebak dari perannya dan menyebut kepala sekolah "Wakil".
+		// Ini profil milik pemanggil sendiri, jadi tidak ada data orang lain yang
+		// ikut terbuka.
 		err = h.db.QueryRow(r.Context(),
-			`SELECT COALESCE(nama,''), COALESCE(email,'') FROM guru WHERE id = $1`, userID,
-		).Scan(&displayName, &email)
+			`SELECT COALESCE(nama,''), COALESCE(email,''), COALESCE(jabatan,''), COALESCE(roles, '{}')
+			   FROM guru WHERE id = $1`, userID,
+		).Scan(&displayName, &email, &jabatan, &roles)
 	}
 	if err != nil {
 		jsonError(w, "profil tidak ditemukan", http.StatusNotFound)
 		return
+	}
+
+	if roles == nil {
+		roles = []string{}
 	}
 
 	jsonOK(w, map[string]any{
@@ -227,6 +239,8 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		"role":         role,
 		"display_name": displayName,
 		"email":        email,
+		"jabatan":      jabatan,
+		"roles":        roles,
 		"status":       "active",
 	})
 }

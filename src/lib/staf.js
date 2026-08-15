@@ -21,18 +21,15 @@ export const SEBUTAN_PERAN = {
 };
 
 /**
- * Peran 'Kepala Sekolah' adalah SEBUTAN, bukan tingkat akses.
+ * Peran 'Kepala Sekolah' terutama adalah SEBUTAN.
  *
- * Ia tidak dipetakan ke app_role mana pun: kepala sekolah memakai dashboard yang
- * mengikuti peran lain di akunnya (Admin, Tata Usaha, atau Pengajar), sama seperti
- * di sekolah sungguhan seorang kepala sekolah tetap seorang guru bersertifikat.
- * Yang ditentukan peran ini adalah sebutannya, penanda tangan pada dokumen, dan
- * kutipan di halaman Profil publik.
+ * Ia menentukan sebutan orangnya di direktori publik, penanda tangan pada dokumen
+ * sekolah, dan kutipan di halaman Profil. Untuk hak akses ia memakai app_role
+ * `pentashih` — dashboard pengawasan sekolah yang sama dengan wakilnya, karena
+ * keduanya mengawasi hal yang persis sama dan sama-sama tidak berhak menyunting
+ * (lihat getOperationalRoleFromGuruForm di src/lib/dataMasterAdapters.js).
  *
- * Jangan menambahkannya ke pemetaan app_role tanpa memutuskan lebih dulu dashboard
- * mana yang ia terima — dashboard Wakil Kepala Sekolah yang ada sekarang masih
- * berisi materi program Qur'an (distribusi jilid, calon khotim) dan belum layak
- * untuk kepala sekolah dasar umum.
+ * Admin dan Tata Usaha tetap didahulukan bila akunnya juga memegang salah satunya.
  */
 export const PERAN_KEPALA_SEKOLAH = 'Kepala Sekolah';
 

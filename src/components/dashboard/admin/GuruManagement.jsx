@@ -27,10 +27,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isAdminRole } from '@/lib/roles';
 import { labelStafRole } from '@/lib/staf';
 
-// 'Kepala Sekolah' adalah sebutan, bukan tingkat akses: ia tidak menentukan
-// dashboard mana yang diterima (lihat PERAN_KEPALA_SEKOLAH di src/lib/staf.js),
-// jadi akun kepala sekolah tetap perlu satu peran lain — biasanya Pengajar atau
-// Admin — untuk menentukan hak aksesnya.
+// 'Kepala Sekolah' memberi dashboard pengawasan sekolah, sama dengan Wakil Kepala
+// Sekolah; yang membedakan hanya sebutannya. Admin dan Tata Usaha tetap menang
+// bila akunnya juga memegang salah satunya — lihat
+// getOperationalRoleFromGuruForm di src/lib/dataMasterAdapters.js.
 const AVAILABLE_ROLES = ['Kepala Sekolah', 'Pengajar', 'Pentashih', 'Staff Operasional', 'Tata Usaha', 'Admin'];
 
 // Nilai 'Pentashih' tetap dipakai sebagai nilai tersimpan karena resolusi role

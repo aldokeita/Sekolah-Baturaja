@@ -156,12 +156,19 @@ export const getOperationalRoleFromGuruForm = (input) => {
   // then Pentashih, otherwise a plain teacher account.
   if (roles.includes('Admin')) return 'admin';
   if (roles.includes('Tata Usaha')) return 'tata_usaha';
-  if (roles.includes('Pentashih')) return 'pentashih';
-  // 'Kepala Sekolah' SENGAJA tidak muncul di daftar ini. Peran itu adalah
-  // sebutan, bukan tingkat akses (lihat PERAN_KEPALA_SEKOLAH di src/lib/staf.js),
-  // jadi akun kepala sekolah mengikuti peran lain di akunnya dan jatuh ke 'guru'
-  // bila tidak ada peran lain. Memetakannya ke app_role tersendiri berarti
-  // memutuskan dashboard mana yang ia terima — keputusan yang belum diambil.
+  // Kepala sekolah memakai app_role `pentashih` — dashboard pengawasan sekolah,
+  // yang sama dengan wakilnya. Bukan app_role baru: keduanya mengawasi hal yang
+  // persis sama (kehadiran, keterisian kelas, murid yang perlu perhatian) dan
+  // sama-sama tidak berhak menyunting. Menambah app_role kembar hanya
+  // menggandakan jumlah tempat yang harus diperiksa ulang di setiap handler.
+  //
+  // Yang membedakan keduanya adalah SEBUTAN, bukan hak akses: judul dashboard dan
+  // kartu profilnya berbunyi "Kepala Sekolah" ketika akunnya memegang sebutan itu
+  // (lihat isKepalaSekolah di src/lib/staf.js).
+  //
+  // Admin dan Tata Usaha tetap didahulukan: kepala sekolah yang juga memegang
+  // salah satunya jelas menginginkan dashboard yang lebih luas.
+  if (roles.includes('Pentashih') || roles.includes('Kepala Sekolah')) return 'pentashih';
   return 'guru';
 };
 

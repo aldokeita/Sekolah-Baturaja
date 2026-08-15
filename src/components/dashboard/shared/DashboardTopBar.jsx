@@ -4,6 +4,7 @@ import { ExternalLink, LogOut, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
+import { isKepalaSekolah } from '@/lib/staf';
 
 /**
  * Bilah atas dashboard: satu-satunya jalan keluar dari portal.
@@ -18,6 +19,10 @@ import useSchoolIdentity from '@/hooks/useSchoolIdentity';
  * kelima peran mendapatkannya sekaligus dan tidak ada yang terlewat lagi.
  */
 
+// Kepala Sekolah dan Wakil Kepala Sekolah berbagi app_role `pentashih`, jadi
+// peran saja tidak cukup untuk memberi sebutan yang benar — tanpa pemeriksaan
+// tambahan bilah ini memanggil kepala sekolah "Wakil". Sebutannya diambil dari
+// `jabatan`/`roles` yang kini ikut dikirim /api/auth/me.
 const LABEL_PERAN = {
   superadmin: 'Pemilik Template',
   admin: 'Administrator',
@@ -45,7 +50,7 @@ const PROFILE_LINKS = [
 
 
 const DashboardTopBar = () => {
-  const { role, signOut } = useAuth();
+  const { role, profile, signOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const sekolah = useSchoolIdentity();
   const location = useLocation();
@@ -53,6 +58,9 @@ const DashboardTopBar = () => {
   const isHome = location.pathname === '/';
   const isProfileGroup = PROFILE_LINKS.some(({ to }) => location.pathname.startsWith(to));
   const at = (path) => location.pathname.startsWith(path);
+  const labelPeran = isKepalaSekolah(profile)
+    ? 'Kepala Sekolah'
+    : (LABEL_PERAN[role] || 'Portal sekolah');
 
   const handleLogout = async () => {
     await signOut();
@@ -66,7 +74,7 @@ const DashboardTopBar = () => {
           <span className="dashboard-topbar__mark" aria-hidden="true">{sekolah.logoAbbr}</span>
           <span className="dashboard-topbar__identity">
             <span className="dashboard-topbar__name">{sekolah.shortName}</span>
-            <span className="dashboard-topbar__role">{LABEL_PERAN[role] || 'Portal sekolah'}</span>
+            <span className="dashboard-topbar__role">{labelPeran}</span>
           </span>
         </Link>
 

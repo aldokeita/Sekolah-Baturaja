@@ -509,7 +509,27 @@ DOM: warna bilah tidak pernah berlaku dan React memperingatkan setiap render. Sa
 adalah `GuruAttendanceRecap`, yang memakainya untuk mewarnai bilah menurut persentase kehadiran —
 jadi bilahnya selalu berwarna bawaan. Prop-nya sekarang diterima dan digabung ke `Indicator`.
 
-### 'Kepala Sekolah' adalah SEBUTAN, bukan tingkat akses
+### Kepala Sekolah memakai app_role `pentashih`, dibedakan oleh sebutannya
+
+Setelah dashboard Wakil Kepala Sekolah ditulis ulang jadi panel pengawasan SD (lihat catatan di
+atas), alasan menahan pemetaannya hilang. `getOperationalRoleFromGuruForm` sekarang memetakan peran
+`'Kepala Sekolah'` ke app_role `pentashih` — **bukan** app_role baru.
+
+Alasannya: keduanya mengawasi hal yang persis sama (kehadiran, keterisian kelas, murid yang perlu
+perhatian) dan sama-sama tidak berhak menyunting. Menambah app_role kembar hanya menggandakan
+jumlah tempat yang harus diperiksa ulang di setiap handler Go, dan setiap tempat yang terlewat
+menjadi lubang otorisasi senyap.
+
+Admin dan Tata Usaha tetap didahulukan bila akunnya juga memegang salah satunya.
+
+**Konsekuensi yang harus diingat: `role` saja tidak lagi cukup untuk memberi sebutan.** Kepala
+Sekolah dan wakilnya berbagi satu app_role, jadi setiap tempat yang menerjemahkan peran menjadi
+sebutan harus memakai `isKepalaSekolah` lebih dulu. Sudah dipasang di judul dashboard, kartu profil,
+dan bilah atas. `/api/auth/me` kini ikut mengirim `jabatan` dan `roles` supaya bilah atas punya
+bahan untuk membedakannya — sebelumnya ia hanya menerima `role` dan memanggil kepala sekolah
+"Wakil".
+
+### 'Kepala Sekolah' sebagai sebutan
 
 Struktur sekolah sempat punya Wakil Kepala Sekolah tanpa kepalanya. Peran
 `'Kepala Sekolah'` kini ada di kosakata `guru.roles`, tetapi **tidak** dipetakan ke app_role mana
