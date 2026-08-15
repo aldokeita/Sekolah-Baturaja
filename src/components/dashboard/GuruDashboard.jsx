@@ -281,6 +281,15 @@ const GuruDashboard = () => {
 
   const openDetailModal = (santri) => { setSelectedSantri(santri); setIsDetailOpen(true); };
   const openTransferModal = (santri) => setTransferSantri(santri);
+
+  // Sejak guru mata pelajaran ikut melihat kelas yang diajarnya, daftar kelas di
+  // dashboard memuat dua macam: kelas yang diwalikan guru ini, dan kelas yang
+  // sekadar diajarnya. Hanya yang pertama boleh dipindah muridnya — cerminan
+  // guruOwnsSantri di sisi Go.
+  const isWaliKelas = useCallback(
+    (kelas) => Boolean(guruData?.id) && kelas?.id_guru === guruData.id,
+    [guruData?.id],
+  );
   const openHafalanModal = (santri, category) => {
       // Lingkup diturunkan dari jenis materi yang dibuka, bukan dari status murid.
       // Dengan begitu murid mana pun bisa punya hafalan per kelas maupun per juz.
@@ -613,20 +622,31 @@ const GuruDashboard = () => {
                                                 <td className="py-3 px-4">
                                                     <div className="flex items-center gap-1">
                                                         <Button size="sm" variant="ghost" onClick={() => openDetailModal(santri)} className={cn("text-primary hover:text-primary hover:bg-primary/10")}>Detail</Button>
+                                                        {/* Memindahkan murid adalah hak wali kelas dan admin. Guru mata
+                                                            pelajaran melihat kelas ini karena mengajar di sini, dan
+                                                            backend akan menolaknya 403 — jadi tombolnya dimatikan alih-alih
+                                                            menawarkan aksi yang pasti gagal dengan pesan "periksa koneksi". */}
                                                         <TooltipProvider delayDuration={250}>
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        size="icon"
-                                                                        variant="outline"
-                                                                        onClick={() => openTransferModal(santri)}
-                                                                        className="guru-transfer-action h-10 w-10 rounded-xl"
-                                                                        aria-label={`Transfer ${santri.nama_lengkap} ke kelas lain`}
-                                                                    >
-                                                                        <ArrowRightLeft className="h-4 w-4" />
-                                                                    </Button>
+                                                                    <span className="inline-flex">
+                                                                        <Button
+                                                                            size="icon"
+                                                                            variant="outline"
+                                                                            disabled={!isWaliKelas(cls)}
+                                                                            onClick={() => openTransferModal(santri)}
+                                                                            className="guru-transfer-action h-10 w-10 rounded-xl"
+                                                                            aria-label={isWaliKelas(cls)
+                                                                                ? `Transfer ${santri.nama_lengkap} ke kelas lain`
+                                                                                : `Transfer ${santri.nama_lengkap} hanya dapat dilakukan wali kelas`}
+                                                                        >
+                                                                            <ArrowRightLeft className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </span>
                                                                 </TooltipTrigger>
-                                                                <TooltipContent side="top" className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white dark:bg-white dark:text-slate-950">Transfer kelas</TooltipContent>
+                                                                <TooltipContent side="top" className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white dark:bg-white dark:text-slate-950">
+                                                                    {isWaliKelas(cls) ? 'Transfer kelas' : 'Hanya wali kelas yang dapat memindahkan murid'}
+                                                                </TooltipContent>
                                                             </Tooltip>
                                                         </TooltipProvider>
                                                     </div>

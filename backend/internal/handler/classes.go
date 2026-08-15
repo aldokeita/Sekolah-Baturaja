@@ -116,6 +116,27 @@ func (h *ClassesHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Seorang guru hanya boleh melihat kelas yang benar-benar dipegangnya, baik
+	// sebagai wali kelas maupun lewat jadwal mengajar.
+	//
+	// Tanpa ini `GET /api/classes?include_santri=true` tanpa penyaring apa pun
+	// mengembalikan SELURUH kelas beserta rosternya kepada guru mana pun — nama
+	// setiap murid di sekolah terbaca hanya dengan menghapus parameternya. Itu
+	// berselisih dengan `santri.List`, yang sudah lama membatasi guru ke kelasnya
+	// sendiri; dua pintu ke data yang sama tidak boleh berbeda aturannya.
+	//
+	// Pentashih sengaja TIDAK dibatasi: perannya memang meninjau murid lintas
+	// kelas, sejalan dengan policy santri_pentashih_select.
+	if role == "guru" {
+		if uid := middleware.UserIDFromCtx(ctx); uid != "" {
+			args = append(args, uid)
+			i := len(args)
+			where = append(where, fmt.Sprintf(
+				"(cl.id_guru = $%d OR cl.id IN (SELECT class_id FROM jadwal_pelajaran WHERE guru_id = $%d))",
+				i, i))
+		}
+	}
+
 	includeGuru := r.URL.Query().Get("include_guru") == "true"
 	// Roster PII is staff/teacher-only. A santri asking for include_santri gets
 	// the class list without the roster attached, never a forbidden error, so the

@@ -1667,6 +1667,32 @@ di panel admin tidak tercampur kelas yang sekadar diajar X.
 | admin saring `id_guru` = guru mapel | 0 baris — arti lama terjaga |
 | admin saring `id_guru` = Siti Aminah | 1 baris — Kelas Purnama |
 
+#### Dua temuan saat menguji guru mapel di browser
+
+**1. Kebocoran roster antar kelas (sudah lama ada, sudah ditutup).**
+`GET /api/classes?include_santri=true` **tanpa penyaring apa pun** mengembalikan SELURUH
+kelas beserta rosternya kepada guru mana pun — nama setiap murid di sekolah terbaca hanya
+dengan menghapus parameter `id_guru`. Terlihat saat memeriksa data Rina: ia menerima kelima
+kelas padahal hanya mengajar satu.
+
+Ini berselisih dengan `santri.List`, yang sudah lama membatasi guru ke kelasnya sendiri. Dua
+pintu ke data yang sama tidak boleh berbeda aturannya. `classes.List` kini menyaring peran
+`guru` ke kelas yang benar-benar dipegangnya. **Pentashih sengaja tidak dibatasi** — perannya
+memang meninjau murid lintas kelas, sejalan dengan `santri_pentashih_select`.
+
+Terbukti: permintaan yang sama kini mengembalikan 1 kelas untuk Rina, sementara admin tetap
+menerima kelima kelas.
+
+**2. Tombol Transfer menawarkan aksi yang pasti gagal.**
+Karena guru mapel kini melihat kelas yang diajarnya, tombol "Transfer kelas" ikut muncul
+untuk murid yang bukan perwaliannya. Menekannya memanggil `transfer-destinations`, dijawab
+**403** dengan benar — tetapi modalnya menampilkan *"Daftar kelas belum dapat dimuat.
+Periksa koneksi Anda"*, menyalahkan jaringan padahal ini soal hak akses.
+
+Tombolnya kini **dimatikan** bila guru bukan wali kelas, dengan tooltip "Hanya wali kelas
+yang dapat memindahkan murid". Penjagaan backend tidak diubah — yang diperbaiki hanya
+menawarkan aksi yang mustahil lalu berbohong soal sebabnya.
+
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 
 Seluruh fitur 1–6 diperiksa langsung di `localhost:3000` dengan akun guru sungguhan, bukan
