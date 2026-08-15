@@ -2050,6 +2050,42 @@ WhatsApp, bukan cabang tampilan.
 API: lookup RFID murid mengembalikan `Aisyah Putri (kategori=Anak)`, dan pembacaan absensi
 murid tetap 200.
 
+#### Verifikasi tampilan hasil scan di browser
+
+Diuji di `/absensi-digital` dengan RFID sungguhan. Ahmad Fauzan sudah absen hari ini, jadi
+memindainya menampilkan kartu "sudah tercatat" **tanpa menulis baris baru** — seluruh jalur
+render terlewati tanpa mengubah data.
+
+Kartunya tampil lengkap: nama, sesi, status "Tepat Waktu", jam check-in, **JILID, POIN, LEVEL
+Bronze, HAFALAN**, rekap bulan ini, pesan, dan kutipan. **Kemunculan kartu LEVEL itu buktinya**:
+justru bagian inilah yang dulu ditahan cabang "dewasa". Kartu peringatan juga diperiksa lewat
+Aisyah Putri — di luar jam shift, muncul "Tidak ada sesi absensi yang sedang dibuka saat ini."
+
+**Catatan cara uji:** penekanan Enter sintetis tidak memicu submit implisit form, jadi
+handlernya dipanggil lewat `form.requestSubmit()` di konsol. Jalur kodenya sama persis dengan
+kartu RFID sungguhan; yang berbeda hanya pemicunya.
+
+### Celah migrasi shift yang baru ketahuan — **sudah ditutup**
+
+Verifikasi di atas memunculkan kejanggalan: kartu Ahmad Fauzan tertulis **"Sesi Siang"**
+padahal Kelas 4A bershift Pagi.
+
+Penyebabnya migrasi shift terdahulu (`20260815000400`) hanya menata `classes.sesi` dan
+**melewatkan `santri.sesi_mengaji`**. Sepuluh murid masih bernilai `'Sore'`.
+
+Itu bukan sekadar label yang jelek. `getSantriSession` mendahulukan `sesi_mengaji` sebelum
+jatuh ke shift kelas, dan `'Sore'` kini dipetakan ke `'Siang'` oleh alias — sehingga jendela
+absensi mereka menjadi **11.30–17.00**. Murid kelas pagi yang datang pukul 07.00 akan **ditolak
+karena dianggap di luar jam absensi**.
+
+Migrasi `20260815000600_santri_sesi_ikut_kelas.sql` (**sudah diterapkan**) mengosongkan nilai
+yang bukan shift sah, bukan menebaknya. Dengan `NULL`, `getSantriSession` jatuh ke `class.sesi`
+— dan shift kelas memang satu-satunya sumber yang benar. Menyimpan shift terpisah di baris
+murid justru yang mengundang selisih ini sejak awal.
+
+Terbukti di browser: kartu yang sama kini menulis **"Sesi Pagi"**, dan tidak ada lagi murid
+yang shift-nya berbeda dari kelasnya.
+
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 
 Seluruh fitur 1–6 diperiksa langsung di `localhost:3000` dengan akun guru sungguhan, bukan
