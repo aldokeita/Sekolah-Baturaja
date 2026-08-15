@@ -29,6 +29,8 @@ import {
 } from '@/utils/AttendanceStatusLogic';
 import { resolveAvatarRecords } from '@/lib/storageAdapters';
 import { getActiveCalendarDates } from '@/lib/calendarUtils';
+import { fetchJadwalList, fetchPeriodeList } from '@/lib/scheduleAdapters';
+import { getTeacherLessonSession } from '@/lib/guruAttendance';
 
 const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -46,6 +48,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
     const [attendanceData, setAttendanceData] = useState([]);
     const [gurus, setGurus] = useState([]);
     const [classes, setClasses] = useState([]);
+    const [jadwal, setJadwal] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -75,7 +78,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
         const endDate = `${selectedYear}-12-31`;
         const isOwnRecap = role === 'guru' && Boolean(user);
 
-        const [att, guruList, classList, contentMap, calendarContextData] = await Promise.all([
+        const [att, guruList, classList, contentMap, calendarContextData, jadwalList] = await Promise.all([
             fetchAttendance({
                 role: 'guru',
                 ...(isOwnRecap ? { user_id: user.id } : {}),
@@ -90,7 +93,18 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
             fetchClassList().catch(() => null),
             fetchWebsiteContentMap({ keys: ['guru_session_overrides'], publicOnly: false }).catch(() => ({})),
             fetchCalendarContext(startDate, endDate),
+            // Jadwal pelajaran periode aktif. Sejak absensi guru dicatat per jam
+            // pelajaran, inilah sumber kewajiban hadir yang sebenarnya — bukan lagi
+            // sesi kelas perwalian. Gagal memuatnya tidak fatal: guru yang masih
+            // memakai model sesi lama tetap terekap lewat jalur kelas.
+            fetchPeriodeList()
+                .then((daftar) => {
+                    const aktif = (daftar || []).find((p) => p.is_active) || (daftar || [])[0] || null;
+                    return aktif ? fetchJadwalList({ periodeId: aktif.id }) : [];
+                })
+                .catch(() => []),
         ]);
+        setJadwal(jadwalList || []);
         const overrides = { content: contentMap?.guru_session_overrides };
 
         if (att && guruList && classList) {
@@ -197,6 +211,37 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
         );
     };
 
+    /**
+     * Sesi mengajar tiap guru, dikelompokkan per hari dalam sepekan:
+     *
+     *   { guruId: { 1: Set('Pagi'), 3: Set('Pagi','Siang') } }
+     *
+     * Kunci harinya 1..6 (Senin..Sabtu), sama dengan kolom `hari` pada
+     * `jadwal_pelajaran`. Guru yang tidak punya satu pun jadwal tidak muncul di
+     * peta ini, dan rekapnya tetap memakai model sesi kelas perwalian.
+     *
+     * BATAS KETELITIAN: nilainya Set, jadi dua jam pelajaran yang jatuh di sesi
+     * yang sama pada hari yang sama terhitung SATU kewajiban, bukan dua. Grid
+     * rekap memang berkolom sesi (Pagi/Siang/Sore), bukan per jam pelajaran;
+     * menghitung per jam berarti merombak tampilannya juga. Akibat wajarnya:
+     * guru yang mengajar dua jam Pagi lalu hadir di salah satunya tetap terbaca
+     * 100% untuk hari itu.
+     */
+    const sesiJadwalPerHari = useMemo(() => {
+        const peta = {};
+        (jadwal || []).forEach((row) => {
+            const guruId = row?.guru_id;
+            const hari = Number(row?.hari);
+            if (!guruId || !hari) return;
+            const sesi = getTeacherLessonSession(row);
+            if (!sesi) return;
+            if (!peta[guruId]) peta[guruId] = {};
+            if (!peta[guruId][hari]) peta[guruId][hari] = new Set();
+            peta[guruId][hari].add(sesi);
+        });
+        return peta;
+    }, [jadwal]);
+
     const recapData = useMemo(() => {
         const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
         const today = new Date();
@@ -218,8 +263,20 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
         const processedData = filteredGurus.map(guru => {
             let assignedSessions = [];
 
+            // Sesi per hari dalam sepekan, diturunkan dari jadwal pelajaran.
+            // Kosong berarti guru ini tidak punya jadwal, dan rekapnya jatuh ke
+            // model lama (sesi kelas perwalian).
+            const sesiPerHari = sesiJadwalPerHari[guru.id] || null;
+            const pakaiJadwal = Boolean(sesiPerHari) && !overriddenSessions[guru.id];
+
             if (overriddenSessions[guru.id]) {
                 assignedSessions = normalizeSessionList(overriddenSessions[guru.id]);
+            } else if (pakaiJadwal) {
+                // Gabungan seluruh sesi yang pernah diajarnya dalam sepekan; dipakai
+                // untuk label dan rincian, bukan untuk menghitung kewajiban.
+                assignedSessions = normalizeSessionList(
+                    Object.values(sesiPerHari).flatMap((set) => [...set]),
+                );
             } else {
                 const guruClasses = classes.filter(c => c.id_guru === guru.id);
                 assignedSessions = normalizeSessionList(guruClasses.map(c => c.sesi));
@@ -230,7 +287,10 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
             if (assignedSessions.length === 0) return null;
 
             const pastActiveDaysCount = activeDays.filter(d => d.isPast).length;
-            let totalSessionsExpected = pastActiveDaysCount * assignedSessions.length;
+            // Model sesi lama menagih setiap sesi pada setiap hari aktif. Model
+            // jadwal hanya menagih hari yang benar-benar ada jam mengajarnya, jadi
+            // kewajibannya dijumlahkan per hari di dalam loop di bawah.
+            let totalSessionsExpected = pakaiJadwal ? 0 : pastActiveDaysCount * assignedSessions.length;
             let totalSessionsAttended = 0;
             let sessionBreakdown = {};
 
@@ -242,7 +302,15 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
                 const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 dailyDetails[day] = {};
 
-                assignedSessions.forEach(sesi => {
+                // Hari 1..6 = Senin..Sabtu, sama dengan kolom `hari` jadwal dan
+                // dengan Date.getDay() untuk Senin–Sabtu.
+                const sesiHariIni = pakaiJadwal
+                    ? [...(sesiPerHari[new Date(selectedYear, selectedMonth, day).getDay()] || [])].sort()
+                    : assignedSessions;
+
+                if (pakaiJadwal && isPast) totalSessionsExpected += sesiHariIni.length;
+
+                sesiHariIni.forEach(sesi => {
                     const attendanceRecord = attendanceData.find(a =>
                         a.user_id === guru.id &&
                         a.attendance_date === dateStr &&
@@ -291,7 +359,7 @@ const GuruAttendanceRecap = ({ isReadOnly = false }) => {
         }
 
         return processedData;
-    }, [attendanceData, gurus, classes, selectedYear, selectedMonth, searchTerm, selectedGuruDetail, calendarContext, overriddenSessions]);
+    }, [attendanceData, gurus, classes, sesiJadwalPerHari, selectedYear, selectedMonth, searchTerm, selectedGuruDetail, calendarContext, overriddenSessions]);
 
     const handleExport = () => {
         const exportData = [];

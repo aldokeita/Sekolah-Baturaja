@@ -1717,20 +1717,54 @@ guru", jadwal lama termuat (`Jumat 16:00–17:00, Ruang Demo`), dan riwayat notu
 tidak memutus data lama. Tab **Notulensi nonaktif** untuk Rina karena ia bukan notulen; itu
 perilaku yang benar.
 
-**Rekap Absensi kosong untuk guru mata pelajaran — BELUM diperbaiki, perlu keputusan.**
-`GuruAttendanceRecap` menurunkan sesi wajib seorang guru dari `classes.filter(c => c.id_guru
-=== guru.id)` — **kelas yang diwalikannya**, memakai model sesi lama (Pagi/Siang/Sore). Guru
-mata pelajaran tidak mewalikan kelas mana pun, jadi `assignedSessions` kosong dan seluruh
-rekapnya hilang dengan pesan "Tidak ada data guru atau jadwal mengajar ditemukan".
+**Rekap Absensi kini membaca jadwal pelajaran — SUDAH dirombak.**
+Sebelumnya `GuruAttendanceRecap` menurunkan sesi wajib seorang guru dari
+`classes.filter(c => c.id_guru === guru.id)` — **kelas yang diwalikannya**, memakai model sesi
+lama. Guru mata pelajaran tidak mewalikan kelas mana pun, jadi `assignedSessions` kosong dan
+seluruh rekapnya hilang dengan pesan "Tidak ada data guru atau jadwal mengajar ditemukan".
+Bukan akibat penyempitan cakupan kelas — bahkan saat kelima kelas terlihat, tidak satu pun
+ber-`id_guru` miliknya.
 
-Ini **bukan** akibat penyempitan cakupan kelas di atas — bahkan saat kelima kelas terlihat,
-tidak satu pun ber-`id_guru` miliknya.
+Akarnya ketidaksesuaian model: sejak `2a362b6` absensi guru dicatat lewat **jadwal
+pelajaran**, sementara rekapnya masih mengukur **sesi kelas perwalian**.
 
-Akar masalahnya sebuah ketidaksesuaian model: sejak `2a362b6` absensi guru dicatat lewat
-**jadwal pelajaran**, sementara rekapnya masih mengukur **sesi kelas perwalian**. Memperbaiki
-berarti menurunkan sesi wajib dari `jadwal_pelajaran` (lewat `getTeacherLessonSession`) untuk
-guru yang punya jadwal — perubahan berarti pada panel admin, bukan tambalan kecil. Sengaja
-tidak dikerjakan tanpa persetujuan.
+**Cara kerja sekarang.** Rekap memuat `jadwal_pelajaran` periode aktif dan membangun peta
+`sesiJadwalPerHari`: `{ guruId: { 1: Set('Pagi'), 3: Set('Siang') } }`, kunci hari 1..6
+(Senin..Sabtu) yang kebetulan sama dengan `Date.getDay()` untuk Senin–Sabtu.
+
+Perbedaan penting dari model lama: kewajiban **dijumlahkan per hari**, bukan
+`hari_aktif × jumlah_sesi`. Guru hanya ditagih pada hari yang benar-benar ada jam mengajarnya.
+
+**Tiga jalur, berurutan prioritas:**
+
+1. Ada override manual (`guru_session_overrides`) → pakai itu, tak berubah.
+2. Punya jadwal pelajaran → model jadwal (baru).
+3. Tidak keduanya → model sesi kelas perwalian (lama), tetap utuh untuk sekolah yang masih
+   memakainya.
+
+**Label sesi mengikuti kelas, bukan jam pelajaran — dan itu disengaja.**
+`getTeacherLessonSession` mendahulukan `schedule.sesi` (diwarisi dari kelas) sebelum menebak
+dari `jam_mulai`. Pada data demo, Kelas Purnama bersesi "Sore" padahal jam pelajarannya 07:00,
+jadi rekapnya menulis "Sore". Terlihat janggal, tetapi **fungsi yang sama dipakai kios saat
+mencatat absensi** — kalau rekap memakai aturan berbeda, kewajiban dan catatannya tidak akan
+pernah bertemu. Kejanggalannya ada di data demo, bukan di kode. Mengubahnya berarti mengubah
+cara absensi pusat dicatat, yang dilarang.
+
+**Batas ketelitian yang diketahui.** Nilai petanya `Set`, jadi dua jam pelajaran pada sesi dan
+hari yang sama terhitung **satu** kewajiban. Grid rekap memang berkolom sesi
+(Pagi/Siang/Sore), bukan per jam pelajaran; menghitung per jam berarti merombak tampilannya
+juga. Akibat wajarnya: guru yang mengajar dua jam Pagi lalu hadir di salah satunya tetap
+terbaca 100% untuk hari itu. Dicatat di komentar kode agar tidak terbaca sebagai bug.
+
+**Bukti uji ujung-ke-ujung** dengan akun Rina (jadwal Senin 07.00, Kelas Purnama):
+
+| Keadaan | Rekap |
+|---|---|
+| belum ada absensi | `0 / 2` · 0% |
+| setelah satu kehadiran dicatat Senin 10 Agu | `1 / 2` · 50% · "Sore 1 Sesi" |
+
+Pembagi `2` benar: Senin aktif hingga 15 Agustus 2026 hanya tanggal 3 dan 10. Baris absensi
+ujinya sudah dihapus setelah verifikasi.
 
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 
