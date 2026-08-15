@@ -194,7 +194,7 @@ const HafalanSection = ({
   );
 };
 
-const MurojaahRecorder = ({ santriId, hafalanItems, onSubmissionSuccess, isAdult }) => {
+const MurojaahRecorder = ({ santriId, hafalanItems, onSubmissionSuccess }) => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedItem, setSelectedItem] = useState('');
     const [isUploading, setIsUploading] = useState(false);
@@ -234,7 +234,7 @@ const MurojaahRecorder = ({ santriId, hafalanItems, onSubmissionSuccess, isAdult
         }, 1000);
     };
 
-    return (<Card className={cn("lg:col-span-1", isAdult ? "bg-white/80 dark:bg-black/40 border-purple-500/30 backdrop-blur-sm text-gray-800 dark:text-white" : "")}><CardHeader><CardTitle className={cn("flex items-center gap-2", isAdult ? "text-purple-700 dark:text-purple-300" : "text-primary")}><Mic className="w-6 h-6"/> Pojok Muroja'ah</CardTitle></CardHeader><CardContent className="space-y-4"><Select value={selectedCategory} onValueChange={setSelectedCategory}><SelectTrigger className={isAdult ? "bg-white dark:bg-black/50 border-gray-300 dark:border-purple-500/30 text-gray-900 dark:text-white" : ""}><SelectValue placeholder="Pilih Kategori" /></SelectTrigger><SelectContent>{categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent></Select><Select value={selectedItem} onValueChange={setSelectedItem}><SelectTrigger className={isAdult ? "bg-white dark:bg-black/50 border-gray-300 dark:border-purple-500/30 text-gray-900 dark:text-white" : ""}><SelectValue placeholder="Pilih Hafalan" /></SelectTrigger><SelectContent>{filteredItems.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><div className="flex justify-center gap-4"><Button onClick={handleSend} size="lg" disabled={isUploading || !selectedItem} className={isAdult ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}>{isUploading ? 'Mengirim...' : <><Send className="w-4 h-4 mr-2"/> Kirim Setoran</>}</Button></div></CardContent></Card>);
+    return (<Card className="lg:col-span-1"><CardHeader><CardTitle className="flex items-center gap-2 text-primary"><Mic className="w-6 h-6"/> Pojok Muroja'ah</CardTitle></CardHeader><CardContent className="space-y-4"><Select value={selectedCategory} onValueChange={setSelectedCategory}><SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger><SelectContent>{categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent></Select><Select value={selectedItem} onValueChange={setSelectedItem}><SelectTrigger><SelectValue placeholder="Pilih Hafalan" /></SelectTrigger><SelectContent>{filteredItems.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><div className="flex justify-center gap-4"><Button onClick={handleSend} size="lg" disabled={isUploading || !selectedItem}>{isUploading ? 'Mengirim...' : <><Send className="w-4 h-4 mr-2"/> Kirim Setoran</>}</Button></div></CardContent></Card>);
 };
 
 const ClassmatesList = ({ classmates, todayAttendance }) => {
@@ -370,7 +370,9 @@ const EditProfileDialog = ({ isOpen, onOpenChange, santri, onUpdate }) => {
     );
 };
 
-const SantriDashboard = ({ isAdult = false }) => {
+// Tanpa prop `isAdult`: SD negeri hanya punya satu jenis murid. Pembedaan murid
+// dewasa berasal dari produk sebelumnya dan sudah dicabut.
+const SantriDashboard = () => {
   const { user } = useAuth();
   const [santriData, setSantriData] = useState(null);
   const [hafalan, setHafalan] = useState([]);
@@ -628,7 +630,7 @@ const SantriDashboard = ({ isAdult = false }) => {
                   <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">Kirim setoran hafalan dan buka video panduan tanpa memenuhi halaman ringkasan.</p>
                 </div>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <MurojaahRecorder santriId={santriData.id} hafalanItems={hafalanItems} onSubmissionSuccess={() => initializeData()} isAdult={false} />
+                  <MurojaahRecorder santriId={santriData.id} hafalanItems={hafalanItems} onSubmissionSuccess={() => initializeData()} />
                   <Card className="group overflow-hidden border-none bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-700 text-white shadow-xl">
                     <CardContent className="flex min-h-[250px] flex-col items-start justify-between p-7 sm:p-8">
                       <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/20 bg-white/15 backdrop-blur-sm"><PlayCircle className="h-7 w-7" /></div>

@@ -2018,12 +2018,37 @@ Seluruh 20 murid kini berkategori `Anak`. Komentar di `SantriManagement.jsx` yan
 kolom `hafalan_items.program_scope`, sekelas dengan `'Pentashih'` — mengubahnya memutus data
 hafalan lama. Sudah ada komentar yang menjelaskannya di berkas itu.
 
-**Sisa yang ditemukan tapi BELUM dikerjakan — perlu keputusan.** Kode masih bercabang pada
-kategori `'Dewasa'` di tiga tempat: `DigitalAttendancePage.jsx` (dua cabang tampilan hasil scan
-dan statistik dewasa), dan `DashboardPage.jsx` (`isAdult`). Itu bertentangan dengan keputusan
-mengikat *"Kategori murid & kelas: dihapus seluruhnya. Tidak ada kelas dewasa"*. Tidak ada satu
-pun baris data berkategori `Dewasa` sekarang, jadi cabang-cabang itu kode mati — tetapi
-mencabutnya menyentuh halaman absensi pusat, yang dilarang diubah tanpa permintaan tersendiri.
+### Kategori `'Dewasa'` dicabut — **Tuntas**
+
+Sesuai keputusan mengikat *"Kategori murid & kelas: dihapus seluruhnya. Tidak ada kelas
+dewasa"*. Tidak ada satu pun baris data berkategori `Dewasa`, jadi seluruhnya kode mati.
+
+| Berkas | Yang dicabut |
+|---|---|
+| `DigitalAttendancePage.jsx` | `isAdult`, larik `adultQuotes`, blok `adultStats`, dan **satu cabang tampilan hasil scan penuh** untuk murid dewasa |
+| `DashboardPage.jsx` | prop `isAdult` ke `SantriDashboard` |
+| `SantriDashboard.jsx` | prop `isAdult` beserta varian gaya ungunya di `MurojaahRecorder` |
+| `JilidChangeModal.jsx` | imbuhan judul `(Dewasa)` |
+| `PaymentSystem.jsx` | badge kategori murid |
+| `paymentAdapters.js` | fungsi `formatSantriCategory` |
+| `appConfigAdapters.js` | kunci `ADULT_SESSION` yang tidak dipakai siapa pun |
+
+**Cabang tampilan hasil scan yang dicabut ternyata identik** dengan cabang murid biasa, kecuali
+tidak menampilkan kartu level. Jadi mencabutnya justru **menambah** yang dilihat murid, bukan
+mengurangi.
+
+**Temuan sampingan: layar pembayaran menampilkan "TPQ" kepada pembeli.**
+`formatSantriCategory` memetakan kategori `'Anak'` menjadi label **"TPQ"**, dan `PaymentSystem`
+menampilkannya sebagai badge di bawah nama tiap murid. Jadi panel pembayaran sebuah SD negeri
+memasang istilah lembaga Al-Qur'an di layar. Badge dan fungsinya sama-sama dicabut — pada
+sekolah dengan satu jenis murid, badge kategori memang tidak menerangkan apa pun.
+
+`kategori` di `JilidChangeModal` **tetap dipertahankan**: di sana ia variabel template pesan
+WhatsApp, bukan cabang tampilan.
+
+**Bukti uji.** `npm run lint` dan `npm run build` bersih. Jalur absensi diperiksa ulang lewat
+API: lookup RFID murid mengembalikan `Aisyah Putri (kategori=Anak)`, dan pembacaan absensi
+murid tetap 200.
 
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 

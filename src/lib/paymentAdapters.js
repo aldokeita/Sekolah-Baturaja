@@ -88,14 +88,12 @@ export const formatPaymentPeriod = (bulan, tahun) => {
     return `${bulan ? monthNumberToName(bulan) : '-'} ${tahun || ''}`.trim();
 };
 
-export const formatSantriCategory = (value) => {
-    const category = String(value || '').trim();
-    if (!category) return 'TPQ';
-    if (category.toUpperCase() === 'PTPT') return 'PTPT';
-    if (category.toLowerCase() === 'dewasa') return 'Dewasa';
-    if (category.toLowerCase() === 'anak' || category.toUpperCase() === 'TPQ') return 'TPQ';
-    return category;
-};
+/* formatSantriCategory DICABUT. Fungsinya memetakan kategori murid ke label
+   "TPQ" / "PTPT" / "Dewasa" — pembagian murid ala lembaga Al-Qur'an. Pada SD
+   negeri hanya ada satu jenis murid, sehingga label itu bukan sekadar tidak
+   berguna: kategori 'Anak' dipetakan menjadi "TPQ", jadi layar pembayaran
+   menampilkan istilah lembaga Al-Qur'an kepada pembeli. Badge pemakainya di
+   PaymentSystem ikut dicabut. */
 
 export const validatePaymentAmount = (amount) => Number.isFinite(Number(amount)) && Number(amount) >= 0;
 

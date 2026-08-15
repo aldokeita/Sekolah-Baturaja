@@ -109,16 +109,8 @@ const motivationalMessages = [
     "Terima kasih sudah hadir. Kehadiranmu sangat berarti buat kakak."
 ];
 
-const adultQuotes = [
-    "Tak ada kata terlambat untuk belajar Al-Qur'an.",
-    "Sebaik-baik kalian adalah yang belajar Al-Qur'an dan mengajarkannya.",
-    "Lelah bekerja seharian, sembuhkan dengan lantunan ayat suci.",
-    "Setiap huruf yang dibaca adalah pahala yang berlipat ganda.",
-    "Kesabaran dunia jangan sampai melalaikan akhirat.",
-    "Istiqomah itu berat, tapi hadiahnya surga.",
-    "Allah melihat usahamu, bukan hanya hasilmu.",
-    "Membaca Al-Qur'an dengan terbata-bata pun mendapat dua pahala."
-];
+// Kumpulan kutipan untuk murid dewasa dicabut bersama kategori 'Dewasa': tidak
+// ada murid dewasa di sekolah dasar negeri.
 
 const getCurrentMonthDateRange = () => {
     const now = new Date();
@@ -600,8 +592,9 @@ const DigitalAttendancePage = () => {
                     String(b.check_in_timestamp || b.created_at || ''))
               ))[0] || null;
 
-        const isAdult = kategori === 'Dewasa';
-        const randomQuote = (userRole === 'guru' || isAdult) ? (isAdult ? adultQuotes[Math.floor(Math.random() * adultQuotes.length)] : guruQuotes[Math.floor(Math.random() * guruQuotes.length)]) : motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+        const randomQuote = userRole === 'guru'
+          ? guruQuotes[Math.floor(Math.random() * guruQuotes.length)]
+          : motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
         const successData = { type: 'success', role: userRole, kategori, name: user.nama || user.nama_lengkap, photo: user.foto_url, quote: randomQuote, points: user.points, jilid: user.jilid, jabatan: user.jabatan, no_hp: user.no_hp, rfid: tag, gender: user.jenis_kelamin, isPentashih, sesi: sesiUser };
 
         const shouldRestoreAbsentAttendance = userRole === 'santri'
@@ -610,7 +603,7 @@ const DigitalAttendancePage = () => {
 
         if (existingAttendance && !shouldRestoreAbsentAttendance) {
           if (userRole === 'santri') {
-             const levelInfo = (!isAdult) ? getLevelInfo(user.points, user.jenis_kelamin) : null;
+             const levelInfo = getLevelInfo(user.points, user.jenis_kelamin);
              const [monthlyStats, learningHighlights] = await Promise.all([
                  getSantriMonthlyAttendanceStats(user.id),
                  getSantriLearningHighlights(user.id),
@@ -718,25 +711,19 @@ const DigitalAttendancePage = () => {
         if (insertError) { setLastScan({ type: 'error', message: getAttendanceErrorMessage(insertError), name: user.nama || user.nama_lengkap, photo: user.foto_url }); }
         else {
           let newPoints = user.points || 0;
-          if (userRole === 'santri' && !isAdult && attendanceStatusText === 'Hadir' && !shouldRestoreAbsentAttendance) {
+          if (userRole === 'santri' && attendanceStatusText === 'Hadir' && !shouldRestoreAbsentAttendance) {
             // Points are a bonus, not part of the attendance record — a failure
             // here must not turn a saved check-in into an error screen.
             const awarded = await incrementSantriPoints(user.id, 1).then(() => true).catch(() => false);
             if (awarded) newPoints += 1;
           }
-          const levelInfo = (userRole === 'santri' && !isAdult) ? getLevelInfo(newPoints, user.jenis_kelamin) : null;
+          const levelInfo = userRole === 'santri' ? getLevelInfo(newPoints, user.jenis_kelamin) : null;
           const [monthlyStats, learningHighlights] = userRole === 'santri'
             ? await Promise.all([
                 getSantriMonthlyAttendanceStats(user.id),
                 getSantriLearningHighlights(user.id),
               ])
             : [undefined, {}];
-          let adultStats = null;
-          if (isAdult) {
-              const totals = await fetchAttendanceCount(user.id).catch(() => null);
-              const daysCount = totals?.count || 0;
-              adultStats = { daysStudied: daysCount || 1, timesStudied: daysCount || 1 };
-          }
           let guruStats = null;
           if (userRole === 'guru' && !isPentashih) {
              const [monthTotals, historyDates] = await Promise.all([
@@ -774,7 +761,6 @@ const DigitalAttendancePage = () => {
             levelInfo,
             monthlyStats,
             ...learningHighlights,
-            adultStats,
             guruStats,
           });
         }
@@ -999,32 +985,9 @@ const DigitalAttendancePage = () => {
       );
     }
 
-    // Santri Success — Adult
-    if (scan.type === 'success' && scan.role === 'santri' && scan.kategori === 'Dewasa') {
-      return (
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="attendance-result" role="status" aria-live="polite">
-          <AttendanceProfileCard
-            variant="student"
-            name={scan.name}
-            photo={scan.photo}
-            status={scan.status || 'Hadir'}
-            time={scan.time}
-            jilid={scan.jilid}
-            points={scan.points}
-            monthlyStats={scan.monthlyStats}
-            hafalanCount={scan.hafalanCount}
-            characterStrength={scan.characterStrength}
-            strongestHafalanCategory={scan.strongestHafalanCategory}
-            sesi={scan.sesi}
-            message={scan.message}
-            quote={scan.quote}
-            showSuccessBadge
-          />
-        </motion.div>
-      );
-    }
-
-    // Santri Success — Child
+    // Hasil scan murid. Dulu ada dua cabang: murid dewasa (tanpa kartu level) dan
+    // murid anak. SD negeri hanya punya satu jenis murid, jadi cabang dewasanya
+    // dicabut — isinya pun sama persis kecuali tidak menampilkan level.
     if (scan.type === 'success' && scan.role === 'santri') {
       return (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="attendance-result" role="status" aria-live="polite">

@@ -23,7 +23,6 @@ import {
   checkPaymentDuplicates,
   fetchAllPayments,
   fetchAllSantri,
-  formatSantriCategory,
   getPaymentErrorMessage,
   getSharedDefaultSppAmount,
   monthNameToNumber,
@@ -78,10 +77,9 @@ const SantriSelectorModal = ({ santriList, onSelect, open, onOpenChange, selecte
               <div key={santri.id} onClick={() => onSelect(santri)} className={`relative flex flex-col items-center text-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border-2 ${selectedSantriIds.has(santri.id) ? 'border-primary' : 'border-transparent'}`}>
                 {selectedSantriIds.has(santri.id) && <div className="absolute top-1 right-1 bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center"><Check className="w-3 h-3"/></div>}
                 <Avatar className="w-20 h-20 mb-2"><AvatarImage src={santri.foto_url} /><AvatarFallback>{santri.nama_lengkap.charAt(0)}</AvatarFallback></Avatar>
+                {/* Badge kategori dicabut: SD negeri hanya punya satu jenis murid,
+                    dan labelnya memetakan 'Anak' menjadi "TPQ". */}
                 <p className="text-sm font-medium leading-tight">{santri.nama_lengkap}</p>
-                <Badge variant={santri.kategori === 'Dewasa' ? 'secondary' : 'outline'} className="mt-1 text-[10px]">
-                    {formatSantriCategory(santri.kategori)}
-                </Badge>
               </div>
             ))}
           </div>

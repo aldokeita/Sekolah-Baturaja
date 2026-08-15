@@ -64,7 +64,7 @@ const JilidChangeModal = ({ isOpen, onClose, santri, direction, currentJilid, ne
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         {direction === 'up' ? <ChevronRight className="text-green-500"/> : <AlertTriangle className="text-orange-500"/>}
-                        Konfirmasi {direction === 'up' ? 'Kenaikan' : 'Penurunan'} Jilid {kategori === 'Dewasa' ? '(Dewasa)' : ''}
+                        Konfirmasi {direction === 'up' ? 'Kenaikan' : 'Penurunan'} Jilid
                     </DialogTitle>
                     <DialogDescription>
                         Mengubah jilid dari <strong>{currentJilid}</strong> ke <strong>{nextJilid}</strong>.

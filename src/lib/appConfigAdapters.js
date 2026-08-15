@@ -1,7 +1,6 @@
 import apiClient from '@/lib/apiClient';
 
 export const APP_CONFIG_KEYS = {
-  ADULT_SESSION: 'adultSessionConfig',
   LEVEL_CONFIG: 'level_config',
   GATCHA_CONFIG: 'gatcha_config',
   QUIZ_HAFALAN_CONFIG: 'quiz_hafalan_config',
