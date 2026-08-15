@@ -1627,6 +1627,60 @@ lamanya masih terbaca:
 
 `npm run lint` dan `npm run build` bersih.
 
+### Guru mata pelajaran kini melihat murid kelas yang diajarnya
+
+Ditemukan saat verifikasi browser: guru uji yang punya jadwal mengajar melihat **tabel murid
+kosong**. Penyebabnya, roster bersandar pada `classes.id_guru` — **wali kelas** — sedangkan
+subtab Nilai dan Materi bersandar pada `jadwal_pelajaran`. Guru mata pelajaran berhak memberi
+nilai untuk sebuah kelas tetapi tidak dapat melihat muridnya.
+
+**Yang dilebarkan — hanya jalur BACA:**
+
+| Tempat | Sebelum | Sesudah |
+|---|---|---|
+| `classes.List` saat guru menanyakan kelasnya sendiri | `cl.id_guru = $1` | wali kelas **atau** `jadwal_pelajaran` |
+| `santri.List` cakupan guru | wali kelas | wali kelas **atau** jadwal |
+| `santri.Detail` | `guruOwnsSantri` | `guruTeachesSantri` (baru) |
+
+**Yang sengaja TIDAK dilebarkan — jalur TULIS:** `MoveClass` dan `TransferDestinations` tetap
+memakai `guruOwnsSantri` (wali kelas saja). Penempatan murid tetap wewenang wali kelas dan
+admin; menyatukan keduanya akan membuat setiap guru mata pelajaran dapat memindahkan murid
+antar kelas hanya karena mengajar satu jam di sana. Karena itu helper barunya **terpisah**,
+bukan `guruOwnsSantri` yang diubah — tiga pemanggilnya tidak boleh berubah bersamaan.
+
+**Panel admin tidak ikut berubah.** Pelebaran di `classes.List` hanya berlaku ketika
+`id_guru` yang diminta sama dengan akun pemanggil dan perannya guru. Admin yang menyaring
+`id_guru=X` tetap memperoleh arti lama — kelas yang **diwalikan** X — supaya kolom wali kelas
+di panel admin tidak tercampur kelas yang sekadar diajar X.
+
+**Bukti uji.** Guru uji diberi jadwal di Kelas Purnama **tanpa** dijadikan wali kelasnya
+(wali tetap Siti Aminah):
+
+| Uji | Hasil |
+|---|---|
+| daftar kelas miliknya | 1 baris — Kelas Purnama muncul |
+| daftar murid | 2 baris — murid Kelas Purnama terlihat |
+| buka detail murid kelas yang diajar | 200 |
+| buka detail murid kelas lain | 403 |
+| **tujuan transfer murid** | **403** — bukan wali kelas |
+| **pindahkan murid ke kelas lain** | **403** |
+| admin saring `id_guru` = guru mapel | 0 baris — arti lama terjaga |
+| admin saring `id_guru` = Siti Aminah | 1 baris — Kelas Purnama |
+
+### Verifikasi browser rangkaian dashboard guru — **Selesai**
+
+Seluruh fitur 1–6 diperiksa langsung di `localhost:3000` dengan akun guru sungguhan, bukan
+hanya lewat API. Tabel murid tampil paling atas; empat subtab hadir di bawahnya; panel
+`AbsensiSaya` benar-benar sudah tidak dirender.
+
+Yang terbukti tersimpan dan bertahan setelah muat ulang halaman: **nilai asesmen** (beserta
+ringkasan rata-rata/min/maks), **konten kelas** (buat lalu terbitkan, status berubah
+Draf → Terbit), dan **setoran murojaah manual** (tersimpan `diterima` plus satu baris di
+`murojaah_audit`). Template WhatsApp terisi lengkap — nama wali, nama guru, nama sekolah dari
+identitas, nama murid, dan kelas. Mode gelap dan terang keduanya benar.
+
+**Tidak diuji:** tombol "Buka WhatsApp", karena membuka layanan luar.
+
 **Berkas coret-coretan dihapus.** Empat artefak penelusuran era Supabase menumpuk di `src/`
 dan sudah dibuang: `inspect_mmq_constraint.sql`, `fix_mmq_rls_policies.sql`,
 `inspect_database.sql`, dan `rls_audit_report.md`. Semuanya berisi kueri diagnostik untuk

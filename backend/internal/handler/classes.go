@@ -96,7 +96,24 @@ func (h *ClassesHandler) List(w http.ResponseWriter, r *http.Request) {
 		add("cl.is_active = $%d", active)
 	}
 	if v := r.URL.Query().Get("id_guru"); v != "" {
-		add("cl.id_guru = $%d", v)
+		// Seorang guru sampai ke satu kelas lewat dua jalur: menjadi wali kelasnya
+		// (`cl.id_guru`) atau mengajar di sana menurut `jadwal_pelajaran`. Dulu hanya
+		// jalur pertama yang dihitung, sehingga guru mata pelajaran melihat daftar
+		// kelasnya kosong padahal ia berhak memberi nilai dan materi di kelas itu.
+		//
+		// Pelebaran ini HANYA berlaku saat guru menanyakan kelasnya sendiri. Admin
+		// yang menyaring `id_guru=X` tetap memperoleh arti lama, yaitu kelas yang
+		// diwalikan X — kalau tidak, kolom wali kelas di panel admin akan ikut
+		// menampilkan kelas yang sekadar diajar X.
+		if middleware.RoleFromCtx(ctx) == "guru" && v == middleware.UserIDFromCtx(ctx) {
+			args = append(args, v)
+			i := len(args)
+			where = append(where, fmt.Sprintf(
+				"(cl.id_guru = $%d OR cl.id IN (SELECT class_id FROM jadwal_pelajaran WHERE guru_id = $%d))",
+				i, i))
+		} else {
+			add("cl.id_guru = $%d", v)
+		}
 	}
 
 	includeGuru := r.URL.Query().Get("include_guru") == "true"

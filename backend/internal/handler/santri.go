@@ -167,12 +167,24 @@ func (h *SantriHandler) List(w http.ResponseWriter, r *http.Request) {
 		// sama dengan policy santri_pentashih_select di migrasi
 		// 20260725000100_pentashih_full_read_access_rls.sql.
 	case role == "guru":
+		// Dua jalur sah seorang guru sampai ke satu murid: menjadi wali kelasnya,
+		// atau mengajar di kelasnya menurut `jadwal_pelajaran`. Sebelumnya hanya
+		// jalur wali kelas yang dihitung, sehingga guru mata pelajaran dapat
+		// menilai dan memberi materi untuk sebuah kelas tetapi tidak dapat membuka
+		// data muridnya sendiri — daftar kelasnya tampil kosong.
+		//
+		// Ini melebarkan hak BACA saja. Penyuntingan data master murid tetap milik
+		// admin; lihat pemeriksaan terpisah pada Update dan MoveClass.
 		args = append(args, userID)
 		i := len(args)
 		where = append(where, fmt.Sprintf(
 			"(s.current_class_id IN (SELECT id FROM classes WHERE id_guru = $%d) "+
+				"OR s.current_class_id IN (SELECT class_id FROM jadwal_pelajaran WHERE guru_id = $%d) "+
 				"OR s.id IN (SELECT cm.santri_id FROM class_memberships cm "+
-				"JOIN classes c ON c.id = cm.class_id WHERE c.id_guru = $%d AND cm.status = 'active'))", i, i))
+				"WHERE cm.status = 'active' AND ("+
+				"cm.class_id IN (SELECT id FROM classes WHERE id_guru = $%d) "+
+				"OR cm.class_id IN (SELECT class_id FROM jadwal_pelajaran WHERE guru_id = $%d))))",
+			i, i, i, i))
 	case role == "santri":
 		add("s.id = $%d", userID)
 	default:
@@ -261,8 +273,9 @@ func (h *SantriHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Guru may only read santri in their own class.
-	if role == "guru" && !h.guruOwnsSantri(ctx, userID, id) {
+	// Guru may only read santri from a class they hold — as wali kelas or through
+	// their teaching schedule.
+	if role == "guru" && !h.guruTeachesSantri(ctx, userID, id) {
 		jsonError(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -673,6 +686,35 @@ func insertSantriTx(ctx context.Context, tx pgx.Tx, body map[string]any) (map[st
 	return insertRowTx(ctx, tx, "santri", profile, santriCreatable)
 }
 
+// guruTeachesSantri dipakai jalur BACA: guru berhak melihat murid bila ia wali
+// kelasnya ATAU mengajar di kelasnya menurut `jadwal_pelajaran`.
+//
+// Sengaja terpisah dari guruOwnsSantri. Yang terakhir menjaga pemindahan kelas,
+// dan pemindahan murid tetap wewenang wali kelas serta admin — menyatukan
+// keduanya akan membuat setiap guru mata pelajaran ikut dapat memindahkan murid
+// antar kelas hanya karena mengajar satu jam di sana.
+func (h *SantriHandler) guruTeachesSantri(ctx context.Context, guruID, santriID string) bool {
+	var exists bool
+	err := h.db.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM santri s
+			WHERE s.id = $1 AND (
+				s.current_class_id IN (SELECT id FROM classes WHERE id_guru = $2)
+				OR s.current_class_id IN (SELECT class_id FROM jadwal_pelajaran WHERE guru_id = $2)
+			)
+		) OR EXISTS (
+			SELECT 1 FROM class_memberships cm
+			WHERE cm.santri_id = $1 AND cm.status = 'active' AND (
+				cm.class_id IN (SELECT id FROM classes WHERE id_guru = $2)
+				OR cm.class_id IN (SELECT class_id FROM jadwal_pelajaran WHERE guru_id = $2)
+			)
+		)
+	`, santriID, guruID).Scan(&exists)
+	return err == nil && exists
+}
+
+// guruOwnsSantri menjaga jalur TULIS: hanya wali kelas. Jangan dilebarkan ke
+// jadwal mengajar — lihat catatan pada guruTeachesSantri.
 func (h *SantriHandler) guruOwnsSantri(ctx context.Context, guruID, santriID string) bool {
 	var exists bool
 	err := h.db.QueryRow(ctx, `
