@@ -131,9 +131,21 @@ const PpdbPage = () => {
 
   const go = useCallback((n) => { setStep(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
 
+  // Pilihan jalur bisa menunjuk jalur yang sudah dimatikan sekolah: nilai awalnya
+  // 'domisili' dipasang mati-matian di kode, dan draf yang tersimpan di perangkat
+  // orang tua bisa berumur berhari-hari. Tanpa penyelarasan ini pendaftaran terkirim
+  // membawa jalur yang tidak dibuka, dan langkah keduanya tampak tanpa pilihan
+  // terpilih sama sekali.
+  useEffect(() => {
+    const aktif = ppdb.jalur.filter((j) => j.aktif !== false);
+    if (aktif.length === 0) return;
+    if (!aktif.some((j) => j.id === jalur)) setJalur(aktif[0].id);
+  }, [ppdb.jalur, jalur]);
+
   const d = data.current;
   const v = (k) => (d[k] && String(d[k]).trim() ? d[k] : '—');
-  const jalurLabel = ppdb.jalur.find((j) => j.id === jalur)?.name || '—';
+  const jalurAktif = ppdb.jalur.filter((j) => j.aktif !== false);
+  const jalurLabel = jalurAktif.find((j) => j.id === jalur)?.name || '—';
   const pct = done ? 100 : Math.round(((step - 1) / 3) * 100);
 
   // Tahun ajaran dari panel Identitas. Sebelumnya "2026/2027" ditulis di enam
@@ -238,7 +250,11 @@ const PpdbPage = () => {
       label, style: chipStyle(gender === k), pick: () => setGender(k),
     })),
 
-    jalur: ppdb.jalur.map(({ id: k, name: label, desc }) => {
+    // Hanya jalur yang dinyalakan sekolah yang boleh dipilih orang tua. Jalur mati
+    // tetap tersimpan lengkap di Konten → Informasi Pendaftaran supaya bisa
+    // dinyalakan kembali, tetapi menampilkannya di sini berarti menerima pendaftar
+    // pada jalur yang tidak dibuka sekolah.
+    jalur: jalurAktif.map(({ id: k, name: label, desc }) => {
       const on = jalur === k;
       return {
         label, desc,
