@@ -33,6 +33,8 @@ import { buildSessionStartTimestamp, calculateTimeDifference, resolveAttendanceR
 import {
   buildHafalanScoreMap,
   DEVELOPMENT_SCORE_OPTIONS,
+  createManualMurojaahSubmission,
+  deleteMurojaahSubmission,
   fetchClassesWithActiveSantriForTeacher,
   fetchHafalanItems,
   fetchHafalanProgress,
@@ -322,11 +324,19 @@ const GuruDashboard = () => {
     }
   };
 
-  const handleSubmitFeedback = async () => {
+  // Status 'perlu_perbaikan' sudah lama diterima basis data dan backend, tetapi
+  // tidak pernah bisa dicapai dari layar ini karena statusnya ditulis mati
+  // 'diterima'. Sekarang penilainya yang memilih.
+  const handleSubmitFeedback = async (status = 'diterima') => {
     if (!currentSubmission) return;
     try {
-      await updateMurojaahReview({ id: currentSubmission.id, status: 'diterima', feedback, userId: user.id });
-      toast({ title: 'Berhasil', description: 'Umpan balik telah disimpan.' });
+      await updateMurojaahReview({ id: currentSubmission.id, status, feedback, userId: user.id });
+      toast({
+        title: 'Berhasil',
+        description: status === 'perlu_perbaikan'
+          ? 'Setoran ditandai perlu perbaikan.'
+          : 'Umpan balik telah disimpan.',
+      });
       setIsMurojaahOpen(false);
       setCurrentSubmission(null);
       refreshSubmissions();
@@ -335,11 +345,21 @@ const GuruDashboard = () => {
     }
   };
 
-  const confirmDeleteSubmission = (submissionId) => {
+  const confirmDeleteSubmission = (submission) => {
     setConfirmDialog({
-        isOpen: true, title: 'Hapus Setoran', description: 'Apakah Anda yakin ingin menghapus setoran ini?',
+        isOpen: true,
+        title: 'Hapus setoran murojaah?',
+        description: `Setoran "${submission.content}" milik ${submission.santri?.nama_lengkap || 'murid ini'} akan dihapus `
+            + 'dari daftar. Penghapusan tercatat beserta salinan datanya, jadi masih dapat ditelusuri bila keliru.',
         onConfirm: async () => {
-            toast({ title: "Aksi tidak tersedia", description: "Penghapusan setoran murojaah tidak dibuka untuk guru pada fase ini.", variant: "destructive" });
+            try {
+                await deleteMurojaahSubmission(submission.id);
+                toast({ title: 'Terhapus', description: 'Setoran murojaah berhasil dihapus.' });
+                if (currentSubmission?.id === submission.id) setCurrentSubmission(null);
+                await refreshSubmissions();
+            } catch (error) {
+                toast({ title: 'Gagal menghapus', description: getAcademicErrorMessage(error), variant: 'destructive' });
+            }
         }
     });
   };
@@ -351,8 +371,24 @@ const GuruDashboard = () => {
     }
 
     setIsSubmittingManual(true);
-    setIsSubmittingManual(false);
-    toast({ title: "Belum tersedia", description: "Input setoran manual guru ditunda. Murid dapat mengajukan murojaah dari dashboard murid.", variant: "destructive" });
+    try {
+        // Setoran tatap muka sudah dinilai di tempat, jadi langsung berstatus
+        // diterima — bukan masuk antrean 'menunggu' seperti pengajuan murid.
+        await createManualMurojaahSubmission({
+            santriId: manualMurojaahForm.santri_id,
+            type: manualMurojaahForm.category,
+            content: manualMurojaahForm.item_name,
+            feedback: manualMurojaahForm.feedback,
+            status: 'diterima',
+        });
+        toast({ title: "Tersimpan", description: "Setoran murojaah berhasil dicatat." });
+        setManualMurojaahForm({ santri_id: '', category: 'Surat', item_name: '', feedback: '' });
+        await refreshSubmissions();
+    } catch (error) {
+        toast({ title: "Gagal menyimpan", description: getAcademicErrorMessage(error), variant: "destructive" });
+    } finally {
+        setIsSubmittingManual(false);
+    }
   };
 
   const pendingSubmissionsCount = useMemo(() => murojaahSubmissions.filter(sub => sub.status === 'menunggu').length, [murojaahSubmissions]);
@@ -785,7 +821,10 @@ const GuruDashboard = () => {
                                 <div className="space-y-3 pt-4 border-t border-border">
                                     <label className="font-semibold text-sm">Berikan Umpan Balik / Nilai</label>
                                     <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Tuliskan umpan balik untuk murid ini..." className="min-h-[100px]" />
-                                    <Button onClick={handleSubmitFeedback} className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md"><Send className="w-4 h-4 mr-2"/> Simpan Penilaian</Button>
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        <Button onClick={() => handleSubmitFeedback('diterima')} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md"><Send className="w-4 h-4 mr-2"/> Terima Setoran</Button>
+                                        <Button variant="outline" onClick={() => handleSubmitFeedback('perlu_perbaikan')}>Perlu Perbaikan</Button>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="space-y-2 rounded-xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-400/25 dark:bg-slate-900/70">
@@ -795,7 +834,7 @@ const GuruDashboard = () => {
                             )}
 
                             <div className="pt-8 text-center">
-                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => confirmDeleteSubmission(currentSubmission.id)}>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => confirmDeleteSubmission(currentSubmission)}>
                                     <Trash2 className="w-4 h-4 mr-2" /> Hapus Setoran Ini
                                 </Button>
                             </div>

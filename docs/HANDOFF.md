@@ -1505,6 +1505,76 @@ lalu jadwal dan akunnya dihapus:
 **Belum diverifikasi:** tampilan di browser dan perilaku tautan `wa.me` sungguhan, karena
 alasan yang sama seperti fitur sebelumnya.
 
+### 5. Input dan pengelolaan setoran murojaah — **Tuntas**
+
+Panel "Pusat Muroja'ah Kelas" sudah ada di dashboard guru dan **UI-nya sudah lengkap sejak
+dulu** — form pilih murid, kategori, item hafalan, umpan balik, semuanya terpasang. Yang
+tidak ada adalah isinya: dua fungsinya hanya menampilkan toast penolakan.
+
+```js
+// handleManualMurojaahInsert — sebelum
+setIsSubmittingManual(true);
+setIsSubmittingManual(false);
+toast({ title: "Belum tersedia", ... });
+
+// confirmDeleteSubmission — sebelum
+onConfirm: async () => { toast({ title: "Aksi tidak tersedia", ... }); }
+```
+
+**Tiga lubang backend yang ditemukan saat mengaktifkannya.**
+
+| Endpoint | Sebelum | Akibat |
+|---|---|---|
+| `POST /api/academic/murojah` | tanpa pemeriksaan kelas | guru dapat mencatatkan penilaian pada **murid mana pun** cukup dengan mengetahui id-nya |
+| `PUT /api/academic/murojah/{id}` | `RequireRole("admin","guru")` saja | guru mana pun dapat menilai — bahkan menimpa — setoran murid kelas lain; tata usaha & superadmin justru tertutup |
+| `DELETE` | **tidak ada** | tidak ada jalan menghapus sama sekali |
+
+Semuanya kini melewati `pastikanBolehMurojah`, yang bertanya pada `guruPegangSantri`: guru
+berhak bila menjadi **wali kelas** murid itu (`classes.id_guru`) **atau** mengajar di
+kelasnya (`jadwal_pelajaran`). Keanggotaan kelas ikut diperiksa supaya roster dan
+`current_class_id` yang sempat berbeda tidak membuat guru kehilangan muridnya sendiri.
+Penjagaan ditaruh **di dalam handler**, bukan daftar peran di router — daftar peran tidak
+dapat memeriksa apakah muridnya memang murid guru tersebut.
+
+**Pencatatan perubahan: tabel `murojaah_audit`** (migrasi `20260815000300_murojaah_audit.sql`,
+**sudah diterapkan**). Mencatat `buat`, `ubah`, `hapus` beserta aktor, perannya, dan
+perpindahan statusnya.
+
+Dua keputusan rancangan yang penting:
+
+- **Tanpa foreign key ke `murojaah_submissions`.** FK dengan `ON DELETE CASCADE` justru akan
+  ikut menghapus bukti penghapusannya. Catatan hapus harus tetap hidup setelah baris aslinya
+  lenyap.
+- **Menyimpan `data_lama` (jsonb) berisi salinan penuh baris** sebelum dihapus. Itu
+  satu-satunya cara memulihkan setoran yang terhapus keliru. Terbukti pada uji: setelah
+  penghapusan, isi `Al-Fatihah` masih terbaca di `data_lama->>'content'`.
+
+Kegagalan menulis audit **tidak** membatalkan aksi utama — setoran yang sudah tersimpan tidak
+boleh dianggap gagal hanya karena catatannya meleset — tetapi tetap masuk log server.
+
+**Status `perlu_perbaikan` akhirnya bisa dicapai.** Basis data dan backend sudah lama
+menerimanya, tetapi layar penilaian menulis mati `status: 'diterima'`, jadi tidak ada jalan
+menandai setoran perlu diulang. Sekarang ada dua tombol: **Terima Setoran** dan **Perlu
+Perbaikan**. Setoran yang dicatat guru secara tatap muka langsung berstatus `diterima` —
+sudah dinilai di tempat, bukan masuk antrean `menunggu` seperti pengajuan murid.
+
+**Bukti uji.** Guru uji dengan jadwal di Kelas Purnama; murid dalam dan luar kelas itu:
+
+| Uji | Hasil |
+|---|---|
+| guru catat setoran murid kelasnya | 201 |
+| guru catat setoran murid **kelas lain** | 403 |
+| status di luar empat nilai sah | 400 |
+| isi setoran kosong | 400 |
+| guru nilai setoran muridnya | 200 |
+| guru nilai setoran murid kelas lain | 403 |
+| guru hapus setoran murid kelas lain | 403 |
+| guru hapus setoran muridnya | 200 |
+| hapus id tak dikenal | 404 |
+| isi `murojaah_audit` | 4 baris: buat/buat/ubah/hapus, dengan perpindahan status dan salinan penuh pada penghapusan |
+
+**Belum diverifikasi:** tampilan di browser, karena alasan yang sama seperti fitur sebelumnya.
+
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.
 
