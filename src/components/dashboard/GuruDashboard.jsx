@@ -54,6 +54,7 @@ import StudentTransferModal from '@/components/dashboard/guru/StudentTransferMod
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
+import { enableTahfizh } from '@/lib/featureFlags';
 import { labelStafRole } from '@/lib/staf';
 
 const ProfileConstellationScene = lazy(() => import('@/components/dashboard/santri/SantriLevelScene'));
@@ -535,7 +536,15 @@ const GuruDashboard = () => {
               <div className="guru-profile-card__actions">
                 <Button onClick={() => setIsEditProfileOpen(true)} variant="outline" className="guru-profile-card__button"><Edit className="mr-2 h-4 w-4" /> Edit Profil</Button>
                 <div className="guru-profile-card__action-pair"><Button onClick={() => setIsRapatGuruOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Rapat Guru</Button><Button onClick={() => setIsRecapOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Absensi</Button></div>
+                {/* Muroja'ah adalah setoran hafalan Al-Qur'an — bagian program
+                    tahfizh opsional, bukan kegiatan wajib sekolah dasar umum.
+                    Saklarnya sudah lama ada tetapi hanya dipasang di panel admin,
+                    sehingga guru di sekolah yang tidak menjalankan tahfizh tetap
+                    melihat pusat penilaian setoran. Datanya tetap utuh; yang
+                    disembunyikan hanya jalan masuknya. */}
+                {enableTahfizh && (
                 <Button onClick={() => setIsMurojaahOpen(true)} size="sm" className="guru-profile-card__button guru-profile-card__button--accent"><Mic className="mr-2 h-4 w-4"/> Setoran Muroja'ah{pendingSubmissionsCount > 0 && <span className="guru-profile-card__notification-dot" aria-label={`${pendingSubmissionsCount} setoran menunggu peninjauan`}></span>}</Button>
+                )}
               </div>
             </div>
           </section>
@@ -748,7 +757,9 @@ const GuruDashboard = () => {
         </Dialog>
       )}
 
-      <Dialog open={isMurojaahOpen} onOpenChange={setIsMurojaahOpen}>
+      {/* Dialognya ikut dipagari, bukan hanya tombolnya: tanpa ini modal masih
+          bisa terbuka lewat jalur lain dan menampilkan modul yang sudah dimatikan. */}
+      <Dialog open={enableTahfizh && isMurojaahOpen} onOpenChange={setIsMurojaahOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0">
             <DialogHeader className="p-6 pb-2 border-b">
                 <div className="flex items-center justify-between">

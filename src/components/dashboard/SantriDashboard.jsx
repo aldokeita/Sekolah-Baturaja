@@ -41,6 +41,7 @@ import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { deleteAvatar, getStorageErrorMessage, resolveAvatarUrl, uploadAvatar } from '@/lib/storageAdapters';
 import { getSessionName } from '@/utils/sessionMapping';
 import { resolveSantriLevel } from '@/lib/santriLevel';
+import { enableTahfizh } from '@/lib/featureFlags';
 import AvatarPreviewDialog from '@/components/dashboard/shared/AvatarPreviewDialog';
 
 const SantriLevelScene = lazy(() => import('@/components/dashboard/santri/SantriLevelScene'));
@@ -531,9 +532,10 @@ const SantriDashboard = () => {
               </p>
               <div className="mt-5 grid grid-cols-2 gap-2 sm:max-w-xl sm:grid-cols-4">
                 {[
-                  // Kolom `jilid` pada murid kini berarti tingkat mengaji pilihan
-                  // sekolah (lihat tahfizhLevels), bukan jilid Qiroati.
-                  ['Tingkat', santriData.jilid || '-'],
+                  // Kolom `jilid` pada murid berarti tingkat mengaji pilihan
+                  // sekolah (lihat tahfizhLevels), bukan jilid Qiroati — dan
+                  // hanya bermakna bila program tahfizh opsional dinyalakan.
+                  ...(enableTahfizh ? [['Tingkat', santriData.jilid || '-']] : []),
                   ['Poin', santriData.points || 0],
                   ['Level', levelInfo.name],
                   ['Sesi', sessionName],
@@ -571,7 +573,7 @@ const SantriDashboard = () => {
                 <TabsTrigger value="overview" className="whitespace-nowrap">Ringkasan</TabsTrigger>
                 <TabsTrigger value="attendance" className="whitespace-nowrap">Rekap Absensi</TabsTrigger>
                 <TabsTrigger value="payments" className="whitespace-nowrap">Riwayat Pembayaran</TabsTrigger>
-                <TabsTrigger value="learning" className="whitespace-nowrap">Muroja'ah & Video</TabsTrigger>
+                {enableTahfizh && <TabsTrigger value="learning" className="whitespace-nowrap">Muroja'ah & Video</TabsTrigger>}
               </TabsList>
             </div>
 
@@ -582,26 +584,34 @@ const SantriDashboard = () => {
                      <div className="flex items-end justify-between gap-4">
                        <div>
                          <p className="text-xs font-bold uppercase tracking-wider text-primary">Perkembangan belajar</p>
-                         <h2 className="mt-1 text-xl font-black text-foreground sm:text-2xl">Progres hafalan dan karakter</h2>
+                         <h2 className="mt-1 text-xl font-black text-foreground sm:text-2xl">
+                           {enableTahfizh ? 'Progres hafalan dan karakter' : 'Jadwal dan perkembangan karakter'}
+                         </h2>
                        </div>
                        <BarChart3 className="hidden h-7 w-7 text-primary/60 sm:block" aria-hidden="true" />
                      </div>
-                     {/* Keempat bagian tampil untuk setiap murid, tanpa memandang status.
-                         Dulu murid berkategori PTPT hanya melihat Tahfizh dan yang lain
-                         hanya melihat tiga sisanya. */}
-                     <HafalanSection title="Do'a" category="Doa" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Doa')} hafalanData={hafalan} tone="emerald" />
-                     <HafalanSection title="Sholat" category="Sholat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Sholat')} hafalanData={hafalan} tone="sky" />
-                     <HafalanSection title="Surat" category="Surat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Surat')} hafalanData={hafalan} tone="violet" />
-                     <HafalanSection
-                       title="Hafalan Al-Qur'an per Juz"
-                       category="Tahfizh"
-                       items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Tahfizh')}
-                       hafalanData={hafalan}
-                       tone="violet"
-                       targets={JUZ_TAHFIZH_TARGETS}
-                       titlePrefix=""
-                       isTahfizh
-                     />
+                     {/* Keempat bagian ini seluruhnya milik program tahfizh opsional:
+                         Do'a, Sholat, Surat, dan hafalan Al-Qur'an per juz. Di sekolah
+                         dasar umum yang tidak menjalankannya, murid melihat ratusan
+                         butir hafalan bertanda "BELUM" yang memang tidak pernah
+                         ditugaskan kepadanya. Datanya tetap tersimpan. */}
+                     {enableTahfizh && (
+                       <>
+                         <HafalanSection title="Do'a" category="Doa" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Doa')} hafalanData={hafalan} tone="emerald" />
+                         <HafalanSection title="Sholat" category="Sholat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Sholat')} hafalanData={hafalan} tone="sky" />
+                         <HafalanSection title="Surat" category="Surat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Surat')} hafalanData={hafalan} tone="violet" />
+                         <HafalanSection
+                           title="Hafalan Al-Qur'an per Juz"
+                           category="Tahfizh"
+                           items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Tahfizh')}
+                           hafalanData={hafalan}
+                           tone="violet"
+                           targets={JUZ_TAHFIZH_TARGETS}
+                           titlePrefix=""
+                           isTahfizh
+                         />
+                       </>
+                     )}
                      {/* Jadwal kelas tempat murid berada, hanya bisa dibaca. */}
                      <JadwalSaya
                        classId={santriData.current_class_id || santriData.id_kelas}
@@ -622,6 +632,7 @@ const SantriDashboard = () => {
                 <SantriPaymentHistory />
             </TabsContent>
 
+            {enableTahfizh && (
             <TabsContent value="learning">
               <div className="space-y-5">
                 <div>
@@ -644,12 +655,14 @@ const SantriDashboard = () => {
                 </div>
               </div>
             </TabsContent>
+            )}
         </Tabs>
 
         <EditProfileDialog isOpen={isInfoModalOpen} onOpenChange={setIsInfoModalOpen} santri={santriData} onUpdate={initializeData} />
         <AvatarPreviewDialog open={isAvatarPreviewOpen} onOpenChange={setIsAvatarPreviewOpen} imageUrl={santriData.foto_url} name={santriData.nama_lengkap} description="Foto profil murid yang sedang digunakan." />
 
-        <Dialog open={isHafalanModalOpen} onOpenChange={setIsHafalanModalOpen}>
+        {/* Modal video hafalan ikut dipagari bersama tab yang membukanya. */}
+        <Dialog open={enableTahfizh && isHafalanModalOpen} onOpenChange={setIsHafalanModalOpen}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Video Hafalan Murid</DialogTitle><DialogDescription>Pilih kategori video hafalan yang ingin ditonton.</DialogDescription></DialogHeader>
                 <Tabs defaultValue="Jilid 1" className="w-full">

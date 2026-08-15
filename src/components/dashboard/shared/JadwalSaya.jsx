@@ -30,6 +30,13 @@ const JadwalSaya = ({ guruId, classId, title = 'Jadwal Pelajaran', emptyText }) 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Murid yang belum ditempatkan ke kelas tidak punya `classId`. Jalur ini dulu
+  // keluar lebih awal TANPA pernah mengisi `periode`, sehingga judulnya berbunyi
+  // "Periode ajaran belum ditentukan" — pernyataan yang keliru ketika periodenya
+  // justru aktif, dan mengirim sekolah mencari masalah yang tidak ada. Yang
+  // sebenarnya kurang adalah penempatan kelasnya.
+  const belumPunyaSasaran = !guruId && !classId;
+
   const muat = useCallback(async () => {
     if (!guruId && !classId) {
       setRows([]);
@@ -76,7 +83,9 @@ const JadwalSaya = ({ guruId, classId, title = 'Jadwal Pelajaran', emptyText }) 
           <div>
             <h3 id="jadwal-saya" className="text-lg font-bold text-foreground">{title}</h3>
             <p className="text-xs text-muted-foreground">
-              {periode ? getPeriodeLabel(periode) : 'Periode ajaran belum ditentukan'}
+              {periode ? getPeriodeLabel(periode)
+                : belumPunyaSasaran ? 'Belum masuk kelas'
+                : 'Periode ajaran belum ditentukan'}
             </p>
           </div>
         </div>
@@ -93,7 +102,9 @@ const JadwalSaya = ({ guruId, classId, title = 'Jadwal Pelajaran', emptyText }) 
 
       {!error && kosong && (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          {emptyText || 'Belum ada jadwal pelajaran yang tercatat untuk periode ini.'}
+          {belumPunyaSasaran
+            ? 'Jadwal pelajaran muncul setelah murid ditempatkan ke sebuah kelas.'
+            : (emptyText || 'Belum ada jadwal pelajaran yang tercatat untuk periode ini.')}
         </p>
       )}
 
