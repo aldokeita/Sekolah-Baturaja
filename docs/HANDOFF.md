@@ -1283,6 +1283,75 @@ dibuat lewat API admin lalu dihapus beserta baris absensinya:
 **Belum diverifikasi:** tampilan panel di browser. Verifikasi itu butuh login dengan akun
 guru, dan agen tidak dapat mengisi field password.
 
+### 2. Modul nilai asesmen mata pelajaran — **Tuntas**
+
+Tabel baru `nilai` (migrasi `20260815000100_nilai_asesmen.sql`, **sudah diterapkan** ke
+Postgres lokal dan diperiksa dengan `\d nilai`).
+
+**Kepemilikan bersandar pada `jadwal_pelajaran`, tidak disalin.** Itu keputusan
+rancangan yang menentukan seluruh modul: `jadwal_pelajaran` adalah satu-satunya sumber
+yang menyatakan guru mana mengajar mata pelajaran apa di kelas mana pada periode berapa.
+Kalau kombinasi itu disalin ke tabel `nilai`, dua sumber kebenaran akan berselisih begitu
+admin memindahkan jadwal — guru yang sudah dicabut tetap memegang nilainya. Karena itu
+`nilai.go` selalu bertanya ulang lewat `guruMengajar()`.
+
+**Aturan hak akses.**
+
+| Peran | Baca | Tulis |
+|---|---|---|
+| admin, tata usaha, superadmin | semua | semua, termasuk memindahkan nilai antar kelas/mapel |
+| guru | hanya kombinasi yang diampunya | hanya kombinasi yang diampunya |
+| murid | hanya nilainya sendiri | tidak sama sekali |
+| peran lain | dikunci ke `santri_id` sendiri | tidak sama sekali |
+
+Peran yang tidak dikenali jatuh ke cakupan **paling sempit**, bukan paling longgar.
+
+Dua penjagaan tambahan yang mudah terlewat:
+
+- **Memindahkan nilai** ke kelas atau mata pelajaran lain berarti memindahkan
+  kepemilikannya, jadi hanya back-office yang boleh. Tanpa ini guru bisa melempar nilai ke
+  kelas yang tidak diampunya lalu kehilangan jejaknya.
+- **Hak diperiksa terhadap baris yang ADA**, bukan terhadap kiriman klien. Kalau yang
+  diperiksa kiriman, guru cukup mengirim `class_id` miliknya untuk menyunting nilai kelas
+  lain.
+- **Keanggotaan kelas divalidasi** saat menyimpan: murid harus benar-benar terdaftar di
+  kelas itu (`class_memberships.status = 'active'` atau `santri.current_class_id`), supaya
+  nilai tidak nyasar ke murid kelas lain hanya karena id-nya diketahui.
+
+**Berkas.** `backend/internal/handler/nilai.go`, terdaftar di `main.go` sebagai
+`/api/nilai`; `src/lib/nilaiAdapters.js`; `src/components/dashboard/shared/ModulNilai.jsx`.
+Dropdown kelas dan mata pelajaran diturunkan dari jadwal guru — penyaringan itu hanya
+kenyamanan, penjagaannya tetap di Go.
+
+**Bukti uji.** Panggilan API sungguhan dengan guru uji yang dibuat lewat API admin, diberi
+satu jadwal (Pendidikan Pancasila / Kelas Demo A), lalu dihapus beserta seluruh barisnya:
+
+| Uji | Hasil |
+|---|---|
+| guru simpan nilai mapel yang diampu | 201 |
+| guru simpan nilai mapel yang **tidak** diampu | 403 |
+| guru simpan nilai untuk kelas lain | 403 |
+| skor 150 | 400 |
+| murid bukan anggota kelas | 400 |
+| jenis asesmen kosong | 400 |
+| guru `LIST` | 1 baris, hanya mapel ampuannya |
+| admin `LIST` | 2 baris, kedua mapel |
+| guru ubah nilainya sendiri | 200 |
+| guru ubah nilai bukan ampuannya | 403 |
+| guru hapus nilai bukan ampuannya | 403 |
+| guru pindahkan nilai ke kelas lain | 403 |
+| guru hapus nilainya sendiri | 200 |
+| ringkasan (`/summary`) | jumlah, rata-rata, min, maks benar |
+
+**Catatan kebersihan data.** Saat menyiapkan uji, `jadwal_pelajaran`
+`d212e593-b36e-414a-8163-6c0f0179d79a` (Pendidikan Pancasila / Kelas Demo A) sempat
+ditugaskan ke guru uji. Nilai `guru_id` aslinya **tidak tercatat di repositori** — tidak
+ada seed jadwal di `supabase/migrations/` maupun `backend/init/` — jadi setelah uji kolom
+itu dikembalikan ke `NULL` (belum ditugaskan), bukan ke nilai semula. Hanya berdampak pada
+basis data pengembangan lokal.
+
+**Belum diverifikasi:** tampilan panel di browser, karena alasan yang sama seperti fitur 1.
+
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.
 

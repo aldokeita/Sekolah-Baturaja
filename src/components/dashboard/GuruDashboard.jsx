@@ -16,6 +16,7 @@ import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import GuruAttendanceRecap from '@/components/dashboard/admin/GuruAttendanceRecap';
 import AttendanceDetailsModal from '@/components/dashboard/shared/AttendanceDetailsModal';
 import AbsensiSaya from '@/components/dashboard/shared/AbsensiSaya';
+import ModulNilai from '@/components/dashboard/shared/ModulNilai';
 import AttendanceStatusIcon from '@/components/dashboard/shared/AttendanceStatusIcon';
 import { fetchGuruDetail, updateGuru, updateSantriJilid } from '@/lib/dataMasterAdapters';
 import { fetchAttendance } from '@/lib/attendanceAdapters';
@@ -504,6 +505,12 @@ const GuruDashboard = () => {
             RFID di halaman Absensi Digital; koreksi tetap wewenang admin. */}
         <div className="mt-6">
           <AbsensiSaya userId={guruData?.id} />
+        </div>
+
+        {/* Nilai asesmen. Kelas & mapel diturunkan dari jadwal mengajar; backend
+            menolak kombinasi yang tidak diampu, bukan sekadar disembunyikan. */}
+        <div className="mt-6">
+          <ModulNilai guruId={guruData?.id} />
         </div>
 
         <div className="mt-6 space-y-8 md:mt-8">
