@@ -506,9 +506,16 @@ func (h *AttendanceHandler) List(w http.ResponseWriter, r *http.Request) {
 	// their own rows, so a guru cannot read another guru's recap by passing an
 	// arbitrary user_id. Guru still needs santri rows for their class roster, so
 	// only guru-role rows are restricted for them.
+	//
+	// Pentashih ("Wakil Kepala Sekolah") membaca seluruh sekolah. Perannya memang
+	// pengawasan: ia sudah boleh membaca seluruh kelas beserta rosternya
+	// (classes.go) dan seluruh murid (santri.go), jadi membatasi absensinya ke
+	// barisnya sendiri membuat dashboard pengawasannya mustahil dibangun tanpa
+	// menaikkannya menjadi admin. Ini pelebaran BACA saja — Update dan MarkAbsent
+	// tetap dijaga CanManage, sehingga ia tidak bisa mengubah kehadiran siapa pun.
 	ctxUser := middleware.UserIDFromCtx(r.Context())
 	ctxRole := middleware.RoleFromCtx(r.Context())
-	if !middleware.CanManage(ctxRole) {
+	if !middleware.CanManage(ctxRole) && ctxRole != "pentashih" {
 		if ctxUser == "" {
 			jsonError(w, "sesi tidak valid", http.StatusUnauthorized)
 			return

@@ -538,6 +538,48 @@ Penanda tangan dokumen diubah dari "Wakil Kepala Sekolah" menjadi "Kepala Sekola
 adalah kepala sekolahnya. Di modal itu sebutannya sempat tercetak dua kali, di baris keterangan dan
 di baris tanda tangan; baris tanda tangan sekarang dikosongkan seperti kolom Orang Tua di sebelahnya.
 
+### Dashboard Wakil Kepala Sekolah ditulis ulang jadi panel pengawasan SD
+
+Isi lamanya adalah panel mutu program Qur'an: "Penguji & Quality Assurance", matriks distribusi
+jilid, pipeline calon khotim & pra-imtihan, dan daftar murid yang lama belum naik jilid. Di sekolah
+dasar umum semuanya tidak berlaku — dan lebih buruk, `levelStats` punya cabang `else dasar++`,
+sehingga **seluruh murid SD yang kolom jilid-nya kosong dilaporkan "Jilid Dasar 100%"**. Angka yang
+salah, bukan sekadar kosakata yang salah.
+
+Sekarang isinya yang benar-benar diawasi seorang wakil kepala sekolah:
+
+- kehadiran hari ini per sekolah dan **per kelas**, dengan wali kelasnya;
+- **murid perlu perhatian** — kehadiran bulan berjalan di bawah 75%, lengkap dengan tautan WA wali;
+- dua peringatan keterisian yang hanya muncul bila memang ada: kelas tanpa wali kelas, dan murid
+  yang belum ditempatkan.
+
+Tiga jebakan yang sudah dibereskan di dalamnya, jangan dibalik lagi:
+
+1. **Baris "tidak hadir" bukan kehadiran.** Admin bisa menandai murid alpa, dan barisnya tetap ada
+   di tabel `attendance`. Tanpa `isExplicitAbsentAttendance` murid yang alpa setiap hari justru
+   terhitung hadir penuh.
+2. **Hitung HARI, bukan BARIS.** Satu murid bisa punya lebih dari satu baris absensi per hari,
+   jadi rekapnya memakai `Set` tanggal.
+3. **Penyebutnya hari efektif kalender akademik**, bukan jumlah hari kalender — akhir pekan dan
+   libur nasional tidak boleh menurunkan persentase siapa pun.
+
+Peran ini tetap **baca saja**: menyunting kehadiran milik admin lewat Rekap Absensi, dijaga
+`CanManage` pada `Update` dan `MarkAbsent`.
+
+### Pentashih boleh membaca absensi seluruh sekolah
+
+`attendance.List` dulu memaku setiap peran di luar `CanManage` ke barisnya sendiri. Pentashih pun
+ikut terkena, padahal ia sudah boleh membaca seluruh kelas beserta rosternya (`classes.go`) dan
+seluruh murid (`santri.go`, policy `santri_pentashih_select`). Akibatnya dashboard pengawasannya
+mustahil dibangun tanpa menaikkannya jadi admin.
+
+Pelebarannya **baca saja** dan hanya untuk peran itu; `Update` dan `MarkAbsent` tetap `CanManage`.
+
+Ikutannya: `/api/attendance` membatasi satu permintaan pada 500 baris dan **tidak** mengirim
+`X-Total-Count`, jadi rentang sebulan untuk seluruh sekolah pasti terpotong diam-diam bila diambil
+sekali jalan. Rekap lintas sekolah wajib lewat `fetchAllAttendance`, yang menyusuri halaman sampai
+halaman pendek — bukan lewat `fetchAttendance` dengan limit besar.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

@@ -7,40 +7,46 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Users, BookOpen, Award, Calendar, Phone, ShieldCheck,
-  GraduationCap, AlertTriangle, Trophy, BarChart3, FileSpreadsheet,
-  Printer, Search, Clock, History
+  Users, Calendar, Phone, ShieldCheck,
+  GraduationCap, AlertTriangle, BarChart3, FileSpreadsheet,
+  Printer, Search, UserCheck, UserX,
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { resolveAvatarRecord, resolveAvatarRecords } from '@/lib/storageAdapters';
 import { fetchAllSantri, fetchClassList, fetchGuruDetail } from '@/lib/dataMasterAdapters';
-import { labelStafRole } from '@/lib/staf';
-import { fetchJilidHistoryForSantriList } from '@/lib/academicAdapters';
+import {
+  fetchAllAttendance,
+  fetchCalendarContext,
+  getLocalDateString,
+  isExplicitAbsentAttendance,
+} from '@/lib/attendanceAdapters';
+import { getActiveCalendarDates } from '@/lib/calendarUtils';
+import { isKepalaSekolah, labelStafRole } from '@/lib/staf';
 import ClassManagement from '@/components/dashboard/admin/ClassManagement';
 import * as XLSX from 'xlsx';
 
-const KHOTIM_JILID_LIST = ['Jilid 6A', 'Jilid 6B', 'Al-Qur\'an', 'Ghorib Tajwid', 'Finishing'];
+/**
+ * Dashboard pengawasan untuk Wakil Kepala Sekolah — dan untuk Kepala Sekolah,
+ * bila akunnya memegang sebutan itu (lihat isKepalaSekolah di src/lib/staf.js).
+ *
+ * Isi lamanya adalah panel mutu program Qur'an: distribusi jilid, pipeline calon
+ * khotim, dan daftar murid yang lama belum naik jilid. Semua itu tidak berlaku di
+ * sekolah dasar umum — seluruh murid SD tergolong "Jilid Dasar 100%" hanya karena
+ * kolom jilid-nya kosong. Yang benar-benar diawasi seorang wakil kepala sekolah
+ * adalah kehadiran, keterisian kelas, dan murid yang mulai sering absen.
+ *
+ * Peran ini BACA SAJA di sini. Menyunting kehadiran tetap milik admin lewat panel
+ * Rekap Absensi; backend menjaganya dengan CanManage pada Update dan MarkAbsent.
+ */
 
-// Helper calculation for untested duration
-const calculateUntestedDuration = (lastDateStr) => {
-  if (!lastDateStr) return { durationText: 'Belum pernah tes', daysAgo: 999, formattedDate: '-' };
-  const lastDate = new Date(lastDateStr);
-  const now = new Date();
-  const diffTime = Math.max(0, now - lastDate);
-  const daysAgo = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+// Ambang kehadiran bulanan yang dianggap perlu perhatian. 75% kira-kira setara
+// dengan absen sepekan penuh dalam sebulan — cukup jarang untuk bermakna, cukup
+// sering untuk masih bisa ditolong sebelum jadi putus sekolah.
+const AMBANG_KEHADIRAN = 75;
 
-  let durationText = '';
-  if (daysAgo >= 30) {
-    const months = Math.floor(daysAgo / 30);
-    const remainingDays = daysAgo % 30;
-    durationText = remainingDays > 0 ? `${months} Bln ${remainingDays} Hri` : `${months} Bulan`;
-  } else {
-    durationText = `${daysAgo} Hari`;
-  }
+const persen = (bagian, total) => (total > 0 ? Math.round((bagian / total) * 100) : 0);
 
-  const formattedDate = lastDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-  return { durationText, daysAgo, formattedDate };
-};
+const nomorWa = (nomor) => String(nomor || '').replace(/\D/g, '').replace(/^0/, '62');
 
 const PentashihDashboard = () => {
   const sekolah = useSchoolIdentity();
@@ -48,74 +54,85 @@ const PentashihDashboard = () => {
   const [guruData, setGuruData] = useState(null);
   const [santriList, setSantriList] = useState([]);
   const [classList, setClassList] = useState([]);
+  const [hadirHariIni, setHadirHariIni] = useState(new Set());
+  const [kehadiranBulanIni, setKehadiranBulanIni] = useState({});
+  const [hariEfektif, setHariEfektif] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Search States
-  const [khotimSearch, setKhotimSearch] = useState('');
-  const [stagnantSearch, setStagnantSearch] = useState('');
+  const [cariKelas, setCariKelas] = useState('');
+  const [cariMurid, setCariMurid] = useState('');
 
   const fetchDashboardData = useCallback(async () => {
     if (!user?.id) return;
 
     setIsLoading(true);
     try {
-      // include_guru returns the teacher as flat guru_* columns; fetchClassList
-      // rebuilds the nested `guru` object this view reads. is_active is NOT NULL
-      // in the schema, so the old "or is_active is null" arm never matched.
-      const [guruProfile, classes, santri] = await Promise.all([
+      const hariIni = getLocalDateString();
+      const awalBulan = `${hariIni.slice(0, 7)}-01`;
+
+      const [guruProfile, classes, santri, absensiBulan, kalender] = await Promise.all([
         fetchGuruDetail(user.id),
         fetchClassList({ is_active: true, includeGuru: true, limit: 200 }),
-        // activeOnly matches status Aktif/active OR NULL, which is what the old
-        // .or('status.eq.Aktif,status.eq.active,status.is.null') filter did.
         fetchAllSantri({ activeOnly: true, notDeleted: true }),
+        // Satu permintaan untuk seluruh bulan berjalan; kehadiran hari ini
+        // disaring dari hasil yang sama supaya tidak ada dua sumber angka yang
+        // bisa berselisih.
+        fetchAllAttendance({ role: 'santri', date_from: awalBulan, date_to: hariIni }),
+        fetchCalendarContext(awalBulan, hariIni).catch(() => null),
       ]);
 
       const resolvedGuru = await resolveAvatarRecord(guruProfile, { ownerType: 'guru' });
       const resolvedSantri = await resolveAvatarRecords(santri || [], { ownerType: 'santri' });
 
-      // Jilid history is keyed by santri, so it needs the roster first.
-      const jilidHistoryRows = await fetchJilidHistoryForSantriList(
-        resolvedSantri.map(s => s.id)
-      ).catch(() => []);
+      const classMap = Object.fromEntries((classes || []).map((c) => [c.id, c]));
 
-      const classMap = Object.fromEntries((classes || []).map(c => [c.id, c]));
-
-      // Rows arrive ordered by changed_at DESC, so the first hit per santri is
-      // their most recent change.
-      const jilidHistoryMap = {};
-      jilidHistoryRows.forEach(h => {
-        if (!jilidHistoryMap[h.santri_id]) {
-          jilidHistoryMap[h.santri_id] = h.changed_at;
-        }
-      });
-
-      const mappedSantri = resolvedSantri.map(s => {
-        // current_class_id only. The old query also fell back to an active
-        // class_memberships row, but the backend has no memberships endpoint and
-        // treats current_class_id as the authoritative placement (see
-        // activeSantriByClass in classes.go), so the fallback is dropped rather
-        // than backed by an invented route.
+      const mappedSantri = resolvedSantri.map((s) => {
         const classId = s.current_class_id || null;
         const cls = classId ? classMap[classId] : null;
-        const lastTestDate = jilidHistoryMap[s.id] || s.updated_at || s.created_at || null;
-        const untestedInfo = calculateUntestedDuration(lastTestDate);
-
         return {
           ...s,
           classId,
-          className: cls?.nama_kelas || 'Belum Ada Kelas',
-          teacherName: cls?.guru?.nama || 'Belum Ada Guru',
+          className: cls?.nama_kelas || 'Belum masuk kelas',
+          teacherName: cls?.guru?.nama || 'Belum ada wali kelas',
           teacherHp: cls?.guru?.no_hp || null,
-          lastTestDate,
-          untestedDurationText: untestedInfo.durationText,
-          untestedDaysAgo: untestedInfo.daysAgo,
-          untestedFormattedDate: untestedInfo.formattedDate,
         };
       });
 
+      // Baris "tidak hadir" yang dicatat admin BUKAN kehadiran. Tanpa penyaringan
+      // ini seorang murid yang ditandai alpa setiap hari akan terhitung hadir
+      // penuh, karena barisnya tetap ada di tabel absensi.
+      const hadirSaja = (absensiBulan || []).filter((row) => !isExplicitAbsentAttendance(row.status));
+
+      const setHariIni = new Set(
+        hadirSaja.filter((row) => row.attendance_date === hariIni).map((row) => row.user_id)
+      );
+
+      // Satu murid bisa punya lebih dari satu baris per hari (mis. dua sesi),
+      // jadi yang dihitung adalah jumlah HARI berbeda, bukan jumlah baris.
+      const hariPerMurid = {};
+      hadirSaja.forEach((row) => {
+        if (!hariPerMurid[row.user_id]) hariPerMurid[row.user_id] = new Set();
+        hariPerMurid[row.user_id].add(row.attendance_date);
+      });
+      const rekap = Object.fromEntries(
+        Object.entries(hariPerMurid).map(([id, hari]) => [id, hari.size])
+      );
+
+      // Penyebutnya adalah hari efektif menurut kalender akademik, bukan jumlah
+      // hari kalender: akhir pekan dan libur nasional tidak boleh menurunkan
+      // persentase kehadiran siapa pun (lihat migrasi libur nasional).
+      const efektif = getActiveCalendarDates({
+        startDate: awalBulan,
+        endDate: hariIni,
+        ...(kalender || { eventsByDate: {}, monthSettingsByYear: {} }),
+      });
+
       setGuruData(resolvedGuru || null);
-      setClassList(classes);
+      setClassList(classes || []);
       setSantriList(mappedSantri);
+      setHadirHariIni(setHariIni);
+      setKehadiranBulanIni(rekap);
+      setHariEfektif(Array.isArray(efektif) ? efektif.length : 0);
     } catch (error) {
       toast({ title: 'Gagal memuat data', description: error.message, variant: 'destructive' });
     } finally {
@@ -127,123 +144,100 @@ const PentashihDashboard = () => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // -------------------------------------------------------------
-  // Poin 4: Analytics & Level Distribution Calculations
-  // -------------------------------------------------------------
-  const levelStats = useMemo(() => {
-    let praTk = 0;
-    let dasar = 0;
-    let menengah = 0;
-    let khotim = 0;
-
-    santriList.forEach(s => {
-      const j = (s.jilid || '').trim();
-      if (j.includes('Pra TK')) praTk++;
-      else if (['Jilid 1A', 'Jilid 1B', 'Jilid 1C', 'Jilid 2A', 'Jilid 2B', 'Jilid 3A', 'Jilid 3B'].includes(j)) dasar++;
-      else if (['Jilid 4A', 'Jilid 4B', 'Jilid 5A', 'Jilid 5B', 'Jilid Juz 27'].includes(j)) menengah++;
-      else if (KHOTIM_JILID_LIST.includes(j)) khotim++;
-      else dasar++;
+  const kelasStats = useMemo(() => {
+    const perKelas = (classList || []).map((cls) => {
+      const murid = santriList.filter((s) => s.classId === cls.id);
+      const hadir = murid.filter((s) => hadirHariIni.has(s.id)).length;
+      return {
+        id: cls.id,
+        nama: cls.nama_kelas,
+        sesi: cls.sesi || '-',
+        wali: cls.guru?.nama || null,
+        waliHp: cls.guru?.no_hp || null,
+        jumlah: murid.length,
+        hadir,
+        persen: persen(hadir, murid.length),
+      };
     });
 
-    const total = santriList.length || 1;
-    return {
-      praTk,
-      dasar,
-      menengah,
-      khotim,
-      praTkPct: Math.round((praTk / total) * 100),
-      dasarPct: Math.round((dasar / total) * 100),
-      menengahPct: Math.round((menengah / total) * 100),
-      khotimPct: Math.round((khotim / total) * 100),
-    };
-  }, [santriList]);
+    if (!cariKelas) return perKelas;
+    const cari = cariKelas.toLowerCase();
+    return perKelas.filter(
+      (k) => k.nama.toLowerCase().includes(cari) || (k.wali || '').toLowerCase().includes(cari)
+    );
+  }, [classList, santriList, hadirHariIni, cariKelas]);
 
-  // -------------------------------------------------------------
-  // Poin 3: Candidate Khotim & Pra-Imtihan List
-  // -------------------------------------------------------------
-  const khotimCandidates = useMemo(() => {
-    return santriList.filter(s => {
-      const j = (s.jilid || '').trim();
-      const isCandidate = KHOTIM_JILID_LIST.includes(j);
-      if (!isCandidate) return false;
-      if (!khotimSearch) return true;
-      const search = khotimSearch.toLowerCase();
-      return (
-        s.nama_lengkap.toLowerCase().includes(search) ||
-        (s.nomor_induk && s.nomor_induk.toLowerCase().includes(search)) ||
-        s.className.toLowerCase().includes(search)
-      );
-    });
-  }, [santriList, khotimSearch]);
+  const ringkasan = useMemo(() => {
+    const total = santriList.length;
+    const hadir = santriList.filter((s) => hadirHariIni.has(s.id)).length;
+    const kelasTanpaWali = (classList || []).filter((c) => !c.guru?.nama).length;
+    const belumMasukKelas = santriList.filter((s) => !s.classId).length;
+    return { total, hadir, persenHadir: persen(hadir, total), kelasTanpaWali, belumMasukKelas };
+  }, [santriList, hadirHariIni, classList]);
 
-  // -------------------------------------------------------------
-  // Poin 1: Stagnant Student Alert Filter (Ordered by untested duration)
-  // -------------------------------------------------------------
-  const stagnantSantriList = useMemo(() => {
-    return santriList
-      .filter(s => {
-        const isStagnant = s.untestedDaysAgo >= 90; // 3+ months threshold
-        if (!isStagnant) return false;
+  const muridPerluPerhatian = useMemo(() => {
+    // Tanpa hari efektif tidak ada penyebut yang sah, jadi daftarnya dikosongkan
+    // ketimbang menampilkan 0% untuk semua orang di awal bulan.
+    if (hariEfektif <= 0) return [];
 
-        if (!stagnantSearch) return true;
-        const search = stagnantSearch.toLowerCase();
-        return (
-          s.nama_lengkap.toLowerCase().includes(search) ||
-          (s.nomor_induk && s.nomor_induk.toLowerCase().includes(search)) ||
-          s.className.toLowerCase().includes(search)
-        );
+    const daftar = santriList
+      .map((s) => {
+        const hadir = kehadiranBulanIni[s.id] || 0;
+        return { ...s, hadirBulanIni: hadir, persenBulanIni: persen(hadir, hariEfektif) };
       })
-      .sort((a, b) => b.untestedDaysAgo - a.untestedDaysAgo);
-  }, [santriList, stagnantSearch]);
+      .filter((s) => s.persenBulanIni < AMBANG_KEHADIRAN)
+      .sort((a, b) => a.persenBulanIni - b.persenBulanIni);
 
-  // -------------------------------------------------------------
-  // Poin 5: Excel & PDF Export Handlers
-  // -------------------------------------------------------------
+    if (!cariMurid) return daftar;
+    const cari = cariMurid.toLowerCase();
+    return daftar.filter(
+      (s) =>
+        s.nama_lengkap.toLowerCase().includes(cari) ||
+        (s.nisn || '').toLowerCase().includes(cari) ||
+        s.className.toLowerCase().includes(cari)
+    );
+  }, [santriList, kehadiranBulanIni, hariEfektif, cariMurid]);
+
   const exportExcelReport = () => {
     try {
-      const khotimData = khotimCandidates.map((s, idx) => ({
-        'No': idx + 1,
-        'Nomor Induk Qiroati': s.nomor_induk || '-',
-        'Nama Murid': s.nama_lengkap,
-        'Nama Panggilan': s.nama_panggilan || '-',
-        'Jilid Saat Ini': s.jilid || '-',
-        'Kelas': s.className,
-        'Guru Pengampu': s.teacherName,
-        'No HP Ortu': s.no_hp_ortu || '-',
-      }));
-
-      const stagnantData = stagnantSantriList.map((s, idx) => ({
-        'No': idx + 1,
-        'Nomor Induk': s.nomor_induk || '-',
-        'Nama Murid': s.nama_lengkap,
-        'Jilid': s.jilid || '-',
-        'Kelas': s.className,
-        'Guru Pengampu': s.teacherName,
-        'Lama Belum Tes': s.untestedDurationText,
-        'Tanggal Tes Terakhir': s.untestedFormattedDate,
-      }));
-
-      const levelSummaryData = [
-        { 'Kategori Jilid': 'Pra-TK (Pra-A / Pra-B / Pra-C)', 'Jumlah Murid': levelStats.praTk, 'Persentase': `${levelStats.praTkPct}%` },
-        { 'Kategori Jilid': 'Dasar (Jilid 1A - 3B)', 'Jumlah Murid': levelStats.dasar, 'Persentase': `${levelStats.dasarPct}%` },
-        { 'Kategori Jilid': 'Menengah (Jilid 4A - 5B)', 'Jumlah Murid': levelStats.menengah, 'Persentase': `${levelStats.menengahPct}%` },
-        { 'Kategori Jilid': 'Khotim / Tajwid / Finishing', 'Jumlah Murid': levelStats.khotim, 'Persentase': `${levelStats.khotimPct}%` },
-        { 'Kategori Jilid': 'TOTAL MURID', 'Jumlah Murid': santriList.length, 'Persentase': '100%' },
+      const ringkasanData = [
+        { Indikator: 'Total murid aktif', Nilai: ringkasan.total },
+        { Indikator: 'Hadir hari ini', Nilai: `${ringkasan.hadir} (${ringkasan.persenHadir}%)` },
+        { Indikator: 'Hari efektif bulan berjalan', Nilai: hariEfektif },
+        { Indikator: `Murid di bawah ${AMBANG_KEHADIRAN}% kehadiran`, Nilai: muridPerluPerhatian.length },
+        { Indikator: 'Kelas tanpa wali kelas', Nilai: ringkasan.kelasTanpaWali },
+        { Indikator: 'Murid belum masuk kelas', Nilai: ringkasan.belumMasukKelas },
       ];
 
+      const kelasData = kelasStats.map((k, idx) => ({
+        No: idx + 1,
+        Kelas: k.nama,
+        Sesi: k.sesi,
+        'Wali Kelas': k.wali || 'Belum ada',
+        'Jumlah Murid': k.jumlah,
+        'Hadir Hari Ini': k.hadir,
+        Persentase: `${k.persen}%`,
+      }));
+
+      const perhatianData = muridPerluPerhatian.map((s, idx) => ({
+        No: idx + 1,
+        NISN: s.nisn || '-',
+        'Nama Murid': s.nama_lengkap,
+        Kelas: s.className,
+        'Wali Kelas': s.teacherName,
+        'Hari Hadir': s.hadirBulanIni,
+        'Hari Efektif': hariEfektif,
+        Persentase: `${s.persenBulanIni}%`,
+        'No HP Wali': s.no_hp_ortu || '-',
+      }));
+
       const wb = XLSX.utils.book_new();
-
-      const wsSummary = XLSX.utils.json_to_sheet(levelSummaryData);
-      XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan Jilid');
-
-      const wsKhotim = XLSX.utils.json_to_sheet(khotimData);
-      XLSX.utils.book_append_sheet(wb, wsKhotim, 'Calon Khotim');
-
-      const wsStagnant = XLSX.utils.json_to_sheet(stagnantData);
-      XLSX.utils.book_append_sheet(wb, wsStagnant, 'Evaluasi Murid Stagnan');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ringkasanData), 'Ringkasan');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(kelasData), 'Kehadiran per Kelas');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(perhatianData), 'Murid Perlu Perhatian');
 
       const dateStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-      XLSX.writeFile(wb, `Laporan_Wakil_Kepala_Sekolah_${dateStr}.xlsx`);
+      XLSX.writeFile(wb, `Laporan_Pengawasan_Sekolah_${dateStr}.xlsx`);
 
       toast({ title: 'Berhasil Ekspor Excel', description: 'File laporan berhasil diunduh.' });
     } catch (err) {
@@ -255,25 +249,27 @@ const PentashihDashboard = () => {
     window.print();
   };
 
+  const sebutan = guruData && isKepalaSekolah(guruData)
+    ? 'Kepala Sekolah'
+    : labelStafRole(guruData?.jabatan || 'Wakil Kepala Sekolah');
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 bg-slate-50 dark:bg-slate-950 min-h-screen space-y-8 print:pt-4 print:pb-4 print:bg-white print:dark:bg-white print:text-black">
-      {/* Header Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6 print:border-b-2">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-3xl md:text-4xl font-black uppercase text-purple-700 dark:text-purple-400 tracking-wide print:text-black">
-              Dashboard Wakil Kepala Sekolah
+              Dashboard {sebutan}
             </h1>
             <Badge className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1 text-xs uppercase tracking-wider flex items-center gap-1 shadow-sm print:hidden">
-              <ShieldCheck className="w-3.5 h-3.5" /> Penguji & Quality Assurance
+              <ShieldCheck className="w-3.5 h-3.5" /> Pengawasan Sekolah
             </Badge>
           </div>
           <p className="text-muted-foreground print:text-slate-600">
-            Pusat pengawasan mutu bacaan, distribusi tingkat, dan calon khotim {sekolah.shortName}.
+            Pantau kehadiran, keterisian kelas, dan murid yang perlu perhatian di {sekolah.shortName}.
           </p>
         </div>
 
-        {/* Poin 5: Print & Export Actions */}
         <div className="flex items-center gap-3 flex-wrap print:hidden">
           <Button
             variant="outline"
@@ -301,7 +297,6 @@ const PentashihDashboard = () => {
         </div>
       </div>
 
-      {/* Hero Metric Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 print:grid-cols-4 print:gap-3">
         <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4 print:col-span-4 print:grid-cols-4">
           <Card className="bg-white dark:bg-slate-900 border-l-4 border-purple-500 shadow-sm print:border print:shadow-none">
@@ -310,45 +305,46 @@ const PentashihDashboard = () => {
                 <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-2xl font-black text-slate-900 dark:text-slate-100 print:text-black">{santriList.length}</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-slate-100 print:text-black">{ringkasan.total}</p>
                 <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider print:text-slate-600">Total Murid Aktif</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Poin 3 Metric: Khotim Candidates */}
-          <Card className="bg-white dark:bg-slate-900 border-l-4 border-amber-500 shadow-sm print:border print:shadow-none">
+          <Card className="bg-white dark:bg-slate-900 border-l-4 border-emerald-500 shadow-sm print:border print:shadow-none">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-3 bg-amber-100 dark:bg-amber-950/50 rounded-xl shrink-0 print:hidden">
-                <Trophy className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              <div className="p-3 bg-emerald-100 dark:bg-emerald-950/50 rounded-xl shrink-0 print:hidden">
+                <UserCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-2xl font-black text-amber-700 dark:text-amber-400 print:text-amber-800">{khotimCandidates.length}</p>
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider print:text-slate-600">Calon Khotim</p>
+                <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 print:text-emerald-800">
+                  {ringkasan.hadir}<span className="text-sm font-bold opacity-70"> / {ringkasan.total}</span>
+                </p>
+                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider print:text-slate-600">
+                  Hadir Hari Ini ({ringkasan.persenHadir}%)
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Poin 1 Metric: Stagnant Santri Alert */}
           <Card className="bg-white dark:bg-slate-900 border-l-4 border-rose-500 shadow-sm print:border print:shadow-none">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-3 bg-rose-100 dark:bg-rose-950/50 rounded-xl shrink-0 print:hidden">
                 <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
               </div>
               <div>
-                <p className="text-2xl font-black text-rose-600 dark:text-rose-400 print:text-rose-800">{stagnantSantriList.length}</p>
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider print:text-slate-600">Murid Perlu Evaluasi</p>
+                <p className="text-2xl font-black text-rose-600 dark:text-rose-400 print:text-rose-800">{muridPerluPerhatian.length}</p>
+                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider print:text-slate-600">Murid Perlu Perhatian</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Profile Card Pentashih */}
         <div className="md:col-span-4 print:hidden">
           {guruData ? (
             <Card className="bg-gradient-to-br from-purple-700 via-indigo-700 to-blue-800 text-white h-full shadow-lg relative overflow-hidden border-0 rounded-2xl">
               <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                <Award className="w-32 h-32 text-white" />
+                <ShieldCheck className="w-32 h-32 text-white" />
               </div>
               <CardContent className="p-4 flex flex-col justify-center h-full relative z-10">
                 <div className="flex items-center gap-3 mb-2">
@@ -361,7 +357,7 @@ const PentashihDashboard = () => {
                   <div className="min-w-0 flex-1">
                     <h2 className="text-base font-bold leading-tight truncate">{guruData.nama}</h2>
                     <span className="inline-flex items-center gap-1 text-purple-100 text-[11px] font-semibold bg-white/20 px-2 py-0.5 rounded-full mt-0.5">
-                      <ShieldCheck className="w-3 h-3" /> {labelStafRole(guruData.jabatan || 'Wakil Kepala Sekolah')}
+                      <ShieldCheck className="w-3 h-3" /> {sebutan}
                     </span>
                   </div>
                 </div>
@@ -381,166 +377,108 @@ const PentashihDashboard = () => {
         </div>
       </div>
 
-      {/* POIN 4: Matriks Performa & Distribusi Jilid */}
-      <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden print:border-slate-300">
-        <CardContent className="p-5 space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400 print:text-black" />
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 print:text-black">
-                Matriks Distribusi Tingkat Jilid Murid
-              </h2>
-            </div>
-            <Badge variant="outline" className="text-xs font-semibold text-purple-700 border-purple-200 dark:text-purple-300 print:border-slate-400 print:text-black">
-              Total {santriList.length} Murid
-            </Badge>
-          </div>
+      {/* Dua tanda keterisian yang paling sering luput: kelas tanpa wali kelas dan
+          murid yang belum ditempatkan. Keduanya hanya tampil ketika benar-benar
+          ada, supaya sekolah yang rapi tidak dihadiahi kotak peringatan kosong. */}
+      {(ringkasan.kelasTanpaWali > 0 || ringkasan.belumMasukKelas > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {ringkasan.kelasTanpaWali > 0 && (
+            <Card className="border-l-4 border-amber-500 bg-amber-50/60 dark:bg-amber-950/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <UserX className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <p className="text-sm text-amber-900 dark:text-amber-200">
+                  <strong>{ringkasan.kelasTanpaWali} kelas</strong> belum punya wali kelas. Penugasannya diatur admin di Manajemen Kelas.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          {ringkasan.belumMasukKelas > 0 && (
+            <Card className="border-l-4 border-amber-500 bg-amber-50/60 dark:bg-amber-950/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <UserX className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <p className="text-sm text-amber-900 dark:text-amber-200">
+                  <strong>{ringkasan.belumMasukKelas} murid</strong> belum ditempatkan ke kelas mana pun.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Pra-TK */}
-            <div className="p-4 rounded-xl bg-purple-50/70 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30 space-y-2">
-              <div className="flex justify-between items-center text-xs font-bold text-purple-800 dark:text-purple-300">
-                <span>Pra-TK (Pra A-C)</span>
-                <span className="text-sm font-black">{levelStats.praTk} <span className="text-[11px] font-medium opacity-80">({levelStats.praTkPct}%)</span></span>
-              </div>
-              <div className="w-full h-2 bg-purple-200 dark:bg-purple-900/50 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-600 rounded-full transition-all duration-500" style={{ width: `${levelStats.praTkPct}%` }} />
-              </div>
-              <p className="text-[11px] text-muted-foreground">Tahap pengenalan huruf & hijaiyah dasar.</p>
-            </div>
-
-            {/* Jilid Dasar */}
-            <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 space-y-2">
-              <div className="flex justify-between items-center text-xs font-bold text-blue-800 dark:text-blue-300">
-                <span>Jilid Dasar (1A - 3B)</span>
-                <span className="text-sm font-black">{levelStats.dasar} <span className="text-[11px] font-medium opacity-80">({levelStats.dasarPct}%)</span></span>
-              </div>
-              <div className="w-full h-2 bg-blue-200 dark:bg-blue-900/50 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${levelStats.dasarPct}%` }} />
-              </div>
-              <p className="text-[11px] text-muted-foreground">Pembiasaan makhroj & harokat murid.</p>
-            </div>
-
-            {/* Jilid Menengah */}
-            <div className="p-4 rounded-xl bg-sky-50/70 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/30 space-y-2">
-              <div className="flex justify-between items-center text-xs font-bold text-sky-800 dark:text-sky-300">
-                <span>Jilid Menengah (4A - 5B)</span>
-                <span className="text-sm font-black">{levelStats.menengah} <span className="text-[11px] font-medium opacity-80">({levelStats.menengahPct}%)</span></span>
-              </div>
-              <div className="w-full h-2 bg-sky-200 dark:bg-sky-900/50 rounded-full overflow-hidden">
-                <div className="h-full bg-sky-600 rounded-full transition-all duration-500" style={{ width: `${levelStats.menengahPct}%` }} />
-              </div>
-              <p className="text-[11px] text-muted-foreground">Penerapan tajwid & panjang pendek.</p>
-            </div>
-
-            {/* Khotim / Tajwid */}
-            <div className="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 space-y-2">
-              <div className="flex justify-between items-center text-xs font-bold text-amber-900 dark:text-amber-300">
-                <span>Khotim & Tajwid (6A+)</span>
-                <span className="text-sm font-black text-amber-700 dark:text-amber-400">{levelStats.khotim} <span className="text-[11px] font-medium opacity-80">({levelStats.khotimPct}%)</span></span>
-              </div>
-              <div className="w-full h-2 bg-amber-200 dark:bg-amber-900/50 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full transition-all duration-500" style={{ width: `${levelStats.khotimPct}%` }} />
-              </div>
-              <p className="text-[11px] text-muted-foreground">Persiapan Imtihan & Khotaman resmi.</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* WIDGET GRID: POIN 3 (Khotim) & POIN 1 (Stagnant Alert dengan Durasi Belum Tes) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1">
-        {/* POIN 3: Calon Khotim & Pra-Imtihan */}
+        {/* Kehadiran per kelas hari ini */}
         <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden flex flex-col print:border-slate-300">
           <CardContent className="p-5 flex-1 flex flex-col space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-amber-100 dark:bg-amber-950/50 rounded-lg text-amber-700 dark:text-amber-400 print:hidden">
-                  <Trophy className="w-4 h-4" />
+                <div className="p-2 bg-purple-100 dark:bg-purple-950/50 rounded-lg text-purple-700 dark:text-purple-400 print:hidden">
+                  <BarChart3 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-100 print:text-black">
-                    Pipeline Calon Khotim & Pra-Imtihan
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Murid di tingkat Jilid 6, Al-Qur'an, Ghorib, Tajwid, & Finishing.
-                  </p>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 print:text-black">Kehadiran per Kelas Hari Ini</h3>
+                  <p className="text-xs text-muted-foreground">Perbandingan murid yang sudah tercatat hadir terhadap jumlah muridnya.</p>
                 </div>
               </div>
-              <Badge className="bg-amber-500 text-white font-bold text-xs w-fit">
-                {khotimCandidates.length} Murid
+              <Badge variant="outline" className="text-xs font-semibold text-purple-700 border-purple-200 dark:text-purple-300 w-fit print:border-slate-400 print:text-black">
+                {classList.length} Kelas
               </Badge>
             </div>
 
-            {/* Search Filter */}
             <div className="relative print:hidden">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Cari calon khotim..."
-                value={khotimSearch}
-                onChange={e => setKhotimSearch(e.target.value)}
+                placeholder="Cari kelas atau wali kelas..."
+                value={cariKelas}
+                onChange={(e) => setCariKelas(e.target.value)}
                 className="pl-9 h-9 text-xs"
               />
             </div>
 
-            {/* List Table */}
             <div className="flex-1 overflow-x-auto max-h-80 overflow-y-auto custom-scrollbar">
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="border-b text-muted-foreground bg-slate-50 dark:bg-slate-800/50">
-                    <th className="py-2.5 px-3 font-semibold">Murid</th>
-                    <th className="py-2.5 px-3 font-semibold">Jilid</th>
-                    <th className="py-2.5 px-3 font-semibold">Kelas & Guru</th>
-                    <th className="py-2.5 px-3 font-semibold text-right print:hidden">Kontak Ortu</th>
+                    <th className="py-2.5 px-3 font-semibold">Kelas</th>
+                    <th className="py-2.5 px-3 font-semibold">Wali Kelas</th>
+                    <th className="py-2.5 px-3 font-semibold">Hadir</th>
+                    <th className="py-2.5 px-3 font-semibold w-28">Persentase</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {khotimCandidates.map(s => (
-                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-slate-100">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="w-7 h-7 print:hidden">
-                            <AvatarImage src={s.foto_url} />
-                            <AvatarFallback className="text-[10px] font-bold bg-amber-100 text-amber-800">
-                              {s.nama_lengkap?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-semibold leading-tight">{s.nama_lengkap}</p>
-                            <p className="text-[10px] text-muted-foreground font-mono">{s.nomor_induk || '-'}</p>
-                          </div>
-                        </div>
+                  {kelasStats.map((k) => (
+                    <tr key={k.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-2.5 px-3">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{k.nama}</p>
+                        <p className="text-[10px] text-muted-foreground">Sesi {k.sesi}</p>
                       </td>
                       <td className="py-2.5 px-3">
-                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 font-bold text-[10px]">
-                          {s.jilid}
-                        </Badge>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <p className="font-semibold text-slate-800 dark:text-slate-200">{s.className}</p>
-                        <p className="text-[10px] text-muted-foreground">{s.teacherName}</p>
-                      </td>
-                      <td className="py-2.5 px-3 text-right print:hidden">
-                        {s.no_hp_ortu ? (
-                          <a
-                            href={`https://wa.me/${s.no_hp_ortu.replace(/\D/g, '').replace(/^0/, '62')}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
-                          >
-                            <Phone className="w-3 h-3" /> WA Ortu
-                          </a>
+                        {k.wali ? (
+                          <span className="text-slate-800 dark:text-slate-200">{k.wali}</span>
                         ) : (
-                          <span className="text-muted-foreground text-[10px]">-</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-semibold">Belum ada</span>
                         )}
+                      </td>
+                      <td className="py-2.5 px-3 font-mono text-slate-800 dark:text-slate-200">
+                        {k.hadir} / {k.jumlah}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 flex-1 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${k.persen >= AMBANG_KEHADIRAN ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                              style={{ width: `${k.persen}%` }}
+                            />
+                          </div>
+                          <span className="font-bold tabular-nums text-slate-700 dark:text-slate-300">{k.persen}%</span>
+                        </div>
                       </td>
                     </tr>
                   ))}
 
-                  {khotimCandidates.length === 0 && (
+                  {kelasStats.length === 0 && (
                     <tr>
                       <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                        Tidak ada calon khotim yang cocok dengan pencarian.
+                        {isLoading ? 'Memuat data kelas…' : 'Belum ada kelas yang cocok dengan pencarian.'}
                       </td>
                     </tr>
                   )}
@@ -550,7 +488,7 @@ const PentashihDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* POIN 1: Peringatan Santri Stagnant dengan Indikator Durasi Belum Tes */}
+        {/* Murid dengan kehadiran rendah bulan berjalan */}
         <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden flex flex-col print:border-slate-300">
           <CardContent className="p-5 flex-1 flex flex-col space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
@@ -559,109 +497,95 @@ const PentashihDashboard = () => {
                   <AlertTriangle className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-100 print:text-black">
-                    Evaluasi Perkembangan Murid Stagnan
-                  </h3>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 print:text-black">Murid Perlu Perhatian</h3>
                   <p className="text-xs text-muted-foreground">
-                    Murid yang paling lama belum tes / naik jilid (berdasarkan riwayat pengujian).
+                    Kehadiran di bawah {AMBANG_KEHADIRAN}% dari {hariEfektif} hari efektif bulan ini.
                   </p>
                 </div>
               </div>
               <Badge variant="destructive" className="font-bold text-xs w-fit">
-                {stagnantSantriList.length} Perlu Evaluasi
+                {muridPerluPerhatian.length} Murid
               </Badge>
             </div>
 
-            {/* Search Filter */}
             <div className="relative print:hidden">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Cari murid evaluasi..."
-                value={stagnantSearch}
-                onChange={e => setStagnantSearch(e.target.value)}
+                placeholder="Cari murid atau kelas..."
+                value={cariMurid}
+                onChange={(e) => setCariMurid(e.target.value)}
                 className="pl-9 h-9 text-xs"
               />
             </div>
 
-            {/* List Table with Untested Duration */}
             <div className="flex-1 overflow-x-auto max-h-80 overflow-y-auto custom-scrollbar">
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="border-b text-muted-foreground bg-slate-50 dark:bg-slate-800/50">
                     <th className="py-2.5 px-3 font-semibold">Murid</th>
-                    <th className="py-2.5 px-3 font-semibold">Jilid</th>
-                    <th className="py-2.5 px-3 font-semibold">Lama Belum Tes</th>
-                    <th className="py-2.5 px-3 font-semibold">Guru Pengampu</th>
-                    <th className="py-2.5 px-3 font-semibold text-right print:hidden">Kontak Guru</th>
+                    <th className="py-2.5 px-3 font-semibold">Kehadiran</th>
+                    <th className="py-2.5 px-3 font-semibold">Wali Kelas</th>
+                    <th className="py-2.5 px-3 font-semibold text-right print:hidden">Kontak Wali</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {stagnantSantriList.map(s => {
-                    const isVeryLong = s.untestedDaysAgo >= 180; // >= 6 Months
-                    return (
-                      <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-slate-100">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="w-7 h-7 print:hidden">
-                              <AvatarImage src={s.foto_url} />
-                              <AvatarFallback className="text-[10px] font-bold bg-rose-100 text-rose-700">
-                                {s.nama_lengkap?.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-semibold leading-tight">{s.nama_lengkap}</p>
-                              <p className="text-[10px] text-muted-foreground">{s.className}</p>
-                            </div>
+                  {muridPerluPerhatian.map((s) => (
+                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="w-7 h-7 print:hidden">
+                            <AvatarImage src={s.foto_url} />
+                            <AvatarFallback className="text-[10px] font-bold bg-rose-100 text-rose-700">
+                              {s.nama_lengkap?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold leading-tight text-slate-900 dark:text-slate-100">{s.nama_lengkap}</p>
+                            <p className="text-[10px] text-muted-foreground">{s.className}</p>
                           </div>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <Badge variant="outline" className="border-slate-300 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-semibold text-[10px]">
-                            {s.jilid || '-'}
-                          </Badge>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <div className="flex flex-col">
-                            <Badge
-                              variant="outline"
-                              className={`w-fit font-bold text-[10px] px-2 py-0.5 flex items-center gap-1 ${
-                                isVeryLong
-                                  ? 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300'
-                                  : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300'
-                              }`}
-                            >
-                              <Clock className="w-3 h-3" />
-                              {s.untestedDurationText}
-                            </Badge>
-                            <span className="text-[10px] text-muted-foreground mt-0.5">
-                              sejak {s.untestedFormattedDate}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <p className="font-semibold text-slate-800 dark:text-slate-200">{s.teacherName}</p>
-                        </td>
-                        <td className="py-2.5 px-3 text-right print:hidden">
-                          {s.teacherHp ? (
-                            <a
-                              href={`https://wa.me/${s.teacherHp.replace(/\D/g, '').replace(/^0/, '62')}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] text-purple-600 dark:text-purple-400 hover:underline font-semibold"
-                            >
-                              <Phone className="w-3 h-3" /> WA Guru
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <Badge
+                          variant="outline"
+                          className={`w-fit font-bold text-[10px] px-2 py-0.5 ${
+                            s.persenBulanIni < 50
+                              ? 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300'
+                              : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300'
+                          }`}
+                        >
+                          {s.persenBulanIni}%
+                        </Badge>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {s.hadirBulanIni} dari {hariEfektif} hari
+                        </p>
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-800 dark:text-slate-200">{s.teacherName}</td>
+                      <td className="py-2.5 px-3 text-right print:hidden">
+                        {s.no_hp_ortu ? (
+                          <a
+                            href={`https://wa.me/${nomorWa(s.no_hp_ortu)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
+                          >
+                            <Phone className="w-3 h-3" /> WA Wali
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
 
-                  {stagnantSantriList.length === 0 && (
+                  {muridPerluPerhatian.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                        Tidak ada murid yang membutuhkan evaluasi khusus saat ini.
+                      <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                        {isLoading
+                          ? 'Memuat data kehadiran…'
+                          : hariEfektif <= 0
+                            ? 'Belum ada hari efektif pada bulan ini.'
+                            : 'Tidak ada murid dengan kehadiran di bawah ambang.'}
                       </td>
                     </tr>
                   )}
@@ -672,19 +596,17 @@ const PentashihDashboard = () => {
         </Card>
       </div>
 
-      {/* Main Class Management View for Pentashih */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 print:hidden">
         <div className="border-b pb-4 mb-2">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            Manajemen Kelas & Murid
+            Manajemen Kelas &amp; Murid
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Tampilan interaktif berbasis sesi dan kelas. Klik murid untuk melihat rincian jilid, histori absensi, dan performa santri.
+            Tampilan kelas per sesi. Klik murid untuk melihat rincian profil dan riwayat absensinya.
           </p>
         </div>
 
-        {/* Render ClassManagement with pentashih view permissions */}
         <ClassManagement userRole="pentashih" />
       </div>
     </div>

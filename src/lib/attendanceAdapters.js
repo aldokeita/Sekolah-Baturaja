@@ -115,9 +115,30 @@ export const fetchAttendance = async (filters = {}) => {
     if (filters.date_from) params.set('date_from', filters.date_from);
     if (filters.date_to) params.set('date_to', filters.date_to);
     if (filters.limit) params.set('limit', String(filters.limit));
+    if (filters.page) params.set('page', String(filters.page));
     const qs = params.toString() ? `?${params.toString()}` : '';
     const data = await apiClient.get(`/api/attendance${qs}`);
     return data || [];
+};
+
+// Batas satu permintaan adalah 500 baris (maxPaginationLimit di attendance.go)
+// dan endpointnya tidak mengirim X-Total-Count, jadi rentang sepanjang satu bulan
+// untuk seluruh sekolah PASTI terpotong bila diambil sekali jalan. Pemotongan
+// senyap pada data kehadiran menghasilkan persentase yang salah tanpa tanda apa
+// pun, jadi rekap lintas sekolah harus lewat sini, bukan lewat fetchAttendance
+// dengan limit besar.
+export const fetchAllAttendance = async (filters = {}) => {
+    const pageSize = 500;
+    const rows = [];
+    // Halamannya 1-based di sisi server. Batas 40 halaman (20.000 baris) adalah
+    // jaring pengaman terhadap loop tak berujung, bukan batas yang diharapkan
+    // tercapai; satu bulan untuk sekolah 1.000 murid masih di bawahnya.
+    for (let page = 1; page <= 40; page += 1) {
+        const batch = await fetchAttendance({ ...filters, page, limit: pageSize });
+        rows.push(...batch);
+        if (batch.length < pageSize) break;
+    }
+    return rows;
 };
 
 export const fetchTodayAttendance = async (classId) => {
