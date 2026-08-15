@@ -509,6 +509,35 @@ DOM: warna bilah tidak pernah berlaku dan React memperingatkan setiap render. Sa
 adalah `GuruAttendanceRecap`, yang memakainya untuk mewarnai bilah menurut persentase kehadiran —
 jadi bilahnya selalu berwarna bawaan. Prop-nya sekarang diterima dan digabung ke `Indicator`.
 
+### 'Kepala Sekolah' adalah SEBUTAN, bukan tingkat akses
+
+Struktur sekolah sempat punya Wakil Kepala Sekolah tanpa kepalanya. Peran
+`'Kepala Sekolah'` kini ada di kosakata `guru.roles`, tetapi **tidak** dipetakan ke app_role mana
+pun — `getOperationalRoleFromGuruForm` sengaja tidak menyebutnya. Akun kepala sekolah mengikuti peran
+lain di akunnya (Admin, Tata Usaha, atau Pengajar), sama seperti di sekolah sungguhan kepala sekolah
+tetap guru bersertifikat.
+
+Alasan menahan pemetaan itu: satu-satunya dashboard pengawasan yang ada adalah
+`PentashihDashboard`, dan isinya **masih program Qur'an** — "Penguji & Quality Assurance",
+"pengawasan mutu bacaan", "distribusi tingkat", "calon khotim", distribusi jilid. Mengarahkan kepala
+sekolah dasar umum ke sana akan menyuguhkan materi yang tidak berlaku sama sekali. Keputusan
+dashboard mana yang ia terima belum diambil.
+
+Yang ditentukan peran ini: sebutannya di direktori publik, penanda tangan pada dokumen, dan kutipan
+di halaman Profil. `sebutanStaf` mendahulukan `'Kepala Sekolah'` atas peran lain di akun yang sama —
+tanpa itu `find` mengambil peran mana pun yang lebih dulu tersimpan, sehingga kepala sekolah bisa
+muncul sebagai "Guru". `isKepalaSekolah` juga mengenali dari `jabatan` bebas teks, karena halaman
+Profil publik sudah lama memakai jalur itu dan data sekolah yang sudah terisi tidak boleh berhenti
+dikenali. Wakil kepala sekolah dikecualikan secara eksplisit.
+
+Satu baris kepala sekolah disemai di `03_dummy_accounts.sql`. Tanpa itu kutipan di halaman Profil
+menampilkan **nama sekolah** di tempat nama orang, dan pemasangan pembeli terlihat belum selesai.
+
+Penanda tangan dokumen diubah dari "Wakil Kepala Sekolah" menjadi "Kepala Sekolah" di
+`reportUtils.js` (PDF dan DOCX) serta `SantriDetailModal.jsx` — yang mengesahkan dokumen sekolah
+adalah kepala sekolahnya. Di modal itu sebutannya sempat tercetak dua kali, di baris keterangan dan
+di baris tanda tangan; baris tanda tangan sekarang dikosongkan seperti kolom Orang Tua di sebelahnya.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

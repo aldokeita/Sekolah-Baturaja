@@ -157,6 +157,11 @@ export const getOperationalRoleFromGuruForm = (input) => {
   if (roles.includes('Admin')) return 'admin';
   if (roles.includes('Tata Usaha')) return 'tata_usaha';
   if (roles.includes('Pentashih')) return 'pentashih';
+  // 'Kepala Sekolah' SENGAJA tidak muncul di daftar ini. Peran itu adalah
+  // sebutan, bukan tingkat akses (lihat PERAN_KEPALA_SEKOLAH di src/lib/staf.js),
+  // jadi akun kepala sekolah mengikuti peran lain di akunnya dan jatuh ke 'guru'
+  // bila tidak ada peran lain. Memetakannya ke app_role tersendiri berarti
+  // memutuskan dashboard mana yang ia terima — keputusan yang belum diambil.
   return 'guru';
 };
 

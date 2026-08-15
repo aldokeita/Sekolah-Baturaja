@@ -45,6 +45,14 @@ begin
   for r in
     select * from (values
       -- id, email, password, display name, jabatan, roles[], app_role
+      -- Kepala sekolah. Perannya adalah SEBUTAN, bukan tingkat akses, jadi akun
+      -- ini juga memegang 'Pengajar' -- itulah yang menentukan dashboardnya.
+      -- Barisnya ada di seed karena halaman Profil publik mengambil nama
+      -- penanda tangan kutipannya dari Data Guru: baris yang jabatannya memuat
+      -- "Kepala Sekolah". Tanpa satu baris pun, halaman Profil pembeli
+      -- menampilkan nama sekolah di tempat nama orang.
+      ('a1fa7a10-0000-0000-0000-000000000010'::uuid, 'kepsek@sdnbaturaja.sch.id',    'kepsek123',
+       'Suryani Hadi, S.Pd., M.M.', 'Kepala Sekolah',    array['Kepala Sekolah', 'Pengajar'], 'guru'),
       ('a1fa7a10-0000-0000-0000-000000000011'::uuid, 'tatausaha@sdnbaturaja.sch.id', 'tatausaha123',
        'Lestari Ningsih, A.Md.', 'Tata Usaha',           array['Tata Usaha'],  'tata_usaha'),
       ('a1fa7a10-0000-0000-0000-000000000012'::uuid, 'guru@sdnbaturaja.sch.id',      'guru123',

@@ -793,9 +793,13 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 </p>
                             </div>
                             <div className="space-y-16">
-                                <p className="font-semibold text-slate-700 dark:text-slate-300">Disahkan oleh,<br/>Wakil Kepala Sekolah</p>
+                                {/* Kepala sekolah yang mengesahkan, bukan wakilnya.
+                                    Baris bawah dibiarkan kosong untuk tanda tangan
+                                    basah, seperti kolom Orang Tua di sebelahnya —
+                                    sebelumnya sebutannya tercetak dua kali. */}
+                                <p className="font-semibold text-slate-700 dark:text-slate-300">Disahkan oleh,<br/>Kepala Sekolah</p>
                                 <p className="font-bold text-slate-900 dark:text-slate-100 border-b border-slate-300 dark:border-slate-700 pb-1 w-3/4 mx-auto">
-                                    Wakil Kepala Sekolah
+                                    ( .................................... )
                                 </p>
                             </div>
                         </div>

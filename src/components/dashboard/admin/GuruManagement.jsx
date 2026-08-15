@@ -27,7 +27,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isAdminRole } from '@/lib/roles';
 import { labelStafRole } from '@/lib/staf';
 
-const AVAILABLE_ROLES = ['Pengajar', 'Pentashih', 'Staff Operasional', 'Tata Usaha', 'Admin'];
+// 'Kepala Sekolah' adalah sebutan, bukan tingkat akses: ia tidak menentukan
+// dashboard mana yang diterima (lihat PERAN_KEPALA_SEKOLAH di src/lib/staf.js),
+// jadi akun kepala sekolah tetap perlu satu peran lain — biasanya Pengajar atau
+// Admin — untuk menentukan hak aksesnya.
+const AVAILABLE_ROLES = ['Kepala Sekolah', 'Pengajar', 'Pentashih', 'Staff Operasional', 'Tata Usaha', 'Admin'];
 
 // Nilai 'Pentashih' tetap dipakai sebagai nilai tersimpan karena resolusi role
 // dan data guru lama bergantung padanya. Yang berubah hanya labelnya.
@@ -37,7 +41,9 @@ const ROLE_LABELS = { Pentashih: 'Wakil Kepala Sekolah' };
 // Tata Usaha bukan guru, jadi menandai mereka "Belum Bersertifikat" bukan sekadar
 // label yang keliru — pembaca menyimpulkan ada berkas yang belum diurus padahal
 // pertanyaannya tidak berlaku untuk mereka.
-const PERAN_MENGAJAR = ['Pengajar', 'Pentashih'];
+// Kepala sekolah ikut dihitung mengajar: di sekolah negeri jabatan itu dipegang
+// guru bersertifikat pendidik, jadi kolom Sertifikasi memang berlaku untuknya.
+const PERAN_MENGAJAR = ['Kepala Sekolah', 'Pengajar', 'Pentashih'];
 const mengajar = (guru) => (Array.isArray(guru?.roles) ? guru.roles : []).some((r) => PERAN_MENGAJAR.includes(r));
 
 // Kolom `status_guru` sempat menampung dua kosakata sekaligus: sertifikasi
