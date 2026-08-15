@@ -17,6 +17,7 @@ import GuruAttendanceRecap from '@/components/dashboard/admin/GuruAttendanceReca
 import AttendanceDetailsModal from '@/components/dashboard/shared/AttendanceDetailsModal';
 import ModulNilai from '@/components/dashboard/shared/ModulNilai';
 import ModulKontenKelas from '@/components/dashboard/shared/ModulKontenKelas';
+import ModulKomunikasiWali from '@/components/dashboard/shared/ModulKomunikasiWali';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AttendanceStatusIcon from '@/components/dashboard/shared/AttendanceStatusIcon';
 import { fetchGuruDetail, updateGuru, updateSantriJilid } from '@/lib/dataMasterAdapters';
@@ -609,10 +610,11 @@ const GuruDashboard = () => {
         {/* Jadwal dan nilai dipindah ke subtab supaya tabel data murid tetap
             jadi yang pertama terlihat, bukan terdorong ke bawah dua panel. */}
         <Tabs defaultValue="jadwal" className="mt-6 md:mt-8">
-          <TabsList className="grid w-full grid-cols-3 sm:inline-flex sm:w-auto">
+          <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto md:grid-cols-4">
             <TabsTrigger value="jadwal">Jadwal Mengajar</TabsTrigger>
             <TabsTrigger value="nilai">Nilai Asesmen</TabsTrigger>
             <TabsTrigger value="konten">Materi &amp; Tugas</TabsTrigger>
+            <TabsTrigger value="wali">Komunikasi Wali</TabsTrigger>
           </TabsList>
 
           <TabsContent value="jadwal" className="mt-4">
@@ -636,6 +638,13 @@ const GuruDashboard = () => {
                 Konten kelas sengaja tidak menumpang tabel `announcements`, yang
                 memasok situs publik. */}
             <ModulKontenKelas guruId={guruData?.id} />
+          </TabsContent>
+
+          <TabsContent value="wali" className="mt-4">
+            {/* Hanya menyiapkan pesan dan membuka WhatsApp guru; tidak ada pesan
+                yang terkirim dari sini dan tidak ada kredensial yang disimpan.
+                Nomor selalu dari basis data, tidak pernah ditanam di kode. */}
+            <ModulKomunikasiWali guruNama={guruData?.nama} />
           </TabsContent>
         </Tabs>
       </div>

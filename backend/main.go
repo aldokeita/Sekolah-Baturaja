@@ -51,6 +51,7 @@ func main() {
 	scheduleHandler := handler.NewScheduleHandler(pool)
 	nilaiHandler := handler.NewNilaiHandler(pool)
 	kelasKontenHandler := handler.NewKelasKontenHandler(pool)
+	kontakWaliHandler := handler.NewKontakWaliHandler(pool)
 	mmqHandler := handler.NewMMQHandler(pool)
 	gamificationHandler := handler.NewGamificationHandler(pool)
 	mediaPlayerHandler := handler.NewMediaPlayerHandler(pool)
@@ -139,6 +140,7 @@ func main() {
 		r.Mount("/api/schedule", scheduleHandler.Routes())
 		r.Mount("/api/nilai", nilaiHandler.Routes())
 		r.Mount("/api/kelas-konten", kelasKontenHandler.Routes())
+		r.Mount("/api/kontak-wali", kontakWaliHandler.Routes())
 		r.Mount("/api/mmq", mmqHandler.Routes())
 		r.Mount("/api/config", configHandler.Routes())
 

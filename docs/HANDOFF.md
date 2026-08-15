@@ -1448,6 +1448,63 @@ guru uji lalu dikembalikan ke `NULL`.
 
 **Belum diverifikasi:** tampilan di browser, karena alasan yang sama seperti fitur 1 dan 2.
 
+### 4. Komunikasi guru dengan wali murid — **Tuntas**
+
+Subtab keempat: **Komunikasi Wali**. **Tidak ada tabel baru** — kontak wali sudah tersimpan
+di `santri.no_hp_ortu`, `nama_ayah`, `nama_ibu`.
+
+**Tidak ada integrasi luar dan tidak ada kredensial.** Yang dibuat hanya tautan `wa.me`
+berisi pesan yang sudah terisi, dibuka di peramban guru. **Pesannya belum terkirim** saat
+tautan dibuka — guru masih membaca dan menekan kirim sendiri di WhatsApp. Persis seperti
+mengetik nomor di aplikasi WhatsApp sendiri, hanya lebih cepat.
+
+**Kenapa endpoint sendiri, bukan `/api/santri`.** Dua alasan:
+
+1. Cakupan guru di `santri.List` bersandar pada `classes.id_guru` — **wali kelas saja**. Guru
+   mata pelajaran yang mengajar lewat `jadwal_pelajaran` tidak termasuk, padahal ia juga
+   perlu menghubungi wali muridnya. Melebarkan cakupan di sana akan mengubah perilaku Data
+   Murid yang tidak berkaitan dengan permintaan ini.
+2. Kontak wali adalah data pribadi. `/api/kontak-wali` hanya mengembalikan kolom yang
+   benar-benar dipakai untuk menghubungi — bukan seluruh baris murid.
+
+**Cakupan `/api/kontak-wali`.**
+
+| Peran | Hasil |
+|---|---|
+| admin, tata usaha, superadmin | semua murid aktif |
+| guru | murid di kelas yang dipegangnya — sebagai **wali kelas** (`classes.id_guru`) **atau** lewat **jadwal mengajar** (`jadwal_pelajaran.guru_id`) |
+| murid | **403** |
+| peran lain | 403 |
+
+Murid nonaktif tidak masuk daftar: wali mereka bukan lagi tanggung jawab guru kelas berjalan.
+
+**Normalisasi nomor.** `normalizeNomorWa` mengubah `08xx`, `+62 8xx`, dan `8xx` menjadi
+`628xx`, lalu menolak apa pun yang panjangnya di luar 10–15 digit. Nomor yang tidak lolos
+membuat tombolnya nonaktif dan murid itu dihitung di peringatan "belum punya nomor wali",
+alih-alih membuka tautan yang pasti gagal. **Tidak ada nomor yang ditanam di kode.**
+
+**Lima template** (perkenalan, konfirmasi ketidakhadiran, pengingat tugas, apresiasi,
+undangan pertemuan) dengan placeholder `{wali} {murid} {kelas} {guru} {sekolah}`. Disimpan
+sebagai teks biasa di adapter, bukan tabel tersendiri — guru selalu dapat menyunting isinya
+sebelum mengirim, jadi menyimpannya di basis data hanya menambah beban tanpa menambah
+kegunaan. Nama sekolah diambil dari `useSchoolIdentity`, bukan ditulis mati.
+
+**Berkas.** `backend/internal/handler/kontakwali.go` (`/api/kontak-wali`);
+`src/lib/kontakWaliAdapters.js`; `src/components/dashboard/shared/ModulKomunikasiWali.jsx`.
+
+**Bukti uji.** Guru uji diberi satu jadwal di Kelas Purnama (kelas yang punya murid aktif),
+lalu jadwal dan akunnya dihapus:
+
+| Uji | Hasil |
+|---|---|
+| guru yang mengajar Kelas Purnama | 2 baris, hanya Kelas Purnama, nomor wali terbaca |
+| admin | 11 baris, lima kelas |
+| **murid membuka kontak wali** | **403** |
+| guru meminta `class_id` kelas lain secara eksplisit | 0 baris |
+
+**Belum diverifikasi:** tampilan di browser dan perilaku tautan `wa.me` sungguhan, karena
+alasan yang sama seperti fitur sebelumnya.
+
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.
 
