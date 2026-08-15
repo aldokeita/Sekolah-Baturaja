@@ -1996,6 +1996,35 @@ Al-Qur'an, tidak berlaku di SD negeri. Kodenya sudah lama memakai "Belum Bersert
 tertinggal hanya datanya. Diperbaiki menjadi "Belum Bersertifikat" — hanya data lokal, tidak
 ada perubahan kode.
 
+### Panel Bisyaroh & kategori Qiroati — sebagian besar sudah bersih
+
+**Bisyaroh: tidak ada yang perlu dikerjakan.** `SalaryCalculation.jsx` sudah dihapus.
+Penyebutan yang tersisa hanyalah komentar penjelas di `AdminDashboard.jsx`,
+`DashboardWorkspace.jsx`, `TataUsahaDashboard.jsx`, dan satu baris di
+`admin/AGENTS.md` — dan baris itu berada di bawah judul **"Panel yang sudah dicabut — jangan
+dikembalikan"**. Itu nisan yang sengaja dipasang beserta alasannya, bukan daftar panel hidup.
+Menghapusnya justru menghilangkan peringatan agar panel tanpa penyimpanan itu tidak dibangkitkan
+lagi.
+
+**Kategori Qiroati: yang tersisa hanya data, bukan kode.** Tiga baris `santri.kategori = 'PTPT'`
+— fixture demo nonaktif tanpa kelas, sisa versi seed sebelum dirapikan. Diselaraskan dengan
+`seed.sql` yang baru: nama jadi `Santri Demo C1/C2/C3`, kategori `Anak`, `jilid` dan
+`sesi_mengaji` dikosongkan karena keduanya hanya terpakai bila program tahfizh dinyalakan.
+Seluruh 20 murid kini berkategori `Anak`. Komentar di `SantriManagement.jsx` yang menyebut
+"subCategory era Qiroati" ditulis ulang tanpa jargon itu.
+
+**Yang SENGAJA tidak diubah:** `HAFALAN_SCOPE_PER_KELAS = 'TPQ'` dan
+`HAFALAN_SCOPE_PER_JUZ = 'PTPT'` di `academicAdapters.js`. Keduanya **nilai tersimpan** di
+kolom `hafalan_items.program_scope`, sekelas dengan `'Pentashih'` — mengubahnya memutus data
+hafalan lama. Sudah ada komentar yang menjelaskannya di berkas itu.
+
+**Sisa yang ditemukan tapi BELUM dikerjakan — perlu keputusan.** Kode masih bercabang pada
+kategori `'Dewasa'` di tiga tempat: `DigitalAttendancePage.jsx` (dua cabang tampilan hasil scan
+dan statistik dewasa), dan `DashboardPage.jsx` (`isAdult`). Itu bertentangan dengan keputusan
+mengikat *"Kategori murid & kelas: dihapus seluruhnya. Tidak ada kelas dewasa"*. Tidak ada satu
+pun baris data berkategori `Dewasa` sekarang, jadi cabang-cabang itu kode mati — tetapi
+mencabutnya menyentuh halaman absensi pusat, yang dilarang diubah tanpa permintaan tersendiri.
+
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 
 Seluruh fitur 1–6 diperiksa langsung di `localhost:3000` dengan akun guru sungguhan, bukan

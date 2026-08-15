@@ -1233,9 +1233,10 @@ const SantriManagement = () => {
       <BulkUploadModal isOpen={isBulkUploadOpen} onClose={() => setIsBulkUploadOpen(false)} onUpload={handleDataProcessing} category="Anak" />
       <UploadReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} report={uploadReport} onConfirm={confirmBulkUpload} />
       <BirthdayNotificationModal isOpen={isBirthdayModalOpen} onClose={() => setIsBirthdayModalOpen(false)} students={birthdayStudents} />
-      {/* Tanpa `categories`: arsip menampilkan semua kategori, mengikuti daftar
-          utama panel ini yang juga tidak menyaring kategori. Dulu prop ini berisi
-          ['Anak', 'TPQ'] / ['PTPT'] mengikuti subCategory era Qiroati. */}
+      {/* Tanpa `categories`: arsip menampilkan semua murid, mengikuti daftar utama
+          panel ini yang juga tidak menyaring kategori. SD negeri hanya punya satu
+          jenis murid — pemisahan kategori berasal dari produk sebelumnya dan sudah
+          dicabut. */}
       <SantriArchiveDialog
         open={isArchiveOpen}
         onOpenChange={setIsArchiveOpen}
