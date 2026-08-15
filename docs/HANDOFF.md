@@ -1852,10 +1852,58 @@ pembeli pada instalasi baru. `seed.sql` sudah dirapikan: nama kelas jadi Kelas 1
 murid biasa berkategori `Anak` — kolom jilid dan sesi mengaji hanya relevan bila program
 tahfizh opsional dinyalakan.
 
-**Sisa yang belum disentuh di `seed.sql`:** `nomor_induk_qiroati` masih dipakai sebagai nomor
-induk, alias login memakai domain `@auth.lpqalfathmaulana.local`, `site_name` masih
-"LPQ Al-Fath Maulana", dan kategori hafalan bernama "Doa Demo"/"Surat Demo". Semuanya warisan
-produk lama yang layak dirapikan pada putaran berikutnya.
+### Sisa warisan LPQ di data contoh — **Tuntas**
+
+**Ada DUA sumber data contoh**, keduanya dijalankan `backend/init/01_migrate.sh`:
+`supabase/seed.sql` (murid, kelas, catatan) dan `backend/init/03_dummy_accounts.sql` (akun
+login tiap peran). Kelima kelas berjuluk indah yang sempat terlihat di basis data lokal
+**tidak ada di keduanya** — murni sisa sesi pengembangan terdahulu.
+
+**Yang dirapikan di `seed.sql`:**
+
+| Sebelum | Sesudah |
+|---|---|
+| `site_name` = "LPQ Al-Fath Maulana" | **baris dihapus** |
+| `nomor_induk_qiroati` = `AFMLOCAL-ANAK-A01` | `nisn` + `nis` sungguhan (`9100000101` / `26101`) |
+| alias login `@auth.lpqalfathmaulana.local` | `@auth.sekolah.local` |
+| jabatan "Pengajar Demo" | "Guru Kelas" |
+| "Pentashih Demo" | "Wakasek Demo" · jabatan "Wakil Kepala Sekolah" |
+| hafalan "Doa Demo"/"Surat Demo", jilid "Pra" | "Doa Harian"/"Surat Pendek", "Tingkat 1" |
+| metode bayar "Demo Manual" | "Tunai" |
+| pengeluaran kategori "Demo" | "Operasional" |
+| rapat 16.00–17.00 "Ruang Demo" | 13.00–14.30 "Ruang Guru" |
+
+`site_name` **dihapus, bukan diganti isinya**: tidak ada satu pun kode yang membacanya. Nama
+sekolah datang dari kunci `school_identity` (`src/lib/schoolIdentity.js`), yang bawaannya sudah
+"Sekolah Dasar Negeri Baturaja". Baris lamanya hanya menitipkan nama lembaga produk terdahulu
+ke basis data setiap pemasangan baru.
+
+Nilai peran `'Pentashih'` di kolom `roles` **tetap dipertahankan** — hanya nama tampilan dan
+jabatannya yang berubah, sesuai keputusan mengikat.
+
+`backend/init/01_migrate.sh` ikut disesuaikan: stub `auth.users` untuk id `...004` memakai
+`wakasek-demo@example.invalid`.
+
+**Jebakan yang sempat terjadi.** Seed dijalankan langsung ke basis data kerja untuk mengujinya,
+padahal basis data itu sudah berisi kelas hasil penggantian nama. Karena kelas seed memakai id
+tetap (blok `b2fa7a20`), hasilnya **kelas ganda** — dua "Kelas 1A", dua "2A", dua "3A".
+Duplikatnya sudah dibuang. Cara menguji seed yang benar adalah pada basis data kosong, dan
+itulah yang akhirnya dipakai.
+
+**Cara verifikasinya.** Basis data `seedtest` dibuat kosong, 66 migrasi dipasang berurutan,
+stub `auth.users` disisipkan, lalu `seed.sql` dijalankan — **tanpa satu pun galat**. Hasil
+pemasangan baru: tiga kelas `Kelas 1A/2A/3A` shift Pagi, delapan murid ber-NISN/NIS tanpa
+jilid, `website_content` hanya berisi kunci `profile`, dan staf berjabatan "Guru Kelas" dan
+"Wakil Kepala Sekolah". Basis data uji dihapus setelahnya.
+
+**Perbaikan ketahanan.** Sisipan `auth_login_aliases` semula memakai
+`on conflict (alias_type, normalized_alias)`. Ada pula batasan unik satu alias aktif per
+pengguna, sehingga menjalankan ulang seed setelah nilai aliasnya berubah menabrak batasan yang
+tidak disebut targetnya. Diganti `on conflict do nothing` tanpa target.
+
+**Sisa yang masih menyebut produk lama, di luar lingkup permintaan ini:** nama kolom
+`santri.nomor_induk_qiroati` dan tabel `mmq_*` — keduanya nama skema, hanya bisa diubah lewat
+migrasi tersendiri, dan sengaja dibiarkan demi kompatibilitas data lama.
 
 ### Verifikasi browser rangkaian dashboard guru — **Selesai**
 

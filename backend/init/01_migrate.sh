@@ -21,7 +21,7 @@ insert into auth.users (id, email) values
   ('a1fa7a10-0000-0000-0000-000000000001', 'admin-demo@example.invalid'),
   ('a1fa7a10-0000-0000-0000-000000000002', 'guru-a-demo@example.invalid'),
   ('a1fa7a10-0000-0000-0000-000000000003', 'guru-b-demo@example.invalid'),
-  ('a1fa7a10-0000-0000-0000-000000000004', 'pentashih-demo@example.invalid'),
+  ('a1fa7a10-0000-0000-0000-000000000004', 'wakasek-demo@example.invalid'),
   ('a1fa7a10-0000-0000-0000-000000000101', null),
   ('a1fa7a10-0000-0000-0000-000000000102', null),
   ('a1fa7a10-0000-0000-0000-000000000103', null),
