@@ -1373,6 +1373,81 @@ mengubah baris absensi mana pun.
 Tombol **Absensi** di kartu profil guru (membuka `GuruAttendanceRecap` mode baca) sudah ada
 sejak sebelum rangkaian ini dan tetap dibiarkan.
 
+### 3. Materi, tugas, dan pengumuman kelas — **Tuntas**
+
+Tabel baru `kelas_konten` (migrasi `20260815000200_kelas_konten.sql`, **sudah diterapkan**
+dan diperiksa dengan `\d kelas_konten`). Subtab ketiga: **Materi & Tugas**.
+
+**Kenapa tidak menumpang `announcements`.** Tabel itu memasok situs publik dan punya
+kebijakan baca anonim `announcements_anon_select_published`. Konten kelas yang dititipkan ke
+sana akan **bocor ke halaman Berita** begitu statusnya terbit. Audiensnya berbeda, jadi
+tabelnya berbeda. `kelas_konten` sengaja **tidak punya kebijakan untuk peran `anon`** sama
+sekali.
+
+**Tiga jenis dalam satu tabel:** `materi`, `tugas`, `pengumuman`, dijaga CHECK. Batas
+pengumpulan dijaga CHECK terpisah supaya hanya bisa menempel pada `tugas` — aturan yang sama
+diuji lebih awal di Go agar pesannya jelas, dan di UI agar fieldnya tidak muncul sama sekali.
+
+**Aturan hak akses.**
+
+| Peran | Baca | Tulis |
+|---|---|---|
+| admin, tata usaha, superadmin | semua | semua, termasuk memindahkan antar kelas |
+| guru | kelas yang diajarnya, **termasuk drafnya** | kelas yang diajarnya |
+| murid | **hanya yang terbit, hanya kelasnya** | tidak sama sekali |
+| tanpa sesi sah | ditolak 401 | ditolak |
+
+Pengumuman kelas boleh **tanpa mata pelajaran**. Karena itu `guruPegangKelas()` punya dua
+tingkat: bila kontennya menyebut mata pelajaran, guru harus mengampu mata pelajaran itu di
+kelas tersebut; bila tidak, cukup mengampu apa pun di kelas itu.
+
+**Lampiran adalah TAUTAN, bukan unggahan.** `authorizeFileWrite` di `file.go` mengunci
+bucket `documents` pada tingkat `CanManage`, jadi guru tidak dapat mengunggah berkas. Bucket
+itu memang dirancang untuk arsip dokumen resmi. Permintaan pemilik berbunyi "lampiran **jika**
+storage yang ada mendukungnya" — untuk guru, tidak mendukung. Melonggarkan gate itu berarti
+mengubah keamanan berkas di luar lingkup modul ini, jadi tidak dilakukan. Kolomnya
+`lampiran_url` + `lampiran_nama`, diisi dengan menempel tautan. **Bila unggahan berkas oleh
+guru memang diinginkan, itu keputusan tersendiri** dan perlu perubahan sadar pada
+`authorizeFileWrite`.
+
+**Menerbitkan menstempel tanggal.** `status = 'published'` tanpa `tanggal_publikasi` akan
+diisi `now()`, baik saat membuat maupun saat menerbitkan draf lama (`COALESCE`, jadi tanggal
+terbit pertama tidak tertimpa). Tanpa ini konten terbit tidak akan pernah naik ke urutan
+teratas milik murid. Urutan memakai `COALESCE(tanggal_publikasi, created_at)` supaya draf
+baru tidak tenggelam di daftar guru.
+
+**Berkas.** `backend/internal/handler/kelaskonten.go` (`/api/kelas-konten`);
+`src/lib/kelasKontenAdapters.js`; `src/components/dashboard/shared/ModulKontenKelas.jsx`.
+
+**Bukti uji.** Guru uji dengan satu jadwal di Kelas Demo A; murid sungguhan (Kelas Purnama)
+dipakai untuk menguji lingkup baca. Semua dihapus setelahnya:
+
+| Uji | Hasil |
+|---|---|
+| guru buat materi di kelas yang diajar | 201 |
+| guru buat tugas + batas pengumpulan | 201, terbit tersetempel otomatis |
+| guru buat pengumuman kelas tanpa mata pelajaran | 201 |
+| guru buat konten untuk kelas lain | 403 |
+| guru pakai mata pelajaran yang tidak diampu | 403 |
+| batas pengumpulan pada `materi` | 400 |
+| jenis di luar tiga nilai sah | 400 |
+| judul kosong | 400 |
+| **murid `LIST`** | **1 baris — hanya terbit, hanya kelasnya; draf di kelasnya sendiri tidak terlihat** |
+| guru `LIST` | 3 baris, hanya kelasnya, termasuk drafnya |
+| admin `LIST` | 5 baris |
+| guru terbitkan drafnya | 200, tanggal tersetempel |
+| guru sembunyikan lagi | 200, kembali draf |
+| guru ubah konten kelas lain | 403 |
+| guru hapus konten kelas lain | 403 |
+| status di luar tiga nilai sah | 400 |
+| guru pindahkan ke kelas lain | 403 |
+| guru hapus kontennya sendiri | 200 |
+
+**Catatan kebersihan data.** Sama seperti fitur 2, jadwal `d212e593` sempat ditugaskan ke
+guru uji lalu dikembalikan ke `NULL`.
+
+**Belum diverifikasi:** tampilan di browser, karena alasan yang sama seperti fitur 1 dan 2.
+
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.
 
