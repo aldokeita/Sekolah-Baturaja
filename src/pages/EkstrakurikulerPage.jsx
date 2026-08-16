@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import EkskulBody from '@/components/sdnb/generated/EkskulBody';
 import { EKSKUL_CONTENT_KEY, fetchEkskulContent, normalizeEkskulContent } from '@/lib/ekskulContent';
 import {
@@ -200,10 +200,10 @@ const EkstrakurikulerPage = () => {
 
   return (
     <div className="sdnb-ekskul">
-      <Helmet>
-        <title>Ekstrakurikuler — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Kegiatan ekstrakurikuler, jadwal sepekan, dan cara mendaftar." />
-      </Helmet>
+      <JudulHalaman
+        judul="Ekstrakurikuler"
+        deskripsi="Kegiatan ekstrakurikuler, jadwal sepekan, dan cara mendaftar."
+      />
       {EkskulBody(vals)}
     </div>
   );

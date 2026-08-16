@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import FasilitasBody from '@/components/sdnb/generated/FasilitasBody';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
@@ -187,10 +187,10 @@ const FacilitiesPage = () => {
 
   return (
     <div className="sdnb-fasilitas">
-      <Helmet>
-        <title>Fasilitas — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Ruang kelas, perpustakaan, musala, lapangan, kebun sekolah, dan fasilitas penunjang lainnya." />
-      </Helmet>
+      <JudulHalaman
+        judul="Fasilitas"
+        deskripsi="Ruang kelas, perpustakaan, musala, lapangan, kebun sekolah, dan fasilitas penunjang lainnya."
+      />
       {FasilitasBody(vals)}
     </div>
   );

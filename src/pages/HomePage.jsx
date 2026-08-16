@@ -115,7 +115,9 @@ const TestiCard = ({ t }) => (
 
 const HomePage = () => {
   const sekolah = useSchoolIdentity();
-  const [counts, setCounts] = useState({ siswa: 624, guru: 34 });
+  // null = belum termuat. Sengaja BUKAN angka contoh: bilangan bawaan apa pun di
+  // sini akan tercetak sebagai klaim jumlah murid sekolah pembeli.
+  const [counts, setCounts] = useState({ siswa: null, guru: null });
   const [news, setNews] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [buildingPhoto, setBuildingPhoto] = useState('');
@@ -127,14 +129,16 @@ const HomePage = () => {
     let mounted = true;
     (async () => {
       const [siswa, guru, newsResult, contentMap, homeContent] = await Promise.all([
-        publicFetch('/api/santri/count').then((d) => d?.total || 0).catch(() => 0),
-        publicFetch('/api/guru/count').then((d) => d?.total || 0).catch(() => 0),
+        // null saat gagal, BUKAN 0: nol adalah jawaban sah dari sekolah yang belum
+        // memasukkan murid, dan keduanya harus bisa dibedakan.
+        publicFetch('/api/santri/count').then((d) => Number(d?.total) || 0).catch(() => null),
+        publicFetch('/api/guru/count').then((d) => Number(d?.total) || 0).catch(() => null),
         fetchPublishedNews({ limit: 3 }).catch(() => []),
         fetchWebsiteContentMap({ keys: ['galleryPhotos', 'schoolBuildingPhoto'], publicOnly: true }).catch(() => ({})),
         fetchHomeContent().catch(() => null),
       ]);
       if (!mounted) return;
-      setCounts({ siswa: siswa || 624, guru: guru || 34 });
+      setCounts({ siswa, guru });
       if (Array.isArray(newsResult)) setNews(newsResult);
       if (Array.isArray(contentMap.galleryPhotos)) setPhotos(contentMap.galleryPhotos);
       if (typeof contentMap.schoolBuildingPhoto === 'string') setBuildingPhoto(contentMap.schoolBuildingPhoto);
@@ -204,7 +208,11 @@ const HomePage = () => {
             Belajar dengan <span style={GRAD_TEXT}>tenang</span>,<br />tumbuh dengan<br /><span style={GRAD_TEXT}>percaya diri</span>.
           </h1>
           <p style={{ margin: '22px 0 0', maxWidth: 480, fontSize: 16, lineHeight: 1.65, color: '#535878', textWrap: 'pretty' }}>
-            Sekolah Dasar Negeri Baturaja mendampingi anak sejak kelas satu lewat <strong style={{ color: '#3b3f6b', fontWeight: 700 }}>kelas kecil</strong>, guru wali yang mengenal setiap murid, dan halaman bermain yang aman. Enam ratus lebih anak belajar di sini setiap hari.
+            {/* Nama sekolah dari panel Identitas, bukan teks mati: paragraf ini
+                dulu menyebut sekolah CONTOH sebagai pemilik halaman pembeli.
+                Kalimat "Enam ratus lebih anak" ikut dicabut — itu jumlah karangan,
+                dan jumlah murid yang sebenarnya sudah tampil di bawah. */}
+            {sekolah.name} mendampingi anak sejak kelas satu lewat <strong style={{ color: '#3b3f6b', fontWeight: 700 }}>kelas kecil</strong>, guru wali yang mengenal setiap murid, dan halaman bermain yang aman.
           </p>
           <div style={{ marginTop: 30, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             <Link to="/pendaftaran" className="shine h-bright" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 22px 44px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>
@@ -224,7 +232,13 @@ const HomePage = () => {
               ))}
             </div>
             <div style={{ fontSize: 12.5, lineHeight: 1.45, color: '#5a5f80' }}>
-              <strong style={{ ...GRAD_TEXT, fontWeight: 800 }}><span data-count={counts.siswa}>0</span> siswa</strong> aktif<br />98% lulusan diterima di SMP negeri pilihan
+              {/* Baris jumlah murid hanya muncul setelah angkanya benar-benar
+                  didapat. Menampilkannya lebih dulu berarti memasang "0 siswa
+                  aktif" di halaman depan selama pemuatan, atau angka karangan. */}
+              {counts.siswa !== null && (
+                <><strong style={{ ...GRAD_TEXT, fontWeight: 800 }}><span data-count={counts.siswa}>0</span> siswa</strong> aktif<br /></>
+              )}
+              98% lulusan diterima di SMP negeri pilihan
             </div>
           </div>
         </div>
@@ -272,7 +286,13 @@ const HomePage = () => {
             { count: 32, label: 'Prestasi tingkat kabupaten & provinsi' },
           ].map((s) => (
             <div key={s.label} style={{ position: 'relative', padding: '26px 28px' }}>
-              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}><span data-count={s.count}>0</span>{s.suffix}</div>
+              {/* Selagi angkanya belum didapat, yang tampil tanda pisah — bukan
+                  nol. Nol adalah pernyataan, dan pernyataan yang salah. */}
+              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}>
+                {s.count === null
+                  ? <span style={{ color: '#a3a7c4' }}>—</span>
+                  : <><span data-count={s.count}>0</span>{s.suffix}</>}
+              </div>
               <div style={{ marginTop: 3, fontSize: 12.5, color: '#63678a' }}>{s.label}</div>
             </div>
           ))}

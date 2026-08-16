@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import BeritaBody from '@/components/sdnb/generated/BeritaBody';
 import { fetchPublicTeachers, fetchPublishedAnnouncements, fetchPublishedNews } from '@/lib/publicContentAdapters';
 import { inisialNama, sebutanStaf, stafKe } from '@/lib/staf';
@@ -192,10 +192,10 @@ const NewsPage = () => {
 
   return (
     <div className="sdnb-berita">
-      <Helmet>
-        <title>Berita — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Kabar terbaru, pengumuman, prestasi, dan agenda Sekolah Dasar Negeri Baturaja." />
-      </Helmet>
+      <JudulHalaman
+        judul="Berita"
+        deskripsi="Kabar terbaru, pengumuman, prestasi, dan agenda {sekolah}."
+      />
       {BeritaBody(vals)}
     </div>
   );

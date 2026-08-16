@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import PrestasiBody from '@/components/sdnb/generated/PrestasiBody';
 import {
   PRESTASI_CONTENT_KEY,
@@ -204,10 +204,10 @@ const PrestasiPage = () => {
 
   return (
     <div className="sdnb-prestasi">
-      <Helmet>
-        <title>Prestasi — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Catatan prestasi murid dan sekolah dari tingkat kecamatan sampai nasional." />
-      </Helmet>
+      <JudulHalaman
+        judul="Prestasi"
+        deskripsi="Catatan prestasi murid dan sekolah dari tingkat kecamatan sampai nasional."
+      />
       {PrestasiBody(vals)}
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoginBody from '@/components/sdnb/generated/LoginBody';
 import SiteNav from '@/components/sdnb/SiteNav';
@@ -132,10 +132,10 @@ const LoginPage = () => {
 
   return (
     <div className="sdnb sdnb-login">
-      <Helmet>
-        <title>Masuk — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Masuk ke portal Sekolah Dasar Negeri Baturaja untuk orang tua, guru, dan tata usaha." />
-      </Helmet>
+      <JudulHalaman
+        judul="Masuk"
+        deskripsi="Masuk ke portal {sekolah} untuk orang tua, guru, dan tata usaha."
+      />
       <SiteNav />
       {LoginBody(vals)}
     </div>

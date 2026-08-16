@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import BeritaBody from '@/components/sdnb/generated/BeritaBody';
 import {
   NEWS_CONTENT_UPDATED_EVENT,
@@ -177,7 +177,7 @@ const NewsPageCms = () => {
   if (loading) {
     return (
       <div className="sdnb-berita">
-        <Helmet><title>Berita — Sekolah Dasar Negeri Baturaja</title></Helmet>
+        <JudulHalaman judul="Berita" />
         <section className="mx-auto max-w-5xl px-7 py-16" aria-busy="true" aria-label="Memuat berita">
           <div className="h-10 w-2/3 animate-pulse rounded-lg bg-slate-200/70" />
           <div className="mt-6 h-56 animate-pulse rounded-3xl bg-slate-200/70" />
@@ -190,7 +190,7 @@ const NewsPageCms = () => {
   if (loadError) {
     return (
       <div className="sdnb-berita">
-        <Helmet><title>Berita — Sekolah Dasar Negeri Baturaja</title></Helmet>
+        <JudulHalaman judul="Berita" />
         <section className="mx-auto max-w-3xl px-7 py-20 text-center">
           <h1 className="text-2xl font-bold text-slate-900">Berita belum dapat dimuat</h1>
           <p className="mt-3 text-sm text-slate-600">{loadError}</p>
@@ -203,7 +203,7 @@ const NewsPageCms = () => {
   if (articles.length === 0) {
     return (
       <div className="sdnb-berita">
-        <Helmet><title>Berita — Sekolah Dasar Negeri Baturaja</title></Helmet>
+        <JudulHalaman judul="Berita" />
         <section className="mx-auto max-w-3xl px-7 py-20 text-center">
           <h1 className="text-2xl font-bold text-slate-900">Belum ada berita</h1>
           <p className="mt-3 text-sm text-slate-600">Berita dan pengumuman sekolah akan tampil di sini setelah diterbitkan.</p>
@@ -256,10 +256,10 @@ const NewsPageCms = () => {
 
   return (
     <div className="sdnb-berita">
-      <Helmet>
-        <title>Berita — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Kabar terbaru, pengumuman, prestasi, dan agenda Sekolah Dasar Negeri Baturaja." />
-      </Helmet>
+      <JudulHalaman
+        judul="Berita"
+        deskripsi="Kabar terbaru, pengumuman, prestasi, dan agenda {sekolah}."
+      />
       {BeritaBody(values)}
     </div>
   );

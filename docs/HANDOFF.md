@@ -760,6 +760,47 @@ Ikutannya, `guruTeachesSantri` diangkat menjadi fungsi paket di `santri.go` dan 
 memanggilnya. Dua salinan aturan "guru mana boleh melihat murid mana" akan berselisih begitu salah
 satunya disunting.
 
+### Judul halaman publik WAJIB lewat `JudulHalaman`
+
+Sembilan halaman publik dulu menulis judulnya sebagai teks mati —
+`<title>Prestasi — Sekolah Dasar Negeri Baturaja</title>`. Header halamannya benar karena membaca
+identitas, tapi judulnya tidak; dan justru judul itu yang keluar dari situs: tab peramban, penanda
+buku, hasil pencarian, dan pratinjau tautan saat dibagikan. Pembeli yang sudah mengganti nama
+sekolahnya tetap menyebarkan nama sekolah CONTOH.
+
+`src/components/sdnb/JudulHalaman.jsx` menyusunnya dari `useSchoolIdentity`. Dibuat sebagai komponen,
+bukan sekadar hook yang dipasang di tiap halaman, supaya susunan judulnya ada di **satu** tempat —
+menyalin polanya ke sembilan berkas mengundang salinan kesepuluh yang lupa. `{sekolah}` di dalam
+`deskripsi` diganti nama sekolah.
+
+**Halaman publik baru jangan memakai `<Helmet><title>` langsung.**
+
+### Angka di halaman publik tidak boleh punya nilai contoh
+
+`HomePage` dulu memulai dengan `useState({ siswa: 624, guru: 34 })` dan menyimpan hasilnya sebagai
+`siswa || 624`. `||` menyala pada **nol yang sah**, bukan hanya saat gagal — jadi sekolah yang baru
+memasang dan belum memasukkan murid memasang klaim "624 siswa" dan "34 guru" di halaman depannya.
+
+Sekarang: `null` berarti belum termuat, `0` berarti benar-benar nol. Kartu statistik menampilkan
+tanda pisah selagi `null`, dan baris jumlah murid di hero disembunyikan sampai angkanya didapat.
+Kalimat "Enam ratus lebih anak belajar di sini setiap hari" ikut dicabut dari paragraf hero, dan
+nama sekolah di paragraf itu kini diambil dari identitas.
+
+Aturannya: **jangan pernah memasang bilangan contoh sebagai nilai awal atau fallback untuk angka
+yang seharusnya datang dari data sekolah.** Teks contoh boleh — pembeli menyuntingnya, dan sudah
+jelas itu teks. Angka contoh terbaca sebagai fakta.
+
+### `prefers-reduced-motion` tidak boleh ikut menyembunyikan informasi
+
+`useSdnbMotion` dulu keluar lebih awal ketika pengunjung meminta lebih sedikit gerakan. Masalahnya,
+angka pada markup ditulis `<span data-count="624">0</span>` — nolnya teks nyata, dan animasinyalah
+yang menggantinya. Tanpa animasi angka itu tinggal nol selamanya: halaman depan mengaku punya
+"0 Siswa aktif", "0 Guru", "0% Lulusan". Terkena tujuh halaman.
+
+Sekarang jalur itu menulis nilai akhirnya langsung, tanpa animasi. Yang dikurangi **gerakannya**,
+bukan informasinya. Diuji dengan `matchMedia` yang ditambal: seluruh penghitung menampilkan angka
+benar tanpa digulir sama sekali.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

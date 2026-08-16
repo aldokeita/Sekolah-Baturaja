@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import ProgramBody from '@/components/sdnb/generated/ProgramBody';
 import { fetchProgramContent, normalizeProgramContent, PROGRAM_CONTENT_KEY } from '@/lib/programContent';
 import {
@@ -176,10 +176,10 @@ const ProgramPage = () => {
 
   return (
     <div className="sdnb-program">
-      <Helmet>
-        <title>Program — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Program pembelajaran, ritme satu hari di sekolah, dan beban jam pelajaran per pekan." />
-      </Helmet>
+      <JudulHalaman
+        judul="Program"
+        deskripsi="Program pembelajaran, ritme satu hari di sekolah, dan beban jam pelajaran per pekan."
+      />
       {ProgramBody(vals)}
     </div>
   );

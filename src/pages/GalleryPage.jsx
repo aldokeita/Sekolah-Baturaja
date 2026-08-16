@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import GaleriBody from '@/components/sdnb/generated/GaleriBody';
 import { fetchWebsiteContentMap, WEBSITE_CONTENT_UPDATED_EVENT, WEBSITE_CONTENT_UPDATED_STORAGE_KEY } from '@/lib/publicContentAdapters';
 import { fetchClassCount, fetchSantriCount } from '@/lib/dataMasterAdapters';
@@ -456,10 +456,10 @@ const GalleryPage = () => {
 
   return (
     <div className="sdnb-galeri">
-      <Helmet>
-        <title>Galeri — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Dokumentasi kegiatan belajar, ekstrakurikuler, acara, dan fasilitas Sekolah Dasar Negeri Baturaja." />
-      </Helmet>
+      <JudulHalaman
+        judul="Galeri"
+        deskripsi="Dokumentasi kegiatan belajar, ekstrakurikuler, acara, dan fasilitas {sekolah}."
+      />
       {GaleriBody(vals)}
     </div>
   );

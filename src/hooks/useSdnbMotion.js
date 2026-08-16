@@ -20,11 +20,44 @@ import { useEffect } from 'react';
  */
 export default function useSdnbMotion(deps = []) {
   useEffect(() => {
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const kurangiGerak = Boolean(window.matchMedia)
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let io = null;
     let cio = null;
     const timers = [];
+
+    const fmt = (n) => n.toLocaleString('id-ID');
+
+    /**
+     * Menulis angka akhir tanpa animasi.
+     *
+     * Dulu seluruh hook ini keluar lebih awal ketika pengunjung meminta lebih
+     * sedikit gerakan. Masalahnya, angka pada markup ditulis sebagai
+     * `<span data-count="624">0</span>` — nolnya adalah teks nyata, dan
+     * animasinyalah yang menggantinya. Tanpa animasi, angka itu tinggal nol
+     * selamanya: halaman depan mengaku punya "0 Siswa aktif" dan "0 Guru".
+     *
+     * Yang seharusnya dikurangi adalah GERAKANNYA, bukan informasinya.
+     */
+    const tulisLangsung = (tries) => {
+      const nums = Array.from(document.querySelectorAll('[data-count]'));
+      if (!nums.length) {
+        if (tries < 20) timers.push(setTimeout(() => tulisLangsung(tries + 1), 120));
+        return;
+      }
+      nums.forEach((el) => {
+        const target = parseFloat(el.getAttribute('data-count'));
+        if (!Number.isFinite(target)) return;
+        el.style.fontVariantNumeric = 'tabular-nums';
+        el.textContent = el.hasAttribute('data-plain') ? String(target) : fmt(target);
+      });
+    };
+
+    if (kurangiGerak) {
+      timers.push(setTimeout(() => tulisLangsung(0), 60));
+      return () => timers.forEach(clearTimeout);
+    }
 
     const setup = (tries) => {
       const els = Array.from(document.querySelectorAll('[data-reveal]'));
@@ -70,7 +103,6 @@ export default function useSdnbMotion(deps = []) {
         if (tries < 20) timers.push(setTimeout(() => countUp(tries + 1), 120));
         return;
       }
-      const fmt = (n) => n.toLocaleString('id-ID');
       const run = (el) => {
         const target = parseFloat(el.getAttribute('data-count'));
         // `data-plain` (Profil Sekolah) prints the raw number, so a year like
