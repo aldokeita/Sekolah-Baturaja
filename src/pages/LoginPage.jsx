@@ -21,12 +21,24 @@ import '@/styles/login-page.css';
  * Wiring: the mockup's in-memory credential check is replaced by the app's JWT
  * auth (`signInWithUsername`). The role tabs keep their design role — they set
  * the field label and placeholder — while the backend resolves the actual role.
+ * Karena peran sebenarnya ditentukan backend, tab yang dipilih tidak membatasi
+ * siapa yang boleh masuk; ia hanya memberi tahu apa yang harus diisi.
  */
 
+/* Label dan contoh isian tiap tab HARUS sesuai dengan yang benar-benar diterima
+ * backend. `resolveUser` di backend/internal/handler/auth.go mencari murid lewat
+ * nomor induk (atau nama panggilan), lalu pegawai lewat **email** — tidak ada
+ * jalur NIP dan tidak ada jalur nama pengguna.
+ *
+ * Sebelumnya tab Guru meminta "Nomor induk pegawai" dengan contoh 198703142009
+ * dan tab Tata usaha meminta "Nama pengguna" dengan contoh tu.baturaja. Keduanya
+ * dari mockup, dan keduanya tidak pernah bisa masuk: pegawai yang menuruti
+ * labelnya selalu ditolak. Contoh emailnya memakai domain example.sch.id supaya
+ * tidak menyodorkan alamat sekolah tertentu sebagai milik pembeli. */
 const PERAN = [
   ['Orang tua', 'Nomor induk murid', 'Contoh: 2026041'],
-  ['Guru', 'Nomor induk pegawai', 'Contoh: 198703142009'],
-  ['Tata usaha', 'Nama pengguna', 'Contoh: tu.baturaja'],
+  ['Guru', 'Email', 'Contoh: nama@example.sch.id'],
+  ['Tata usaha', 'Email', 'Contoh: nama@example.sch.id'],
 ];
 
 const LoginPage = () => {

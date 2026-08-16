@@ -244,7 +244,11 @@ const ClassmatesList = ({ classmates, todayAttendance }) => {
             <CardHeader className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-t-lg">
                 <CardTitle className="flex items-center gap-2 text-[#112D4E] dark:text-white text-lg">
                     <Users className="w-5 h-5 text-blue-500" />
-                    Manajemen Kelas & Absensi Hari Ini
+                    {/* Judulnya dulu "Manajemen Kelas & Absensi Hari Ini". Yang
+                        membaca layar ini murid dan orang tuanya, dan tidak ada
+                        yang bisa mereka kelola di sini — isinya daftar teman
+                        sekelas beserta kehadiran hari ini, tidak lebih. */}
+                    Teman Sekelas & Kehadiran Hari Ini
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
@@ -252,6 +256,16 @@ const ClassmatesList = ({ classmates, todayAttendance }) => {
                     {classmates.length > 0 ? classmates.map(friend => {
                         const attendance = todayAttendance.find(a => a.user_id === friend.id);
                         const isPresent = !!attendance;
+                        /* Tanpa catatan absensi, baris ini dulu berbunyi "Alpha" —
+                         * tuduhan bolos, padahal jam sekolahnya bisa jadi belum
+                         * mulai. Kartu profil di layar yang sama menyebut hari
+                         * yang sama "Belum Absen", jadi satu layar memberi dua
+                         * jawaban berbeda. Sekarang keduanya sepakat.
+                         *
+                         * Status sebenarnya juga dipakai apa adanya: absensi
+                         * mengenal Hadir, Terlambat, Izin, dan Sakit, dan ketiga
+                         * yang terakhir dulu semuanya tertulis "Hadir". */
+                        const statusHariIni = attendance?.status || 'Belum absen';
                         return (
                             <div key={friend.id} className={cn("flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-sm", isPresent ? "bg-green-50 dark:bg-slate-900/75 border-green-200 dark:border-emerald-400/30" : "bg-gray-50 dark:bg-slate-900/60 border-gray-100 dark:border-white/10")}>
                                 <Avatar className="w-10 h-10 border-2 border-white shadow-sm">
@@ -260,17 +274,20 @@ const ClassmatesList = ({ classmates, todayAttendance }) => {
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-semibold text-sm truncate text-gray-800 dark:text-gray-200">{friend.nama_lengkap}</p>
-                                    <p className="text-xs text-muted-foreground truncate">{friend.jilid}</p>
+                                    {/* `jilid` hanya bermakna bila program tahfizh
+                                        opsional dinyalakan; tanpa itu barisnya
+                                        kosong dan cuma menyisakan celah. */}
+                                    {enableTahfizh && <p className="text-xs text-muted-foreground truncate">{friend.jilid}</p>}
                                 </div>
                                 {isPresent ? (
                                     <div className="flex flex-col items-center text-green-600">
                                         <CheckCircleFull className="w-5 h-5" />
-                                        <span className="text-[10px] font-bold">Hadir</span>
+                                        <span className="text-[10px] font-bold">{statusHariIni}</span>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center text-gray-400">
                                         <div className="w-5 h-5 rounded-full border-2 border-dashed border-gray-300"></div>
-                                        <span className="text-[10px]">Alpha</span>
+                                        <span className="whitespace-nowrap text-[10px]">{statusHariIni}</span>
                                     </div>
                                 )}
                             </div>
@@ -530,7 +547,12 @@ const SantriDashboard = () => {
               <p className="mt-2 flex items-center justify-center gap-2 text-sm font-semibold text-muted-foreground sm:text-base lg:justify-start">
                 <Users className="h-4 w-4" /> {santriData.class?.nama_kelas || 'Belum masuk kelas'}
               </p>
-              <div className="mt-5 grid grid-cols-2 gap-2 sm:max-w-xl sm:grid-cols-4">
+              {/* `auto-fit` dipakai, bukan jumlah kolom tetap. Barisnya dulu
+                  dipaku empat kolom padahal isinya tiga saat program tahfizh
+                  dimatikan — dan pembeli mendapat satu kotak kosong menggantung
+                  di ujung baris. `auto-fit` melipat jalur yang tidak terpakai,
+                  jadi jumlah kolomnya selalu sama dengan jumlah kartunya. */}
+              <div className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2 sm:max-w-xl">
                 {[
                   // Kolom `jilid` pada murid berarti tingkat mengaji pilihan
                   // sekolah (lihat tahfizhLevels), bukan jilid Qiroati — dan
@@ -538,7 +560,12 @@ const SantriDashboard = () => {
                   ...(enableTahfizh ? [['Tingkat', santriData.jilid || '-']] : []),
                   ['Poin', santriData.points || 0],
                   ['Level', levelInfo.name],
-                  ['Sesi', sessionName],
+                  /* "Sesi" hanya bermakna di sekolah yang benar-benar memakai
+                   * lebih dari satu giliran belajar. Sekolah dasar tidak, jadi
+                   * nilainya selalu "Pagi" — atau "-" bila murid belum masuk
+                   * kelas, dan kartu berisi tanda hubung bukan informasi.
+                   * Ditampilkan hanya bila ada isinya. */
+                  ...(sessionName && sessionName !== '-' ? [['Sesi', sessionName]] : []),
                 ].map(([label, value]) => (
                   <div key={label} className="min-w-0 rounded-md border border-white/80 bg-slate-100/90 px-3 py-2.5 shadow-[inset_3px_3px_7px_rgba(15,23,42,0.1),inset_-3px_-3px_7px_rgba(255,255,255,0.9)] backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/85 dark:shadow-[inset_3px_3px_7px_rgba(0,0,0,0.4),inset_-3px_-3px_7px_rgba(51,65,85,0.24)]">
                     <p className="text-[10px] font-bold uppercase text-muted-foreground">{label}</p>

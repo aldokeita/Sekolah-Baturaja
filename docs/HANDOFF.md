@@ -998,6 +998,63 @@ di atas tulisan "Belum ada berita" terbaca seperti halaman rusak.
 Pil kategori itu **hiasan, bukan penyaring** — menekannya tidak melakukan apa-apa. Itu cacat
 tersendiri yang belum ditangani.
 
+### Label kolom login harus sesuai dengan yang diterima backend — SUDAH DIPERBAIKI
+
+`resolveUser` di `backend/internal/handler/auth.go` mencari murid lewat nomor induk (atau nama
+panggilan), lalu pegawai lewat **email**. Tidak ada jalur NIP dan tidak ada jalur nama pengguna.
+Padahal tab Guru meminta "Nomor induk pegawai" dengan contoh `198703142009`, dan tab Tata usaha
+meminta "Nama pengguna" dengan contoh `tu.baturaja`. Keduanya warisan mockup, dan keduanya membuat
+pegawai yang menuruti labelnya **selalu ditolak** — dua dari lima peran tidak bisa masuk.
+
+Keduanya kini berbunyi "Email" dengan contoh `nama@example.sch.id`. Domain contohnya sengaja netral
+supaya tidak menyodorkan alamat sekolah tertentu sebagai milik pembeli.
+
+Tab peran itu **tidak membatasi** siapa yang boleh masuk — peran sebenarnya ditentukan backend. Ia
+hanya memberi tahu apa yang harus diisi, jadi labelnya wajib jujur.
+
+### Dashboard Murid: empat cacat yang ditemukan lewat pemeriksaan langsung
+
+Semuanya di `src/components/dashboard/SantriDashboard.jsx`.
+
+1. **Satu layar, dua jawaban.** Kartu profil menyebut hari ini "Belum Absen", sementara daftar di
+   bawahnya menyebut hari yang sama **"Alpha"** — tuduhan bolos, padahal jam sekolahnya bisa jadi
+   belum mulai. Keduanya kini memakai kalimat yang sama.
+2. **Status absensi diringkas jadi "Hadir".** Absensi mengenal Hadir, Terlambat, Izin, dan Sakit,
+   tapi daftar teman sekelas menuliskan keempatnya "Hadir" karena hanya memeriksa ada-tidaknya
+   catatan. Sekarang statusnya dipakai apa adanya. Diuji dengan menyisipkan satu catatan Izin: kartu
+   profil dan daftar sama-sama berbunyi "Izin".
+3. **Kolom dipaku empat.** Baris Poin/Level/Sesi memakai `sm:grid-cols-4` padahal isinya tiga saat
+   program tahfizh dimatikan, jadi tersisa satu kotak kosong. Sekarang `auto-fit`, yang melipat
+   jalur tak terpakai — keluarga cacat yang sama dengan grid halaman publik, lihat `gridKolom.js`.
+4. **Kosakata yang salah sasaran.** Judul panelnya "Manajemen Kelas & Absensi Hari Ini" di layar yang
+   dibaca murid dan orang tuanya, padahal tidak ada yang bisa mereka kelola di sana. Menjadi "Teman
+   Sekelas & Kehadiran Hari Ini". Kartu "Sesi" juga hanya tampil bila ada isinya, dan `jilid` teman
+   sekelas hanya tampil bila tahfizh dinyalakan.
+
+Kartu "Sesi" **belum dicabut**, hanya disembunyikan saat kosong. Di sekolah dasar nilainya selalu
+"Pagi", jadi kartunya nyaris tanpa informasi — mencabutnya keputusan produk, bukan perbaikan cacat.
+
+### Sandi akun demo pegawai bisa menyimpang dari yang didokumentasikan
+
+Sandi di basis data pengembangan lokal pernah tidak lagi cocok dengan nilai yang tertulis di
+`backend/init/03_dummy_accounts.sql`, sehingga login guru gagal padahal akunnya aktif. Berkas init
+hanya dijalankan saat kontainer pertama kali dibuat, jadi perubahan sesudahnya tidak ikut kembali.
+
+Untuk menyetel ulang satu akun demo (JANGAN dipakai untuk admin atau superadmin — sandi keduanya
+milik penjual dan tidak boleh ada di berkas mana pun):
+
+```sql
+update public.guru
+set password = extensions.crypt('guru123', extensions.gen_salt('bf', 12))
+where email = 'guru@sdnbaturaja.sch.id';
+```
+
+Memastikan sebuah sandi cocok tanpa menampilkannya:
+
+```sql
+select email, (password = extensions.crypt('<sandi>', password)) as cocok from public.guru;
+```
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya
