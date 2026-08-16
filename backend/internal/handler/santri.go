@@ -249,14 +249,32 @@ func (h *SantriHandler) Detail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/* `class_start_date` adalah tanggal murid masuk kelas yang sekarang. Kolomnya
+	 * sudah lama ditulis saat mutasi, tapi tidak pernah dikembalikan ke mana pun,
+	 * sehingga rekap kehadiran tidak punya cara mengetahui sejak kapan murid itu
+	 * ada di kelasnya. Akibatnya rekap menyisir sebulan penuh dan menghitung
+	 * setiap hari sebelum murid tiba sebagai tidak hadir — murid pindahan langsung
+	 * terbaca bolos hampir sebulan.
+	 *
+	 * Diambil dari keanggotaan yang berstatus aktif, bukan yang paling awal:
+	 * pemilik template memutuskan rekap dihitung sejak tanggal PINDAH, bukan sejak
+	 * pertama kali murid masuk sekolah. */
 	rows, err := h.db.Query(ctx, `
 		SELECT s.*,
 		       c.id AS class_id, c.nama_kelas AS class_nama, c.sesi AS class_sesi,
 		       c.kategori AS class_kategori, c.id_guru AS class_id_guru,
-		       g.nama AS class_guru_nama
+		       g.nama AS class_guru_nama,
+		       cm.start_date AS class_start_date
 		FROM santri s
 		LEFT JOIN classes c ON c.id = s.current_class_id
 		LEFT JOIN guru g ON g.id = c.id_guru
+		LEFT JOIN LATERAL (
+			SELECT start_date
+			FROM class_memberships
+			WHERE santri_id = s.id AND class_id = s.current_class_id AND status = 'active'
+			ORDER BY start_date DESC
+			LIMIT 1
+		) cm ON TRUE
 		WHERE s.id = $1
 	`, id)
 	if err != nil {

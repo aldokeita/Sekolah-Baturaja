@@ -1133,6 +1133,48 @@ dua arah: dengan `VITE_ENABLE_GAME_FEATURES=false` hanya "Play Quiz" yang tersis
 mengajar yang selalu boleh dipakai guru, bukan permainan hadiah — keputusan pemilik template. Di
 layar absensi ia dulu ikut di dalam pagar, jadi mematikan permainan ikut mencabut kuisnya.
 
+### Rekap kehadiran dimulai dari tanggal murid masuk kelas — SUDAH DIPERBAIKI
+
+Rekap menyisir seluruh hari aktif dalam sebulan dan memperlakukan setiap hari tanpa catatan sebagai
+tidak hadir. Masuk akal untuk murid yang memang sudah di kelas, keliru untuk murid pindahan: hari
+sebelum ia tiba ikut dihitung bolos. Satu murid yang baru masuk kelas langsung berbunyi **92,3%
+tidak hadir**.
+
+`class_memberships.start_date` sudah lama ditulis saat mutasi tapi **tidak pernah dikembalikan
+endpoint mana pun**, jadi frontend tidak punya cara mengetahuinya. `Detail` di `santri.go` kini
+mengembalikannya sebagai `class_start_date`, diambil lewat LATERAL join dari keanggotaan yang
+berstatus aktif.
+
+Dipakai tanggal **PINDAH**, bukan tanggal pertama kali murid masuk sekolah — keputusan pemilik
+template. Murid yang pindah kelas di tengah bulan memulai rekap bulan itu dari tanggal pindahnya.
+
+Dua layar ikut: `SantriAbsensiRecap` memulai jendelanya dari tanggal itu, dan matriks kehadiran di
+`SantriDetailModal` memberi hari sebelum itu keadaan tersendiri — "Belum masuk kelas ini", bukan
+libur dan bukan pula bolos — serta mengeluarkannya dari hitungan Tidak Hadir.
+
+Diuji dengan murid yang masuk 12 Agustus: matriks menandai 1–11 sebagai belum masuk, 12–14 sebagai
+Tidak Hadir, dan totalnya turun dari 12 menjadi 3.
+
+Efek sampingnya: bulan tanpa satu pun hari belajar (murid pindah di akhir bulan, atau bulan yang
+libur seluruhnya) dulu berbunyi "0% kehadiran" — kabar buruk padahal tidak ada yang diukur. Sekarang
+tanda hubung. **0% yang sungguhan tetap 0%**, yaitu murid yang punya hari belajar tapi tidak hadir
+sekali pun.
+
+Rapor **tidak** terpengaruh, dulu maupun sekarang: ia memakai ringkasan per status dari backend, yang
+hanya menghitung baris yang benar-benar ada, jadi hari tanpa catatan tidak pernah menjadi alpa di
+sana.
+
+### "Sabtu ikut dihitung" bukan cacat — periksa `academic_calendar_month_settings` dulu
+
+Rekap yang menghitung Sabtu sebagai hari belajar mudah disangka salah. Bawaan sistemnya sudah benar
+(`DEFAULT_SATURDAY_IS_HOLIDAY = true`), tapi sekolah bisa menetapkan lain **per bulan** lewat
+`academic_calendar_month_settings`. Basis data pengembangan ini punya baris untuk Agustus 2026
+dengan `saturday_is_holiday = false`, jadi 13 hari belajar (1–16 Agustus dikurangi hari Minggu)
+memang benar.
+
+Sebelum melaporkan hitungan hari belajar sebagai cacat, periksa tabel itu untuk bulan yang
+bersangkutan.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

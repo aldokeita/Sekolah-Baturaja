@@ -101,8 +101,21 @@ const SantriAbsensiRecap = () => {
         today.setHours(0, 0, 0, 0);
         const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
         const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
-        const activeDates = getActiveCalendarDates({
-            startDate: monthStart,
+        /* Rekap dimulai dari tanggal murid masuk kelasnya, bukan dari tanggal 1.
+         *
+         * Hari aktif tanpa catatan absensi dihitung sebagai tidak hadir — masuk
+         * akal untuk murid yang memang sudah di kelas, keliru untuk yang belum.
+         * Tanpa batas ini murid pindahan terbaca bolos setiap hari sebelum ia
+         * tiba: satu murid yang masuk hari ini langsung berbunyi 92,3% tidak
+         * hadir pada bulan itu.
+         *
+         * Dipakai tanggal PINDAH, bukan tanggal pertama kali masuk sekolah —
+         * keputusan pemilik template. `class_start_date` datang dari keanggotaan
+         * kelas yang aktif; lihat Detail di backend/internal/handler/santri.go. */
+        const tanggalMasukKelas = String(santriData?.class_start_date || '').slice(0, 10);
+        const mulai = tanggalMasukKelas > monthStart ? tanggalMasukKelas : monthStart;
+        const activeDates = mulai > monthEnd ? [] : getActiveCalendarDates({
+            startDate: mulai,
             endDate: monthEnd,
             throughDate: today,
             ...calendarContext,
@@ -280,11 +293,19 @@ const SantriAbsensiRecap = () => {
     if (isLoading) return <div className="p-8 text-center text-muted-foreground">Memuat data absensi...</div>;
     if (error) return <div className="p-8 text-center text-red-500">Error: {error}</div>;
 
+    /* Bulan tanpa satu pun hari belajar yang bisa dinilai — murid baru pindah di
+     * akhir bulan, atau bulannya libur seluruhnya. "0%" di situ terbaca sebagai
+     * kabar buruk padahal tidak ada yang diukur, jadi angkanya diganti tanda
+     * hubung. Bedakan dari 0% yang sungguhan, yaitu murid yang punya hari belajar
+     * tapi tidak hadir sekali pun. */
+    const adaHariBelajar = stats.total_sessions > 0;
+    const persen = (nilai) => (adaHariBelajar ? `${nilai}%` : '—');
+
     const statItems = [
-        { label: 'Tepat waktu', value: stats.hadir_count, detail: `${stats.hadir_percentage}% bulan ini`, icon: CheckCircle2, tone: 'text-emerald-600 dark:text-emerald-300', border: 'border-emerald-200 dark:border-emerald-400/25' },
-        { label: 'Terlambat', value: stats.terlambat_count, detail: `${stats.terlambat_percentage}% bulan ini`, icon: Clock, tone: 'text-amber-600 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-400/25' },
-        { label: 'Tidak hadir', value: stats.tidak_hadir_count, detail: `${stats.tidak_hadir_percentage}% bulan ini`, icon: XCircle, tone: 'text-rose-600 dark:text-rose-300', border: 'border-rose-200 dark:border-rose-400/25' },
-        { label: 'Kehadiran', value: `${stats.overall_percentage}%`, detail: `${stats.total_sessions} hari belajar`, icon: Percent, tone: 'text-cyan-600 dark:text-cyan-300', border: 'border-cyan-200 dark:border-cyan-400/25' }
+        { label: 'Tepat waktu', value: stats.hadir_count, detail: adaHariBelajar ? `${stats.hadir_percentage}% bulan ini` : 'belum ada hari belajar', icon: CheckCircle2, tone: 'text-emerald-600 dark:text-emerald-300', border: 'border-emerald-200 dark:border-emerald-400/25' },
+        { label: 'Terlambat', value: stats.terlambat_count, detail: adaHariBelajar ? `${stats.terlambat_percentage}% bulan ini` : 'belum ada hari belajar', icon: Clock, tone: 'text-amber-600 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-400/25' },
+        { label: 'Tidak hadir', value: stats.tidak_hadir_count, detail: adaHariBelajar ? `${stats.tidak_hadir_percentage}% bulan ini` : 'belum ada hari belajar', icon: XCircle, tone: 'text-rose-600 dark:text-rose-300', border: 'border-rose-200 dark:border-rose-400/25' },
+        { label: 'Kehadiran', value: persen(stats.overall_percentage), detail: `${stats.total_sessions} hari belajar`, icon: Percent, tone: 'text-cyan-600 dark:text-cyan-300', border: 'border-cyan-200 dark:border-cyan-400/25' }
     ];
 
     return (
@@ -300,7 +321,7 @@ const SantriAbsensiRecap = () => {
                     </div>
                     <div className="rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-slate-900/80">
                         <div className="flex items-end justify-between gap-3">
-                            <div><p className="text-xs font-bold uppercase text-muted-foreground">Kehadiran</p><p className="mt-1 text-3xl font-black text-slate-900 dark:text-white">{stats.overall_percentage}%</p></div>
+                            <div><p className="text-xs font-bold uppercase text-muted-foreground">Kehadiran</p><p className="mt-1 text-3xl font-black text-slate-900 dark:text-white">{persen(stats.overall_percentage)}</p></div>
                             <CalendarIcon className="h-7 w-7 text-cyan-600 dark:text-cyan-300" />
                         </div>
                         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"><div className="h-full rounded-full bg-cyan-500 transition-[width] duration-500" style={{ width: `${Math.min(100, stats.overall_percentage)}%` }} /></div>

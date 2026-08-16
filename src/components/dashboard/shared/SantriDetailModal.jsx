@@ -830,7 +830,12 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         </DialogTitle>
                         <DialogDescription>Matriks kehadiran murid per bulan.</DialogDescription>
                     </DialogHeader>
-                    <AttendanceMatrixPanel santriId={santri?.id} />
+                    {/* Tanggal masuk kelas dititipkan supaya matriks tidak menandai
+                        hari sebelum murid tiba sebagai tidak hadir. */}
+                    <AttendanceMatrixPanel
+                        santriId={santri?.id}
+                        tanggalMasukKelas={santriFullData?.class_start_date || santri?.class_start_date}
+                    />
                 </DialogContent>
             </Dialog>
         </>
@@ -838,7 +843,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
 };
 
 // Komponen Matriks Kehadiran
-const AttendanceMatrixPanel = ({ santriId }) => {
+const AttendanceMatrixPanel = ({ santriId, tanggalMasukKelas }) => {
     const [year, setYear] = React.useState(new Date().getFullYear());
     const [month, setMonth] = React.useState(new Date().getMonth() + 1);
     const [records, setRecords] = React.useState([]);
@@ -860,6 +865,11 @@ const AttendanceMatrixPanel = ({ santriId }) => {
     const HOLIDAY_CONFIG = { bg: 'bg-slate-100 dark:bg-slate-900/65 border-slate-200 dark:border-slate-800', text: 'text-slate-400 dark:text-slate-500', label: 'L', title: 'Libur Akademik' };
     // Today/future active day without record = Belum Absen
     const UNASSESSED_CONFIG = { bg: 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700', text: 'text-slate-400 dark:text-slate-500', label: '-', title: 'Belum Absen' };
+    /* Hari sebelum murid pindah ke kelas ini. Bukan libur, bukan pula bolos —
+     * murid memang belum ada di sini, jadi tidak ada yang bisa dinilai. Tanpa
+     * pembeda ini murid pindahan tampak bolos setiap hari sebelum ia tiba. */
+    const BELUM_MASUK_CONFIG = { bg: 'bg-slate-50 dark:bg-slate-900/40 border-dashed border-slate-200 dark:border-slate-800', text: 'text-slate-300 dark:text-slate-600', label: '·', title: 'Belum masuk kelas ini' };
+    const masukSejak = String(tanggalMasukKelas || '').slice(0, 10);
     const [calendarContext, setCalendarContext] = React.useState({ eventsByDate: {}, monthSettingsByYear: {} });
 
     React.useEffect(() => {
@@ -900,8 +910,12 @@ const AttendanceMatrixPanel = ({ santriId }) => {
     const totalHadir = validRecords.filter(r => ['hadir','present'].includes(r.status?.toLowerCase())).length;
     const totalTerlambat = validRecords.filter(r => ['terlambat','late'].includes(r.status?.toLowerCase())).length;
     const totalAlpha = validRecords.filter(r => ['alpha','absent'].includes(r.status?.toLowerCase())).length;
-    // TH = ONLY past active days with no record
-    const totalTH = activeDates.filter(dateStr => dateStr < todayStr && !recordMap[dateStr]).length;
+    /* TH = hari aktif yang sudah lewat dan tidak punya catatan. Hari sebelum
+     * murid pindah ke kelas ini dikecualikan — ia belum ada di sini, jadi tidak
+     * ada yang bisa disebut tidak hadir. */
+    const totalTH = activeDates.filter(dateStr => (
+        dateStr < todayStr && !recordMap[dateStr] && !(masukSejak && dateStr < masukSejak)
+    )).length;
     const showSaturdayColumn = displayDates.some((dateString) => getCalendarDateDayOfWeek(dateString) === 6);
     const DAY_NAMES = showSaturdayColumn ? ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] : ['Sen', 'Sel', 'Rab', 'Kam', 'Jum'];
     const currentYear = new Date().getFullYear();
@@ -963,7 +977,9 @@ const AttendanceMatrixPanel = ({ santriId }) => {
                             const isActiveDay = isCalendarDateActive({ dateString: dateStr, ...calendarContext });
 
                             let cfg;
-                            if (!isActiveDay) {
+                            if (masukSejak && dateStr < masukSejak) {
+                                cfg = BELUM_MASUK_CONFIG;
+                            } else if (!isActiveDay) {
                                 cfg = HOLIDAY_CONFIG;
                             } else if (status) {
                                 cfg = STATUS_CONFIG[status] || { bg: 'bg-slate-400', text: 'text-white', label: status.charAt(0).toUpperCase(), title: status };
