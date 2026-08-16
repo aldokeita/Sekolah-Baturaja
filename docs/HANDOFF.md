@@ -980,6 +980,24 @@ Sekarang dipasang di dalam `<Router>`, dengan dua tambahan:
 
 Cacat ini hanya terlihat lewat **klik tautan**. Membuka URL langsung selalu benar.
 
+### Beranda dan halaman Berita tidak boleh saling membantah
+
+Beranda memasang tiga kartu berita karangan lengkap dengan tanggal ketika sekolah belum menerbitkan
+apa pun, sementara halaman Berita di menu yang sama berkata "Belum ada berita". Situs yang sama
+membantah dirinya sendiri, dan yang dipasang di halaman pertama adalah berita yang tidak ada.
+
+`NEWS_FALLBACK` diganti nama menjadi `NEWS_STYLE` supaya perannya jelas: ia HANYA memasok warna
+sampul, warna label kategori, dan teks pengganti untuk artikel yang tidak punya ringkasan sendiri.
+Ia tidak lagi menjadi isi cadangan. Kosong tetap kosong, dan kata-kata keadaan kosongnya disalin
+persis dari halaman Berita.
+
+`newsStatus` dibedakan dari daftar kosong: selagi memuat, "Belum ada berita" belum tentu benar, jadi
+yang tampil "Memuat kabar terbaru…". Deretan pil kategori ikut disembunyikan saat kosong — kategori
+di atas tulisan "Belum ada berita" terbaca seperti halaman rusak.
+
+Pil kategori itu **hiasan, bukan penyaring** — menekannya tidak melakukan apa-apa. Itu cacat
+tersendiri yang belum ditangani.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

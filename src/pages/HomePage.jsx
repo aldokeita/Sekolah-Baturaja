@@ -75,7 +75,14 @@ const GALLERY = [
   { caption: 'Halaman bermain', grad: 'linear-gradient(150deg,#b6f0e0,#8fd8ec)', reveal: 320 },
 ];
 
-const NEWS_FALLBACK = [
+/* HANYA gaya kartu berita: warna sampul, warna label kategori, dan contoh isi
+ * yang dipakai bila sebuah artikel tidak punya ringkasan sendiri.
+ *
+ * Dulu daftar ini juga dipakai sebagai ISI cadangan ketika sekolah belum
+ * menerbitkan berita apa pun, dan hasilnya halaman depan memasang tiga berita
+ * karangan lengkap dengan tanggal — sementara halaman Berita di menu yang sama
+ * berkata "Belum ada berita". Situs yang sama membantah dirinya sendiri. */
+const NEWS_STYLE = [
   { media: 'linear-gradient(150deg,#c4b7f7,#93b8f7)', cat: 'Prestasi', catColor: '#4a3ec9', catBg: 'rgba(120,130,255,.16)', date: '12 Juli 2026', title: 'Regu pramuka meraih juara dua lomba tingkat kabupaten', excerpt: 'Delapan murid kelas lima dan enam mengikuti perkemahan tiga hari di Bukit Batu dan pulang membawa piala.' },
   { media: 'linear-gradient(150deg,#ffc6da,#f6a8c6)', cat: 'Kegiatan', catColor: '#a83a70', catBg: 'rgba(246,168,198,.28)', date: '4 Juli 2026', title: 'Pekan literasi menghadirkan pendongeng anak', excerpt: 'Sesi mendongeng dan membaca bersama berlangsung enam hari di perpustakaan dan halaman sekolah.' },
   { media: 'linear-gradient(150deg,#b3eee0,#8ed4ea)', cat: 'Pengumuman', catColor: '#20707f', catBg: 'rgba(142,212,234,.3)', date: '28 Juni 2026', title: 'Jadwal daftar ulang murid baru gelombang pertama', excerpt: 'Daftar ulang dibuka 5 sampai 12 Agustus di ruang tata usaha, pukul 08.00 hingga 14.00.' },
@@ -120,6 +127,8 @@ const HomePage = () => {
   // sini akan tercetak sebagai klaim jumlah murid sekolah pembeli.
   const [counts, setCounts] = useState({ siswa: null, guru: null });
   const [news, setNews] = useState([]);
+  // Dibedakan dari daftar kosong: selagi memuat, "Belum ada berita" belum tentu benar.
+  const [newsStatus, setNewsStatus] = useState('loading');
   const [photos, setPhotos] = useState([]);
   const [buildingPhoto, setBuildingPhoto] = useState('');
   const [open, setOpen] = useState(0);
@@ -141,6 +150,7 @@ const HomePage = () => {
       if (!mounted) return;
       setCounts({ siswa, guru });
       if (Array.isArray(newsResult)) setNews(newsResult);
+      setNewsStatus('ready');
       if (Array.isArray(contentMap.galleryPhotos)) setPhotos(contentMap.galleryPhotos);
       if (typeof contentMap.schoolBuildingPhoto === 'string') setBuildingPhoto(contentMap.schoolBuildingPhoto);
       if (homeContent) setIsi(homeContent);
@@ -161,9 +171,10 @@ const HomePage = () => {
   useSdnbMotion([counts.siswa, counts.guru, news.length, photos.length]);
 
   const newsCards = useMemo(() => {
-    if (news.length === 0) return NEWS_FALLBACK;
+    // Kosong tetap kosong. Halaman ini dan halaman Berita harus mengatakan hal
+    // yang sama tentang sekolah yang belum menerbitkan apa pun.
     return news.slice(0, 3).map((item, i) => {
-      const base = NEWS_FALLBACK[i % NEWS_FALLBACK.length];
+      const base = NEWS_STYLE[i % NEWS_STYLE.length];
       const d = item.date || item.published_at || item.created_at;
       return {
         ...base,
@@ -378,13 +389,33 @@ const HomePage = () => {
             <div style={kicker}>Berita</div>
             <h2 style={h2Style}>Kabar <span style={GRAD_TEXT}>terbaru</span></h2>
           </div>
+          {/* Disembunyikan saat belum ada berita — deretan kategori di atas
+              tulisan "Belum ada berita" terbaca seperti halaman yang rusak. */}
+          {newsCards.length > 0 && (
           <div style={{ display: 'flex', gap: 8 }}>
             <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah))', boxShadow: '0 12px 26px -12px rgba(95,105,235,.9),inset 0 1px 0 rgba(255,255,255,.5)' }}>Semua</span>
             <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: '#4a4f74', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Prestasi</span>
             <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: '#4a4f74', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Kegiatan</span>
           </div>
+          )}
         </div>
 
+        {newsCards.length === 0 ? (
+          /* Kata-katanya sengaja sama persis dengan halaman Berita. */
+          <div
+            aria-busy={newsStatus === 'loading'}
+            style={{ ...glassCard, marginTop: 28, padding: '30px 32px', borderRadius: 24, boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}
+          >
+            <h3 style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 17, fontWeight: 800, letterSpacing: '-.015em', color: '#1b1c2c' }}>
+              {newsStatus === 'loading' ? 'Memuat kabar terbaru…' : 'Belum ada berita'}
+            </h3>
+            {newsStatus === 'ready' && (
+              <p style={{ margin: '9px 0 0', fontSize: 13.5, lineHeight: 1.6, color: '#5b6082' }}>
+                Berita dan pengumuman sekolah akan tampil di sini setelah diterbitkan.
+              </p>
+            )}
+          </div>
+        ) : (
         <div className="sdnb-grid3" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: kolomUntuk(newsCards.length, 3), gap: 22 }}>
           {newsCards.map((n) => (
             <div key={n.title} className="h-lift" style={{ ...glassCard, borderRadius: 24, boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)', transition: 'transform .25s ease' }}>
@@ -406,6 +437,7 @@ const HomePage = () => {
             </div>
           ))}
         </div>
+        )}
       </section>
 
       {/* ── TESTIMONI ────────────────────────────────────────────────────── */}
