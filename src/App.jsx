@@ -25,6 +25,7 @@ import EkstrakurikulerPage from '@/pages/EkstrakurikulerPage';
 import DigitalAttendancePage from '@/pages/DigitalAttendancePage';
 import TvDisplayPage from '@/pages/TvDisplayPage';
 import GatchaGamePage from '@/pages/GatchaGamePage';
+import QuizHafalanPage from '@/pages/QuizHafalanPage';
 import GalleryPage from '@/pages/GalleryPage';
 import RandomNamePage from '@/pages/RandomNamePage';
 import TopScorePage from '@/pages/TopScorePage';
@@ -161,6 +162,14 @@ function App() {
               <Routes>
                 <Route path="/absensi-digital" element={<ProtectedRoute allowedRoles={operationalDisplayRoles}><DigitalAttendancePage /></ProtectedRoute>} />
                 <Route path="/tv-display-mode" element={<ProtectedRoute allowedRoles={operationalDisplayRoles}><TvDisplayPage /></ProtectedRoute>} />
+                {/* QuizHafalanPage sudah lama ada di repositori tapi rutenya tidak
+                    pernah didaftarkan, jadi tombol "Play Quiz" di dashboard guru dan
+                    di layar absensi digital membuang penekannya ke halaman kosong.
+                    Perannya mengikuti layar operasional lain: kuis dijalankan guru
+                    untuk muridnya dan gurulah yang memberi poin, jadi murid tidak
+                    termasuk. Sengaja DI LUAR pagar enableGameFeatures — ini alat
+                    mengajar, bukan permainan hadiah seperti Gatcha. */}
+                <Route path="/quiz-hafalan" element={<ProtectedRoute allowedRoles={operationalDisplayRoles}><QuizHafalanPage /></ProtectedRoute>} />
                 {enableGameFeatures ? (
                   <>
                     <Route path="/gatcha-game" element={<ProtectedRoute><GatchaGamePage /></ProtectedRoute>} />

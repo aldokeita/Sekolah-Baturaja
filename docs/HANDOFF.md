@@ -1055,6 +1055,47 @@ Memastikan sebuah sandi cocok tanpa menampilkannya:
 select email, (password = extensions.crypt('<sandi>', password)) as cocok from public.guru;
 ```
 
+### Pagar `enableTahfizh` harus dipasang di SELURUH jalan masuk, bukan sebagian
+
+`VITE_ENABLE_TAHFIZH` sudah menutup tombol Setoran Muroja'ah di `GuruDashboard.jsx`, lengkap dengan
+komentar yang menjelaskan alasannya — tapi dua jalan masuk lain di berkas dan komponen yang sama
+terlewat, sehingga sekolah dasar umum tetap mendapat perangkat sekolah Qur'an:
+
+- Tabel murid di dashboard guru: kolom **Jilid** (dengan tombol naik/turun jilid) dan kolom
+  **Hafalan** (Doa, Sholat, Surat, Tahfizh).
+- `SantriDetailModal.jsx` sama sekali tidak punya pagarnya: "Tingkat Saat Ini", "Terakhir Naik
+  Tingkat", tombol "Naik Tingkat"/"Turun", dan lencana "N Hari di tingkat …". CLAUDE.md menyebut
+  saklar ini menutup "kolom Tingkat berikut riwayatnya", jadi modal ini memang termasuk.
+
+Semuanya kini dipagari. Datanya tetap utuh; yang disembunyikan hanya jalan masuknya.
+
+**Saat menambah apa pun yang menyebut jilid, tingkat, hafalan, atau muroja'ah, pasang pagarnya di
+tempat yang sama.** Cacat ini muncul dua kali karena pagarnya dipasang per-tombol, bukan per-modul.
+
+### Modal Detail Murid tidak bisa tahu nama kelas sendiri
+
+Baris murid yang dipegang dashboard guru hanya membawa `current_class_id`, dan endpoint detail murid
+juga begitu — tidak ada nama kelas di mana pun yang bisa dibaca modal. Akibatnya modal menulis
+"Kelas: -" untuk murid yang di layar yang sama terdaftar di Kelas 4A, dan yang di tab Komunikasi
+Wali juga tertulis Kelas 4A.
+
+Yang tahu namanya adalah pemanggilnya, karena daftar murid memang dikelompokkan per kelas. Jadi
+`openDetailModal(santri, cls)` menitipkan `className`. Pemanggil lain yang membuka modal ini
+sebaiknya melakukan hal yang sama selama endpointnya belum mengembalikan nama kelas.
+
+### `/quiz-hafalan` ada halamannya tapi tidak pernah didaftarkan — SUDAH DIPERBAIKI
+
+`src/pages/QuizHafalanPage.jsx` lengkap dan berfungsi, tapi rutenya tidak ada di `App.jsx`. Tombol
+"Play Quiz" di dashboard guru dan di layar absensi digital karena itu membuang penekannya ke halaman
+publik tanpa isi — bukan ke pesan kesalahan, melainkan navbar dan footer dengan badan kosong.
+
+Kini terdaftar dengan `operationalDisplayRoles`: kuis dijalankan guru untuk muridnya dan gurulah
+yang memberi poin, jadi murid tidak termasuk. Diuji: murid yang memaksa membuka `/quiz-hafalan`
+dipantulkan kembali ke dashboardnya.
+
+Sengaja **di luar** pagar `enableGameFeatures` — ini alat mengajar, bukan permainan hadiah seperti
+Gatcha, dan pemilik template memutuskan guru selalu boleh memakainya.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

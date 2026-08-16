@@ -32,6 +32,7 @@ import {
   saveSantriNote,
 } from '@/lib/academicAdapters';
 import { fetchSantriDetail } from '@/lib/dataMasterAdapters';
+import { enableTahfizh } from '@/lib/featureFlags';
 import SantriDevelopmentProfile from '@/components/dashboard/shared/SantriDevelopmentProfile';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { getActiveCalendarDates, getCalendarDateDayOfWeek, getCalendarDateRange, isCalendarDateActive } from '@/lib/calendarUtils';
@@ -261,7 +262,11 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <AvatarFallback className="text-4xl font-bold">{santri?.nama_lengkap?.charAt(0) || 'S'}</AvatarFallback>
                             </Avatar>
                             <div className="flex gap-2 w-full justify-center">
-                                {(onPromote || onDemote) && (
+                                {/* "Naik Tingkat" dan "Turun" memindahkan murid antar
+                                    jilid — bagian dari program tahfizh opsional, bukan
+                                    kenaikan kelas. Tanpa pagar ini sekolah dasar umum
+                                    mendapat tombol yang tidak berarti apa-apa baginya. */}
+                                {enableTahfizh && (onPromote || onDemote) && (
                                     <>
                                         {onPromote && (
                                             <Button onClick={onPromote} size="sm" className="h-8 flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold" title="Naik Tingkat">
@@ -283,7 +288,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                     <History className="w-4 h-4 mr-1.5 text-indigo-600 dark:text-indigo-400" /> Absensi
                                 </Button>
                             </div>
-                            {jilidDuration !== null && (
+                            {enableTahfizh && jilidDuration !== null && (
                                 <div className={`px-3 py-1 rounded-full text-xs font-bold border ${jilidDuration > 90 ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-blue-100 text-blue-700 border-blue-200'} flex items-center gap-1 mt-1`}>
                                     <Clock className="w-3 h-3" /> {jilidDuration} Hari di tingkat {santri.jilid}
                                 </div>
@@ -299,10 +304,16 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nama Panggilan</p>
                                 <p className="font-bold text-base text-slate-800 dark:text-slate-200">{santri.nama_panggilan || santri.nama_lengkap?.trim().split(' ')[0] || '-'}</p>
                             </div>
+                            {/* Tingkat dan riwayat kenaikannya milik program tahfizh
+                                opsional — CLAUDE.md menyebut saklar itu menutup "kolom
+                                Tingkat berikut riwayatnya", dan modal ini terlewat. */}
+                            {enableTahfizh && (
                             <div>
                                 <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Tingkat Saat Ini</p>
                                 <p className="font-black text-lg text-purple-600 dark:text-purple-400">{santri.jilid}</p>
                             </div>
+                            )}
+                            {enableTahfizh && (
                             <div>
                                 <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Terakhir Naik Tingkat</p>
                                 <p className="font-bold flex items-center gap-1 text-slate-800 dark:text-slate-200">
@@ -310,6 +321,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                     {lastPromotedDate ? new Date(lastPromotedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
                                 </p>
                             </div>
+                            )}
                             <div>
                                 <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Kelas</p>
                                 <p className="font-bold text-slate-800 dark:text-slate-200">{santri.className || santri.class?.nama_kelas || '-'}</p>

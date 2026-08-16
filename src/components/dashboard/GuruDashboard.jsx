@@ -280,7 +280,16 @@ const GuruDashboard = () => {
       }
   };
 
-  const openDetailModal = (santri) => { setSelectedSantri(santri); setIsDetailOpen(true); };
+  /* Nama kelas ikut dititipkan. Baris murid yang dipegang dashboard ini hanya
+   * membawa `current_class_id`, dan endpoint detail murid pun begitu — tidak ada
+   * nama kelas di mana pun yang bisa dibaca modal sendiri. Akibatnya modal
+   * menulis "Kelas: -" untuk murid yang di layar yang sama terdaftar di kelasnya.
+   * Yang tahu nama kelasnya adalah pemanggil ini, karena daftarnya memang
+   * dikelompokkan per kelas. */
+  const openDetailModal = (santri, cls) => {
+    setSelectedSantri(cls?.nama_kelas ? { ...santri, className: cls.nama_kelas } : santri);
+    setIsDetailOpen(true);
+  };
   const openTransferModal = (santri) => setTransferSantri(santri);
 
   // Sejak guru mata pelajaran ikut melihat kelas yang diajarnya, daftar kelas di
@@ -566,8 +575,15 @@ const GuruDashboard = () => {
                                         <th className="py-3 px-4 text-left font-semibold text-foreground/70 w-12">No</th>
                                         <th className="py-3 px-4 text-left font-semibold text-foreground/70">Nama Murid</th>
                                         <th className="py-3 px-4 text-center font-semibold text-foreground/70">Kehadiran</th>
-                                        <th className="py-3 px-4 text-left font-semibold text-foreground/70">Jilid</th>
-                                        <th className="py-3 px-4 text-left font-semibold text-foreground/70">Hafalan</th>
+                                        {/* Kedua kolom ini milik program tahfizh opsional. Pagarnya
+                                            sudah dipasang pada tombol Setoran Muroja'ah di berkas yang
+                                            sama, tapi tabelnya terlewat — sekolah dasar umum yang tidak
+                                            menjalankan tahfizh tetap mendapat kolom Jilid lengkap dengan
+                                            tombol naik-turun, dan kolom Hafalan berisi Doa, Sholat,
+                                            Surat, Tahfizh. Datanya tetap utuh; yang disembunyikan hanya
+                                            jalan masuknya. */}
+                                        {enableTahfizh && <th className="py-3 px-4 text-left font-semibold text-foreground/70">Jilid</th>}
+                                        {enableTahfizh && <th className="py-3 px-4 text-left font-semibold text-foreground/70">Hafalan</th>}
                                         <th className="py-3 px-4 text-left font-semibold text-foreground/70">Aksi</th>
                                     </tr>
                                 </thead>
@@ -610,6 +626,7 @@ const GuruDashboard = () => {
                                                         />
                                                     </div>
                                                 </td>
+                                                {enableTahfizh && (
                                                 <td className="py-3 px-4 flex items-center gap-2 group">
                                                     <span className={cn("px-2 py-1 rounded text-xs font-bold bg-primary/10 text-primary")}>{santri.jilid}</span>
                                                     <div className="flex gap-1 opacity-100">
@@ -617,6 +634,8 @@ const GuruDashboard = () => {
                                                         <Button onClick={() => initiateJilidChange(santri, 'down')} size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-red-100 rounded-full" title="Turun Jilid"><ChevronDown className="h-4 w-4 text-red-600" /></Button>
                                                     </div>
                                                 </td>
+                                                )}
+                                                {enableTahfizh && (
                                                 <td className="py-3 px-4">
                                                     <div className="flex flex-wrap gap-1">
                                                         {/* Keempatnya terbuka untuk setiap murid. Dulu murid berkategori
@@ -628,9 +647,10 @@ const GuruDashboard = () => {
                                                         <Button size="sm" variant="outline" className="h-7 border-violet-300 text-xs text-violet-700 hover:bg-violet-50 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-950/30" onClick={() => openHafalanModal(santri, 'Tahfizh')}>Tahfizh</Button>
                                                     </div>
                                                 </td>
+                                                )}
                                                 <td className="py-3 px-4">
                                                     <div className="flex items-center gap-1">
-                                                        <Button size="sm" variant="ghost" onClick={() => openDetailModal(santri)} className={cn("text-primary hover:text-primary hover:bg-primary/10")}>Detail</Button>
+                                                        <Button size="sm" variant="ghost" onClick={() => openDetailModal(santri, cls)} className={cn("text-primary hover:text-primary hover:bg-primary/10")}>Detail</Button>
                                                         {/* Memindahkan murid adalah hak wali kelas dan admin. Guru mata
                                                             pelajaran melihat kelas ini karena mengajar di sini, dan
                                                             backend akan menolaknya 403 — jadi tombolnya dimatikan alih-alih
