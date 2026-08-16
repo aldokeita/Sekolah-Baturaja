@@ -13,6 +13,7 @@ import PaymentStatusPage from '@/pages/PaymentStatusPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { hydrateSchoolIdentity, subscribeSchoolIdentity, getSchoolIdentity } from '@/lib/schoolIdentity';
+import ScrollToTop from '@/components/ScrollToTop';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
 import NewsPage from '@/pages/NewsPageCms';
 import FacilitiesPage from '@/pages/FacilitiesPage';
@@ -150,6 +151,7 @@ function App() {
         <DndProvider backend={HTML5Backend}>
           <Router>
             <RouteLogger />
+            <ScrollToTop />
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
               {/* Jaring terakhir. Boundary di dalam DashboardPage hanya menangkap
                   error dari komponen dashboard di bawahnya; error yang dilempar

@@ -34,6 +34,11 @@ html { scroll-behavior: smooth; }
 .sdnb a:hover { color: #3730a3; }
 .sdnb *, .sdnb *::before, .sdnb *::after { box-sizing: border-box; }
 
+/* Tautan berjangkar (`/#faq`) mendarat tepat di tepi atas layar, padahal bilah
+   navigasi menempel di sana dan menutupi judul bagiannya. Jarak ini memberi
+   ruang untuk bilah itu plus sedikit napas. */
+.sdnb section[id] { scroll-margin-top: 104px; }
+
 /* ── verbatim: nav layout helpers ────────────────────────────────────────── */
 .nav-links { display: flex; align-items: center; justify-content: center; gap: 4px; }
 .nav-links a { white-space: nowrap; }

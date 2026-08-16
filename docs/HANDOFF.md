@@ -959,6 +959,27 @@ Diperiksa dengan pemindai kontras yang dijalankan sambil menggulir seluruh halam
 halaman publik, nol pelanggaran** pada permukaan yang bisa diukur. Teks di atas foto dan gradasi
 dilewati pemindai — itu harus dinilai dengan mata.
 
+### Gulungan tidak pernah kembali ke atas saat pindah halaman — SUDAH DIPERBAIKI
+
+`src/components/ScrollToTop.jsx` sudah lama ada di repositori tapi **tidak pernah dipasang**: App
+hanya mengimpor `ScrollToTopButton`, yang namanya mirip tapi pekerjaannya lain (tombol melayang di
+pojok). Akibatnya setiap perpindahan di dalam aplikasi membawa posisi gulungan halaman sebelumnya —
+pengunjung yang menggulir ke tengah Beranda lalu menekan menu "Program" mendarat di tengah halaman
+Program, melewati judul dan pembukanya.
+
+Sekarang dipasang di dalam `<Router>`, dengan dua tambahan:
+
+- **Ulangi sekali pada bingkai berikutnya.** Animasi "muncul saat digulir" mengubah tinggi bagian
+  sesaat setelah cat pertama, dan penjangkaran gulungan bawaan peramban kadang menggeser posisi
+  kembali ke bawah. Tanpa pengulangan ini hasilnya tidak menentu — kadang 0, kadang 347.
+- **Tautan berjangkar diantar, bukan dipaksa ke atas.** `/#faq` sebelumnya tidak bergerak ke mana
+  pun: peramban hanya menangani jangkar saat memuat dokumen, dan tidak ada yang menanganinya pada
+  perpindahan di dalam aplikasi. Bagiannya dicari beberapa kali karena isinya bisa datang belakangan.
+  `.sdnb section[id]` diberi `scroll-margin-top: 104px` supaya judul bagiannya tidak tertutup bilah
+  navigasi yang menempel.
+
+Cacat ini hanya terlihat lewat **klik tautan**. Membuka URL langsung selalu benar.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya
