@@ -3,6 +3,7 @@ import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import FasilitasBody from '@/components/sdnb/generated/FasilitasBody';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { fetchClassCount, fetchGuruCount } from '@/lib/dataMasterAdapters';
+import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
 
@@ -71,6 +72,7 @@ const GRAD = [
 ];
 
 const FacilitiesPage = () => {
+  const sekolah = useSchoolIdentity();
   const [aktif, setAktif] = useState(0);
   const [jalan, setJalan] = useState(true);
   const [cms, setCms] = useState([]);
@@ -126,6 +128,19 @@ const FacilitiesPage = () => {
     if (!Array.isArray(cms) || cms.length === 0) return null;
     return cms.filter((r) => String(r?.kategori || '').toLowerCase() !== 'belajar').length;
   }, [cms]);
+
+  /* Kartu ringkasan. Luas lahan diisi sekolah di Identitas; sisanya diturunkan
+   * dari datanya sendiri. Kartu tanpa angka disingkirkan di sini, bukan
+   * disembunyikan di markup, supaya jumlah kolom gridnya bisa mengikuti. */
+  const kartuRingkas = useMemo(() => {
+    const luas = String(sekolah.landArea || '').trim();
+    return [
+      ...(luas ? [{ n: Number(luas.replace(/[^\d]/g, '')) || 0, suf: ' m²', label: 'Luas lahan' }] : []),
+      { n: jumlahKelas, suf: '', label: 'Ruang kelas' },
+      { n: ruangPenunjang, suf: '', label: 'Ruang penunjang' },
+      { n: jumlahGuru, suf: '', label: 'Guru dan staf' },
+    ].filter((r) => r.n !== null);
+  }, [sekolah.landArea, jumlahKelas, ruangPenunjang, jumlahGuru]);
 
   // auto tour
   useEffect(() => {
@@ -205,13 +220,18 @@ const FacilitiesPage = () => {
      * karangan. Kalau nanti diperlukan, ia butuh field tersendiri lebih dulu.
      *
      * Kartu yang angkanya belum didapat disembunyikan, bukan ditampilkan nol. */
-    ringkas: [
-      { n: jumlahKelas, suf: '', label: 'Ruang kelas' },
-      { n: ruangPenunjang, suf: '', label: 'Ruang penunjang' },
-      { n: jumlahGuru, suf: '', label: 'Guru dan staf' },
-    ]
-      .filter((r) => r.n !== null)
-      .map((r, k, semua) => ({ ...r, box: `padding:28px 28px 28px ${k === 0 ? '0' : '28px'};border-right:${k === semua.length - 1 ? 'none' : '1px solid rgba(255,255,255,.16)'}` })),
+    /* Padding kiri kartu pertama dulu nol karena barisnya tanpa panel. Setelah
+     * diberi panel kaca, nol membuat angka pertama menempel ke tepi. Warna garis
+     * pemisah juga diturunkan ke nada gelap — rgba putih tidak terlihat di atas
+     * panel terang. Nadanya sama dengan baris statistik halaman Program. */
+    ringkas: kartuRingkas.map((r, k) => ({
+      ...r,
+      box: `padding:26px 28px;border-right:${k === kartuRingkas.length - 1 ? 'none' : '1px solid rgba(120,132,200,.24)'}`,
+    })),
+    // Jumlah kolom mengikuti jumlah kartu. Sebelumnya baris ini dipaku empat kolom
+    // di markup, jadi begitu satu kartu hilang tersisa kolom kosong yang membuat
+    // barisnya tampak berantakan dan garis pemisahnya menggantung.
+    kolomRingkas: `repeat(${kartuRingkas.length || 1},1fr)`,
 
     mozaik: source.map((s, k) => ({
       nama: s.nama, kategori: s.kategori, luas: s.luas, ringkas: s.ringkas,

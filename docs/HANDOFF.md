@@ -841,9 +841,19 @@ array `F` di `FacilitiesPage` hanya cadangan saat CMS kosong. Yang bercacat adal
 dan guru dari endpoint hitungan, ruang penunjang dari daftar Fasilitas yang disunting sekolah.
 Kartu yang angkanya belum didapat disembunyikan, bukan ditampilkan nol.
 
-**"Luas lahan" DICABUT, bukan dijadikan nol.** Tidak ada sumbernya di sistem dan tidak ada tempat
-bagi pembeli mengisinya, jadi menampilkannya hanya bisa berupa karangan. Kalau nanti diminta, ia
-butuh field tersendiri lebih dulu — kemungkinan di Identitas Sekolah, sejajar dengan alamat.
+**"Luas lahan" kini field `landArea` di Identitas Sekolah**, sejajar dengan alamat dan jam layanan.
+Bukan brand field, jadi pembeli boleh mengisinya sendiri. Dikosongkan berarti kartunya hilang —
+sekolah yang tidak mencatat luas lahannya tidak dipasangi angka karangan. Disimpan sebagai teks
+supaya "4.200" dan "4200" sama-sama diterima.
+
+**Baris ringkasan itu dirancang mockup untuk latar GELAP, padahal halamannya terang.** Teksnya `#fff`
+dan garis pemisahnya `rgba(255,255,255,.16)` — nyaris tidak terbaca, dan pemisahnya tidak terlihat
+sama sekali. Cacat ini sudah ada sejak awal, hanya tersamar selagi barisnya penuh empat kolom.
+Sekarang barisnya memakai panel kaca yang sama dengan baris statistik Beranda, dengan warna teks
+nada gelap.
+
+**Jumlah kolomnya mengikuti jumlah kartu** (`kolomRingkas`). Sebelumnya dipaku `repeat(4,1fr)` di
+markup, jadi begitu satu kartu hilang tersisa kolom kosong dan garis pemisah menggantung.
 
 **Judul "Sepuluh perhentian"** juga tertanam, sementara daftar di bawahnya mengikuti fasilitas milik
 sekolah — sekolah dengan tiga ruang tetap dijuduli sepuluh. Kini mengikuti jumlah sebenarnya.

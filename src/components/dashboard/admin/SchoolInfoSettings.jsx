@@ -38,6 +38,7 @@ const TEXT_FIELDS = [
   { key: 'mapUrl', label: 'Tautan Google Maps', placeholder: 'https://maps.app.goo.gl/…', hint: 'Boleh dikosongkan. Bila diisi, tombol "Buka peta" muncul di halaman Kontak.' },
   { key: 'officeHours', label: 'Jam layanan', placeholder: 'Senin–Jumat, 07.30–15.00' },
   { key: 'academicYear', label: 'Tahun ajaran', placeholder: '2026/2027', hint: 'Dipakai di halaman PPDB, footer, dan data pokok sekolah.' },
+  { key: 'landArea', label: 'Luas lahan (m²)', placeholder: '4200', hint: 'Boleh dikosongkan. Bila diisi, muncul sebagai kartu ringkasan di halaman Fasilitas.' },
 ];
 
 const AREA_FIELDS = [

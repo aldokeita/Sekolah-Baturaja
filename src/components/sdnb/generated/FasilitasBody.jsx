@@ -20,7 +20,7 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-fasilitas.css';
 
 const FasilitasBody = (vals = {}) => {
-  const { chip, jalanDot, jalanLabel, jalanTeks, judulSemuaRuang, maju, mozaik, mundur, panggung, progres, ringkas, sorot, tglJalan } = vals;
+  const { chip, jalanDot, jalanLabel, jalanTeks, judulSemuaRuang, kolomRingkas, maju, mozaik, mundur, panggung, progres, ringkas, sorot, tglJalan } = vals;
   return (
     <>
 <section style={{ maxWidth: "1300px", margin: "0 auto", padding: "10px 28px 0" }}>
@@ -92,11 +92,17 @@ const FasilitasBody = (vals = {}) => {
       </div>
     </section>
 <section style={{ maxWidth: "1300px", margin: "0 auto", padding: "52px 28px 0" }}>
-      <div className="fstats" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderTop: "1px solid rgba(255,255,255,.16)", borderBottom: "1px solid rgba(255,255,255,.16)" }}>
+      {/* Baris ringkasan ini dirancang mockup untuk duduk di atas panel gelap, tapi
+          halaman Fasilitas berlatar terang — teks putihnya nyaris tidak terbaca dan
+          garis pemisah rgba putih tidak kelihatan sama sekali. Diberi panel kaca
+          yang sama dengan baris statistik di Beranda, dan warnanya diturunkan ke
+          nada gelap supaya kontras pada latar terang. */}
+      <div className="fstats" style={{ position: "relative", overflow: "hidden", display: "grid", gridTemplateColumns: kolomRingkas || "repeat(4,1fr)", padding: "6px 28px", borderRadius: "26px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}>
+        <div aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, right: 0, height: "52%", background: "linear-gradient(168deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }}></div>
         {(ringkas || []).map((r, $index) => (<React.Fragment key={$index}>
-          <div style={__dcs(r.box)}>
-            <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "42px", lineHeight: "1", letterSpacing: "-.045em", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#fff" }}><span data-count={r.n}>0</span><span style={{ fontSize: "19px", color: "#9096d6" }}>{r.suf}</span></div>
-            <div style={{ marginTop: "10px", fontSize: "11px", fontWeight: "800", letterSpacing: ".15em", textTransform: "uppercase", color: "#8f95cf" }}>{r.label}</div>
+          <div style={{ ...__dcs(r.box), position: "relative" }}>
+            <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "42px", lineHeight: "1", letterSpacing: "-.045em", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#1d1f33" }}><span data-count={r.n}>0</span><span style={{ fontSize: "19px", color: "#63678a" }}>{r.suf}</span></div>
+            <div style={{ marginTop: "10px", fontSize: "11px", fontWeight: "800", letterSpacing: ".15em", textTransform: "uppercase", color: "#63678a" }}>{r.label}</div>
           </div>
         </React.Fragment>))}
       </div>

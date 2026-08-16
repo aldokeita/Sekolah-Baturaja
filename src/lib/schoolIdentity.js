@@ -55,6 +55,11 @@ export const DEFAULT_SCHOOL_IDENTITY = Object.freeze({
   mapUrl: '',
   officeHours: 'Senin–Jumat, 07.30–15.00',
   academicYear: '2026/2027',
+  /* Luas lahan sekolah dalam meter persegi, dipakai kartu ringkasan di halaman
+   * Fasilitas. Dikosongkan berarti kartunya tidak ditampilkan — sekolah yang tidak
+   * mencatat luas lahannya tidak boleh dipasangi angka karangan. Disimpan sebagai
+   * teks, bukan angka, supaya "4.200" dan "4200" sama-sama diterima apa adanya. */
+  landArea: '',
   /* Warna sekolah: dua warna untuk gradasi, atau satu bila memilih solid.
    * Seluruh palet halaman publik diturunkan dari sini oleh turunkanPalet, lalu
    * dipasang sebagai CSS custom property pada elemen root — jadi CSS mana pun
