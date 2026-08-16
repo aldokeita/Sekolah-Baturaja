@@ -104,6 +104,24 @@ const normalizeDaftar = (rows, fallback, mapper) => {
   return hasil.length > 0 ? hasil : fallback;
 };
 
+/**
+ * Blok klaim: daftar kosong DIHORMATI, tidak jatuh ke bawaan.
+ *
+ * Dipakai untuk daftar yang isinya klaim tentang sekolah — akreditasi, tahun
+ * berdiri, jumlah rombongan belajar. Bawaannya milik sekolah contoh, jadi
+ * memulihkannya saat sekolah sengaja mengosongkan berarti memaksa capaian
+ * sekolah lain muncul sebagai capaiannya sendiri, tanpa cara mematikannya.
+ *
+ * `undefined` tetap jatuh ke bawaan: itu berarti kuncinya belum pernah disimpan
+ * (pemasangan lama), bukan pilihan sekolah. Sejalan dengan badge dan stats di
+ * src/lib/homeContent.js.
+ */
+const normalizeKlaim = (rows, fallback, mapper) => {
+  if (rows === undefined || rows === null) return fallback;
+  if (!Array.isArray(rows)) return fallback;
+  return rows.map(mapper).filter(Boolean);
+};
+
 /** Blok objek: field kosong jatuh ke bawaannya masing-masing, bukan seluruh blok. */
 const normalizeObjek = (source, fallback) => {
   const isi = source && typeof source === 'object' ? source : {};
@@ -131,10 +149,11 @@ export const normalizeProfileContent = (stored) => {
       };
     }),
 
-    // Tiker berupa daftar teks biasa, bukan objek.
-    ticker: normalizeDaftar(source.ticker, bawaan.ticker, (row) => teks(row) || null),
+    // Tiker berupa daftar teks biasa, bukan objek. Isinya klaim ("Terakreditasi
+    // A", "Adiwiyata Nasional"), jadi boleh dikosongkan sampai habis.
+    ticker: normalizeKlaim(source.ticker, bawaan.ticker, (row) => teks(row) || null),
 
-    stats: normalizeDaftar(source.stats, bawaan.stats, (row) => {
+    stats: normalizeKlaim(source.stats, bawaan.stats, (row) => {
       const label = teks(row?.label);
       if (!label) return null;
       return {

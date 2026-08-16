@@ -10,6 +10,7 @@ import {
   fetchPublicTeachers,
 } from '@/lib/publicContentAdapters';
 import { DEFAULT_PROFILE_CONTENT, fetchProfileContent } from '@/lib/profileContent';
+import { kapasitasKolom, kolomUntuk } from '@/lib/gridKolom';
 import { PRESTASI_CONTENT_KEY, fetchPrestasiContent, normalizePrestasiContent } from '@/lib/prestasiContent';
 import { inisialNama, sebutanStaf } from '@/lib/staf';
 import '@/styles/sdnb.css';
@@ -63,6 +64,9 @@ const ORANG_GRADASI = [
  * posisi — jadi jumlah item boleh berubah dan tampilannya tetap konsisten. */
 
 // Gradasi dan ukuran kotak mosaik fasilitas.
+/** Lebar kartu fasilitas dalam satuan kolom, dibaca dari nilai 'span N'. */
+const lebarFasilitas = (span) => Number(String(span).replace(/\D/g, '')) || 1;
+
 const FASILITAS_GAYA = [
   ['linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)', 'span 2', 'span 2'],
   ['linear-gradient(150deg,#ffc9dc,#f2a9c8)', 'span 1', 'span 1'],
@@ -418,6 +422,9 @@ const ProfilePage = () => {
         : isi.hero.badgeLabel;
   const kepalaAvatarUrl = String(isi.quoteAvatarUrl || kepalaSekolah?.foto || '').trim();
   const capaianTeratas = (prestasi.records || []).slice(0, 3);
+  const kolomFasilitas = kapasitasKolom(
+    isi.facilities.map((_, i) => lebarFasilitas(FASILITAS_GAYA[i % FASILITAS_GAYA.length][1])),
+  );
 
   return (
     <div className="sdnb-profil">
@@ -481,6 +488,9 @@ const ProfilePage = () => {
           </div>
         </div>
 
+        {/* Dua garis tipis tanpa isi terlihat seperti cacat, jadi tikernya hilang
+            seluruhnya bila sekolah menghapus semua tulisannya. */}
+        {isi.ticker.length > 0 && (
         <div className="mq-wrap" style={{ marginTop: 26, overflow: 'hidden', padding: '6px 0', WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)', borderTop: '1px solid rgba(255,255,255,.8)', borderBottom: '1px solid rgba(255,255,255,.8)' }}>
           <div className="mq-track" style={{ padding: '10px 7px' }}>
             {/* Digandakan supaya animasi berjalannya tampak tanpa jeda. */}
@@ -492,12 +502,16 @@ const ProfilePage = () => {
             ))}
           </div>
         </div>
+        )}
       </section>
 
       {/* ── STAT BAR ─────────────────────────────────────────────────────── */}
+      {/* Sekolah yang menghapus semua angkanya tidak mendapat panel kosong —
+          seluruh barisnya ikut hilang. */}
+      {isi.stats.length > 0 && (
       <section data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '44px 28px 0' }}>
         {/* Jumlah kolom mengikuti jumlah angka yang diisi pembeli, bukan tetap empat. */}
-        <div className="sdnb-profil-stats" style={{ ...glass, position: 'relative', overflow: 'hidden', display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, isi.stats.length)},1fr)`, borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+        <div className="sdnb-profil-stats" style={{ ...glass, position: 'relative', overflow: 'hidden', display: 'grid', gridTemplateColumns: kolomUntuk(isi.stats.length), borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(168deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           {isi.stats.map((s, i) => (
             <div key={`${s.label}-${i}`} style={{ position: 'relative', padding: '26px 28px' }}>
@@ -509,6 +523,7 @@ const ProfilePage = () => {
           ))}
         </div>
       </section>
+      )}
 
       {/* ── CAPAIAN TERATAS ──────────────────────────────────────────────── */}
       <section id="capaian" data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '76px 28px 0' }}>
@@ -529,7 +544,7 @@ const ProfilePage = () => {
         </div>
 
         {capaianTeratas.length > 0 ? (
-          <div className="sdnb-profile-achievements" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }}>
+          <div className="sdnb-profile-achievements" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: kolomUntuk(capaianTeratas.length, 3), gap: 18 }}>
             {capaianTeratas.map((capaian, i) => (
               <article key={`${capaian.judul}-${i}`} style={{ position: 'relative', minHeight: 270, overflow: 'hidden', borderRadius: 24, background: prestasiGradasi(capaian.bidang), border: '1px solid rgba(255,255,255,.62)', boxShadow: '0 28px 58px -24px rgba(55,65,120,.62),inset 0 1px 0 rgba(255,255,255,.65)' }}>
                 {capaian.foto_url && (
@@ -755,11 +770,15 @@ const ProfilePage = () => {
           <p style={{ maxWidth: 330, margin: 0, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>Klik salah satu foto untuk memperbesar dan membaca keterangannya.</p>
         </div>
 
-        <div className="sdnb-profil-fasilitas" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gridAutoRows: 170, gap: 16 }}>
+        {/* Kolom mengikuti kapasitas kartu, bukan empat mati seperti mockup —
+            sekolah yang mengisi dua fasilitas dulu mendapat separuh baris kosong.
+            Lebar kartu ikut dipangkas agar tidak melampaui jumlah kolom. */}
+        <div className="sdnb-profil-fasilitas" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: `repeat(${kolomFasilitas},1fr)`, gridAutoRows: 170, gap: 16 }}>
           {isi.facilities.map((f, i) => {
             const [grad, kolom, baris] = FASILITAS_GAYA[i % FASILITAS_GAYA.length];
+            const lebar = Math.min(lebarFasilitas(kolom), kolomFasilitas);
             return (
-            <div key={`${f.name}-${i}`} onClick={() => setLight(i)} className="gtile" style={{ gridColumn: kolom, gridRow: baris, position: 'relative', overflow: 'hidden', borderRadius: 22, cursor: 'pointer', border: '1px solid rgba(255,255,255,.72)', boxShadow: '0 26px 54px -22px rgba(55,65,120,.58),inset 0 1px 0 rgba(255,255,255,.8)' }}>
+            <div key={`${f.name}-${i}`} onClick={() => setLight(i)} className="gtile" style={{ gridColumn: `span ${lebar}`, gridRow: baris, position: 'relative', overflow: 'hidden', borderRadius: 22, cursor: 'pointer', border: '1px solid rgba(255,255,255,.72)', boxShadow: '0 26px 54px -22px rgba(55,65,120,.58),inset 0 1px 0 rgba(255,255,255,.8)' }}>
               <div className="gfill" style={{ position: 'absolute', inset: 0, background: grad }} />
               <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
               <div style={{ position: 'absolute', left: 14, bottom: 14, padding: '7px 12px', borderRadius: 11, fontSize: 12, fontWeight: 700, color: '#2c2f4d', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.85)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{f.name}</div>

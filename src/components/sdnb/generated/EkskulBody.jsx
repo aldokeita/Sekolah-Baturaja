@@ -17,6 +17,7 @@ import React from 'react';
 // Aliased: mockups use short loop variables (e.g. sc-for as="s") that would
 // otherwise shadow the style helper inside a map callback.
 import { s as __dcs } from '@/lib/dcStyle';
+import { kolomUntuk } from '@/lib/gridKolom';
 import '@/styles/sdnb-ekskul.css';
 
 const EkskulBody = (vals = {}) => {
@@ -120,7 +121,7 @@ const EkskulBody = (vals = {}) => {
         <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "#21243f" }}>Jadwal sepekan</h2>
         <span style={{ fontSize: "12.5px", color: "#6d7192" }}>Semua latihan selesai paling lambat pukul 16.30</span>
       </div>
-      <div className="jadwal" style={{ marginTop: "26px", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "18px", alignItems: "start" }}>
+      <div className="jadwal" style={{ marginTop: "26px", display: "grid", gridTemplateColumns: kolomUntuk((jadwal || []).length, 5), gap: "18px", alignItems: "start" }}>
         {(jadwal || []).map((j, $index) => (<React.Fragment key={$index}>
           <div>
             <div style={__dcs(j.head)}>{j.hari}</div>
@@ -142,7 +143,7 @@ const EkskulBody = (vals = {}) => {
           <div>
             <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "rgba(255,255,255,.82)" }}>Cara ikut</div>
             <h2 style={{ margin: "16px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "40px", lineHeight: "1.06", letterSpacing: "-.038em", fontWeight: "800", color: "#fff", textWrap: "pretty" }}>Tulis nama di daftar kelas, mulai ikut pekan itu juga.</h2>
-            <div style={{ marginTop: "26px", display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "18px" }}>
+            <div style={{ marginTop: "26px", display: "grid", gridTemplateColumns: kolomUntuk((langkah || []).length, 3), gap: "18px" }}>
               {(langkah || []).map((l, $index) => (<React.Fragment key={$index}>
                 <div style={{ paddingTop: "16px", borderTop: "2px solid rgba(255,255,255,.45)" }}>
                   <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "26px", fontWeight: "800", letterSpacing: "-.03em", color: "rgba(255,255,255,.6)" }}>{l.no}</div>

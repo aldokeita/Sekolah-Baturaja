@@ -16,6 +16,7 @@ import React from 'react';
 // Aliased: mockups use short loop variables (e.g. sc-for as="s") that would
 // otherwise shadow the style helper inside a map callback.
 import { s as __dcs } from '@/lib/dcStyle';
+import { kolomUntuk } from '@/lib/gridKolom';
 import '@/styles/sdnb-galeri.css';
 
 const GaleriBody = (vals = {}) => {
@@ -161,7 +162,10 @@ const GaleriBody = (vals = {}) => {
         <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.6", color: "#5b6082" }}>Arahkan kursor ke tumpukan foto untuk membukanya, klik untuk melihat isi album.</p>
       </div>
 
-      <div style={{ marginTop: "44px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "26px" }}>
+      {/* Jumlah album ditentukan kegiatan yang difoto sekolah, bukan mockup. Baris
+          ini dulu dipaku empat kolom, jadi dua album menyisakan separuh baris
+          kosong. Pesan "belum ada album" tetap perlu satu kolom penuh. */}
+      <div style={{ marginTop: "44px", display: "grid", gridTemplateColumns: kolomUntuk((album || []).length), gap: "26px" }}>
         {(album || []).length > 0 ? (album || []).map((a, $index) => (<React.Fragment key={$index}>
           <div className="stk" onClick={a.open}>
             <div className="lyr l1" style={__dcs(a.l1)}></div>

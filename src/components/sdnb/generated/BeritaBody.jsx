@@ -17,6 +17,7 @@ import React from 'react';
 // Aliased: mockups use short loop variables (e.g. sc-for as="s") that would
 // otherwise shadow the style helper inside a map callback.
 import { s as __dcs } from '@/lib/dcStyle';
+import { kolomUntuk } from '@/lib/gridKolom';
 import '@/styles/sdnb-berita.css';
 
 const BeritaBody = (vals = {}) => {
@@ -102,7 +103,7 @@ const BeritaBody = (vals = {}) => {
             <div style={{ fontSize: "13px", color: "#6d7192", fontVariantNumeric: "tabular-nums" }}>{hitung}</div>
           </div>
 
-          <div className="newsgrid" style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "20px" }}>
+          <div className="newsgrid" style={{ marginTop: "20px", display: "grid", gridTemplateColumns: kolomUntuk((berita || []).length, 2), gap: "20px" }}>
             {(berita || []).map((b, $index) => (<React.Fragment key={$index}>
               <div className="art" onClick={b.open} style={{ position: "relative", overflow: "hidden", borderRadius: "26px", background: "rgba(255,255,255,.56)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.82)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
                 <div style={{ position: "relative", height: "172px", overflow: "hidden" }}>

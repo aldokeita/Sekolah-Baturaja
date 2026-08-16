@@ -17,6 +17,7 @@ import React from 'react';
 // Aliased: mockups use short loop variables (e.g. sc-for as="s") that would
 // otherwise shadow the style helper inside a map callback.
 import { s as __dcs } from '@/lib/dcStyle';
+import { kolomUntuk } from '@/lib/gridKolom';
 import '@/styles/sdnb-program.css';
 
 const ProgramBody = (vals = {}) => {
@@ -51,7 +52,7 @@ const ProgramBody = (vals = {}) => {
             </React.Fragment>))}
           </div>
         </div>
-        <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderTop: "1px solid rgba(120,132,200,.24)" }}>
+        <div style={{ position: "relative", display: "grid", gridTemplateColumns: kolomUntuk((angka || []).length), borderTop: "1px solid rgba(120,132,200,.24)" }}>
           {(angka || []).map((a, $index) => (<React.Fragment key={$index}>
             <div style={__dcs(a.box)}>
               <div aria-busy={a.state === 'loading' || a.state === 'refreshing'} style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "36px", lineHeight: "1", letterSpacing: "-.04em", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#1d1f33" }}>

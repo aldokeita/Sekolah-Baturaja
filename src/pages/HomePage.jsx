@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { publicFetch } from '@/lib/apiClient';
 import { fetchPublishedNews, fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { DEFAULT_HOME_CONTENT, fetchHomeContent } from '@/lib/homeContent';
+import { kolomUntuk } from '@/lib/gridKolom';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
@@ -319,7 +320,9 @@ const HomePage = () => {
           <p style={{ maxWidth: 340, margin: 0, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>Setiap tahap punya cara mengajar, penilaian, dan pendampingan yang berbeda, menyesuaikan usia anak.</p>
         </div>
 
-        <div className="sdnb-grid3" style={{ marginTop: 30, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }}>
+        {/* Daftar program disunting sekolah, jadi kolomnya ikut isinya. Dipaku tiga
+            kolom, sekolah yang menulis dua program mendapat sepertiga baris kosong. */}
+        <div className="sdnb-grid3" style={{ marginTop: 30, display: 'grid', gridTemplateColumns: kolomUntuk(programCards.length, 3), gap: 22 }}>
           {programCards.map((p) => (
             <div key={p.title} className="h-lift-shadow" style={{ ...glassCard, padding: 26, borderRadius: 24, boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)', transition: 'transform .25s ease,box-shadow .25s ease' }}>
               <Before height="55%" alpha=".62" />
@@ -382,7 +385,7 @@ const HomePage = () => {
           </div>
         </div>
 
-        <div className="sdnb-grid3" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }}>
+        <div className="sdnb-grid3" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: kolomUntuk(newsCards.length, 3), gap: 22 }}>
           {newsCards.map((n) => (
             <div key={n.title} className="h-lift" style={{ ...glassCard, borderRadius: 24, boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)', transition: 'transform .25s ease' }}>
               <div style={{ height: 158, background: n.image ? undefined : n.media }}>

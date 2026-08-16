@@ -16,6 +16,7 @@ import React from 'react';
 // Aliased: mockups use short loop variables (e.g. sc-for as="s") that would
 // otherwise shadow the style helper inside a map callback.
 import { s as __dcs } from '@/lib/dcStyle';
+import { kolomUntuk } from '@/lib/gridKolom';
 import '@/styles/sdnb-prestasi.css';
 
 const PrestasiBody = (vals = {}) => {
@@ -56,7 +57,8 @@ const PrestasiBody = (vals = {}) => {
           </div>
         </div>
 
-        <div className="bigstats" style={{ position: "relative", marginTop: "52px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderTop: "1px solid rgba(255,255,255,.16)" }}>
+        {/* Kolom mengikuti jumlah kartu — lihat src/lib/gridKolom.js. */}
+        <div className="bigstats" style={{ position: "relative", marginTop: "52px", display: "grid", gridTemplateColumns: kolomUntuk((stat || []).length), borderTop: "1px solid rgba(255,255,255,.16)" }}>
           {(stat || []).map((s, $index) => (<React.Fragment key={$index}>
             <div style={__dcs(s.box)}>
               <div style={{ fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "44px", lineHeight: "1", letterSpacing: "-.045em", fontWeight: "900", fontVariantNumeric: "tabular-nums", color: "#fff" }}><span data-count={s.n} data-plain="1">0</span>{s.suf}</div>
@@ -138,7 +140,7 @@ const PrestasiBody = (vals = {}) => {
         <h2 style={{ margin: "0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "#21243f" }}>Tiga capaian teratas</h2>
         <span style={{ fontSize: "12.5px", color: "#6d7192" }}>Dinilai dari tingkat lomba dan jumlah peserta</span>
       </div>
-      <div className="podium" style={{ marginTop: "30px", display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "22px", alignItems: "end" }}>
+      <div className="podium" style={{ marginTop: "30px", display: "grid", gridTemplateColumns: kolomUntuk((podium || []).length, 3), gap: "22px", alignItems: "end" }}>
         {(podium || []).map((p, $index) => (<React.Fragment key={$index}>
           <div onClick={p.open} style={__dcs(p.card)}>
             <div style={{ position: "absolute", inset: "0", background: "radial-gradient(120% 80% at 20% 6%,rgba(255,255,255,.16),rgba(255,255,255,0) 60%)" }}></div>

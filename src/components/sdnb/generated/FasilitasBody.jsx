@@ -20,7 +20,7 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-fasilitas.css';
 
 const FasilitasBody = (vals = {}) => {
-  const { chip, jalanDot, jalanLabel, jalanTeks, judulSemuaRuang, kolomRingkas, maju, mozaik, mundur, panggung, progres, ringkas, sorot, tglJalan } = vals;
+  const { chip, jalanDot, jalanLabel, jalanTeks, judulSemuaRuang, kolomMozaik, kolomRingkas, maju, mozaik, mundur, panggung, progres, ringkas, sorot, tglJalan } = vals;
   return (
     <>
 <section style={{ maxWidth: "1300px", margin: "0 auto", padding: "10px 28px 0" }}>
@@ -116,7 +116,7 @@ const FasilitasBody = (vals = {}) => {
         <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.66", color: "#9aa1d8" }}>Klik salah satu ruang untuk membawanya ke layar tur di atas.</p>
       </div>
 
-      <div className="mos" style={{ marginTop: "28px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gridAutoRows: "200px", gridAutoFlow: "dense", gap: "16px" }}>
+      <div className="mos" style={{ marginTop: "28px", display: "grid", gridTemplateColumns: kolomMozaik || "repeat(4,1fr)", gridAutoRows: "200px", gridAutoFlow: "dense", gap: "16px" }}>
         {(mozaik || []).map((m, $index) => (<React.Fragment key={$index}>
           <div className="gcard" onClick={m.pick} style={__dcs(m.cell)}>
             <div className="gf" style={__dcs(m.foto)}></div>

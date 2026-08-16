@@ -26,11 +26,20 @@ describe('normalizeProfileContent', () => {
   // Blok naratif jatuh ke bawaan bila dikosongkan: halaman publik tidak boleh
   // menampilkan bagian tanpa isi.
   it('mengembalikan blok naratif ke bawaan bila dikosongkan', () => {
-    const hasil = normalizeProfileContent({ history: [], facilities: [], ticker: [], quote: [] });
+    const hasil = normalizeProfileContent({ history: [], facilities: [], quote: [] });
     expect(hasil.history).toEqual(DEFAULT_PROFILE_CONTENT.history);
     expect(hasil.facilities).toEqual(DEFAULT_PROFILE_CONTENT.facilities);
-    expect(hasil.ticker).toEqual(DEFAULT_PROFILE_CONTENT.ticker);
     expect(hasil.quote).toEqual(DEFAULT_PROFILE_CONTENT.quote);
+  });
+
+  /* Tiker dan angka ringkasan TIDAK ikut aturan di atas. Isinya klaim tentang
+   * sekolah — "Terakreditasi A", "18 rombongan belajar", "1966" — dan bawaannya
+   * milik sekolah contoh. Memulihkannya saat sekolah menghapusnya berarti
+   * memaksa capaian sekolah lain terbit sebagai capaiannya sendiri. */
+  it('menghormati tiker dan angka ringkasan yang sengaja dikosongkan', () => {
+    const hasil = normalizeProfileContent({ ticker: [], stats: [] });
+    expect(hasil.ticker).toEqual([]);
+    expect(hasil.stats).toEqual([]);
   });
 
   it('membuang baris yang tidak punya isi wajib', () => {
@@ -110,8 +119,16 @@ describe('normalizeProfileContent', () => {
     });
 
     it('membuang angka tanpa keterangan', () => {
-      const hasil = normalizeProfileContent({ stats: [{ value: '99', label: '' }] });
-      expect(hasil.stats).toEqual(DEFAULT_PROFILE_CONTENT.stats);
+      const hasil = normalizeProfileContent({
+        stats: [{ value: '99', label: '' }, { value: '6', label: 'Rombongan belajar' }],
+      });
+      expect(hasil.stats).toEqual([{ value: '6', label: 'Rombongan belajar', suffix: '', plain: false }]);
+    });
+
+    // Kunci yang belum pernah disimpan berbeda dari daftar yang dikosongkan.
+    it('memakai bawaan bila kuncinya belum pernah disimpan', () => {
+      expect(normalizeProfileContent({}).stats).toEqual(DEFAULT_PROFILE_CONTENT.stats);
+      expect(normalizeProfileContent({}).ticker).toEqual(DEFAULT_PROFILE_CONTENT.ticker);
     });
   });
 

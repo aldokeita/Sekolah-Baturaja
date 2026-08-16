@@ -869,6 +869,58 @@ Sekarang jalur itu menulis nilai akhirnya langsung, tanpa animasi. Yang dikurang
 bukan informasinya. Diuji dengan `matchMedia` yang ditambal: seluruh penghitung menampilkan angka
 benar tanpa digulir sama sekali.
 
+### Penghitung angka mati bila halaman dibuka lewat klik menu — SUDAH DIPERBAIKI
+
+Cacat kedua pada mekanisme yang sama, dan lebih luas daripada yang pertama. `useSdnbMotion`
+memantau tiap `[data-count]` dengan `IntersectionObserver`. Saat halaman dibuka lewat **klik menu**
+alih-alih muat ulang, data susulan tiba sesudah pemantauan dimulai, React mengganti simpul yang
+sama, dan yang dipantau menjadi simpul buangan. Simpul penggantinya berisi `0` bawaan markup dan
+tidak pernah disentuh lagi.
+
+Akibatnya seluruh situs publik menampilkan nol kepada pengunjung yang menjelajah secara wajar:
+"0 program berjalan" tepat di atas daftar enam program, "0 Tahun berdiri", "0 m² luas lahan",
+"0 ruang kelas". Muat ulang halaman menampilkan angka yang benar — itulah sebabnya cacat ini lolos
+berkali-kali: setiap pemeriksaan sebelumnya dilakukan dengan navigasi langsung ke URL.
+
+Perbaikannya: simpul yang sudah dipantau ditandai `__dc`, dan sebuah penjaga memindai ulang tiap
+350 ms selama 8 detik pertama. Simpul pengganti tidak membawa penanda itu, jadi terambil sebagai
+baru. Penjaga berhenti sendiri agar tidak ada timer yang hidup selamanya.
+
+**Cara mengujinya harus lewat klik tautan**, bukan `navigate()` ke URL — jalur muat ulang tidak
+pernah menunjukkan cacat ini.
+
+### Grid halaman publik tidak boleh mematok jumlah kolom
+
+Markup halaman publik diturunkan dari mockup, dan mockup selalu digambar dengan barisnya penuh —
+umumnya empat kartu. Begitu isinya milik sekolah sungguhan jumlahnya bebas, dan kolom yang dipaku
+menyisakan lubang di kanan, kadang lengkap dengan garis pemisah yang menggantung.
+
+Ditemukan nyata di tiga tempat: mozaik ruang di Fasilitas (satu kartu di dalam grid 4×2), baris chip
+di Kontak (tiga chip karena WhatsApp dikosongkan), dan album di Galeri (dua album). Pola yang sama
+ada di belasan tempat lain dan hanya kebetulan tidak terlihat karena datanya pas.
+
+`src/lib/gridKolom.js` menyediakan dua penolong: `kolomUntuk(jumlah, maks)` untuk grid biasa dan
+`kapasitasKolom(lebar, maks)` untuk mozaik, yang menghitung kapasitas dari lebar tiap kartu. Untuk
+mozaik, lebar kartu juga harus dipangkas ke jumlah kolom — kartu `span 2` di dalam grid satu kolom
+akan melebar keluar.
+
+Aturannya: **setiap grid yang isinya berasal dari data sekolah wajib memakai salah satu penolong
+ini.** Yang boleh tetap mematok kolom hanyalah grid yang isinya struktural, misalnya lima hari kerja.
+
+### Tiker dan angka ringkasan Profil boleh dikosongkan sampai habis
+
+`normalizeDaftar` di `profileContent.js` memulihkan bawaan setiap kali daftar tersimpan kosong,
+supaya halaman tidak bolong. Untuk blok naratif itu benar. Untuk **tiker** dan **angka ringkasan**
+itu salah: isinya klaim tentang sekolah — "Terakreditasi A", "Adiwiyata Nasional", "1966",
+"18 rombongan belajar" — dan bawaannya milik sekolah contoh. Sekolah yang menghapusnya mendapatkan
+capaian sekolah lain kembali terbit sebagai capaiannya sendiri, tanpa cara mematikannya.
+
+Keduanya kini lewat `normalizeKlaim`, yang membedakan `undefined` (kunci belum pernah disimpan,
+bawaan memang benar) dari `[]` (pilihan sekolah, dihormati). ProfilePage menyembunyikan seluruh
+baris statistik dan seluruh tikernya ketika kosong, bukan menyisakan panel atau dua garis tanpa isi.
+
+Sejalan dengan `badge` dan `stats` di `homeContent.js`, yang sudah memakai aturan ini lebih dulu.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

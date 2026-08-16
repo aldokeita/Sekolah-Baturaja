@@ -3,6 +3,7 @@ import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import FasilitasBody from '@/components/sdnb/generated/FasilitasBody';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { fetchClassCount, fetchGuruCount } from '@/lib/dataMasterAdapters';
+import { kapasitasKolom, kolomUntuk } from '@/lib/gridKolom';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
@@ -119,6 +120,9 @@ const FacilitiesPage = () => {
 
   const n = source.length || 1;
 
+  // Kapasitas mozaik = jumlah lebar semua kartu, dibatasi empat kolom.
+  const kolomMozaik = useMemo(() => kapasitasKolom(source.map((s) => s.col)), [source]);
+
   const jumlahKelas = hitungan.kelas;
   const jumlahGuru = hitungan.guru;
   /* Ruang penunjang dihitung dari daftar Fasilitas yang disunting sekolah. Selama
@@ -215,9 +219,9 @@ const FacilitiesPage = () => {
      *
      * Ketiganya kini diturunkan dari data sekolah sendiri: jumlah kelas dan guru
      * dari endpoint hitungan, jumlah ruang penunjang dari daftar Fasilitas di
-     * panel Konten. "Luas lahan" DICABUT — tidak ada sumbernya di sistem dan tidak
-     * ada tempat untuk pembeli mengisinya, jadi menampilkannya hanya bisa berupa
-     * karangan. Kalau nanti diperlukan, ia butuh field tersendiri lebih dulu.
+     * panel Konten. "Luas lahan" sempat dicabut karena tidak ada sumbernya, lalu
+     * dikembalikan setelah field `landArea` ditambahkan di Identitas Sekolah —
+     * pembeli mengisinya sendiri, dan kartunya hilang bila dibiarkan kosong.
      *
      * Kartu yang angkanya belum didapat disembunyikan, bukan ditampilkan nol. */
     /* Padding kiri kartu pertama dulu nol karena barisnya tanpa panel. Setelah
@@ -231,13 +235,22 @@ const FacilitiesPage = () => {
     // Jumlah kolom mengikuti jumlah kartu. Sebelumnya baris ini dipaku empat kolom
     // di markup, jadi begitu satu kartu hilang tersisa kolom kosong yang membuat
     // barisnya tampak berantakan dan garis pemisahnya menggantung.
-    kolomRingkas: `repeat(${kartuRingkas.length || 1},1fr)`,
+    kolomRingkas: kolomUntuk(kartuRingkas.length),
+
+    /* Mozaik ruang. Kolomnya dulu dipaku empat di markup, padahal isinya sebanyak
+     * daftar Fasilitas milik sekolah. Sekolah yang baru mengisi satu ruang mendapat
+     * satu kartu di pojok kiri atas dengan tiga perempat baris kosong.
+     *
+     * Kolom kini mengikuti kapasitas isi — jumlah lebar semua kartu — dan tetap
+     * dibatasi empat supaya sekolah dengan banyak ruang tidak mendapat kartu kurus.
+     * Lebar tiap kartu ikut dipangkas agar tidak pernah melampaui jumlah kolom. */
+    kolomMozaik: `repeat(${kolomMozaik},1fr)`,
 
     mozaik: source.map((s, k) => ({
       nama: s.nama, kategori: s.kategori, luas: s.luas, ringkas: s.ringkas,
       foto: foto(s),
       pick: () => pilih(k),
-      cell: `grid-column:span ${s.col};grid-row:span ${s.row};border-radius:24px;border:1px solid rgba(255,255,255,.16);box-shadow:0 30px 64px -26px rgba(6,10,42,.9)`,
+      cell: `grid-column:span ${Math.min(s.col, kolomMozaik)};grid-row:span ${s.row};border-radius:24px;border:1px solid rgba(255,255,255,.16);box-shadow:0 30px 64px -26px rgba(6,10,42,.9)`,
     })),
   };
 

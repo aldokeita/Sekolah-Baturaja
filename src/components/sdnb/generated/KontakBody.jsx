@@ -17,6 +17,7 @@ import React from 'react';
 // Aliased: mockups use short loop variables (e.g. sc-for as="s") that would
 // otherwise shadow the style helper inside a map callback.
 import { s as __dcs } from '@/lib/dcStyle';
+import { kolomUntuk } from '@/lib/gridKolom';
 import '@/styles/sdnb-kontak.css';
 
 const KontakBody = (vals = {}) => {
@@ -42,7 +43,10 @@ const KontakBody = (vals = {}) => {
         </div>
       </div>
 
-      <div className="chips" style={{ marginTop: "34px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px" }}>
+      {/* Kolom mengikuti jumlah chip, dibatasi empat. Chip WhatsApp hilang bila
+          sekolah tidak mengisinya, dan barisnya dulu tetap empat kolom — sisanya
+          menganga kosong di kanan. */}
+      <div className="chips" style={{ marginTop: "34px", display: "grid", gridTemplateColumns: kolomUntuk((chips || []).length), gap: "16px" }}>
         {(chips || []).map((c, $index) => (<React.Fragment key={$index}>
           <div className="chip" onClick={c.act} style={{ position: "relative", overflow: "hidden", padding: "22px 22px 20px", borderRadius: "24px", background: "rgba(255,255,255,.58)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
             <div style={__dcs(c.icon)}>
@@ -178,7 +182,8 @@ const KontakBody = (vals = {}) => {
         <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.6", color: "#5b6082" }}>{copy.directoryDescription}</p>
       </div>
 
-      <div className="people" style={{ marginTop: "30px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "20px" }}>
+      {/* Direktori staf: jumlahnya milik sekolah, jadi kolomnya ikut isinya. */}
+      <div className="people" style={{ marginTop: "30px", display: "grid", gridTemplateColumns: kolomUntuk((orang || []).length), gap: "20px" }}>
         {(orang || []).map((o, $index) => (<React.Fragment key={$index}>
           <div className="pcard" style={{ position: "relative", overflow: "hidden", borderRadius: "26px", background: "rgba(255,255,255,.56)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
             <div style={__dcs(o.bar)}></div>
