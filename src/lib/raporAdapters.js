@@ -116,6 +116,31 @@ export const rentangPeriode = (periode) => {
     : { dari: `${akhir}-01-01`, sampai: `${akhir}-06-30`, diturunkan: true };
 };
 
+/**
+ * Fase kurikulum dari nama kelas.
+ *
+ * Format rapor rujukan BSKAP (hlm. 62) memuat field Fase di kepala rapor. Fase
+ * ditentukan tingkat kelas, bukan jenjang sekolah: A untuk kelas 1–2, B untuk 3–4,
+ * C untuk 5–6, D untuk 7–9, E untuk 10, F untuk 11–12. Template ini bawaannya SD
+ * tetapi bisa dipakai SMP/SMA, jadi pemetaannya dibuat lengkap.
+ *
+ * Angka diambil dari nama kelas ("Kelas 4A" → 4). Nama yang tidak memuat angka
+ * mengembalikan null, dan pemanggilnya MENYEMBUNYIKAN barisnya — menebak fase
+ * lebih buruk daripada tidak menampilkannya.
+ */
+export const faseDariKelas = (namaKelas) => {
+  const cocok = String(namaKelas || '').match(/\d+/);
+  if (!cocok) return null;
+  const tingkat = Number(cocok[0]);
+  if (tingkat >= 1 && tingkat <= 2) return 'A';
+  if (tingkat >= 3 && tingkat <= 4) return 'B';
+  if (tingkat >= 5 && tingkat <= 6) return 'C';
+  if (tingkat >= 7 && tingkat <= 9) return 'D';
+  if (tingkat === 10) return 'E';
+  if (tingkat >= 11 && tingkat <= 12) return 'F';
+  return null;
+};
+
 export const getRaporErrorMessage = (error) => {
   const message = String(error?.error || error?.message || error || '').trim();
   if (!message) return 'Rapor gagal disusun.';
@@ -156,7 +181,7 @@ export const fetchRapor = async (santriId, periodeId = '') => {
 
   // Ketidakhadiran dan nilai diambil berbarengan; keduanya berdiri sendiri dan
   // rapor tetap bisa dicetak walau salah satunya kosong.
-  const [ringkasanNilai, rekapAbsensi, daftarGuru, catatanTersimpan] = await Promise.all([
+  const [ringkasanNilai, rekapAbsensi, daftarGuru, catatanTersimpan, deskripsiMapel] = await Promise.all([
     periode
       ? fetchNilaiSummary({ santriId, periodeId: periode.id }).catch(() => [])
       : Promise.resolve([]),
@@ -168,6 +193,7 @@ export const fetchRapor = async (santriId, periodeId = '') => {
     // nama sekolah contoh.
     fetchGuruList().catch(() => []),
     periode ? fetchCatatanRapor(santriId, periode.id).catch(() => null) : Promise.resolve(null),
+    periode ? fetchDeskripsiMapel(santriId, periode.id).catch(() => ({})) : Promise.resolve({}),
   ]);
 
   const kehadiran = ringkasKehadiran(rekapAbsensi?.summary || {});
@@ -183,6 +209,9 @@ export const fetchRapor = async (santriId, periodeId = '') => {
         terendah: Number(row.terendah),
         tertinggi: Number(row.tertinggi),
         predikat: beriPredikat(row.rata_rata),
+        // Komponen minimal BSKAP nomor 7. Kosong berarti guru belum menulisnya;
+        // lembar cetak jatuh ke label predikat supaya kolomnya tidak melompong.
+        deskripsi: (deskripsiMapel || {})[row.mata_pelajaran_id] || '',
       };
     })
     .sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
@@ -202,6 +231,7 @@ export const fetchRapor = async (santriId, periodeId = '') => {
   return {
     murid,
     kelas,
+    fase: faseDariKelas(kelas?.nama_kelas),
     periode,
     rentang,
     mapel,
@@ -212,6 +242,8 @@ export const fetchRapor = async (santriId, periodeId = '') => {
     waliKelas: kelas?.guru?.nama || null,
     kepalaSekolah: kepalaSekolah?.nama || null,
     catatan: catatanTersimpan?.catatan || '',
+    kokurikuler: catatanTersimpan?.deskripsi_kokurikuler || '',
+    ekstrakurikuler: catatanTersimpan?.ekstrakurikuler || '',
     catatanDiperbaruiPada: catatanTersimpan?.updated_at || null,
   };
 };
@@ -230,11 +262,26 @@ export const fetchCatatanRapor = async (santriId, periodeId) => {
   return apiClient.get(`/api/rapor/catatan?${params.toString()}`);
 };
 
-export const saveCatatanRapor = async (santriId, periodeId, catatan) =>
+export const saveCatatanRapor = async (santriId, periodeId, narasi = {}) =>
   apiClient.put('/api/rapor/catatan', {
     santri_id: santriId,
     periode_id: periodeId,
-    catatan,
+    catatan: narasi.catatan || '',
+    deskripsi_kokurikuler: narasi.kokurikuler || '',
+    ekstrakurikuler: narasi.ekstrakurikuler || '',
+  });
+
+export const fetchDeskripsiMapel = async (santriId, periodeId) => {
+  if (!santriId || !periodeId) return {};
+  const params = new URLSearchParams({ santri_id: santriId, periode_id: periodeId });
+  return (await apiClient.get(`/api/rapor/deskripsi-mapel?${params.toString()}`)) || {};
+};
+
+export const saveDeskripsiMapel = async (santriId, periodeId, deskripsi = {}) =>
+  apiClient.put('/api/rapor/deskripsi-mapel', {
+    santri_id: santriId,
+    periode_id: periodeId,
+    deskripsi,
   });
 
 export const deleteCatatanRapor = async (santriId, periodeId) => {

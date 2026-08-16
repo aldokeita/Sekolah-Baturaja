@@ -196,6 +196,18 @@
   white-space: pre-wrap;
 }
 
+/* Kolom tanggapan orang tua dicetak kosong dan ditulis tangan, jadi butuh ruang
+   lebih daripada kotak narasi yang isinya sudah diketik. */
+.rapor-catatan__kotak--lebar {
+  min-height: 58px;
+}
+
+.rapor-penafian {
+  margin-top: 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rapor-garis);
+}
+
 /* ── Tanda tangan ──────────────────────────────────────────────────────────── */
 
 .rapor-ttd {

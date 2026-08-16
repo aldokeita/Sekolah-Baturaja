@@ -38,6 +38,8 @@ func (h *RaporHandler) Routes() chi.Router {
 	r.Get("/catatan", h.GetCatatan)
 	r.Put("/catatan", h.SaveCatatan)
 	r.Delete("/catatan", h.DeleteCatatan)
+	r.Get("/deskripsi-mapel", h.GetDeskripsiMapel)
+	r.Put("/deskripsi-mapel", h.SaveDeskripsiMapel)
 	return r
 }
 
@@ -105,51 +107,91 @@ func (h *RaporHandler) GetCatatan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var catatan string
+	var catatan, kokurikuler, ekstrakurikuler *string
 	var updatedAt *string
 	err := h.db.QueryRow(r.Context(), `
-		SELECT catatan, updated_at::text FROM rapor_catatan
+		SELECT catatan, deskripsi_kokurikuler, ekstrakurikuler, updated_at::text
+		FROM rapor_catatan
 		WHERE santri_id = $1 AND periode_id = $2
-	`, santriID, periodeID).Scan(&catatan, &updatedAt)
+	`, santriID, periodeID).Scan(&catatan, &kokurikuler, &ekstrakurikuler, &updatedAt)
 	if err == pgx.ErrNoRows {
 		// Belum ada catatan bukan kesalahan: sebagian besar murid memang belum
 		// diisi. Mengembalikan 404 memaksa setiap pemanggil menerjemahkannya.
-		jsonOK(w, map[string]any{"data": map[string]any{"catatan": "", "updated_at": nil}})
+		jsonOK(w, map[string]any{"data": map[string]any{
+			"catatan": "", "deskripsi_kokurikuler": "", "ekstrakurikuler": "", "updated_at": nil,
+		}})
 		return
 	}
 	if err != nil {
 		jsonError(w, "gagal mengambil catatan rapor", http.StatusInternalServerError)
 		return
 	}
-	jsonOK(w, map[string]any{"data": map[string]any{"catatan": catatan, "updated_at": updatedAt}})
+	jsonOK(w, map[string]any{"data": map[string]any{
+		"catatan":               teksAtauKosong(catatan),
+		"deskripsi_kokurikuler": teksAtauKosong(kokurikuler),
+		"ekstrakurikuler":       teksAtauKosong(ekstrakurikuler),
+		"updated_at":            updatedAt,
+	}})
+}
+
+func teksAtauKosong(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
+}
+
+// nilaiAtauNil mengubah string kosong menjadi NULL. Kolom narasi rapor memakai
+// NULL untuk "belum diisi"; menyimpan string kosong membuat batasan
+// rapor_catatan_ada_isinya menganggap barisnya tetap terisi.
+func nilaiAtauNil(s string) any {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	return strings.TrimSpace(s)
 }
 
 // PUT /api/rapor/catatan
 // Body: {santri_id, periode_id, catatan}
 func (h *RaporHandler) SaveCatatan(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		SantriID  string `json:"santri_id"`
-		PeriodeID string `json:"periode_id"`
-		Catatan   string `json:"catatan"`
+		SantriID    string `json:"santri_id"`
+		PeriodeID   string `json:"periode_id"`
+		Catatan     string `json:"catatan"`
+		Kokurikuler string `json:"deskripsi_kokurikuler"`
+		Ekstra      string `json:"ekstrakurikuler"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&body); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32<<10)).Decode(&body); err != nil {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
 
 	santriID := strings.TrimSpace(body.SantriID)
 	periodeID := strings.TrimSpace(body.PeriodeID)
-	catatan := strings.TrimSpace(body.Catatan)
 	if santriID == "" || periodeID == "" {
 		jsonError(w, "santri_id dan periode_id wajib diisi", http.StatusBadRequest)
 		return
 	}
-	if catatan == "" {
-		jsonError(w, "catatan tidak boleh kosong; pakai hapus untuk mengosongkannya", http.StatusBadRequest)
-		return
+
+	// Ketiganya boleh diisi sebagian. Yang ditolak adalah menyimpan baris yang
+	// seluruhnya kosong — itu bukan penyimpanan, melainkan penghapusan.
+	isi := map[string]string{
+		"catatan":               strings.TrimSpace(body.Catatan),
+		"deskripsi kokurikuler": strings.TrimSpace(body.Kokurikuler),
+		"ekstrakurikuler":       strings.TrimSpace(body.Ekstra),
 	}
-	if len([]rune(catatan)) > raporCatatanMaks {
-		jsonError(w, "catatan terlalu panjang", http.StatusBadRequest)
+	adaIsi := false
+	for nama, teks := range isi {
+		if teks != "" {
+			adaIsi = true
+		}
+		if len([]rune(teks)) > raporCatatanMaks {
+			jsonError(w, nama+" terlalu panjang", http.StatusBadRequest)
+			return
+		}
+	}
+	if !adaIsi {
+		jsonError(w, "tidak ada isi untuk disimpan; pakai hapus untuk mengosongkannya", http.StatusBadRequest)
 		return
 	}
 	if !h.bolehTulis(r, santriID) {
@@ -159,16 +201,141 @@ func (h *RaporHandler) SaveCatatan(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.UserIDFromCtx(r.Context())
 	_, err := h.db.Exec(r.Context(), `
-		INSERT INTO rapor_catatan (santri_id, periode_id, catatan, created_by, updated_by)
-		VALUES ($1, $2, $3, $4, $4)
+		INSERT INTO rapor_catatan
+			(santri_id, periode_id, catatan, deskripsi_kokurikuler, ekstrakurikuler, created_by, updated_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $6)
 		ON CONFLICT (santri_id, periode_id) DO UPDATE
-		SET catatan = excluded.catatan, updated_by = excluded.updated_by
-	`, santriID, periodeID, catatan, userID)
+		SET catatan               = excluded.catatan,
+		    deskripsi_kokurikuler = excluded.deskripsi_kokurikuler,
+		    ekstrakurikuler       = excluded.ekstrakurikuler,
+		    updated_by            = excluded.updated_by
+	`, santriID, periodeID,
+		nilaiAtauNil(body.Catatan), nilaiAtauNil(body.Kokurikuler), nilaiAtauNil(body.Ekstra),
+		userID)
 	if err != nil {
 		jsonError(w, "gagal menyimpan catatan rapor", http.StatusInternalServerError)
 		return
 	}
-	jsonOK(w, map[string]any{"data": map[string]any{"catatan": catatan}})
+	jsonOK(w, map[string]any{"data": map[string]any{
+		"catatan":               isi["catatan"],
+		"deskripsi_kokurikuler": isi["deskripsi kokurikuler"],
+		"ekstrakurikuler":       isi["ekstrakurikuler"],
+	}})
+}
+
+// GET /api/rapor/deskripsi-mapel?santri_id=&periode_id=
+// Mengembalikan peta mata_pelajaran_id -> deskripsi.
+func (h *RaporHandler) GetDeskripsiMapel(w http.ResponseWriter, r *http.Request) {
+	santriID := strings.TrimSpace(r.URL.Query().Get("santri_id"))
+	periodeID := strings.TrimSpace(r.URL.Query().Get("periode_id"))
+	if santriID == "" || periodeID == "" {
+		jsonError(w, "santri_id dan periode_id wajib diisi", http.StatusBadRequest)
+		return
+	}
+	if !h.bolehBaca(r, santriID) {
+		jsonError(w, "tidak berhak melihat rapor murid ini", http.StatusForbidden)
+		return
+	}
+
+	rows, err := h.db.Query(r.Context(), `
+		SELECT mata_pelajaran_id::text, deskripsi FROM rapor_deskripsi_mapel
+		WHERE santri_id = $1 AND periode_id = $2
+	`, santriID, periodeID)
+	if err != nil {
+		jsonError(w, "gagal mengambil deskripsi capaian", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	hasil := map[string]string{}
+	for rows.Next() {
+		var id, deskripsi string
+		if err := rows.Scan(&id, &deskripsi); err != nil {
+			jsonError(w, "gagal membaca deskripsi capaian", http.StatusInternalServerError)
+			return
+		}
+		hasil[id] = deskripsi
+	}
+	jsonOK(w, map[string]any{"data": hasil})
+}
+
+// PUT /api/rapor/deskripsi-mapel
+// Body: {santri_id, periode_id, deskripsi: {mata_pelajaran_id: teks, ...}}
+//
+// Seluruh peta dikirim sekaligus, bukan satu mata pelajaran per permintaan: guru
+// mengisi deskripsi untuk semua mata pelajaran dalam satu duduk, dan menyimpannya
+// satu per satu membuat sebagian tersimpan ketika koneksi putus di tengah.
+func (h *RaporHandler) SaveDeskripsiMapel(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		SantriID  string            `json:"santri_id"`
+		PeriodeID string            `json:"periode_id"`
+		Deskripsi map[string]string `json:"deskripsi"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 128<<10)).Decode(&body); err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	santriID := strings.TrimSpace(body.SantriID)
+	periodeID := strings.TrimSpace(body.PeriodeID)
+	if santriID == "" || periodeID == "" {
+		jsonError(w, "santri_id dan periode_id wajib diisi", http.StatusBadRequest)
+		return
+	}
+	for _, teks := range body.Deskripsi {
+		if len([]rune(teks)) > raporCatatanMaks {
+			jsonError(w, "deskripsi capaian terlalu panjang", http.StatusBadRequest)
+			return
+		}
+	}
+	if !h.bolehTulis(r, santriID) {
+		jsonError(w, "hanya wali kelas dan tata usaha yang boleh menulis deskripsi capaian", http.StatusForbidden)
+		return
+	}
+
+	userID := middleware.UserIDFromCtx(r.Context())
+	tx, err := h.db.Begin(r.Context())
+	if err != nil {
+		jsonError(w, "gagal menyimpan deskripsi capaian", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(r.Context())
+
+	for mapelID, teks := range body.Deskripsi {
+		id := strings.TrimSpace(mapelID)
+		if id == "" {
+			continue
+		}
+		// Deskripsi yang dikosongkan berarti dihapus. Kolomnya NOT NULL dan punya
+		// batasan tidak-kosong, jadi menyimpan string kosong akan gagal.
+		if strings.TrimSpace(teks) == "" {
+			if _, err := tx.Exec(r.Context(),
+				`DELETE FROM rapor_deskripsi_mapel
+				 WHERE santri_id = $1 AND periode_id = $2 AND mata_pelajaran_id = $3`,
+				santriID, periodeID, id,
+			); err != nil {
+				jsonError(w, "gagal menghapus deskripsi capaian", http.StatusInternalServerError)
+				return
+			}
+			continue
+		}
+		if _, err := tx.Exec(r.Context(), `
+			INSERT INTO rapor_deskripsi_mapel
+				(santri_id, periode_id, mata_pelajaran_id, deskripsi, created_by, updated_by)
+			VALUES ($1, $2, $3, $4, $5, $5)
+			ON CONFLICT (santri_id, periode_id, mata_pelajaran_id) DO UPDATE
+			SET deskripsi = excluded.deskripsi, updated_by = excluded.updated_by
+		`, santriID, periodeID, id, strings.TrimSpace(teks), userID); err != nil {
+			jsonError(w, "gagal menyimpan deskripsi capaian", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if err := tx.Commit(r.Context()); err != nil {
+		jsonError(w, "gagal menyimpan deskripsi capaian", http.StatusInternalServerError)
+		return
+	}
+	jsonOK(w, map[string]any{"data": map[string]any{"tersimpan": len(body.Deskripsi)}})
 }
 
 // DELETE /api/rapor/catatan?santri_id=&periode_id=

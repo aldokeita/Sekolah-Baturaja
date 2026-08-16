@@ -648,6 +648,59 @@ Mengosongkan kotak catatan memanggil jalur **DELETE**, bukan menyimpan string ko
 punya `CHECK (btrim(catatan) <> '')`, jadi menyimpan kosong akan ditolak dan mengosongkan catatan
 terasa gagal tanpa sebab.
 
+### Rapor dinamai "Laporan Kemajuan Belajar", bukan "Rapor"
+
+Riset `docs/51-riset-rapor-resmi-kemendikdasmen.md` menegakkan dua hal dari sumber primer:
+Kemendikdasmen **punya** aplikasi rapor resmi (e-Rapor SD 2025.1, aplikasi lokal, tersambung
+Dapodik), dan pemakaiannya **tidak wajib** — Permendikbudristek 21/2022 tidak menyebut aplikasi apa
+pun, dan Pasal 8 ayat (5) mengakui "rapor **atau bentuk laporan hasil Penilaian lainnya**".
+
+Konsekuensinya untuk produk ini: cetakan kita **sah** sebagai laporan hasil belajar, tetapi **bukan**
+keluaran sistem Kemendikdasmen — dan tidak boleh terbaca seolah-olah begitu.
+
+- Judul lembar memakai **"Laporan Kemajuan Belajar"**, istilah Pasal 8 ayat (1) itu sendiri. Jangan
+  menggantinya menjadi "Rapor", "e-Rapor", atau apa pun yang mengesankan afiliasi.
+- Kaki lembar memuat penafian: dokumen ini terbitan sekolah, rapor resmi mengikuti mekanisme yang
+  ditetapkan sekolah. Penafian itu melindungi sekolah sekaligus produk.
+
+**Jangan membangun integrasi Dapodik.** Web service-nya berjalan lokal di komputer sekolah,
+versinya berganti tiap tahun, dan tidak ada API publik yang stabil untuk pihak ketiga.
+
+### Dua belas komponen minimal BSKAP sudah dipenuhi
+
+Panduan Pembelajaran dan Asesmen BSKAP (Edisi Revisi Ke-3, Juli 2025, hlm. 66) menyebut dua belas
+komponen minimal rapor. Semuanya kini ada di lembar cetak; tiga terakhir ditambahkan oleh migrasi
+`20260816000200`:
+
+| # | Komponen | Sumber |
+|---|---|---|
+| 1–6 | Identitas murid, satuan pendidikan, kelas, semester, mata pelajaran, nilai | sudah ada |
+| 7 | Deskripsi Capaian Kompetensi | `rapor_deskripsi_mapel`, per mata pelajaran |
+| 8 | Deskripsi Capaian Kokurikuler | kolom baru `rapor_catatan.deskripsi_kokurikuler` |
+| 9 | Kegiatan ekstrakurikuler | kolom baru `rapor_catatan.ekstrakurikuler` |
+| 10–11 | Ketidakhadiran, Catatan Wali Kelas | sudah ada |
+| 12 | Tanggapan Orang Tua/Wali | **kotak kosong**, tidak disimpan |
+
+Komponen 12 sengaja tidak punya isian: pada rapor kertas kolom itu ditulis tangan wali murid.
+
+Tambahan: **Fase** (A–F) di kepala rapor, diturunkan dari angka pada nama kelas. Nama kelas tanpa
+angka membuat barisnya **disembunyikan**, bukan ditebak.
+
+Dua jebakan basis data yang sudah dibereskan di migrasi itu:
+
+1. `rapor_catatan.catatan` **tidak lagi NOT NULL**. Murid bisa punya catatan ekstrakurikuler tanpa
+   catatan wali kelas; batasan lama menolak baris semacam itu. Diganti
+   `rapor_catatan_ada_isinya` — setidaknya satu dari tiga kolom terisi.
+2. Kolom narasi menyimpan **NULL** untuk "belum diisi", bukan string kosong. String kosong membuat
+   batasan di atas menganggap barisnya tetap terisi.
+
+Menyimpan deskripsi mata pelajaran memakai **satu transaksi untuk seluruh peta**, bukan satu
+permintaan per mata pelajaran: guru mengisi semuanya dalam satu duduk, dan penyimpanan satuan
+membuat sebagian tersimpan ketika koneksi putus di tengah.
+
+Nama tabel `rapor_catatan` **dipertahankan** meski isinya kini lebih dari catatan. Menggantinya
+memutus data tersimpan demi nama yang lebih rapi — pertukaran yang tidak sepadan.
+
 ### Rentang predikat rapor bisa diatur sekolah
 
 Bawaannya A≥90 / B≥80 / C≥70 / D, kebiasaan umum SD Indonesia — tetapi setiap sekolah menetapkan

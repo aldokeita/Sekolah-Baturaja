@@ -14,7 +14,13 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { fetchPeriodeList, getPeriodeLabel } from '@/lib/scheduleAdapters';
-import { deleteCatatanRapor, fetchRapor, getRaporErrorMessage, saveCatatanRapor } from '@/lib/raporAdapters';
+import {
+  deleteCatatanRapor,
+  fetchRapor,
+  getRaporErrorMessage,
+  saveCatatanRapor,
+  saveDeskripsiMapel,
+} from '@/lib/raporAdapters';
 import { useToast } from '@/components/ui/use-toast';
 import { formatSkor } from '@/lib/nilaiAdapters';
 import '@/styles/rapor-cetak.css';
@@ -34,6 +40,11 @@ import '@/styles/rapor-cetak.css';
  */
 
 const AKAR_CETAK_ID = 'rapor-cetak-root';
+
+const NARASI_KOSONG = Object.freeze({ catatan: '', kokurikuler: '', ekstrakurikuler: '' });
+
+const samaIsinya = (a, b) => Object.keys({ ...a, ...b })
+  .every((k) => String(a?.[k] || '').trim() === String(b?.[k] || '').trim());
 
 const tanggalPanjang = (iso) => {
   if (!iso) return '';
@@ -77,8 +88,11 @@ const useAkarCetak = (aktif) => {
   return akar;
 };
 
-export const LembarRapor = ({ data, sekolah, catatan }) => {
-  const { murid, kelas, periode, mapel, rataKeseluruhan, predikatKeseluruhan, kehadiran, waliKelas, kepalaSekolah } = data;
+export const LembarRapor = ({ data, sekolah, narasi }) => {
+  const {
+    murid, kelas, fase, periode, mapel,
+    rataKeseluruhan, predikatKeseluruhan, kehadiran, waliKelas, kepalaSekolah,
+  } = data;
 
   const totalHari = kehadiran.hadir + kehadiran.sakit + kehadiran.izin + kehadiran.alpa;
 
@@ -95,8 +109,12 @@ export const LembarRapor = ({ data, sekolah, catatan }) => {
         </div>
       </div>
 
+      {/* Judulnya SENGAJA bukan "Rapor". "Laporan Kemajuan Belajar" adalah istilah
+          Permendikbudristek 21/2022 Pasal 8 ayat (1), jadi akurat menurut regulasi
+          tanpa mengesankan dokumen ini keluaran e-Rapor Kemendikdasmen — yang
+          bukan. Lihat docs/51-riset-rapor-resmi-kemendikdasmen.md. */}
       <div className="rapor-judul">
-        <p className="rapor-judul__utama">Laporan Hasil Belajar</p>
+        <p className="rapor-judul__utama">Laporan Kemajuan Belajar</p>
         <p className="rapor-judul__periode">
           {periode
             ? `${getPeriodeLabel(periode)} · Tahun Ajaran ${periode.tahun_ajaran || sekolah.academicYear}`
@@ -111,6 +129,9 @@ export const LembarRapor = ({ data, sekolah, catatan }) => {
         <Baris label="Wali Kelas" nilai={waliKelas} />
         <Baris label="NIS" nilai={murid.nis || murid.nomor_induk} />
         <Baris label="Semester" nilai={periode?.semester} />
+        {/* Fase hanya tampil bila bisa diturunkan dari tingkat kelas; menebaknya
+            lebih buruk daripada mengosongkannya. */}
+        {fase && <Baris label="Fase" nilai={fase} />}
       </div>
 
       <div className="rapor-bagian">
@@ -128,7 +149,7 @@ export const LembarRapor = ({ data, sekolah, catatan }) => {
                 <th style={{ width: '11%' }} className="rapor-angka">Asesmen</th>
                 <th style={{ width: '11%' }} className="rapor-angka">Nilai</th>
                 <th style={{ width: '9%' }} className="rapor-angka">Predikat</th>
-                <th style={{ width: '20%' }}>Keterangan</th>
+                <th style={{ width: '34%' }}>Capaian Kompetensi</th>
               </tr>
             </thead>
             <tbody>
@@ -139,7 +160,9 @@ export const LembarRapor = ({ data, sekolah, catatan }) => {
                   <td className="rapor-angka">{m.jumlah}</td>
                   <td className="rapor-angka">{m.rataRata === null ? '-' : formatSkor(m.rataRata)}</td>
                   <td className="rapor-angka">{m.predikat.huruf}</td>
-                  <td>{m.predikat.label}</td>
+                  {/* Deskripsi capaian yang ditulis guru; bila belum ada, label
+                      predikat dipakai agar kolomnya tidak kosong sama sekali. */}
+                  <td>{m.deskripsi || m.predikat.label}</td>
                 </tr>
               ))}
             </tbody>
@@ -163,6 +186,20 @@ export const LembarRapor = ({ data, sekolah, catatan }) => {
         </p>
       </div>
 
+      {/* Komponen minimal BSKAP nomor 8 dan 9. Keduanya narasi bebas: kokurikuler
+          adalah projek penguatan profil pelajar, ekstrakurikuler adalah kegiatan
+          yang diikuti murid beserta keterangannya. */}
+      <div className="rapor-dua-kolom">
+        <div>
+          <h2 className="rapor-bagian__judul">Capaian Kokurikuler</h2>
+          <div className="rapor-catatan__kotak">{narasi.kokurikuler}</div>
+        </div>
+        <div>
+          <h2 className="rapor-bagian__judul">Kegiatan Ekstrakurikuler</h2>
+          <div className="rapor-catatan__kotak">{narasi.ekstrakurikuler}</div>
+        </div>
+      </div>
+
       <div className="rapor-dua-kolom">
         <div>
           <h2 className="rapor-bagian__judul">Ketidakhadiran</h2>
@@ -180,8 +217,16 @@ export const LembarRapor = ({ data, sekolah, catatan }) => {
         </div>
         <div>
           <h2 className="rapor-bagian__judul">Catatan Wali Kelas</h2>
-          <div className="rapor-catatan__kotak">{catatan}</div>
+          <div className="rapor-catatan__kotak">{narasi.catatan}</div>
         </div>
+      </div>
+
+      {/* Komponen minimal BSKAP nomor 12. Sengaja TIDAK disimpan di basis data:
+          tanggapan ditulis tangan orang tua pada lembar yang dibawa pulang, sama
+          seperti kolom tanda tangannya. */}
+      <div className="rapor-bagian">
+        <h2 className="rapor-bagian__judul">Tanggapan Orang Tua / Wali Murid</h2>
+        <div className="rapor-catatan__kotak rapor-catatan__kotak--lebar" />
       </div>
 
       <div className="rapor-ttd">
@@ -201,6 +246,15 @@ export const LembarRapor = ({ data, sekolah, catatan }) => {
           <p className="rapor-ttd__nama">{kepalaSekolah || ' '}</p>
         </div>
       </div>
+
+      {/* Pernyataan ini melindungi sekolah DAN produk. Dokumen ini sah sebagai
+          laporan hasil belajar menurut Permendikbudristek 21/2022 Pasal 8 ayat (5),
+          tetapi BUKAN keluaran e-Rapor Kemendikdasmen — dan tidak boleh terbaca
+          seolah-olah begitu. Lihat docs/51-riset-rapor-resmi-kemendikdasmen.md. */}
+      <p className="rapor-catatan-kaki rapor-penafian">
+        Dokumen ini adalah laporan kemajuan belajar yang diterbitkan {sekolah.name}.
+        Rapor resmi untuk keperluan administrasi pendidikan mengikuti mekanisme yang ditetapkan sekolah.
+      </p>
     </div>
   );
 };
@@ -213,8 +267,13 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
   const [periodeList, setPeriodeList] = useState([]);
   const [periodeId, setPeriodeId] = useState('');
   const [data, setData] = useState(null);
-  const [catatan, setCatatan] = useState('');
-  const [catatanTersimpan, setCatatanTersimpan] = useState('');
+  // Tiga narasi rapor disimpan bersama dalam satu baris, jadi state-nya satu objek
+  // dan tombol simpannya satu. `tersimpan` menyimpan salinan terakhir dari server
+  // supaya penanda "belum disimpan" jujur.
+  const [narasi, setNarasi] = useState(NARASI_KOSONG);
+  const [narasiTersimpan, setNarasiTersimpan] = useState(NARASI_KOSONG);
+  const [deskripsi, setDeskripsi] = useState({});
+  const [deskripsiTersimpan, setDeskripsiTersimpan] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -246,10 +305,18 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
     try {
       const hasil = await fetchRapor(santriId, periodeId);
       setData(hasil);
-      // Catatan yang tersimpan di server menjadi isi kotak. Ini juga yang membuat
-      // berpindah periode terasa benar: tiap periode punya catatannya sendiri.
-      setCatatan(hasil.catatan || '');
-      setCatatanTersimpan(hasil.catatan || '');
+      // Narasi yang tersimpan di server menjadi isi kotak. Ini juga yang membuat
+      // berpindah periode terasa benar: tiap periode punya narasinya sendiri.
+      const dariServer = {
+        catatan: hasil.catatan || '',
+        kokurikuler: hasil.kokurikuler || '',
+        ekstrakurikuler: hasil.ekstrakurikuler || '',
+      };
+      setNarasi(dariServer);
+      setNarasiTersimpan(dariServer);
+      const desk = Object.fromEntries((hasil.mapel || []).map((m) => [m.id, m.deskripsi || '']));
+      setDeskripsi(desk);
+      setDeskripsiTersimpan(desk);
     } catch (err) {
       setError(getRaporErrorMessage(err));
       setData(null);
@@ -260,34 +327,50 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
 
   useEffect(() => { muat(); }, [muat]);
 
-  const belumDisimpan = catatan.trim() !== catatanTersimpan.trim();
+  const belumDisimpan = !samaIsinya(narasi, narasiTersimpan) || !samaIsinya(deskripsi, deskripsiTersimpan);
 
-  const simpanCatatan = useCallback(async () => {
+  const simpanNarasi = useCallback(async () => {
     if (!santriId || !data?.periode?.id) return;
+    const periodeAktifId = data.periode.id;
     setIsSaving(true);
     try {
-      const isi = catatan.trim();
-      // Mengosongkan kotak berarti menghapus catatannya. Menyimpan string kosong
-      // ditolak backend (kolomnya tidak boleh kosong), jadi jalur hapus dipakai —
-      // kalau tidak, mengosongkan catatan terasa gagal tanpa sebab.
-      if (isi === '') {
-        await deleteCatatanRapor(santriId, data.periode.id);
+      const isi = {
+        catatan: narasi.catatan.trim(),
+        kokurikuler: narasi.kokurikuler.trim(),
+        ekstrakurikuler: narasi.ekstrakurikuler.trim(),
+      };
+      // Mengosongkan SEMUA kotak berarti menghapus barisnya. Menyimpan baris yang
+      // seluruhnya kosong ditolak backend, jadi jalur hapus dipakai — kalau tidak,
+      // mengosongkan narasi terasa gagal tanpa sebab.
+      const adaIsi = Object.values(isi).some((teks) => teks !== '');
+      if (adaIsi) {
+        await saveCatatanRapor(santriId, periodeAktifId, isi);
       } else {
-        await saveCatatanRapor(santriId, data.periode.id, isi);
+        await deleteCatatanRapor(santriId, periodeAktifId);
       }
-      setCatatanTersimpan(isi);
-      setCatatan(isi);
-      toast({ title: 'Tersimpan', description: 'Catatan wali kelas disimpan.' });
+      await saveDeskripsiMapel(santriId, periodeAktifId, deskripsi);
+
+      setNarasi(isi);
+      setNarasiTersimpan(isi);
+      setDeskripsiTersimpan(deskripsi);
+      // Lembar cetak membaca deskripsi dari `data.mapel`, jadi salinan itu ikut
+      // diperbarui — tanpa ini pratinjau masih menampilkan deskripsi lama sampai
+      // rapornya dimuat ulang.
+      setData((sebelumnya) => (sebelumnya ? {
+        ...sebelumnya,
+        mapel: (sebelumnya.mapel || []).map((m) => ({ ...m, deskripsi: deskripsi[m.id] || '' })),
+      } : sebelumnya));
+      toast({ title: 'Tersimpan', description: 'Catatan dan deskripsi capaian disimpan.' });
     } catch (err) {
       toast({
-        title: 'Gagal menyimpan catatan',
+        title: 'Gagal menyimpan',
         description: getRaporErrorMessage(err),
         variant: 'destructive',
       });
     } finally {
       setIsSaving(false);
     }
-  }, [santriId, data, catatan, toast]);
+  }, [santriId, data, narasi, deskripsi, toast]);
 
   const labelPeriode = useMemo(
     () => periodeList.map((p) => ({ id: p.id, label: getPeriodeLabel(p) + (p.is_active ? ' • Aktif' : '') })),
@@ -332,10 +415,10 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
         </div>
 
         <div className="max-h-[52vh] overflow-y-auto border-b px-5 py-3">
-          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-            <label className="text-xs font-semibold uppercase text-muted-foreground" htmlFor="rapor-catatan">
-              Catatan wali kelas
-            </label>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">
+              Isian rapor
+            </p>
             <div className="flex items-center gap-2">
               {belumDisimpan && (
                 <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Belum disimpan</span>
@@ -344,25 +427,86 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={simpanCatatan}
+                onClick={simpanNarasi}
                 disabled={isSaving || isLoading || !data?.periode?.id || !belumDisimpan}
               >
-                <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Menyimpan…' : 'Simpan catatan'}
+                <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Menyimpan…' : 'Simpan isian'}
               </Button>
             </div>
           </div>
-          <Textarea
-            id="rapor-catatan"
-            rows={3}
-            value={catatan}
-            onChange={(e) => setCatatan(e.target.value)}
-            placeholder="Ditulis di sini, tampil di lembar rapor, dan tersimpan per murid per periode."
-          />
+
+          {/* Deskripsi capaian per mata pelajaran — komponen minimal BSKAP nomor 7.
+              Hanya muncul untuk mata pelajaran yang benar-benar punya nilai, supaya
+              guru tidak dihadapkan pada daftar seluruh mata pelajaran sekolah. */}
+          {(data?.mapel || []).length > 0 && (
+            <div className="mb-3 space-y-2">
+              {data.mapel.map((m) => (
+                <div key={m.id}>
+                  <label className="mb-1 block text-xs text-muted-foreground" htmlFor={`rapor-deskripsi-${m.id}`}>
+                    Capaian kompetensi — <span className="font-semibold text-foreground">{m.nama}</span>
+                  </label>
+                  <Textarea
+                    id={`rapor-deskripsi-${m.id}`}
+                    rows={2}
+                    value={deskripsi[m.id] || ''}
+                    onChange={(e) => setDeskripsi((s) => ({ ...s, [m.id]: e.target.value }))}
+                    placeholder={`Kosong akan tercetak sebagai "${m.predikat.label}".`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground" htmlFor="rapor-kokurikuler">
+                Capaian kokurikuler
+              </label>
+              <Textarea
+                id="rapor-kokurikuler"
+                rows={3}
+                value={narasi.kokurikuler}
+                onChange={(e) => setNarasi((s) => ({ ...s, kokurikuler: e.target.value }))}
+                placeholder="Projek penguatan profil pelajar yang diikuti murid."
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground" htmlFor="rapor-ekstrakurikuler">
+                Kegiatan ekstrakurikuler
+              </label>
+              <Textarea
+                id="rapor-ekstrakurikuler"
+                rows={3}
+                value={narasi.ekstrakurikuler}
+                onChange={(e) => setNarasi((s) => ({ ...s, ekstrakurikuler: e.target.value }))}
+                placeholder="Misalnya: Pramuka — aktif dan disiplin."
+              />
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <label className="mb-1 block text-xs text-muted-foreground" htmlFor="rapor-catatan">
+              Catatan wali kelas
+            </label>
+            <Textarea
+              id="rapor-catatan"
+              rows={3}
+              value={narasi.catatan}
+              onChange={(e) => setNarasi((s) => ({ ...s, catatan: e.target.value }))}
+              placeholder="Tersimpan per murid per periode."
+            />
+          </div>
+
           {data?.catatanDiperbaruiPada && !belumDisimpan && (
             <p className="mt-1 text-xs text-muted-foreground">
               Terakhir disimpan {tanggalPanjang(data.catatanDiperbaruiPada)}.
             </p>
           )}
+          {/* Tanggapan orang tua sengaja tidak punya kotak isian di sini: pada rapor
+              kertas kolom itu ditulis tangan wali murid. */}
+          <p className="mt-1 text-xs text-muted-foreground">
+            Kolom Tanggapan Orang Tua/Wali dicetak kosong untuk ditulis tangan.
+          </p>
 
           <div className="rapor-pratinjau mt-4 rounded-lg">
             {isLoading && (
@@ -378,7 +522,7 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
               </div>
             )}
             {!isLoading && !error && data && (
-              <LembarRapor data={data} sekolah={sekolah} catatan={catatan} />
+              <LembarRapor data={data} sekolah={sekolah} narasi={narasi} />
             )}
           </div>
         </div>
@@ -388,7 +532,7 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
         {akarCetak && data && !isLoading && !error
           ? createPortal(
             <div className="rapor-hanya-cetak">
-              <LembarRapor data={data} sekolah={sekolah} catatan={catatan} />
+              <LembarRapor data={data} sekolah={sekolah} narasi={narasi} />
             </div>,
             akarCetak,
           )
