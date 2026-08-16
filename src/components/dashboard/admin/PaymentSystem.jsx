@@ -807,7 +807,22 @@ const PaymentSystem = () => {
 
   return (
     <>
-      <style>{`@media print { body * { visibility: hidden; } #receipt-content, #receipt-content * { visibility: visible; } #receipt-content { position: absolute; left: 0; top: 0; width: 100%; } }`}</style>
+      {/* Aturan penyapunya dipagari `:has()` — lihat rapor-cetak.css untuk alasan
+          lengkapnya. Singkatnya: aplikasi ini punya empat aturan cetak yang
+          sama-sama menyembunyikan SELURUH halaman, dan yang aktif bersamaan akan
+          saling membunuh sampai kertasnya keluar kosong. Masing-masing kini hanya
+          berlaku bila sasarannya ada.
+
+          Pengecualiannya ikut dipagari, dan itu wajib: `:has()` mewarisi bobot
+          argumennya, jadi penyapu berpagar mengalahkan pengecualian polos.
+          `!important` juga ditambahkan supaya tidak kalah oleh penyapu milik
+          PaymentProofModal, yang memakainya. */}
+      <style>{`@media print {
+        body:has(#receipt-content) * { visibility: hidden !important; }
+        body:has(#receipt-content) #receipt-content,
+        body:has(#receipt-content) #receipt-content * { visibility: visible !important; }
+        #receipt-content { position: absolute; left: 0; top: 0; width: 100%; }
+      }`}</style>
       <div className="space-y-6">
         <div className="admin-panel-header">
             <div className="flex items-center gap-3">

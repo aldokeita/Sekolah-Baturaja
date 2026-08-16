@@ -1191,12 +1191,25 @@ aplikasi, jadi tujuan cadangan yang dipakai.
 **Halaman baru yang bisa dicapai dari lebih dari satu tempat wajib memakai hook ini**, bukan menulis
 tujuannya sendiri. Diuji dari dashboard, dari layar absensi, dan lewat URL langsung.
 
-### Dua stylesheet cetak saling meniadakan — SUDAH DIPERBAIKI
+### EMPAT aturan cetak saling meniadakan — SUDAH DIPERBAIKI
 
-Aplikasi ini punya dua berkas gaya cetak yang sama-sama menyapu seluruh halaman:
+Aplikasi ini punya **empat** aturan cetak yang sama-sama menyapu seluruh halaman. Dua berkas CSS
+yang selalu termuat, dan dua `<style>` sebaris di dalam komponen:
 
-- `rapor-cetak.css` — `body > *:not(#rapor-cetak-root) { display: none }`
-- `cetak-bukti.css` — `body * { visibility: hidden }`, lalu `.bukti-cetak` dibuat terlihat
+| Sumber | Aturan penyapu | Sasaran yang diselamatkan |
+|---|---|---|
+| `rapor-cetak.css` | `body > *:not(#rapor-cetak-root) { display: none }` | lembar rapor |
+| `cetak-bukti.css` | `body * { visibility: hidden }` | `.bukti-cetak` |
+| `PaymentSystem.jsx` | `body * { visibility: hidden }` | `#receipt-content` |
+| `PaymentProofModal.jsx` | `body * { visibility: hidden !important }` | `#payment-proof-content` |
+
+Dua yang terakhir dipasang bersamaan pada panel Pembayaran — PaymentSystem merender
+PaymentProofModal — dan aturan modal memakai `!important` sementara aturan kuitansi tidak, jadi
+**kuitansi pembayaran keluar kosong** ketika modal buktinya sedang terpasang.
+
+Keempatnya kini dipagari dengan pola yang sama. Daftar ini harus bertambah bersama setiap aturan
+cetak baru: **aturan cetak yang menyapu seluruh halaman WAJIB dipagari `:has()` pada sasarannya
+sendiri**, dan pengecualiannya ikut dipagari.
 
 Keduanya berlaku bersamaan dan masing-masing membunuh cetakan yang lain: rapor tercetak **kosong**
 karena disembunyikan aturan bukti, dan bukti pendaftaran tercetak **kosong** karena seluruh
@@ -1221,6 +1234,16 @@ pengecualiannya justru membuat bukti tercetak kosong.** Pengecualiannya kini iku
 sementara tanpa media query, lalu baca `getComputedStyle().visibility` pada wadah rapor dan blok
 bukti. `visibility: hidden` bersama `display: block` adalah tanda khas halaman kosong yang tetap
 keluar dari mesin cetak.
+
+### Dua tombol cetak tanpa lembar cetaknya sendiri
+
+`PentashihDashboard.printPdfReport` dan tombol Cetak pada profil perkembangan di
+`SantriDetailModal` memanggil `window.print()` polos, tanpa aturan `@media print` mana pun yang
+memilih apa yang dicetak. Yang keluar seluruh isi layar: bilah navigasi, menu samping, tombol.
+
+Bukan halaman kosong, jadi tidak sefatal cacat di atas — tapi juga bukan dokumen yang pantas
+diberikan ke siapa pun. Belum ditangani: menentukan apa yang seharusnya dicetak kedua tombol itu
+keputusan produk, bukan perbaikan cacat.
 
 ### Cetak rapor sekelas sudah diuji pada beban sebenarnya
 
