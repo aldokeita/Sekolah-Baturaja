@@ -1175,6 +1175,21 @@ memang benar.
 Sebelum melaporkan hitungan hari belajar sebagai cacat, periksa tabel itu untuk bulan yang
 bersangkutan.
 
+### Tombol kembali jangan menebak asalnya
+
+Tombol Exit di halaman kuis menulis tujuannya mati: `/absensi-digital` untuk pegawai,
+`/dashboard` untuk murid. Benar selama halaman itu hanya diluncurkan dari layar absensi, dan salah
+begitu "Play Quiz" ada juga di dashboard guru — guru yang menekannya dari dashboard terlempar ke
+layar absensi, bukan kembali ke tempat ia tadi.
+
+Sekarang memakai `navigate(-1)`, dengan penjaga: `useLocation().key === 'default'` berarti halaman
+itu entri pertama di riwayat peramban (dibuka lewat URL langsung atau tab baru), dan di situ tidak
+ada tempat untuk kembali — tujuan tetapnya yang dipakai supaya penekan tidak terlempar keluar
+aplikasi.
+
+Pola yang sama berlaku untuk tombol kembali mana pun yang halamannya bisa dicapai dari lebih dari
+satu tempat.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

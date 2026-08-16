@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Trophy, CheckCircle, RotateCcw, Users, Smartphone, Monitor, Gamepad2, Sparkles, ArrowLeft, HelpCircle, Search, Sun, Moon, UserCheck } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Helmet } from 'react-helmet';
 import useWindowSize from '@/hooks/useWindowSize';
@@ -54,6 +54,25 @@ const QuizHafalanPage = () => {
   const [isPlayerLoading, setIsPlayerLoading] = useState(false);
 
   const isPracticeMode = role === 'santri';
+
+  /* Tombol Exit mengembalikan penekan ke tempat asalnya.
+   *
+   * Dulu tujuannya tertulis mati: /absensi-digital untuk guru, /dashboard untuk
+   * murid. Halaman ini memang dirancang diluncurkan dari layar absensi, tapi
+   * sejak tombol "Play Quiz" ada di dashboard guru, guru yang menekannya dari
+   * sana justru terlempar ke layar absensi — bukan kembali ke tempat ia tadi.
+   *
+   * `key === 'default'` berarti halaman ini entri pertama di riwayat peramban —
+   * dibuka lewat URL langsung atau tab baru. Di situ tidak ada tempat untuk
+   * kembali, jadi tujuan tetapnya yang dipakai. */
+  const lokasi = useLocation();
+  const keluarDariKuis = () => {
+    if (lokasi.key !== 'default') {
+      navigate(-1);
+      return;
+    }
+    navigate(isPracticeMode ? '/dashboard' : '/absensi-digital');
+  };
 
   // Load Config from hafalan_items table
   useEffect(() => {
@@ -438,7 +457,7 @@ const QuizHafalanPage = () => {
 
       <div className={`relative z-20 p-4 flex justify-between items-center border-b ${isDark ? 'border-white/10 bg-slate-900/50' : 'border-slate-200 bg-white/50'} backdrop-blur-md`}>
           <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" className={isDark ? "text-white hover:bg-white/10" : "text-slate-800 hover:bg-slate-200"} onClick={() => navigate(isPracticeMode ? '/dashboard' : '/absensi-digital')}><ArrowLeft className="w-5 h-5 mr-2" /> Exit</Button>
+              <Button variant="ghost" size="sm" className={isDark ? "text-white hover:bg-white/10" : "text-slate-800 hover:bg-slate-200"} onClick={keluarDariKuis}><ArrowLeft className="w-5 h-5 mr-2" /> Exit</Button>
               <h1 className="text-xl font-bold tracking-wider flex items-center gap-2"><Gamepad2 className="w-6 h-6 text-purple-400" /> QUIZ HAFALAN {isPracticeMode && "(LATIHAN)"}</h1>
           </div>
           {!isPracticeMode && (
