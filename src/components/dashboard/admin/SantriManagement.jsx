@@ -1115,8 +1115,13 @@ const SantriManagement = () => {
         />
       </div>
 
+      {/* Daftar murid halaman ini diteruskan supaya wali kelas bisa berpindah ke
+          murid berikutnya tanpa menutup dialog. Mengisi dua puluh delapan rapor
+          berarti dua puluh delapan kali buka-tutup tanpa ini. */}
       <RaporCetak
         santriId={raporSantriId}
+        daftarMurid={sortedAndFilteredSantri.map((s) => ({ id: s.id, nama: s.nama_lengkap }))}
+        onPindahMurid={setRaporSantriId}
         open={Boolean(raporSantriId)}
         onOpenChange={(terbuka) => { if (!terbuka) setRaporSantriId(null); }}
       />

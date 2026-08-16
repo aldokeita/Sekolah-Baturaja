@@ -701,6 +701,35 @@ membuat sebagian tersimpan ketika koneksi putus di tengah.
 Nama tabel `rapor_catatan` **dipertahankan** meski isinya kini lebih dari catatan. Menggantinya
 memutus data tersimpan demi nama yang lebih rapi — pertukaran yang tidak sepadan.
 
+### Cetak rapor sekelas: konteks bersama diambil sekali
+
+`fetchRapor` untuk satu murid memanggil sembilan endpoint, empat di antaranya
+mengembalikan jawaban yang **sama untuk setiap murid**: daftar periode, daftar kelas, daftar guru,
+dan konfigurasi predikat. Memanggilnya berulang untuk 28 murid berarti 28× daftar kelas dan 28×
+daftar guru.
+
+Karena itu `fetchKonteksRapor()` dipisahkan dan `fetchRapor` menerimanya sebagai argumen ketiga.
+`fetchRaporKelas` mengambil konteks **sekali**, lalu tiap murid hanya menambah empat permintaan
+miliknya sendiri.
+
+Pengambilannya **berkelompok lima**, bukan `Promise.all` atas seluruh kelas: melepas seratus lebih
+permintaan serentak membuat peramban mengantre sendiri — lebih lambat, dan kegagalannya sulit
+dibaca.
+
+Murid yang gagal dimuat **tidak menggagalkan seluruh kelas**; ia dikembalikan dengan `gagal: true`
+dan namanya disebut di dialog. Mencetak 26 dari 28 rapor tanpa memberi tahu dua yang hilang adalah
+kegagalan senyap.
+
+Pemisah halaman memakai `break-before: page` **dan** `page-break-before: always`. Yang kedua bukan
+duplikasi sia-sia — mesin cetak lama hanya mengenal properti lama itu.
+
+Dialog sekelas sengaja **baca saja**. Menyunting 28 rapor dalam satu layar mengundang salah tulis
+pada murid yang salah; pengisian tetap lewat dialog per murid, yang kini punya navigasi antarmurid.
+
+Navigasi itu **meminta persetujuan** bila masih ada isian yang belum disimpan — berpindah murid
+sambil membuang pekerjaan orang tanpa peringatan adalah kegagalan yang sama seperti kehilangan
+catatan dulu.
+
 ### Rentang predikat rapor bisa diatur sekolah
 
 Bawaannya A≥90 / B≥80 / C≥70 / D, kebiasaan umum SD Indonesia — tetapi setiap sekolah menetapkan

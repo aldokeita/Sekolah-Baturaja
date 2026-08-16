@@ -260,6 +260,14 @@
   display: none;
 }
 
+/* Cetak sekelas: tiap murid mulai di halaman baru. Di layar cukup jarak dan
+   garis pemisah supaya pratinjaunya tetap terbaca sebagai kumpulan lembar. */
+.rapor-halaman-baru {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px dashed var(--rapor-garis, #d7dae8);
+}
+
 /* ── Cetak ─────────────────────────────────────────────────────────────────── */
 
 @media print {
@@ -291,6 +299,17 @@
 
   .rapor-hanya-cetak {
     display: block !important;
+  }
+
+  /* Garis pemisah layar diganti pemisah halaman sungguhan. `break-before`
+     dipasang bersama `page-break-before` karena mesin cetak lama hanya mengenal
+     yang kedua. */
+  .rapor-halaman-baru {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: 0 !important;
+    break-before: page;
+    page-break-before: always;
   }
 
   .rapor-pratinjau {

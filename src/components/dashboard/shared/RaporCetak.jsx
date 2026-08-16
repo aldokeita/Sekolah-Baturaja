@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, Printer, RefreshCw, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Printer, RefreshCw, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,7 +61,7 @@ const Baris = ({ label, nilai }) => (
 );
 
 /** Wadah portal, dibuat sekali dan dipakai ulang oleh setiap rapor. */
-const useAkarCetak = (aktif) => {
+export const useAkarCetak = (aktif) => {
   const [akar, setAkar] = useState(null);
 
   useEffect(() => {
@@ -259,7 +259,7 @@ export const LembarRapor = ({ data, sekolah, narasi }) => {
   );
 };
 
-const RaporCetak = ({ santriId, open, onOpenChange }) => {
+const RaporCetak = ({ santriId, open, onOpenChange, daftarMurid = [], onPindahMurid }) => {
   const sekolah = useSchoolIdentity();
   const akarCetak = useAkarCetak(open);
   const { toast } = useToast();
@@ -377,6 +377,23 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
     [periodeList],
   );
 
+  const urutan = daftarMurid.findIndex((m) => m.id === santriId);
+  const bisaPindah = Boolean(onPindahMurid) && urutan >= 0 && daftarMurid.length > 1;
+
+  // Berpindah murid saat masih ada isian yang belum disimpan akan membuang
+  // pekerjaan tanpa peringatan, jadi dimintakan persetujuan lebih dulu.
+  const pindah = useCallback((arah) => {
+    const tujuan = daftarMurid[urutan + arah];
+    if (!tujuan) return;
+    if (belumDisimpan) {
+      const lanjut = window.confirm(
+        'Ada isian rapor yang belum disimpan. Pindah ke murid lain dan membuang perubahan itu?',
+      );
+      if (!lanjut) return;
+    }
+    onPindahMurid(tujuan.id);
+  }, [daftarMurid, urutan, belumDisimpan, onPindahMurid]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] max-w-4xl overflow-hidden p-0">
@@ -412,6 +429,34 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
           <Button type="button" size="sm" onClick={() => window.print()} disabled={isLoading || !data}>
             <Printer className="mr-2 h-4 w-4" /> Cetak
           </Button>
+
+          {bisaPindah && (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => pindah(-1)}
+                disabled={isLoading || isSaving || urutan <= 0}
+                aria-label="Murid sebelumnya"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="min-w-20 text-center text-xs font-medium tabular-nums text-muted-foreground">
+                {urutan + 1} / {daftarMurid.length}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => pindah(1)}
+                disabled={isLoading || isSaving || urutan >= daftarMurid.length - 1}
+                aria-label="Murid berikutnya"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="max-h-[52vh] overflow-y-auto border-b px-5 py-3">

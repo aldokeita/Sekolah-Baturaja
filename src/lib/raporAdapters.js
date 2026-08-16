@@ -1,7 +1,12 @@
 import apiClient from '@/lib/apiClient';
 import { APP_CONFIG_KEYS, fetchAppConfigs } from '@/lib/appConfigAdapters';
 import { fetchAttendanceRecap } from '@/lib/attendanceAdapters';
-import { fetchClassList, fetchGuruList, fetchSantriDetail } from '@/lib/dataMasterAdapters';
+import {
+  fetchClassList,
+  fetchGuruList,
+  fetchSantriDetail,
+  fetchSantriList,
+} from '@/lib/dataMasterAdapters';
 import { fetchNilaiSummary } from '@/lib/nilaiAdapters';
 import { fetchPeriodeList } from '@/lib/scheduleAdapters';
 
@@ -151,47 +156,77 @@ export const getRaporErrorMessage = (error) => {
 };
 
 /**
- * @param {string} santriId murid yang rapornya dicetak
- * @param {string} [periodeId] biarkan kosong untuk memakai periode aktif
+ * Bahan rapor yang SAMA untuk setiap murid: daftar periode, daftar kelas, daftar
+ * guru, dan skala predikat sekolah.
+ *
+ * Dipisahkan supaya cetak sekelas tidak mengambilnya berulang kali. Untuk 28 murid,
+ * memanggil `fetchRapor` satu per satu berarti 28× daftar kelas dan 28× daftar guru
+ * — ratusan permintaan yang seluruhnya mengembalikan jawaban yang sama.
  */
-export const fetchRapor = async (santriId, periodeId = '') => {
-  if (!santriId) throw new Error('Murid belum dipilih.');
-
-  const [murid, daftarPeriode, daftarKelas, konfigurasi] = await Promise.all([
-    fetchSantriDetail(santriId),
+export const fetchKonteksRapor = async () => {
+  const [daftarPeriode, daftarKelas, daftarGuru, konfigurasi] = await Promise.all([
     fetchPeriodeList(),
     fetchClassList({ includeGuru: true, limit: 200 }),
+    // Kepala sekolah menandatangani rapor. Namanya diambil dari Data Guru, bukan
+    // ditulis di komponen cetak, supaya rapor pembeli tidak menandatangani atas
+    // nama sekolah contoh.
+    fetchGuruList().catch(() => []),
     fetchAppConfigs([APP_CONFIG_KEYS.RAPOR_PREDIKAT]).catch(() => ({})),
   ]);
 
   const skalaPredikat = normalisasiPredikat(konfigurasi?.[APP_CONFIG_KEYS.RAPOR_PREDIKAT]);
-  const beriPredikat = buatPredikatDari(skalaPredikat);
+  const kepalaSekolah = (daftarGuru || []).find((g) => {
+    const roles = Array.isArray(g?.roles) ? g.roles : [];
+    if (roles.includes('Kepala Sekolah')) return true;
+    const jabatan = String(g?.jabatan || '');
+    return /kepala\s+sekolah/i.test(jabatan) && !/wakil/i.test(jabatan);
+  }) || null;
 
+  return {
+    daftarPeriode: daftarPeriode || [],
+    daftarKelas: daftarKelas || [],
+    skalaPredikat,
+    beriPredikat: buatPredikatDari(skalaPredikat),
+    kepalaSekolah: kepalaSekolah?.nama || null,
+  };
+};
+
+export const pilihPeriode = (konteks, periodeId = '') => (
+  konteks.daftarPeriode.find((p) => p.id === periodeId)
+  || konteks.daftarPeriode.find((p) => p.is_active)
+  || konteks.daftarPeriode[0]
+  || null
+);
+
+/**
+ * @param {string} santriId murid yang rapornya dicetak
+ * @param {string} [periodeId] biarkan kosong untuk memakai periode aktif
+ */
+export const fetchRapor = async (santriId, periodeId = '', konteksSiap = null) => {
+  if (!santriId) throw new Error('Murid belum dipilih.');
+
+  const konteks = konteksSiap || await fetchKonteksRapor();
+  const { skalaPredikat, beriPredikat } = konteks;
+
+  const murid = await fetchSantriDetail(santriId);
   if (!murid) throw new Error('Data murid tidak ditemukan.');
 
-  const periode = (daftarPeriode || []).find((p) => p.id === periodeId)
-    || (daftarPeriode || []).find((p) => p.is_active)
-    || (daftarPeriode || [])[0]
-    || null;
+  const periode = pilihPeriode(konteks, periodeId);
 
   const classId = murid.current_class_id || murid.id_kelas || null;
-  const kelas = classId ? (daftarKelas || []).find((c) => c.id === classId) || null : null;
+  const kelas = classId ? konteks.daftarKelas.find((c) => c.id === classId) || null : null;
 
   const rentang = rentangPeriode(periode);
 
   // Ketidakhadiran dan nilai diambil berbarengan; keduanya berdiri sendiri dan
   // rapor tetap bisa dicetak walau salah satunya kosong.
-  const [ringkasanNilai, rekapAbsensi, daftarGuru, catatanTersimpan, deskripsiMapel] = await Promise.all([
+  const [ringkasanNilai, rekapAbsensi, catatanTersimpan, deskripsiMapel] = await Promise.all([
     periode
       ? fetchNilaiSummary({ santriId, periodeId: periode.id }).catch(() => [])
       : Promise.resolve([]),
     rentang.dari
       ? fetchAttendanceRecap(santriId, rentang.dari, rentang.sampai).catch(() => null)
       : Promise.resolve(null),
-    // Kepala sekolah menandatangani rapor. Namanya diambil dari Data Guru, bukan
-    // ditulis di komponen cetak, supaya rapor pembeli tidak menandatangani atas
-    // nama sekolah contoh.
-    fetchGuruList().catch(() => []),
     periode ? fetchCatatanRapor(santriId, periode.id).catch(() => null) : Promise.resolve(null),
     periode ? fetchDeskripsiMapel(santriId, periode.id).catch(() => ({})) : Promise.resolve({}),
   ]);
@@ -221,13 +256,6 @@ export const fetchRapor = async (santriId, periodeId = '') => {
     ? Math.round((nilaiAda.reduce((t, m) => t + m.rataRata, 0) / nilaiAda.length) * 100) / 100
     : null;
 
-  const kepalaSekolah = (daftarGuru || []).find((g) => {
-    const roles = Array.isArray(g?.roles) ? g.roles : [];
-    if (roles.includes('Kepala Sekolah')) return true;
-    const jabatan = String(g?.jabatan || '');
-    return /kepala\s+sekolah/i.test(jabatan) && !/wakil/i.test(jabatan);
-  }) || null;
-
   return {
     murid,
     kelas,
@@ -240,11 +268,67 @@ export const fetchRapor = async (santriId, periodeId = '') => {
     predikatKeseluruhan: rataKeseluruhan === null ? null : beriPredikat(rataKeseluruhan),
     kehadiran,
     waliKelas: kelas?.guru?.nama || null,
-    kepalaSekolah: kepalaSekolah?.nama || null,
+    kepalaSekolah: konteks.kepalaSekolah,
     catatan: catatanTersimpan?.catatan || '',
     kokurikuler: catatanTersimpan?.deskripsi_kokurikuler || '',
     ekstrakurikuler: catatanTersimpan?.ekstrakurikuler || '',
     catatanDiperbaruiPada: catatanTersimpan?.updated_at || null,
+  };
+};
+
+/**
+ * Rapor seluruh murid satu kelas, untuk dicetak sekaligus.
+ *
+ * Konteks bersama diambil SEKALI, lalu tiap murid hanya menambah empat permintaan
+ * miliknya sendiri. Tanpa itu satu kelas berisi 28 murid akan menembak daftar
+ * kelas dan daftar guru 28 kali masing-masing.
+ *
+ * Diambil berkelompok, bukan sekaligus: `Promise.all` atas 28 murid melepas lebih
+ * dari seratus permintaan serentak dan membuat peramban mengantre sendiri, yang
+ * justru memperlambat sekaligus menyulitkan membaca kegagalan.
+ *
+ * Murid yang gagal dimuat TIDAK menggagalkan seluruh kelas — ia dikembalikan
+ * dengan `error` terisi, supaya pemanggilnya bisa mencetak sisanya dan menyebut
+ * mana yang bermasalah.
+ *
+ * @param {string} classId
+ * @param {string} [periodeId]
+ * @param {(sudah:number, total:number) => void} [onProgress]
+ */
+export const fetchRaporKelas = async (classId, periodeId = '', onProgress) => {
+  if (!classId) throw new Error('Kelas belum dipilih.');
+
+  const konteks = await fetchKonteksRapor();
+  const daftarMurid = await fetchSantriList({
+    classId,
+    activeOnly: true,
+    notDeleted: true,
+    order: 'nama_lengkap',
+    limit: 200,
+  });
+
+  const murid = (daftarMurid || []).filter((s) => s?.id);
+  const hasil = [];
+  const UKURAN_KELOMPOK = 5;
+
+  for (let i = 0; i < murid.length; i += UKURAN_KELOMPOK) {
+    const kelompok = murid.slice(i, i + UKURAN_KELOMPOK);
+    const rapor = await Promise.all(kelompok.map((s) => (
+      fetchRapor(s.id, periodeId, konteks).catch((err) => ({
+        gagal: true,
+        nama: s.nama_lengkap || 'Murid',
+        error: getRaporErrorMessage(err),
+      }))
+    )));
+    hasil.push(...rapor);
+    if (onProgress) onProgress(hasil.length, murid.length);
+  }
+
+  return {
+    kelas: konteks.daftarKelas.find((c) => c.id === classId) || null,
+    periode: pilihPeriode(konteks, periodeId),
+    daftarPeriode: konteks.daftarPeriode,
+    rapor: hasil,
   };
 };
 

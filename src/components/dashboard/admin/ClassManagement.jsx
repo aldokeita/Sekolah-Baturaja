@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, Clock, BarChart2, GripVertical, FileSpreadsheet, Filter, ArrowRight, Phone, Eye, User, Settings, GraduationCap, ListOrdered } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, Clock, BarChart2, GripVertical, FileSpreadsheet, FileText, Filter, ArrowRight, Phone, Eye, User, Settings, GraduationCap, ListOrdered } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +39,7 @@ import {
 import { resolveAvatarRecord, resolveAvatarRecords } from '@/lib/storageAdapters';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
 import { enableTahfizh } from '@/lib/featureFlags';
+import RaporKelasCetak from '@/components/dashboard/shared/RaporKelasCetak';
 
 const ItemTypes = {
   SANTRI: 'santri',
@@ -349,7 +350,7 @@ const DroppableColumn = React.forwardRef(({ title, children, onDrop, icon, isOve
 });
 DroppableColumn.displayName = 'DroppableColumn';
 
-const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete, onShowDetails, onShowPerformance, santriCount, canManage }) => {
+const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete, onShowDetails, onShowPerformance, onCetakRapor, santriCount, canManage }) => {
   const ref = useRef(null);
   const [{ handlerId }, drop] = useDrop({
     accept: ItemTypes.CLASS,
@@ -379,7 +380,14 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
         </div>
         <div className="flex justify-end gap-2 mb-2 border-b pb-2 flex-wrap">
           {canManage && (<><Button size="sm" variant="outline" onClick={() => onEdit(classItem)}><Edit className="w-3 h-3"/></Button><Button size="sm" variant="destructive" onClick={() => onDelete(classItem.id)}><Trash2 className="w-3 h-3"/></Button></>)}
-          <div className="flex gap-1 ml-auto"><Button size="sm" onClick={() => onShowDetails(classItem)} title="Detail Kelas"><BarChart2 className="w-3 h-3 mr-1"/> Detail</Button></div>
+          <div className="flex gap-1 ml-auto">
+            {onCetakRapor && santriCount > 0 && (
+              <Button size="sm" variant="outline" onClick={() => onCetakRapor(classItem)} title={`Cetak rapor seluruh murid ${classItem.nama_kelas}`}>
+                <FileText className="w-3 h-3 mr-1"/> Rapor
+              </Button>
+            )}
+            <Button size="sm" onClick={() => onShowDetails(classItem)} title="Detail Kelas"><BarChart2 className="w-3 h-3 mr-1"/> Detail</Button>
+          </div>
         </div>
         {children}
         {(!children || children.length === 0) && <div className="text-center py-8 text-muted-foreground">Tarik murid ke sini</div>}
@@ -415,6 +423,8 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const [isSantriDetailOpen, setIsSantriDetailOpen] = useState(false);
   const [isJilidModalOpen, setIsJilidModalOpen] = useState(false);
   const [isReorderOpen, setIsReorderOpen] = useState(false);
+  // Kelas yang rapor sekelasnya sedang dibuka; null berarti dialognya tertutup.
+  const [kelasRapor, setKelasRapor] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSantri, setSelectedSantri] = useState(null);
   const [jilidChangeData, setJilidChangeData] = useState(null);
@@ -968,7 +978,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {classesBySession[session].map((classItem) => (
-                <ClassCard key={classItem.id} index={classes.findIndex(c => c.id === classItem.id)} classItem={classItem} onDropSantri={handleDropSantri} onEdit={handleEdit} onDelete={confirmDeleteClass} onShowDetails={handleShowPerformance} onShowPerformance={handleShowPerformance} santriCount={(santriByClass[classItem.id] || []).length} canManage={canManage}>
+                <ClassCard key={classItem.id} index={classes.findIndex(c => c.id === classItem.id)} classItem={classItem} onDropSantri={handleDropSantri} onEdit={handleEdit} onDelete={confirmDeleteClass} onShowDetails={handleShowPerformance} onShowPerformance={handleShowPerformance} onCetakRapor={setKelasRapor} santriCount={(santriByClass[classItem.id] || []).length} canManage={canManage}>
                   {(santriByClass[classItem.id] || []).map((santri, santriIndex) => (
                     <DraggableSantri
                         key={santri.id}
@@ -1066,6 +1076,12 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         <SantriDetailModal santri={selectedSantri} isOpen={isSantriDetailOpen} onOpenChange={setIsSantriDetailOpen} onPromote={() => initiateJilidChange(selectedSantri, 'up')} onDemote={() => initiateJilidChange(selectedSantri, 'down')} />
         <JilidChangeModal isOpen={isJilidModalOpen} onClose={() => setIsJilidModalOpen(false)} onConfirm={confirmJilidChange} {...jilidChangeData} kategori={kategori} />
         <ClassPerformanceModal isOpen={isPerformanceOpen} onClose={() => setIsPerformanceOpen(false)} classItem={selectedClass} />
+        <RaporKelasCetak
+          classId={kelasRapor?.id}
+          namaKelas={kelasRapor?.nama_kelas}
+          open={Boolean(kelasRapor)}
+          onOpenChange={(terbuka) => { if (!terbuka) setKelasRapor(null); }}
+        />
         <ConfirmationDialog isOpen={confirmDialog.isOpen} onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })} onConfirm={confirmDialog.onConfirm} title={confirmDialog.title} description={confirmDialog.description} />
 
         <SessionConfigDialog open={isConfigOpen} onOpenChange={setIsConfigOpen} config={sessionTimes} onSave={handleSaveConfig} />
