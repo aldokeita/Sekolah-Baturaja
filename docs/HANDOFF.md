@@ -1096,6 +1096,43 @@ dipantulkan kembali ke dashboardnya.
 Sengaja **di luar** pagar `enableGameFeatures` — ini alat mengajar, bukan permainan hadiah seperti
 Gatcha, dan pemilik template memutuskan guru selalu boleh memakainya.
 
+### Alamat tak dikenal menghasilkan halaman kosong — SUDAH DIPERBAIKI
+
+Rute penampung di `App.jsx` membungkus halaman publik di dalam `PublicLayout`, tapi di dalamnya
+tidak ada penampung terakhir. Alamat yang tidak cocok dengan satu pun rute menghasilkan navbar di
+atas, footer di bawah, dan **tidak ada apa-apa di antaranya** — pengunjung tidak diberi tahu bahwa
+ia salah alamat, dan tidak diberi jalan keluar.
+
+`src/pages/NotFoundPage.jsx` mengisi tempat itu, memakai gaya halaman publik dan `JudulHalaman`
+supaya judul tabnya ikut nama sekolah pembeli. Alamat yang diminta ikut ditampilkan supaya pengunjung
+bisa mengenali salah ketiknya sendiri dan sekolah punya sesuatu untuk disebut saat dilapori.
+
+### Judul tab: hidrasi identitas menimpa judul halaman
+
+`App.jsx` menyelaraskan `document.title` dengan nama sekolah setiap kali identitas berubah. Hidrasi
+itu selesai **sesudah** Helmet menulis judul halaman, jadi baris itu menimpanya. Di sebagian besar
+halaman Helmet menulis ulang sesudahnya sehingga tidak pernah terlihat — kebetulan, bukan rancangan.
+Di halaman yang tidak menulis ulang, judulnya jatuh kembali ke nama sekolah saja; itulah cara cacat
+ini akhirnya terlihat, lewat halaman 404 yang baru.
+
+Sekarang penimpaan hanya terjadi bila judul yang ada memang judul yang ditulis App sendiri (atau
+judul statis dari `index.html`). Begitu sebuah halaman memasang judulnya sendiri, App mundur.
+
+### `enableGameFeatures` menyala secara BAWAAN
+
+`featureFlags.js` menulis `VITE_ENABLE_GAME_FEATURES !== 'false'` — jadi modul permainan **aktif
+kecuali dimatikan secara eksplisit**, kebalikan dari `enableTahfizh` dan `enableDeferredFeatures`
+yang mati kecuali dinyalakan. Mudah salah baca, dan pernah salah dibaca: tombol Gatcha di dashboard
+guru sempat disangka "tampil padahal saklarnya mati", padahal saklarnya memang menyala.
+
+Tombol Gatcha dan Acak Nama di `GuruDashboard.jsx` memang belum mengikuti saklarnya sama sekali —
+`DashboardWorkspace.jsx` sudah, jadi dashboard guru yang menyimpang. Sekarang keduanya ikut. Diuji
+dua arah: dengan `VITE_ENABLE_GAME_FEATURES=false` hanya "Play Quiz" yang tersisa.
+
+**Play Quiz sengaja DI LUAR pagar itu**, di dashboard guru maupun di layar absensi digital. Ia alat
+mengajar yang selalu boleh dipakai guru, bukan permainan hadiah — keputusan pemilik template. Di
+layar absensi ia dulu ikut di dalam pagar, jadi mematikan permainan ikut mencabut kuisnya.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

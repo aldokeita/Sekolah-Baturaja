@@ -26,6 +26,7 @@ import DigitalAttendancePage from '@/pages/DigitalAttendancePage';
 import TvDisplayPage from '@/pages/TvDisplayPage';
 import GatchaGamePage from '@/pages/GatchaGamePage';
 import QuizHafalanPage from '@/pages/QuizHafalanPage';
+import NotFoundPage from '@/pages/NotFoundPage';
 import GalleryPage from '@/pages/GalleryPage';
 import RandomNamePage from '@/pages/RandomNamePage';
 import TopScorePage from '@/pages/TopScorePage';
@@ -137,10 +138,24 @@ function App() {
   // publik dan seluruh dashboard memakainya. Endpoint-nya terbuka, jadi ini
   // tetap jalan sebelum login. Bila gagal, singgahan atau nilai bawaan dipakai.
   useEffect(() => {
-    // Judul tab diselaraskan dengan identitas tersimpan. index.html statis, jadi
-    // tanpa ini nama sekolah yang diganti pembeli tidak akan terlihat di tab.
-    // Halaman yang memasang <Helmet> sendiri (mis. dashboard) tetap menang.
-    const syncTitle = (identity) => { document.title = identity.name; };
+    /* Judul tab diselaraskan dengan identitas tersimpan. index.html statis, jadi
+     * tanpa ini nama sekolah yang diganti pembeli tidak akan terlihat di tab.
+     *
+     * Halaman yang memasang <Helmet> sendiri harus menang, dan dulu itu hanya
+     * benar secara kebetulan: hidrasi identitas selesai SESUDAH Helmet menulis
+     * judulnya, lalu baris ini menimpanya. Di sebagian besar halaman Helmet
+     * menulis ulang sesudahnya sehingga tidak terlihat; di halaman yang tidak,
+     * judulnya jatuh kembali ke nama sekolah saja.
+     *
+     * Sekarang penimpaan hanya terjadi bila judul yang ada memang judul yang
+     * ditulis baris ini sendiri (atau judul statis dari index.html). Begitu
+     * sebuah halaman memasang judulnya sendiri, baris ini mundur. */
+    let judulDariSini = document.title;
+    const syncTitle = (identity) => {
+      if (document.title !== judulDariSini) return;
+      document.title = identity.name;
+      judulDariSini = identity.name;
+    };
     const unsubscribe = subscribeSchoolIdentity(syncTitle);
     hydrateSchoolIdentity().then(syncTitle).catch(() => syncTitle(getSchoolIdentity()));
     return unsubscribe;
@@ -213,6 +228,11 @@ function App() {
                         {/* Cek status PPDB pakai nomor pendaftaran. Publik dengan
                             sengaja — orang tua calon murid tidak punya akun. */}
                         <Route path="/cek-pendaftaran" element={<CekPendaftaranPage />} />
+                        {/* Penampung terakhir. Tanpa baris ini alamat yang tidak
+                            dikenal menghasilkan navbar dan footer dengan badan
+                            halaman KOSONG — pengunjung tidak diberi tahu bahwa ia
+                            salah alamat, dan tidak diberi jalan keluar. */}
+                        <Route path="*" element={<NotFoundPage />} />
                       </Routes>
                     </main>
                   </PublicLayout>

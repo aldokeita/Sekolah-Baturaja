@@ -1049,15 +1049,6 @@ const DigitalAttendancePage = () => {
                   <span>Gatcha</span>
                 </button>
                 <button
-                  className="attendance-header__action-btn attendance-header__action-btn--quiz"
-                  onClick={() => navigate('/quiz-hafalan')}
-                  title="Play Quiz"
-                  aria-label="Play Quiz"
-                >
-                  <Library className="w-4 h-4" />
-                  <span>Quiz</span>
-                </button>
-                <button
                   className="attendance-header__action-btn attendance-header__action-btn--random"
                   onClick={() => navigate('/random-name')}
                   title="Acak Nama"
@@ -1068,6 +1059,19 @@ const DigitalAttendancePage = () => {
                 </button>
               </>
             )}
+            {/* Quiz DI LUAR pagar permainan, sejalan dengan dashboard guru: ia
+                alat mengajar yang selalu boleh dipakai guru, bukan permainan
+                hadiah seperti Gatcha dan Acak Nama. Sebelumnya ikut di dalam,
+                jadi mematikan saklar permainan ikut mencabut kuisnya. */}
+            <button
+              className="attendance-header__action-btn attendance-header__action-btn--quiz"
+              onClick={() => navigate('/quiz-hafalan')}
+              title="Play Quiz"
+              aria-label="Play Quiz"
+            >
+              <Library className="w-4 h-4" />
+              <span>Quiz</span>
+            </button>
             <button
               className="attendance-header__action-btn attendance-header__action-btn--tv"
               onClick={() => navigate('/tv-display-mode')}
