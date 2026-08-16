@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+import useKembali from '@/hooks/useKembali';
 import { Card } from '@/components/ui/card';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -73,14 +74,12 @@ const RandomNamePage = () => {
         deductions: [-1, -3, -5]
     });
 
-    const handleBackNavigation = () => {
-        if (role === 'guru' || role === 'admin' || role === 'santri') {
-            navigate('/dashboard');
-        } else {
-            // Default fallback if role is undefined or something else (e.g. public access if allowed in future)
-            navigate('/');
-        }
-    };
+    /* Kembali ke tempat asal penekan; lihat src/hooks/useKembali.js. Cadangannya
+     * masih bergantung peran, untuk halaman yang dibuka lewat URL langsung:
+     * pemilik akun punya dashboard, selain itu beranda publik. */
+    const handleBackNavigation = useKembali(
+        role === 'guru' || role === 'admin' || role === 'santri' ? '/dashboard' : '/',
+    );
 
     // --- Fetch Data ---
     useEffect(() => {

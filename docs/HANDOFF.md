@@ -1175,20 +1175,21 @@ memang benar.
 Sebelum melaporkan hitungan hari belajar sebagai cacat, periksa tabel itu untuk bulan yang
 bersangkutan.
 
-### Tombol kembali jangan menebak asalnya
+### Tombol kembali jangan menebak asalnya — pakai `useKembali`
 
-Tombol Exit di halaman kuis menulis tujuannya mati: `/absensi-digital` untuk pegawai,
-`/dashboard` untuk murid. Benar selama halaman itu hanya diluncurkan dari layar absensi, dan salah
-begitu "Play Quiz" ada juga di dashboard guru — guru yang menekannya dari dashboard terlempar ke
-layar absensi, bukan kembali ke tempat ia tadi.
+Halaman alat bantu — kuis, gatcha, acak nama, papan skor, mode TV — bisa dibuka dari lebih dari satu
+tempat: dashboard guru, layar absensi digital, atau URL langsung. Kelimanya dulu menulis tujuan
+tombol kembalinya mati, umumnya `/absensi-digital`, karena dulu memang hanya dari sana. Begitu
+tombolnya muncul juga di dashboard guru, guru yang menekannya dari dashboard terlempar ke layar
+absensi — bukan kembali ke tempat ia tadi.
 
-Sekarang memakai `navigate(-1)`, dengan penjaga: `useLocation().key === 'default'` berarti halaman
-itu entri pertama di riwayat peramban (dibuka lewat URL langsung atau tab baru), dan di situ tidak
-ada tempat untuk kembali — tujuan tetapnya yang dipakai supaya penekan tidak terlempar keluar
-aplikasi.
+`src/hooks/useKembali.js` menanganinya: `navigate(-1)`, dengan penjaga `useLocation().key !==
+'default'`. Nilai `'default'` hanya muncul pada entri PERTAMA riwayat peramban — halaman dibuka lewat
+URL langsung, tab baru, atau muat ulang — dan di situ `navigate(-1)` akan membuang penekan keluar
+aplikasi, jadi tujuan cadangan yang dipakai.
 
-Pola yang sama berlaku untuk tombol kembali mana pun yang halamannya bisa dicapai dari lebih dari
-satu tempat.
+**Halaman baru yang bisa dicapai dari lebih dari satu tempat wajib memakai hook ini**, bukan menulis
+tujuannya sendiri. Diuji dari dashboard, dari layar absensi, dan lewat URL langsung.
 
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 

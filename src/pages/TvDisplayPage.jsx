@@ -15,6 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import useKembali from '@/hooks/useKembali';
 import { Helmet } from 'react-helmet';
 import { useTheme } from '@/contexts/ThemeContext';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
@@ -91,6 +92,8 @@ const PRIORITY_BADGE = {
 const TvDisplayPage = () => {
     const { sessionTimes: attendanceSessionTimes } = useAttendanceSessionConfiguration();
     const navigate = useNavigate();
+    // Kembali ke tempat asal penekan; lihat src/hooks/useKembali.js.
+    const kembali = useKembali('/absensi-digital');
     const { isDark, toggleTheme } = useTheme();
     const identity = getSchoolIdentity();
 
@@ -363,7 +366,7 @@ const TvDisplayPage = () => {
                         <Button variant="outline" size="icon" onClick={toggleTheme}>{isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-slate-600" />}</Button>
                         <div className={`w-px h-8 ${isDark ? 'bg-slate-700' : 'bg-slate-300'} mx-2`}></div>
                         <DigitalClock size="small" showSeconds={config.showSeconds} colorClass={isDark ? 'text-white' : 'text-slate-800'} />
-                        <div onClick={(e) => { e.stopPropagation(); navigate('/absensi-digital'); }} className="ml-4 opacity-50 hover:opacity-100 cursor-pointer p-2" title="Keluar mode TV"><XCircle className="w-8 h-8" /></div>
+                        <div onClick={(e) => { e.stopPropagation(); kembali(); }} className="ml-4 opacity-50 hover:opacity-100 cursor-pointer p-2" title="Keluar mode TV"><XCircle className="w-8 h-8" /></div>
                     </div>
                 </div>
 
