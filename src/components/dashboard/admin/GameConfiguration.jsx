@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
-import { Save, Plus, Trash2, Percent, Gamepad2, Trophy, X, RefreshCw, BarChart2, User, UserCheck, Sparkles, Clock3, Settings2, MessageSquare, Link2, ExternalLink, ShieldCheck, Receipt } from 'lucide-react';
+import { Save, Plus, Trash2, Percent, Gamepad2, Trophy, X, RefreshCw, BarChart2, User, UserCheck, Sparkles, Clock3, Settings2, MessageSquare, Link2, ExternalLink, ShieldCheck, Receipt, GraduationCap } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { doaHarian, bacaanShalat, suratPendek } from '@/data/islamicContent';
 import { motion } from 'framer-motion';
@@ -17,12 +17,14 @@ import { createDefaultSantriLevelConfig, normalizeLevelConfigShape } from '@/lib
 import { DEFAULT_WHATSAPP_TEMPLATES, fetchWhatsAppTemplates, saveWhatsAppTemplates } from '@/lib/whatsappTemplateAdapters';
 import { fetchWhatsAppGroupLinks, isValidWhatsAppGroupLink, saveWhatsAppGroupLinks, validateWhatsAppGroupLinks, WHATSAPP_JILID_OPTIONS } from '@/lib/whatsappGroupLinksAdapters';
 import PaymentReceiptEditor from './PaymentReceiptEditor';
+import RaporPredikatSettings from './RaporPredikatSettings';
 
 const GameConfiguration = () => {
     const [activeTab, setActiveTab] = useState('attendance');
     const tabs = [
         { id: 'attendance', label: 'Waktu Absensi', icon: Clock3 },
         { id: 'levels', label: 'Konfigurasi Level', icon: BarChart2 },
+        { id: 'rapor', label: 'Predikat Rapor', icon: GraduationCap },
         { id: 'whatsapp', label: 'Pesan WhatsApp', icon: MessageSquare },
         { id: 'payment-receipt', label: 'Bukti Pembayaran', icon: Receipt },
         ...(enableGameFeatures ? [
@@ -83,6 +85,10 @@ const GameConfiguration = () => {
 
                 <TabsContent value="levels" className="animate-in fade-in slide-in-from-bottom-2">
                     <LevelSettings />
+                </TabsContent>
+
+                <TabsContent value="rapor" className="animate-in fade-in slide-in-from-bottom-2">
+                    <RaporPredikatSettings />
                 </TabsContent>
 
                 <TabsContent value="whatsapp" className="animate-in fade-in slide-in-from-bottom-2">

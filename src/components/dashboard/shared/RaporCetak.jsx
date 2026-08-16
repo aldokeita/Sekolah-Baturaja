@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, Printer, RefreshCw } from 'lucide-react';
+import { FileText, Printer, RefreshCw, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,7 +14,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { fetchPeriodeList, getPeriodeLabel } from '@/lib/scheduleAdapters';
-import { fetchRapor, getRaporErrorMessage } from '@/lib/raporAdapters';
+import { deleteCatatanRapor, fetchRapor, getRaporErrorMessage, saveCatatanRapor } from '@/lib/raporAdapters';
+import { useToast } from '@/components/ui/use-toast';
 import { formatSkor } from '@/lib/nilaiAdapters';
 import '@/styles/rapor-cetak.css';
 
@@ -207,11 +208,14 @@ export const LembarRapor = ({ data, sekolah, catatan }) => {
 const RaporCetak = ({ santriId, open, onOpenChange }) => {
   const sekolah = useSchoolIdentity();
   const akarCetak = useAkarCetak(open);
+  const { toast } = useToast();
 
   const [periodeList, setPeriodeList] = useState([]);
   const [periodeId, setPeriodeId] = useState('');
   const [data, setData] = useState(null);
   const [catatan, setCatatan] = useState('');
+  const [catatanTersimpan, setCatatanTersimpan] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const santriTerakhir = useRef(null);
@@ -231,14 +235,8 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
       .catch(() => setPeriodeList([]));
   }, [open]);
 
-  // Catatan wali kelas dikosongkan saat berganti murid, TIDAK saat berganti
-  // periode: mengetik catatan lalu kehilangannya karena menoleh ke semester lain
-  // adalah kehilangan pekerjaan orang.
   useEffect(() => {
-    if (santriTerakhir.current !== santriId) {
-      santriTerakhir.current = santriId;
-      setCatatan('');
-    }
+    if (santriTerakhir.current !== santriId) santriTerakhir.current = santriId;
   }, [santriId]);
 
   const muat = useCallback(async () => {
@@ -246,7 +244,12 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
     setIsLoading(true);
     setError(null);
     try {
-      setData(await fetchRapor(santriId, periodeId));
+      const hasil = await fetchRapor(santriId, periodeId);
+      setData(hasil);
+      // Catatan yang tersimpan di server menjadi isi kotak. Ini juga yang membuat
+      // berpindah periode terasa benar: tiap periode punya catatannya sendiri.
+      setCatatan(hasil.catatan || '');
+      setCatatanTersimpan(hasil.catatan || '');
     } catch (err) {
       setError(getRaporErrorMessage(err));
       setData(null);
@@ -256,6 +259,35 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
   }, [open, santriId, periodeId]);
 
   useEffect(() => { muat(); }, [muat]);
+
+  const belumDisimpan = catatan.trim() !== catatanTersimpan.trim();
+
+  const simpanCatatan = useCallback(async () => {
+    if (!santriId || !data?.periode?.id) return;
+    setIsSaving(true);
+    try {
+      const isi = catatan.trim();
+      // Mengosongkan kotak berarti menghapus catatannya. Menyimpan string kosong
+      // ditolak backend (kolomnya tidak boleh kosong), jadi jalur hapus dipakai —
+      // kalau tidak, mengosongkan catatan terasa gagal tanpa sebab.
+      if (isi === '') {
+        await deleteCatatanRapor(santriId, data.periode.id);
+      } else {
+        await saveCatatanRapor(santriId, data.periode.id, isi);
+      }
+      setCatatanTersimpan(isi);
+      setCatatan(isi);
+      toast({ title: 'Tersimpan', description: 'Catatan wali kelas disimpan.' });
+    } catch (err) {
+      toast({
+        title: 'Gagal menyimpan catatan',
+        description: getRaporErrorMessage(err),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [santriId, data, catatan, toast]);
 
   const labelPeriode = useMemo(
     () => periodeList.map((p) => ({ id: p.id, label: getPeriodeLabel(p) + (p.is_active ? ' • Aktif' : '') })),
@@ -300,16 +332,37 @@ const RaporCetak = ({ santriId, open, onOpenChange }) => {
         </div>
 
         <div className="max-h-[52vh] overflow-y-auto border-b px-5 py-3">
-          <label className="mb-1 block text-xs font-semibold uppercase text-muted-foreground" htmlFor="rapor-catatan">
-            Catatan wali kelas
-          </label>
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+            <label className="text-xs font-semibold uppercase text-muted-foreground" htmlFor="rapor-catatan">
+              Catatan wali kelas
+            </label>
+            <div className="flex items-center gap-2">
+              {belumDisimpan && (
+                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Belum disimpan</span>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={simpanCatatan}
+                disabled={isSaving || isLoading || !data?.periode?.id || !belumDisimpan}
+              >
+                <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Menyimpan…' : 'Simpan catatan'}
+              </Button>
+            </div>
+          </div>
           <Textarea
             id="rapor-catatan"
             rows={3}
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}
-            placeholder="Ditulis di sini dan langsung tampil di lembar rapor. Tidak disimpan ke basis data."
+            placeholder="Ditulis di sini, tampil di lembar rapor, dan tersimpan per murid per periode."
           />
+          {data?.catatanDiperbaruiPada && !belumDisimpan && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Terakhir disimpan {tanggalPanjang(data.catatanDiperbaruiPada)}.
+            </p>
+          )}
 
           <div className="rapor-pratinjau mt-4 rounded-lg">
             {isLoading && (

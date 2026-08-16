@@ -1,3 +1,5 @@
+import apiClient from '@/lib/apiClient';
+import { APP_CONFIG_KEYS, fetchAppConfigs } from '@/lib/appConfigAdapters';
 import { fetchAttendanceRecap } from '@/lib/attendanceAdapters';
 import { fetchClassList, fetchGuruList, fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import { fetchNilaiSummary } from '@/lib/nilaiAdapters';
@@ -18,22 +20,54 @@ import { fetchPeriodeList } from '@/lib/scheduleAdapters';
  * data orang lain.
  */
 
-/* Predikat nilai. Rentangnya adalah kebiasaan yang paling umum dipakai SD di
- * Indonesia, TETAPI setiap sekolah menetapkan KKM-nya sendiri dan angka ini bisa
- * berbeda. Dikumpulkan di satu tempat supaya sekolah yang ingin mengubahnya tidak
- * perlu menyisir komponen cetak. */
-export const PREDIKAT = Object.freeze([
+/* Predikat nilai. Rentang di bawah adalah kebiasaan yang paling umum dipakai SD di
+ * Indonesia, TETAPI setiap sekolah menetapkan KKM-nya sendiri — jadi ini bawaan,
+ * bukan aturan. Sekolah menggantinya di Konfigurasi → Predikat Rapor, tersimpan
+ * pada kunci app-config `rapor_predikat`. */
+export const PREDIKAT_BAWAAN = Object.freeze([
   { min: 90, huruf: 'A', label: 'Sangat Baik' },
   { min: 80, huruf: 'B', label: 'Baik' },
   { min: 70, huruf: 'C', label: 'Cukup' },
   { min: 0, huruf: 'D', label: 'Perlu Bimbingan' },
 ]);
 
-export const predikatDari = (skor) => {
-  const angka = Number(skor);
-  if (!Number.isFinite(angka)) return { huruf: '-', label: 'Belum dinilai' };
-  return PREDIKAT.find((p) => angka >= p.min) || PREDIKAT[PREDIKAT.length - 1];
+/**
+ * Merapikan daftar predikat tersimpan.
+ *
+ * Diurutkan MENURUN menurut `min`, dan itu bukan kosmetik: `predikatDari` memakai
+ * `find` pertama yang ambangnya terlampaui, jadi daftar yang tersimpan menaik akan
+ * memberi predikat terendah kepada setiap nilai. Ambang terkecil dipaksa 0 supaya
+ * tidak ada skor yang jatuh tanpa predikat.
+ */
+export const normalisasiPredikat = (stored) => {
+  const rows = Array.isArray(stored) ? stored : [];
+  const bersih = rows
+    .map((row) => {
+      const huruf = String(row?.huruf ?? '').trim();
+      const label = String(row?.label ?? '').trim();
+      const min = Number(row?.min);
+      if (!huruf || !Number.isFinite(min)) return null;
+      return { min: Math.min(100, Math.max(0, Math.round(min))), huruf, label: label || huruf };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.min - a.min);
+
+  if (bersih.length === 0) return PREDIKAT_BAWAAN.map((p) => ({ ...p }));
+  bersih[bersih.length - 1] = { ...bersih[bersih.length - 1], min: 0 };
+  return bersih;
 };
+
+export const buatPredikatDari = (daftar) => {
+  const skala = normalisasiPredikat(daftar);
+  return (skor) => {
+    const angka = Number(skor);
+    if (!Number.isFinite(angka)) return { huruf: '-', label: 'Belum dinilai' };
+    return skala.find((p) => angka >= p.min) || skala[skala.length - 1];
+  };
+};
+
+/** Pemakai yang tidak punya konfigurasi sekolah tetap mendapat skala bawaan. */
+export const predikatDari = buatPredikatDari(PREDIKAT_BAWAAN);
 
 /* Status kehadiran yang dicetak di rapor. Rapor Indonesia menyebut tiga alasan
  * ketidakhadiran — Sakit, Izin, dan Tanpa Keterangan — jadi status yang tersimpan
@@ -98,11 +132,15 @@ export const getRaporErrorMessage = (error) => {
 export const fetchRapor = async (santriId, periodeId = '') => {
   if (!santriId) throw new Error('Murid belum dipilih.');
 
-  const [murid, daftarPeriode, daftarKelas] = await Promise.all([
+  const [murid, daftarPeriode, daftarKelas, konfigurasi] = await Promise.all([
     fetchSantriDetail(santriId),
     fetchPeriodeList(),
     fetchClassList({ includeGuru: true, limit: 200 }),
+    fetchAppConfigs([APP_CONFIG_KEYS.RAPOR_PREDIKAT]).catch(() => ({})),
   ]);
+
+  const skalaPredikat = normalisasiPredikat(konfigurasi?.[APP_CONFIG_KEYS.RAPOR_PREDIKAT]);
+  const beriPredikat = buatPredikatDari(skalaPredikat);
 
   if (!murid) throw new Error('Data murid tidak ditemukan.');
 
@@ -118,7 +156,7 @@ export const fetchRapor = async (santriId, periodeId = '') => {
 
   // Ketidakhadiran dan nilai diambil berbarengan; keduanya berdiri sendiri dan
   // rapor tetap bisa dicetak walau salah satunya kosong.
-  const [ringkasanNilai, rekapAbsensi, daftarGuru] = await Promise.all([
+  const [ringkasanNilai, rekapAbsensi, daftarGuru, catatanTersimpan] = await Promise.all([
     periode
       ? fetchNilaiSummary({ santriId, periodeId: periode.id }).catch(() => [])
       : Promise.resolve([]),
@@ -129,6 +167,7 @@ export const fetchRapor = async (santriId, periodeId = '') => {
     // ditulis di komponen cetak, supaya rapor pembeli tidak menandatangani atas
     // nama sekolah contoh.
     fetchGuruList().catch(() => []),
+    periode ? fetchCatatanRapor(santriId, periode.id).catch(() => null) : Promise.resolve(null),
   ]);
 
   const kehadiran = ringkasKehadiran(rekapAbsensi?.summary || {});
@@ -143,7 +182,7 @@ export const fetchRapor = async (santriId, periodeId = '') => {
         rataRata: Number.isFinite(rata) ? rata : null,
         terendah: Number(row.terendah),
         tertinggi: Number(row.tertinggi),
-        predikat: predikatDari(row.rata_rata),
+        predikat: beriPredikat(row.rata_rata),
       };
     })
     .sort((a, b) => a.nama.localeCompare(b.nama, 'id'));
@@ -166,10 +205,39 @@ export const fetchRapor = async (santriId, periodeId = '') => {
     periode,
     rentang,
     mapel,
+    skalaPredikat,
     rataKeseluruhan,
-    predikatKeseluruhan: rataKeseluruhan === null ? null : predikatDari(rataKeseluruhan),
+    predikatKeseluruhan: rataKeseluruhan === null ? null : beriPredikat(rataKeseluruhan),
     kehadiran,
     waliKelas: kelas?.guru?.nama || null,
     kepalaSekolah: kepalaSekolah?.nama || null,
+    catatan: catatanTersimpan?.catatan || '',
+    catatanDiperbaruiPada: catatanTersimpan?.updated_at || null,
   };
+};
+
+/* ── Catatan wali kelas ────────────────────────────────────────────────────────
+ *
+ * Hanya catatannya yang disimpan; nilai dan kehadiran tetap dibaca dari sumber
+ * masing-masing setiap kali rapor disusun. Backend (`rapor.go`) menjaga haknya:
+ * menulis hanya boleh oleh wali kelas murid itu dan back-office — guru mata
+ * pelajaran yang kebetulan mengajar di kelas yang sama tidak bisa menimpanya.
+ */
+
+export const fetchCatatanRapor = async (santriId, periodeId) => {
+  if (!santriId || !periodeId) return null;
+  const params = new URLSearchParams({ santri_id: santriId, periode_id: periodeId });
+  return apiClient.get(`/api/rapor/catatan?${params.toString()}`);
+};
+
+export const saveCatatanRapor = async (santriId, periodeId, catatan) =>
+  apiClient.put('/api/rapor/catatan', {
+    santri_id: santriId,
+    periode_id: periodeId,
+    catatan,
+  });
+
+export const deleteCatatanRapor = async (santriId, periodeId) => {
+  const params = new URLSearchParams({ santri_id: santriId, periode_id: periodeId });
+  await apiClient.delete(`/api/rapor/catatan?${params.toString()}`);
 };

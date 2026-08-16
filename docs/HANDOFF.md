@@ -626,9 +626,42 @@ Angka yang tercetak diambil dari sumber yang menjadi acuannya — `nilai/summary
 `attendance/recap` — bukan dari tabel rapor tersendiri. Menyalinnya berarti dua angka yang bisa
 berselisih, dan yang tercetak di rapor adalah yang paling tidak boleh salah.
 
-Dua hal yang masih pantas dijadikan pengaturan: rentang **predikat** (A/B/C/D) ada di `PREDIKAT` pada
-`raporAdapters.js` sebagai konstanta, padahal setiap sekolah menetapkan KKM-nya sendiri; dan
-**catatan wali kelas** hanya hidup di form, tidak tersimpan ke basis data.
+### Catatan wali kelas: HANYA catatannya yang disimpan
+
+`rapor_catatan` (migrasi `20260816000100`) menyimpan satu catatan per murid per periode, dijaga
+`UNIQUE (santri_id, periode_id)` — tanpa itu menyimpan dua kali menghasilkan dua baris dan rapor
+mencetak salah satunya tanpa aturan.
+
+**Nilai dan kehadiran sengaja TIDAK ikut disimpan.** Keduanya tetap dibaca dari `nilai/summary` dan
+`attendance/recap` setiap kali rapor disusun. Menyalinnya ke tabel rapor akan membuat rapor yang
+dicetak ulang berbeda dari data sekolah yang sebenarnya.
+
+Hak tulisnya **lebih sempit** daripada hak baca, dan itu disengaja: catatan rapor adalah penilaian
+pribadi wali kelas, jadi guru mata pelajaran yang kebetulan mengajar di kelas yang sama tidak boleh
+menimpanya. Menulis = wali kelas murid itu + back-office. Membaca = itu semua, plus pengawas dan
+murid yang bersangkutan.
+
+Diuji: tata usaha menulis **200** dan isinya kembali utuh saat dibaca; murid menulis catatan murid
+lain **403**; murid membaca catatan murid lain **403**; murid membaca catatannya sendiri **200**.
+
+Mengosongkan kotak catatan memanggil jalur **DELETE**, bukan menyimpan string kosong — kolomnya
+punya `CHECK (btrim(catatan) <> '')`, jadi menyimpan kosong akan ditolak dan mengosongkan catatan
+terasa gagal tanpa sebab.
+
+### Rentang predikat rapor bisa diatur sekolah
+
+Bawaannya A≥90 / B≥80 / C≥70 / D, kebiasaan umum SD Indonesia — tetapi setiap sekolah menetapkan
+KKM-nya sendiri, jadi angkanya tidak boleh tinggal sebagai konstanta. Tersimpan pada kunci
+app-config `rapor_predikat` (sudah ditambahkan ke `validConfigKeys` di `appconfig.go`; kunci di luar
+allowlist ditolak saat tulis), disunting di Konfigurasi → Predikat Rapor.
+
+`normalisasiPredikat` mengurutkan daftar **menurun** menurut `min` dan memaksa ambang terbawah ke 0.
+Keduanya syarat, bukan kerapian: `predikatDari` mengambil `find` pertama yang ambangnya terlampaui,
+jadi daftar yang tersimpan menaik akan memberi predikat TERENDAH kepada setiap nilai, dan tanpa
+ambang nol ada rentang skor yang jatuh tanpa predikat.
+
+Diuji dari ujung ke ujung: dengan ambang diubah menjadi 85/75/60, nilai 88.33 berpindah dari B ke A
+dan 78.67 dari C ke B, termasuk baris rata-rata keseluruhan.
 
 ### `attendance/recap` tidak memeriksa hak akses apa pun — SUDAH DIPERBAIKI
 
