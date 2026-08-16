@@ -283,7 +283,21 @@
      membuat aturan cetak ini sesederhana satu baris: sembunyikan seluruh saudara
      akar itu. Kalau lembarnya dibiarkan di dalam dialog, penyembunyiannya harus
      menebak belasan tingkat pembungkus milik Radix. */
-  body > *:not(#rapor-cetak-root) {
+  /* DIPAGARI `:has()`, dan itu bukan hiasan.
+   *
+   * Aplikasi ini punya DUA berkas gaya cetak yang sama-sama menyapu seluruh
+   * halaman: berkas ini, dan cetak-bukti.css yang memakai
+   * `body * { visibility: hidden }` untuk bukti pendaftaran. Di server
+   * pengembangan Vite hanya memuat CSS halaman yang pernah dibuka, jadi keduanya
+   * jarang bertemu — tapi `npm run build` menggabungkan seluruh CSS jadi satu
+   * berkas, sehingga di produksi keduanya SELALU aktif bersamaan dan saling
+   * membunuh: rapor tercetak kosong karena disembunyikan aturan bukti, dan bukti
+   * tercetak kosong karena leluhurnya disembunyikan aturan ini.
+   *
+   * Sekarang aturan penyapu hanya berlaku bila sasarannya benar-benar ada.
+   * `#rapor-cetak-root` selalu ada di DOM tapi kosong selama dialog tertutup,
+   * jadi yang diperiksa isinya, bukan sekadar keberadaannya. */
+  body:has(#rapor-cetak-root .rapor-lembar) > *:not(#rapor-cetak-root) {
     display: none !important;
   }
 
@@ -295,6 +309,13 @@
     padding: 0 !important;
     height: auto !important;
     overflow: visible !important;
+  }
+
+  /* Pengaman kedua terhadap `body * { visibility: hidden }` milik cetak-bukti.css,
+     seandainya kedua sasaran pernah ada di halaman yang sama. */
+  #rapor-cetak-root,
+  #rapor-cetak-root * {
+    visibility: visible !important;
   }
 
   .rapor-hanya-cetak {

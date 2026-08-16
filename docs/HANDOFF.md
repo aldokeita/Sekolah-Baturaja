@@ -1191,6 +1191,44 @@ aplikasi, jadi tujuan cadangan yang dipakai.
 **Halaman baru yang bisa dicapai dari lebih dari satu tempat wajib memakai hook ini**, bukan menulis
 tujuannya sendiri. Diuji dari dashboard, dari layar absensi, dan lewat URL langsung.
 
+### Dua stylesheet cetak saling meniadakan — SUDAH DIPERBAIKI
+
+Aplikasi ini punya dua berkas gaya cetak yang sama-sama menyapu seluruh halaman:
+
+- `rapor-cetak.css` — `body > *:not(#rapor-cetak-root) { display: none }`
+- `cetak-bukti.css` — `body * { visibility: hidden }`, lalu `.bukti-cetak` dibuat terlihat
+
+Keduanya berlaku bersamaan dan masing-masing membunuh cetakan yang lain: rapor tercetak **kosong**
+karena disembunyikan aturan bukti, dan bukti pendaftaran tercetak **kosong** karena seluruh
+leluhurnya disembunyikan aturan rapor. Halamannya tetap keluar — jumlahnya benar, isinya tidak.
+
+**Kenapa lolos bertahun-tahun:** di server pengembangan Vite hanya memuat CSS milik halaman yang
+pernah dibuka, jadi keduanya jarang bertemu dalam satu sesi. `npm run build` menggabungkan seluruh
+CSS jadi **satu berkas**, sehingga di produksi keduanya SELALU aktif bersamaan. Cacat yang hampir
+tidak mungkin terlihat saat dikembangkan, dan selalu terjadi pada pembeli.
+
+Perbaikannya: tiap aturan penyapu dipagari `:has()` sehingga hanya berlaku bila sasarannya benar-benar
+ada di halaman. `#rapor-cetak-root` selalu ada di DOM tapi kosong selama dialog tertutup, jadi yang
+diperiksa isinya (`:has(#rapor-cetak-root .rapor-lembar)`), bukan keberadaannya.
+
+**Jebakan yang muncul saat memperbaikinya, dan hampir lolos lagi:** `:has()` mewarisi bobot
+argumennya, jadi `body:has(.bukti-cetak) *` berkekuatan (0,1,1) sedangkan pengecualian `.bukti-cetak`
+hanya (0,1,0) — kalah, meski keduanya `!important`. Sebelum dipagari, penyapunya cuma `body *`
+(0,0,1) sehingga pengecualian polos masih menang. **Memasang pagar tanpa menaikkan bobot
+pengecualiannya justru membuat bukti tercetak kosong.** Pengecualiannya kini ikut dipagari.
+
+**Cara mengujinya tanpa mencetak sungguhan:** salin kedua blok `@media print` ke sebuah `<style>`
+sementara tanpa media query, lalu baca `getComputedStyle().visibility` pada wadah rapor dan blok
+bukti. `visibility: hidden` bersama `display: block` adalah tanda khas halaman kosong yang tetap
+keluar dari mesin cetak.
+
+### Cetak rapor sekelas sudah diuji pada beban sebenarnya
+
+28 murid dalam satu kelas: **1,0 detik**, 145 panggilan ke server, semuanya berhasil, 56 lembar
+terbentuk (28 pratinjau + 28 salinan cetak), tanpa error konsol dan tanpa murid yang gagal.
+Pemuatan berkelompok lima-lima di `fetchRaporKelas` bekerja seperti rancangannya. Beban bukan
+masalah; yang bermasalah hanya stylesheet cetaknya di atas.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya
