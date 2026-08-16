@@ -144,10 +144,34 @@ values
   ('profile', '{"summary":"Konten profil contoh untuk pengembangan dan staging."}', true)
 on conflict (key) do nothing;
 
-insert into public.news (title, slug, excerpt, content, status, published_at)
-values ('Berita Demo', 'berita-demo', 'Excerpt berita dummy.', '{"body":"Konten berita dummy."}', 'published', now())
+-- Satu berita dan satu pengumuman, keduanya berstatus DRAFT.
+--
+-- Sebelumnya keduanya berjudul "Berita Demo"/"Pengumuman Demo" dengan isi
+-- "Excerpt … dummy" dan berstatus `published`, sehingga halaman /berita milik
+-- setiap pembeli langsung menayangkan dua artikel omong kosong kepada calon
+-- orang tua murid — dan ikut muncul di halaman depan.
+--
+-- Tetap disemai, bukan dihapus: tanpa satu baris pun, panel Berita terlihat rusak
+-- pada pemasangan baru dan pembeli tidak punya contoh bentuk isian. Yang berubah
+-- statusnya — draf tidak tampil di halaman publik sampai sekolah menerbitkannya
+-- sendiri.
+insert into public.news (title, slug, excerpt, content, status)
+values (
+  'Contoh berita sekolah',
+  'contoh-berita-sekolah',
+  'Ganti judul dan isi berita ini lewat panel Konten, lalu ubah statusnya menjadi terbit.',
+  '{"body":"Ini contoh berita. Sunting atau hapus lewat panel Konten sebelum situs dipakai."}',
+  'draft'
+)
 on conflict (slug) do nothing;
 
-insert into public.announcements (title, slug, excerpt, content, status, priority, published_at)
-values ('Pengumuman Demo', 'pengumuman-demo', 'Excerpt pengumuman dummy.', '{"body":"Konten pengumuman dummy."}', 'published', 'normal', now())
+insert into public.announcements (title, slug, excerpt, content, status, priority)
+values (
+  'Contoh pengumuman sekolah',
+  'contoh-pengumuman-sekolah',
+  'Ganti judul dan isi pengumuman ini lewat panel Konten, lalu ubah statusnya menjadi terbit.',
+  '{"body":"Ini contoh pengumuman. Sunting atau hapus lewat panel Konten sebelum situs dipakai."}',
+  'draft',
+  'normal'
+)
 on conflict (slug) do nothing;

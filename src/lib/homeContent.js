@@ -19,6 +19,23 @@ import { fetchWebsiteContentMap, saveWebsiteContentItem } from '@/lib/publicCont
 export const HOME_CONTENT_KEY = 'home_content';
 
 export const DEFAULT_HOME_CONTENT = Object.freeze({
+  /* Klaim tentang sekolah yang dulu ditanam di kode HomePage: badge akreditasi
+   * dan dua kartu statistik yang tidak punya sumber data (persentase lulusan dan
+   * jumlah prestasi). Keduanya FAKTA PER-SEKOLAH, jadi setiap salinan yang terjual
+   * memasang capaian sekolah contoh sebagai capaiannya sendiri — tanpa cara
+   * mengubahnya.
+   *
+   * Bedakan dari dua kartu statistik lain di baris yang sama: jumlah murid dan
+   * guru datang dari endpoint hitungan, jadi tidak ada di sini. Yang boleh
+   * disunting hanyalah angka yang memang tidak dimiliki sistem.
+   *
+   * Dikosongkan berarti disembunyikan, bukan jatuh ke bawaan: sekolah yang belum
+   * terakreditasi tidak boleh dipaksa menampilkan badge akreditasi. */
+  badge: 'Terakreditasi A · Sekolah Adiwiyata Nasional',
+  stats: Object.freeze([
+    { value: '98', suffix: '%', label: 'Lulusan diterima SMP negeri' },
+    { value: '32', suffix: '', label: 'Prestasi tingkat kabupaten & provinsi' },
+  ]),
   program: Object.freeze([
     {
       title: 'Kelas I–III',
@@ -81,6 +98,26 @@ const normalizeBlok = (rows, fallback, mapper) => {
 export const normalizeHomeContent = (stored) => {
   const source = stored && typeof stored === 'object' ? stored : {};
   return {
+    /* Badge dan stats TIDAK memakai normalizeBlok, dan itu disengaja: fungsi itu
+     * mengembalikan bawaan ketika isinya kosong, sedangkan kosong di sini punya
+     * arti sendiri — "sekolah ini tidak punya klaim itu". Memulihkannya ke bawaan
+     * akan memaksa akreditasi sekolah CONTOH muncul di halaman sekolah yang
+     * sengaja mengosongkannya.
+     *
+     * Bedakan dari `undefined`, yang berarti kuncinya belum pernah disimpan
+     * (pemasangan lama) — di situ bawaan memang yang benar. */
+    badge: source.badge === undefined ? DEFAULT_HOME_CONTENT.badge : teks(source.badge),
+    stats: Array.isArray(source.stats)
+      ? source.stats
+        .map((row) => {
+          const label = teks(row?.label);
+          const value = teks(row?.value);
+          if (!label || !value) return null;
+          return { value, suffix: teks(row?.suffix), label };
+        })
+        .filter(Boolean)
+        .slice(0, 2)
+      : DEFAULT_HOME_CONTENT.stats,
     program: normalizeBlok(source.program, DEFAULT_HOME_CONTENT.program, (row) => {
       const title = teks(row?.title);
       if (!title) return null;

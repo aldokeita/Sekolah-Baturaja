@@ -170,7 +170,61 @@ const HomeContentSettings = () => {
         </div>
       )}
 
-      <div className="space-y-4">
+      {/* Klaim tentang sekolah. Dulu ditanam di kode HomePage, sehingga setiap
+          pembeli memasang akreditasi dan capaian sekolah CONTOH sebagai miliknya
+          tanpa cara mengubahnya. Jumlah murid dan guru TIDAK di sini — keduanya
+          datang dari data sekolah sendiri dan tidak boleh disunting. */}
+      <div className="space-y-4 border-t pt-6">
+        <div>
+          <h5 className="font-bold text-foreground">Klaim Sekolah</h5>
+          <p className="text-xs text-muted-foreground">
+            Badge di atas judul dan dua kartu statistik terakhir. Kosongkan bila sekolah Anda belum
+            memilikinya — yang kosong tidak ditampilkan, bukan diganti contoh.
+          </p>
+        </div>
+
+        <div className="admin-edit-field">
+          <label htmlFor="beranda-badge">Badge akreditasi</label>
+          <Input
+            id="beranda-badge"
+            value={isi.badge}
+            placeholder="Terakreditasi A · Sekolah Adiwiyata Nasional"
+            onChange={(e) => setIsi((prev) => ({ ...prev, badge: e.target.value }))}
+          />
+        </div>
+
+        {isi.stats.map((s, i) => (
+          <Baris
+            key={i}
+            nomor={`Statistik ${i + 1}`}
+            bolehHapus
+            onHapus={() => hapusBaris('stats', i)}
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[7rem_5rem_1fr]">
+              <div className="admin-edit-field">
+                <label htmlFor={`beranda-stat-nilai-${i}`}>Angka</label>
+                <Input id={`beranda-stat-nilai-${i}`} value={s.value} placeholder="98" onChange={(e) => ubahBaris('stats', i, 'value', e.target.value)} />
+              </div>
+              <div className="admin-edit-field">
+                <label htmlFor={`beranda-stat-akhiran-${i}`}>Akhiran</label>
+                <Input id={`beranda-stat-akhiran-${i}`} value={s.suffix} placeholder="%" onChange={(e) => ubahBaris('stats', i, 'suffix', e.target.value)} />
+              </div>
+              <div className="admin-edit-field">
+                <label htmlFor={`beranda-stat-label-${i}`}>Keterangan</label>
+                <Input id={`beranda-stat-label-${i}`} value={s.label} placeholder="Lulusan diterima SMP negeri" onChange={(e) => ubahBaris('stats', i, 'label', e.target.value)} />
+              </div>
+            </div>
+          </Baris>
+        ))}
+
+        {isi.stats.length < 2 && (
+          <Button type="button" variant="outline" size="sm" onClick={() => tambahBaris('stats', { value: '', suffix: '', label: '' })}>
+            <Plus className="mr-1 h-4 w-4" /> Tambah statistik
+          </Button>
+        )}
+      </div>
+
+      <div className="space-y-4 border-t pt-6">
         <div className="flex items-center justify-between">
           <h5 className="font-bold text-foreground">Kartu Program</h5>
           <Button type="button" size="sm" variant="outline" onClick={() => tambahBaris('program', { title: '', desc: '', tags: [] })}>

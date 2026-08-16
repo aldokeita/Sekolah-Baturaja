@@ -790,6 +790,38 @@ Aturannya: **jangan pernah memasang bilangan contoh sebagai nilai awal atau fall
 yang seharusnya datang dari data sekolah.** Teks contoh boleh — pembeli menyuntingnya, dan sudah
 jelas itu teks. Angka contoh terbaca sebagai fakta.
 
+### Klaim sekolah di halaman depan kini disunting pembeli
+
+Badge akreditasi dan dua kartu statistik terakhir (persentase lulusan, jumlah prestasi) dulu ditanam
+di kode `HomePage`. Keduanya **fakta per-sekolah tanpa sumber data**, jadi setiap salinan yang
+terjual memasang capaian sekolah CONTOH sebagai capaiannya sendiri — dan pembeli tidak punya cara
+mengubahnya.
+
+Sekarang di `home_content` kunci `badge` dan `stats`, disunting di Konten → Halaman Depan.
+
+**Kosong berarti disembunyikan, bukan jatuh ke bawaan.** Aturan ini sama seperti daftar wilayah SPMB
+dan sengaja berbeda dari blok lain di berkas yang sama: sekolah yang belum terakreditasi tidak boleh
+dipaksa menampilkan akreditasi sekolah contoh. Karena itu `badge` dan `stats` **tidak** memakai
+`normalizeBlok` — fungsi itu memulihkan bawaan saat isinya kosong. Yang dibedakan adalah `undefined`
+(kunci belum pernah disimpan → bawaan benar) dari kosong (pilihan sekolah).
+
+Baris statistik menyusut sendiri: kolom gridnya `2 + jumlah stats`. Dua kartu pertama — murid dan
+guru — datang dari endpoint hitungan dan **tidak** boleh masuk daftar yang disunting.
+
+Diuji dari ujung ke ujung: mengosongkan badge dan menyisakan satu statistik membuat badge hilang dan
+baris menyusut dari empat kolom ke tiga, dengan penghitung tetap benar.
+
+### Berita dan pengumuman contoh disemai sebagai DRAF
+
+Seed dulu menerbitkan "Berita Demo" dan "Pengumuman Demo" berisi "Excerpt … dummy" dengan status
+`published`, sehingga halaman `/berita` setiap pembeli langsung menayangkan dua artikel omong kosong
+kepada calon orang tua murid — dan ikut muncul di halaman depan.
+
+Tetap disemai, bukan dihapus: tanpa satu baris pun panel Berita terlihat rusak pada pemasangan baru
+dan pembeli tidak punya contoh bentuk isian. Yang berubah **statusnya menjadi `draft`**, jadi tidak
+tampil di halaman publik sampai sekolah menerbitkannya sendiri, dan judulnya kini berbunyi seperti
+petunjuk ("Contoh berita sekolah").
+
 ### `prefers-reduced-motion` tidak boleh ikut menyembunyikan informasi
 
 `useSdnbMotion` dulu keluar lebih awal ketika pengunjung meminta lebih sedikit gerakan. Masalahnya,

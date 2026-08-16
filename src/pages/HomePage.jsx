@@ -200,10 +200,15 @@ const HomePage = () => {
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section id="beranda" data-reveal="0" className="sdnb-hero" style={{ maxWidth: 1240, margin: '0 auto', padding: '44px 28px 0', display: 'grid', gridTemplateColumns: '1.02fr 1fr', gap: 44, alignItems: 'center' }}>
         <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '7px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, color: '#4b4f78', background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.8)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 10px 24px -14px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
-            <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))' }} />
-            Terakreditasi A · Sekolah Adiwiyata Nasional
-          </div>
+          {/* Badge akreditasi datang dari Konten → Halaman Depan. Dikosongkan
+              berarti hilang: sekolah yang belum terakreditasi tidak boleh dipaksa
+              memasang klaim akreditasi sekolah contoh. */}
+          {isi.badge && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '7px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, color: '#4b4f78', background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.8)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 10px 24px -14px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+              <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))' }} />
+              {isi.badge}
+            </div>
+          )}
           <h1 style={{ margin: '20px 0 0', fontFamily: HEADING_FONT, fontSize: 60, lineHeight: 1.04, letterSpacing: '-.038em', fontWeight: 800, color: '#171827', textWrap: 'balance' }}>
             Belajar dengan <span style={GRAD_TEXT}>tenang</span>,<br />tumbuh dengan<br /><span style={GRAD_TEXT}>percaya diri</span>.
           </h1>
@@ -238,7 +243,9 @@ const HomePage = () => {
               {counts.siswa !== null && (
                 <><strong style={{ ...GRAD_TEXT, fontWeight: 800 }}><span data-count={counts.siswa}>0</span> siswa</strong> aktif<br /></>
               )}
-              98% lulusan diterima di SMP negeri pilihan
+              {/* Baris kedua mengulang kartu statistik pertama, supaya klaimnya
+                  hanya perlu disunting di satu tempat. */}
+              {isi.stats[0] ? `${isi.stats[0].value}${isi.stats[0].suffix} ${isi.stats[0].label.toLowerCase()}` : null}
             </div>
           </div>
         </div>
@@ -277,13 +284,16 @@ const HomePage = () => {
 
       {/* ── STAT BAR ─────────────────────────────────────────────────────── */}
       <section data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '52px 28px 0' }}>
-        <div className="sdnb-stats" style={{ ...glassCard, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+        {/* Dua kartu pertama datang dari sistem (endpoint hitungan), dua terakhir
+            dari Konten → Halaman Depan. Yang dari sistem tidak boleh disunting,
+            yang dari sekolah tidak boleh ditanam di kode — dan kolomnya menyusut
+            sendiri bila sekolah mengosongkan klaimnya. */}
+        <div className="sdnb-stats" style={{ ...glassCard, display: 'grid', gridTemplateColumns: `repeat(${2 + isi.stats.length},1fr)`, borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
           <Before height="52%" deg="168deg" alpha=".6" />
           {[
             { count: counts.siswa, label: 'Siswa aktif' },
             { count: counts.guru, label: 'Guru & tenaga kependidikan' },
-            { count: 98, suffix: '%', label: 'Lulusan diterima SMP negeri' },
-            { count: 32, label: 'Prestasi tingkat kabupaten & provinsi' },
+            ...isi.stats.map((s) => ({ count: Number(s.value), suffix: s.suffix, label: s.label })),
           ].map((s) => (
             <div key={s.label} style={{ position: 'relative', padding: '26px 28px' }}>
               {/* Selagi angkanya belum didapat, yang tampil tanda pisah — bukan
