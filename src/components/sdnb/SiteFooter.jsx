@@ -44,7 +44,7 @@ const kolomInformasi = (sekolah) => [
   { label: 'FAQ', to: '/#faq' },
 ];
 
-const colLabel = { fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#8a8ea8' };
+const colLabel = { fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#63678a' };
 const colList = { marginTop: 14, display: 'flex', flexDirection: 'column', gap: 9, fontSize: 13.5 };
 const colLink = { color: '#3f4468' };
 
@@ -95,7 +95,7 @@ export const SiteFooterRingkas = () => {
         </div>
       </div>
 
-      <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', fontSize: 12, color: '#70759a' }}>
+      <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', fontSize: 12, color: '#5f6389' }}>
         &copy; {new Date().getFullYear()} {sekolah.name}. Seluruh hak cipta dilindungi.
       </div>
     </div>
@@ -181,12 +181,12 @@ const SiteFooter = () => {
           </div>
         </div>
 
-        <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, fontSize: 12, color: '#70759a' }}>
+        <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, fontSize: 12, color: '#5f6389' }}>
           <div>&copy; {new Date().getFullYear()} {sekolah.name}. Seluruh hak cipta dilindungi.</div>
           <div style={{ display: 'flex', gap: 18 }}>
-            <Link to="/" className="h-flink" style={{ color: '#70759a' }}>Kebijakan privasi</Link>
-            <Link to="/" className="h-flink" style={{ color: '#70759a' }}>Peta situs</Link>
-            <Link to="/kontak" className="h-flink" style={{ color: '#70759a' }}>Kontak</Link>
+            <Link to="/" className="h-flink" style={{ color: '#5f6389' }}>Kebijakan privasi</Link>
+            <Link to="/" className="h-flink" style={{ color: '#5f6389' }}>Peta situs</Link>
+            <Link to="/kontak" className="h-flink" style={{ color: '#5f6389' }}>Kontak</Link>
           </div>
         </div>
       </div>

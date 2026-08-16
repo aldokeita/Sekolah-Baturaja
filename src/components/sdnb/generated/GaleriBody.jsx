@@ -42,7 +42,7 @@ const GaleriBody = (vals = {}) => {
         <div className="herotext" style={{ maxWidth: "760px", padding: "38px 40px 40px", borderRadius: "34px", background: "rgba(255,255,255,.42)", backdropFilter: "blur(34px) saturate(190%)", WebkitBackdropFilter: "blur(34px) saturate(190%)", border: "1px solid rgba(255,255,255,.7)", boxShadow: "0 40px 96px -34px rgba(50,60,125,.6),inset 0 1px 0 rgba(255,255,255,1)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "44px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></div>
-            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Dokumentasi sekolah</span>
+            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-teks)" }}>Dokumentasi sekolah</span>
           </div>
           <h1 style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "96px", lineHeight: ".9", letterSpacing: "-.05em", fontWeight: "800", color: "#171827" }}>Galeri<span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>.</span></h1>
           <p style={{ margin: "22px 0 0", maxWidth: "520px", fontSize: "16.5px", lineHeight: "1.68", color: "#4c5175", textWrap: "pretty" }}>Satu tahun ajaran dalam gambar: kelas pagi, latihan pramuka, panen kebun, dan pentas seni. Semua foto diambil oleh guru dan murid sendiri.</p>
@@ -50,12 +50,12 @@ const GaleriBody = (vals = {}) => {
             {(heroStats || []).map((s, $index) => (<React.Fragment key={$index}>
               <div>
                 <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", fontWeight: "800", letterSpacing: "-.035em", color: "#1d1f33" }}><span {...(metricReady(s) ? { 'data-count': s.n, 'data-plain': '1' } : {})}>{metricText(s)}</span><span style={{ fontSize: "20px", color: "#7c81a4" }}>{s.suf}</span></div>
-                <div style={{ marginTop: "3px", fontSize: "12.5px", color: "#6d7192" }}>{s.label}</div>
+                <div style={{ marginTop: "3px", fontSize: "12.5px", color: "#5f6389" }}>{s.label}</div>
               </div>
             </React.Fragment>))}
           </div>
         </div>
-        <div style={{ marginTop: "34px", display: "flex", alignItems: "center", gap: "12px", color: "#6a6f95", fontSize: "12.5px", fontWeight: "600", letterSpacing: ".06em", textTransform: "uppercase" }}>
+        <div style={{ marginTop: "34px", display: "flex", alignItems: "center", gap: "12px", color: "#5f6389", fontSize: "12.5px", fontWeight: "600", letterSpacing: ".06em", textTransform: "uppercase" }}>
           <svg width="16" height="26" viewBox="0 0 16 26" fill="none" stroke="#8a8fb5" strokeWidth="1.6" style={{ animation: "bobline 2.4s ease-in-out infinite" }}><path d="M8 2v18"></path><path d="m3 15 5 5 5-5"></path></svg>
           Gulir untuk menjelajah
         </div>
@@ -120,7 +120,7 @@ const GaleriBody = (vals = {}) => {
             <button className="shine" onClick={cineNext} style={{ position: "relative", overflow: "hidden", width: "46px", height: "46px", borderRadius: "15px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 16px 34px -14px rgba(95,105,235,.95)" }} aria-label="Berikutnya">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
             </button>
-            <div style={{ fontSize: "12.5px", color: "#6d7192" }}>Geser ke samping untuk menonton satu per satu</div>
+            <div style={{ fontSize: "12.5px", color: "#5f6389" }}>Geser ke samping untuk menonton satu per satu</div>
           </div>
         </div>
       </>)}
@@ -156,7 +156,7 @@ const GaleriBody = (vals = {}) => {
 <section id="album" style={{ maxWidth: "1240px", margin: "0 auto", padding: "92px 28px 0" }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "24px", flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Album</div>
+          <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-teks)" }}>Album</div>
           <h2 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.1", letterSpacing: "-.032em", fontWeight: "800", color: "#171827" }}>Arsip per <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>kegiatan</span></h2>
         </div>
         <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.6", color: "#5b6082" }}>Arahkan kursor ke tumpukan foto untuk membukanya, klik untuk melihat isi album.</p>
@@ -179,7 +179,7 @@ const GaleriBody = (vals = {}) => {
               </div>
             </div>
           </div>
-        </React.Fragment>)) : <div role="status" style={{ gridColumn: "1 / -1", padding: "28px", borderRadius: "22px", border: "1px dashed rgba(110,115,170,.3)", color: "#6d7192", fontSize: "14px" }}>{albumMessage || 'Belum ada album.'}</div>}
+        </React.Fragment>)) : <div role="status" style={{ gridColumn: "1 / -1", padding: "28px", borderRadius: "22px", border: "1px dashed rgba(110,115,170,.3)", color: "#5f6389", fontSize: "14px" }}>{albumMessage || 'Belum ada album.'}</div>}
       </div>
     </section>
 {(lightOpen) && (<>

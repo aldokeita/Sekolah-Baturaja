@@ -149,7 +149,7 @@ const PrestasiPage = () => {
       return {
         label: t,
         pick: () => { setTingkat(t); setIdx(-1); },
-        style: `position:relative;padding:10px 0 12px;border:0;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;transition:color .3s ease;color:${on ? '#21243f' : '#8a8ea8'}`,
+        style: `position:relative;padding:10px 0 12px;border:0;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;transition:color .3s ease;color:${on ? '#21243f' : '#63678a'}`,
         rule: `position:absolute;left:0;right:0;bottom:0;height:3px;transition:transform .35s cubic-bezier(.22,.9,.28,1),opacity .3s ease;transform-origin:left;transform:scaleX(${on ? '1' : '0'});opacity:${on ? '1' : '0'};background:linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))`,
       };
     }),

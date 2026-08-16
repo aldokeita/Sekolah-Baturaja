@@ -180,7 +180,7 @@ const ContactPage = () => {
     setTopik: (e) => setTopik(e.target.value),
     setPesan: (e) => setPesan(e.target.value.slice(0, 600)),
     hitungPesan: `${sisa} karakter tersisa`,
-    hitungStyle: `font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;color:${sisa < 80 ? '#c25a7a' : '#8a8ea8'}`,
+    hitungStyle: `font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;color:${sisa < 80 ? '#c25a7a' : '#63678a'}`,
     bantuan: formHint,
     tombolStyle: 'position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;padding:15px 24px;border-radius:16px;border:0;font-family:inherit;font-size:14.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung));transition:opacity .3s ease,transform .3s ease;box-shadow:0 20px 42px -16px rgba(95,105,235,.9);' + (isiLengkap ? 'cursor:pointer;opacity:1' : 'cursor:not-allowed;opacity:.45'),
     kirim: handleKirim,

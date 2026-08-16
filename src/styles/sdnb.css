@@ -123,7 +123,7 @@ html { scroll-behavior: smooth; }
 .sdnb-photo-glass-card__content { position: relative; z-index: 1; }
 .sdnb-photo-glass-card__eyebrow,
 .sdnb-photo-glass-card__meta {
-  color: #6d7192;
+  color: #5f6389;
 }
 .sdnb-photo-glass-card__eyebrow {
   font-size: 11px;
@@ -140,7 +140,7 @@ html { scroll-behavior: smooth; }
   line-height: 1;
 }
 .sdnb-photo-glass-card__score {
-  color: var(--sekolah-aksen-pekat);
+  color: var(--sekolah-aksen-teks);
   font-size: 13px;
   font-weight: 700;
 }
@@ -266,8 +266,8 @@ html[data-theme="dark"] .th-content { filter: none; }
 /* translucent on gradient — style-hover="background:rgba(255,255,255,.3)" */
 .h-white30:hover { background: rgba(255, 255, 255, .3); }
 
-/* footer link — style-hover="color:var(--sekolah-aksen-pekat)" */
-.h-flink:hover { color: var(--sekolah-aksen-pekat); }
+/* footer link — style-hover="color:var(--sekolah-aksen-teks)" */
+.h-flink:hover { color: var(--sekolah-aksen-teks); }
 
 /* lift card — style-hover="transform:translateY(-5px)" */
 .h-lift:hover { transform: translateY(-5px); }

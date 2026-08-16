@@ -8,7 +8,7 @@
   --login-field-border: rgba(120, 132, 200, .28);
   --login-text: #171827;
   --login-muted: #565b7d;
-  --login-subtle: #6d7192;
+  --login-subtle: #5f6389;
   --login-label: #3d4166;
   --login-accent-soft: rgba(91, 108, 255, .14);
   --login-shadow: 0 30px 70px -30px rgba(55, 65, 120, .5);
@@ -59,7 +59,7 @@
 }
 
 .sdnb.sdnb-login .login-kicker {
-  color: var(--sekolah-aksen-pekat) !important;
+  color: var(--sekolah-aksen-teks) !important;
 }
 
 .sdnb.sdnb-login .login-title {
@@ -71,11 +71,11 @@
 }
 
 .sdnb.sdnb-login .login-link {
-  color: var(--sekolah-aksen-pekat) !important;
+  color: var(--sekolah-aksen-teks) !important;
 }
 
 .sdnb.sdnb-login .login-link:hover {
-  color: var(--sekolah-aksen-pekat) !important;
+  color: var(--sekolah-aksen-teks) !important;
   text-decoration: underline;
   text-underline-offset: 3px;
 }

@@ -51,7 +51,7 @@ const Before = ({ height, deg = '166deg', alpha = '.62' }) => (
   <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height, background: `linear-gradient(${deg},rgba(255,255,255,${alpha}),rgba(255,255,255,0))`, pointerEvents: 'none' }} />
 );
 
-const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' };
+const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' };
 const h2Style = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.03em', fontWeight: 800, color: '#171827' };
 const pill = { padding: '6px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, color: '#3f4570', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.85)' };
 
@@ -83,7 +83,7 @@ const NEWS_FALLBACK = [
 
 // Sama seperti PROGRAM_STYLE: hanya gaya, teks dari panel Konten.
 const TESTI_STYLE = [
-  { avatar: 'linear-gradient(140deg,var(--sekolah-aksen-muda),var(--sekolah-aksen-samar))', roleColor: 'var(--sekolah-aksen-pekat)' },
+  { avatar: 'linear-gradient(140deg,var(--sekolah-aksen-muda),var(--sekolah-aksen-samar))', roleColor: 'var(--sekolah-aksen-teks)' },
   { avatar: 'linear-gradient(140deg,#fbcfe8,#f9a8d4)', roleColor: '#d9698f' },
   { avatar: 'linear-gradient(140deg,#a7f3d0,#99f6e4)', roleColor: '#2b9b96' },
   { avatar: 'linear-gradient(140deg,#bfdbfe,#93c5fd)', roleColor: '#4a7fd6' },
@@ -392,7 +392,7 @@ const HomePage = () => {
                 {n.image ? <img src={n.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
               </div>
               <div style={{ padding: '20px 22px 24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 11.5, fontWeight: 600, color: '#6d7192' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 11.5, fontWeight: 600, color: '#5f6389' }}>
                   <span style={{ padding: '4px 9px', borderRadius: 8, color: n.catColor, background: n.catBg }}>{n.cat}</span>
                   {n.date}
                 </div>

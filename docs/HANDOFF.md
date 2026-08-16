@@ -921,6 +921,44 @@ baris statistik dan seluruh tikernya ketika kosong, bukan menyisakan panel atau 
 
 Sejalan dengan `badge` dan `stats` di `homeContent.js`, yang sudah memakai aturan ini lebih dulu.
 
+### Warna aksen tidak boleh dipakai langsung sebagai teks kecil
+
+Warna aksen dipilih sekolah untuk gradasi, tombol, dan judul besar — di sana ia memang harus terang.
+Dipakai sebagai teks 11–13px di atas latar terang, warna yang sama gagal ambang keterbacaan: aksen
+bawaan hanya mencapai rasio **3.56** dari 4.5 yang diminta WCAG AA, dan itu terjadi di hampir setiap
+halaman karena semua label kecil memakainya.
+
+Menurunkan warna aksennya sendiri bukan jawaban — itu mengubah merek sekolah di mana-mana. Palet
+sekarang punya satu turunan khusus, `--sekolah-aksen-teks`: rona dan kejenuhan **persis sama** dengan
+`--sekolah-aksen-pekat`, hanya terangnya diturunkan bertahap sampai lolos ambang terhadap latar
+terang paling gelap yang dipakai halaman publik (#e9edf6). Untuk biru bawaan turunnya hanya 5 poin
+dan mata hampir tidak membedakannya; untuk kuning terang turunnya besar, dan itu memang konsekuensi
+memilih warna terang, bukan tanda hitungannya salah. Diuji dengan enam warna termasuk kuning dan
+putih.
+
+**Aturannya:** `color:` memakai `--sekolah-aksen-teks`; gradasi, latar, garis, dan `WebkitTextStroke`
+tetap memakai `--sekolah-aksen-pekat`. Nilai bawaannya juga tertulis di `:root` `src/index.css` —
+kalau STOP_PALET berubah, samakan keduanya, dan uji pertama di `schoolIdentity.test.js` menguncinya.
+
+### Abu-abu redup halaman publik dinaikkan, abu-abu dashboard TIDAK
+
+Enam nada abu di markup mockup gagal ambang di atas latar terang: `#9aa1d8` (2.12), `#8a8ea8` (2.75),
+`#7b80a4` (3.28), `#70759a` (3.81), `#6d7192` (4.05), `#6b7093` (4.10), ditambah `#6a6f95`, `#7b7fa0`,
+dan `#6c718f` yang menyusul. Semuanya diringkas ke dua nada yang lolos dan tetap menjaga urutan
+terang-gelapnya: **`#63678a`** (4.67) untuk label, dan **`#5f6389`** (4.93) untuk teks pendamping.
+
+Yang **tidak** disentuh: `src/styles/sdnb-dashboard.css` dan `src/styles/admin-dashboard.css`. Nada
+yang sama di sana duduk di atas permukaan **gelap**, jadi angka kontrasnya justru bagus —
+menggelapkannya akan merusak yang sudah benar. Warna redup selalu harus dinilai bersama latarnya,
+bukan sendirian.
+
+Satu pengecualian disengaja: `#6a6f95` pada baris hero Profil berukuran 34px. Teks besar hanya
+butuh 3.0 dan ia sudah 4.18, jadi menggelapkannya cuma mengubah desain tanpa manfaat.
+
+Diperiksa dengan pemindai kontras yang dijalankan sambil menggulir seluruh halaman: **dua belas
+halaman publik, nol pelanggaran** pada permukaan yang bisa diukur. Teks di atas foto dan gradasi
+dilewati pemindai — itu harus dinilai dengan mata.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

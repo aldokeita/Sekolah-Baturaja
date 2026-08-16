@@ -25,6 +25,9 @@
   --sekolah-aksen-muda: #a5b4fc;
   --sekolah-aksen-samar: #c7d2fe;
   --sekolah-aksen-rgb: 100 112 255;
+  /* Aksen untuk teks kecil di atas latar terang. Rona dan kejenuhannya sama
+     dengan --sekolah-aksen-pekat, terangnya diturunkan sampai lolos WCAG AA. */
+  --sekolah-aksen-teks: #4255ff;
 }
 
 @layer base {

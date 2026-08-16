@@ -97,7 +97,7 @@ const SiteNav = () => {
           <div style={{ width: 40, height: 40, borderRadius: 13, background: 'linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 13, letterSpacing: '.02em', boxShadow: '0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)' }}>{sekolah.logoAbbr}</div>
           <div style={{ lineHeight: 1.15 }}>
             <div className="nav-brandtitle" style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-.01em', color: '#1b1c28' }}>{sekolah.name}</div>
-            <div className="nav-sub" style={{ fontSize: 11, fontWeight: 500, color: '#6c718f' }}>{sekolah.city}</div>
+            <div className="nav-sub" style={{ fontSize: 11, fontWeight: 500, color: '#63678a' }}>{sekolah.city}</div>
           </div>
         </Link>
 

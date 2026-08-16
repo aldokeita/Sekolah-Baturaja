@@ -73,7 +73,7 @@ const PrestasiBody = (vals = {}) => {
         <div>
           <div style={{ display: "flex", alignItems: "baseline", gap: "16px", flexWrap: "wrap", paddingBottom: "14px", borderBottom: "2px solid #21243f" }}>
             <h2 style={{ margin: "0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "#21243f" }}>Daftar penghargaan</h2>
-            <span style={{ fontSize: "12.5px", color: "#6d7192", fontVariantNumeric: "tabular-nums" }}>{jumlah}</span>
+            <span style={{ fontSize: "12.5px", color: "#5f6389", fontVariantNumeric: "tabular-nums" }}>{jumlah}</span>
           </div>
 
           <div style={{ marginTop: "20px", display: "flex", flexWrap: "wrap", gap: "26px" }}>
@@ -90,12 +90,12 @@ const PrestasiBody = (vals = {}) => {
                 <div className="lyear" style={{ fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "26px", fontWeight: "900", letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums", color: "#2b2e4d" }}>{d.tahun}</div>
                 <div style={{ minWidth: "0" }}>
                   <div style={{ fontSize: "17px", fontWeight: "700", letterSpacing: "-.016em", color: "#191b2c", textWrap: "pretty" }}>{d.judul}</div>
-                  <div style={{ marginTop: "6px", fontSize: "12.5px", color: "#6d7192" }}>{d.oleh}</div>
+                  <div style={{ marginTop: "6px", fontSize: "12.5px", color: "#5f6389" }}>{d.oleh}</div>
                 </div>
                 <div className="lcol3" style={__dcs(d.medali)}>{d.peringkat}</div>
                 <div className="lcol4" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                  <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#7b80a4" }}>{d.tingkat}</span>
-                  <span className="lgo" style={{ display: "inline-flex", alignItems: "center", color: "var(--sekolah-aksen-pekat)" }}>
+                  <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#63678a" }}>{d.tingkat}</span>
+                  <span className="lgo" style={{ display: "inline-flex", alignItems: "center", color: "var(--sekolah-aksen-teks)" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
                   </span>
                 </div>
@@ -113,7 +113,7 @@ const PrestasiBody = (vals = {}) => {
                 <div className="bargrp" style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
                   <div style={{ fontSize: "11.5px", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#5b6082" }}>{g.n}</div>
                   <div className="bar" style={__dcs(g.bar)}></div>
-                  <div style={{ fontSize: "10.5px", fontWeight: "700", letterSpacing: ".04em", color: "#8a8ea8", fontVariantNumeric: "tabular-nums" }}>{g.th}</div>
+                  <div style={{ fontSize: "10.5px", fontWeight: "700", letterSpacing: ".04em", color: "#63678a", fontVariantNumeric: "tabular-nums" }}>{g.th}</div>
                 </div>
               </React.Fragment>))}
             </div>
@@ -138,7 +138,7 @@ const PrestasiBody = (vals = {}) => {
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "74px 28px 0" }}>
       <div style={{ paddingBottom: "14px", borderBottom: "2px solid #21243f", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "18px", flexWrap: "wrap" }}>
         <h2 style={{ margin: "0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "#21243f" }}>Tiga capaian teratas</h2>
-        <span style={{ fontSize: "12.5px", color: "#6d7192" }}>Dinilai dari tingkat lomba dan jumlah peserta</span>
+        <span style={{ fontSize: "12.5px", color: "#5f6389" }}>Dinilai dari tingkat lomba dan jumlah peserta</span>
       </div>
       <div className="podium" style={{ marginTop: "30px", display: "grid", gridTemplateColumns: kolomUntuk((podium || []).length, 3), gap: "22px", alignItems: "end" }}>
         {(podium || []).map((p, $index) => (<React.Fragment key={$index}>

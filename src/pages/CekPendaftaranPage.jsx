@@ -77,7 +77,7 @@ const CekPendaftaranPage = () => {
       </Helmet>
 
       <main className="sdnb" style={{ maxWidth: '760px', margin: '0 auto', padding: '48px 20px 72px' }}>
-        <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' }}>
           SPMB {sekolah.academicYear}
         </div>
         <h1 style={{ margin: '12px 0 0', fontSize: '34px', lineHeight: 1.12, letterSpacing: '-.03em', fontWeight: 800, color: '#171827' }}>
@@ -175,7 +175,7 @@ const CekPendaftaranPage = () => {
             <h2 style={{ margin: '18px 0 0', fontSize: '22px', fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>
               {hasil.nama_lengkap}
             </h2>
-            <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#6b7093' }}>
+            <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#5f6389' }}>
               {hasil.nomor_pendaftaran} · SPMB {hasil.tahun_ajaran}
               {hasil.jalur_label ? ` · jalur ${hasil.jalur_label}` : ''}
             </p>
@@ -188,7 +188,7 @@ const CekPendaftaranPage = () => {
                 ke tata usaha bila belum menerimanya.
               </p>
             )}
-            <p style={{ margin: '18px 0 0', fontSize: '13px', lineHeight: 1.6, color: '#6b7093' }}>
+            <p style={{ margin: '18px 0 0', fontSize: '13px', lineHeight: 1.6, color: '#5f6389' }}>
               Ada yang ingin ditanyakan? Hubungi kami di <strong>{sekolah.phone}</strong> pada{' '}
               {sekolah.officeHours}.
             </p>
@@ -213,8 +213,8 @@ const CekPendaftaranPage = () => {
           </div>
         )}
 
-        <p style={{ marginTop: '26px', fontSize: '13.5px', color: '#6b7093' }}>
-          Belum mendaftar? <Link to="/pendaftaran" style={{ color: 'var(--sekolah-aksen-pekat)', fontWeight: 700 }}>Isi formulir pendaftaran</Link>.
+        <p style={{ marginTop: '26px', fontSize: '13.5px', color: '#5f6389' }}>
+          Belum mendaftar? <Link to="/pendaftaran" style={{ color: 'var(--sekolah-aksen-teks)', fontWeight: 700 }}>Isi formulir pendaftaran</Link>.
         </p>
       </main>
     </>

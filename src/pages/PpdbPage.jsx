@@ -241,7 +241,7 @@ const PpdbPage = () => {
         num: passed ? '✓' : String(n), label, hint,
         go: () => { if (!done) go(n); },
         wrap: `display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:14px;cursor:pointer;transition:background .2s ease;background:${active ? 'rgba(255,255,255,.72)' : 'transparent'}`,
-        dot: `flex:none;width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${active || passed ? '#fff' : '#6b7093'};background:${active ? 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2))' : passed ? 'linear-gradient(135deg,#7fd8c0,#6fc9e0)' : 'rgba(255,255,255,.72)'};box-shadow:inset 0 1px 0 rgba(255,255,255,.7)`,
+        dot: `flex:none;width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${active || passed ? '#fff' : '#5f6389'};background:${active ? 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2))' : passed ? 'linear-gradient(135deg,#7fd8c0,#6fc9e0)' : 'rgba(255,255,255,.72)'};box-shadow:inset 0 1px 0 rgba(255,255,255,.7)`,
         title: `font-size:13.5px;font-weight:700;letter-spacing:-.01em;color:${active ? '#1b1c2c' : '#4d5273'}`,
       };
     }),

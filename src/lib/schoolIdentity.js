@@ -276,6 +276,52 @@ const keRgb = ({ h, s, l }) => {
 
 const keHeks = (hsl) => `#${keRgb(hsl).map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 
+/* ── Aksen yang boleh dipakai sebagai teks kecil ────────────────────────────
+ *
+ * Warna aksen sekolah dipilih untuk gradasi, tombol, dan judul besar — di sana
+ * ia memang harus terang dan hidup. Dipakai sebagai teks 11–13px di atas latar
+ * terang, warna yang sama gagal standar keterbacaan: aksen bawaan hanya
+ * mencapai rasio 3.56 dari 4.5 yang diminta WCAG AA.
+ *
+ * Menurunkan warna aksennya sendiri bukan jawaban — itu mengubah merek sekolah
+ * di seluruh halaman. Yang dibuat di sini adalah satu turunan khusus teks:
+ * rona dan kejenuhan persis sama, hanya terangnya diturunkan secukupnya sampai
+ * lolos ambang. Untuk biru bawaan turunnya hanya 5 poin dan mata hampir tidak
+ * membedakannya; untuk kuning turunnya besar, dan itu memang tidak terhindarkan.
+ */
+
+/** Latar terang paling gelap yang dipakai halaman publik (#e9edf6). */
+const LATAR_ACUAN = [233, 237, 246];
+const KONTRAS_MIN = 4.5;
+
+const luminansi = ([r, g, b]) => {
+  const kanal = (v) => {
+    const n = v / 255;
+    return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * kanal(r) + 0.7152 * kanal(g) + 0.0722 * kanal(b);
+};
+
+const kontras = (a, b) => {
+  const la = luminansi(a);
+  const lb = luminansi(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+};
+
+/**
+ * Menurunkan terang sebuah warna sampai kontrasnya terhadap latar acuan lolos.
+ *
+ * Langkah setengah poin cukup halus: selisih satu langkah tidak terlihat mata,
+ * dan pencarian selalu berhenti karena hitam pasti lolos terhadap latar terang.
+ */
+const gelapkanSampaiTerbaca = (hsl) => {
+  for (let l = hsl.l; l >= 0; l -= 0.5) {
+    const calon = { h: hsl.h, s: hsl.s, l };
+    if (kontras(keRgb(calon), LATAR_ACUAN) >= KONTRAS_MIN) return calon;
+  }
+  return { h: hsl.h, s: hsl.s, l: 0 };
+};
+
 /**
  * Rona (hue) warna akhir yang "dibuka lipatannya" relatif terhadap warna awal.
  *
@@ -351,6 +397,10 @@ export const turunkanPalet = (hexAwal, hexAkhir, mode = AKSEN_GRADASI) => {
   // Bayangan di halaman publik memakai rgba dengan alfa, dan alfa tidak bisa
   // ditempelkan pada nilai heks di dalam var().
   palet['aksen-rgb'] = keRgb(awal).join(' ');
+
+  /* Turunan khusus teks kecil. Diambil dari `aksen-pekat`, bukan dari `aksen`,
+   * karena itulah warna yang dipakai label dan tautan sebelum ini. */
+  palet['aksen-teks'] = keHeks(gelapkanSampaiTerbaca(keHsl(palet['aksen-pekat'])));
 
   return palet;
 };

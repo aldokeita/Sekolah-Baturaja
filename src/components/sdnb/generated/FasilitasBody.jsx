@@ -113,7 +113,7 @@ const FasilitasBody = (vals = {}) => {
           <div style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".22em", textTransform: "uppercase", color: "#8f95cf" }}>Semua ruang</div>
           <h2 style={{ margin: "12px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.08", letterSpacing: "-.038em", fontWeight: "800", color: "#fff" }}>{judulSemuaRuang} <span style={{ background: "linear-gradient(115deg,#8a95ff,#c9a4f5 46%,#f79cc4)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>satu halaman sekolah</span></h2>
         </div>
-        <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.66", color: "#9aa1d8" }}>Klik salah satu ruang untuk membawanya ke layar tur di atas.</p>
+        <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.66", color: "#63678a" }}>Klik salah satu ruang untuk membawanya ke layar tur di atas.</p>
       </div>
 
       <div className="mos" style={{ marginTop: "28px", display: "grid", gridTemplateColumns: kolomMozaik || "repeat(4,1fr)", gridAutoRows: "200px", gridAutoFlow: "dense", gap: "16px" }}>

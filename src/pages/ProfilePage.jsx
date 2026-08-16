@@ -34,7 +34,7 @@ import '@/styles/sdnb-profil.css';
 const HEADING_FONT = "'Plus Jakarta Sans','Archivo',system-ui,sans-serif";
 const GRAD_TEXT = { background: 'linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' };
 const glass = { background: 'rgba(255,255,255,.5)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.75)' };
-const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' };
+const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' };
 const h2 = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.032em', fontWeight: 800, color: '#171827' };
 
 /* Kartu guru: HANYA gradasi latarnya yang tinggal di kode.
@@ -441,7 +441,7 @@ const ProfilePage = () => {
           <div data-reveal="0">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 44, height: 2, background: 'linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))' }} />
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>{isi.hero.kicker}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' }}>{isi.hero.kicker}</span>
             </div>
             <h1 style={{ margin: '22px 0 0', fontFamily: HEADING_FONT, lineHeight: .98, letterSpacing: '-.045em', color: '#171827' }}>
               <span style={{ display: 'block', fontSize: 34, fontWeight: 500, color: '#6a6f95', letterSpacing: '-.02em' }}>{isi.hero.titleTop}</span>
@@ -477,11 +477,11 @@ const ProfilePage = () => {
               <div style={{ fontFamily: HEADING_FONT, fontSize: 28, fontWeight: 800, letterSpacing: '-.03em', color: '#1d1f33' }}>
                 {angkaHitung(badgeValue)}
               </div>
-              <div style={{ fontSize: 11.5, color: '#6d7192' }}>{badgeLabel}</div>
+              <div style={{ fontSize: 11.5, color: '#5f6389' }}>{badgeLabel}</div>
               {jumlahMurid.error && (
                 <div role="alert" style={{ marginTop: 6, maxWidth: 150, fontSize: 10.5, lineHeight: 1.35, color: '#9b435b' }}>
                   {jumlahMurid.error}
-                  <button type="button" onClick={() => loadJumlahMurid()} style={{ display: 'block', marginTop: 3, padding: 0, border: 0, background: 'none', color: 'var(--sekolah-aksen-pekat)', font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>Coba lagi</button>
+                  <button type="button" onClick={() => loadJumlahMurid()} style={{ display: 'block', marginTop: 3, padding: 0, border: 0, background: 'none', color: 'var(--sekolah-aksen-teks)', font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>Coba lagi</button>
                 </div>
               )}
             </div>
@@ -610,7 +610,7 @@ const ProfilePage = () => {
             <div style={{ fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>
               {kepalaSekolah ? kepalaSekolah.nama : sekolah.name}
             </div>
-            <div style={{ marginTop: 3, fontSize: 13.5, color: '#6b7093' }}>
+            <div style={{ marginTop: 3, fontSize: 13.5, color: '#5f6389' }}>
               {kepalaSekolah ? kepalaSekolah.peran : 'Kepala Sekolah'}
             </div>
             <div style={{ marginTop: 10, width: 120, height: 2, background: 'linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))' }} />
@@ -741,9 +741,9 @@ const ProfilePage = () => {
                 </div>
                 <div style={{ position: 'relative', padding: '20px 22px 22px' }}>
                   <div style={{ fontFamily: HEADING_FONT, fontSize: 16, fontWeight: 800, letterSpacing: '-.018em', color: '#1e2035' }}>{t.nama}</div>
-                  <div style={{ marginTop: 4, fontSize: 12.5, fontWeight: 600, color: '#6b7093' }}>{t.peran}</div>
+                  <div style={{ marginTop: 4, fontSize: 12.5, fontWeight: 600, color: '#5f6389' }}>{t.peran}</div>
                   <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,.85)' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--sekolah-aksen-pekat)' }}>Lihat profil
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--sekolah-aksen-teks)' }}>Lihat profil
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
                     </span>
                   </div>
@@ -800,7 +800,7 @@ const ProfilePage = () => {
           <div style={{ position: 'relative', marginTop: 20, display: 'flex', flexDirection: 'column' }}>
             {dataPokok(sekolah, isi.registry).map(([label, nilai]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 20, padding: '13px 2px', borderBottom: '1px solid rgba(255,255,255,.75)' }}>
-                <span style={{ flex: 'none', fontSize: 13, color: '#6b7093' }}>{label}</span>
+                <span style={{ flex: 'none', fontSize: 13, color: '#5f6389' }}>{label}</span>
                 <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1e2035', textAlign: 'right' }}>{nilai}</span>
               </div>
             ))}
@@ -831,7 +831,7 @@ const ProfilePage = () => {
             <div style={{ padding: '34px 36px 36px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
                 <div>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>{p.peran}</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' }}>{p.peran}</div>
                   <h3 style={{ margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 28, lineHeight: 1.16, letterSpacing: '-.028em', fontWeight: 800, color: '#1b1c2c' }}>{p.nama}</h3>
                 </div>
                 <button type="button" onClick={closeAll} className="shine" aria-label="Tutup" style={{ position: 'relative', overflow: 'hidden', flex: 'none', width: 38, height: 38, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.7)' }}>
@@ -844,7 +844,7 @@ const ProfilePage = () => {
               <div style={{ marginTop: 22, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {p.rincian.map(([k, v]) => (
                   <div key={k} style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#8a8ea8' }}>{k}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#63678a' }}>{k}</div>
                     <div style={{ marginTop: 5, fontSize: 13.5, fontWeight: 700, color: '#1e2035' }}>{v}</div>
                   </div>
                 ))}
