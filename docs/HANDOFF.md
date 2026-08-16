@@ -822,6 +822,32 @@ dan pembeli tidak punya contoh bentuk isian. Yang berubah **statusnya menjadi `d
 tampil di halaman publik sampai sekolah menerbitkannya sendiri, dan judulnya kini berbunyi seperti
 petunjuk ("Contoh berita sekolah").
 
+### Hasil periksa angka di empat halaman publik sisanya
+
+Pertanyaannya: mana angka yang bersumber data, mana yang tertanam dan tidak bisa diubah pembeli.
+
+| Halaman | Hasil |
+|---|---|
+| Program | **Bersih.** Diturunkan dari daftar program + `content.stats` (disunting) |
+| Ekstrakurikuler | **Bersih.** Seluruhnya diturunkan dari daftar kegiatan yang disunting |
+| Prestasi | **Bersih.** Diturunkan dari daftar prestasi + `content.stats` (disunting) |
+| Fasilitas | **Bercacat** — sudah diperbaiki, lihat di bawah |
+
+Daftar fasilitasnya sendiri sudah bisa disunting (kunci `facilities`, panel Konten → Fasilitas);
+array `F` di `FacilitiesPage` hanya cadangan saat CMS kosong. Yang bercacat adalah dua hal lain.
+
+**Baris ringkasan** memuat empat angka mati: 4200 m² luas lahan, 12 ruang kelas, 10 ruang penunjang,
+24 guru dan staf — fakta sekolah CONTOH, tidak bisa diubah pembeli. Tiga kini diturunkan: ruang kelas
+dan guru dari endpoint hitungan, ruang penunjang dari daftar Fasilitas yang disunting sekolah.
+Kartu yang angkanya belum didapat disembunyikan, bukan ditampilkan nol.
+
+**"Luas lahan" DICABUT, bukan dijadikan nol.** Tidak ada sumbernya di sistem dan tidak ada tempat
+bagi pembeli mengisinya, jadi menampilkannya hanya bisa berupa karangan. Kalau nanti diminta, ia
+butuh field tersendiri lebih dulu — kemungkinan di Identitas Sekolah, sejajar dengan alamat.
+
+**Judul "Sepuluh perhentian"** juga tertanam, sementara daftar di bawahnya mengikuti fasilitas milik
+sekolah — sekolah dengan tiga ruang tetap dijuduli sepuluh. Kini mengikuti jumlah sebenarnya.
+
 ### `prefers-reduced-motion` tidak boleh ikut menyembunyikan informasi
 
 `useSdnbMotion` dulu keluar lebih awal ketika pengunjung meminta lebih sedikit gerakan. Masalahnya,

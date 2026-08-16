@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import FasilitasBody from '@/components/sdnb/generated/FasilitasBody';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
+import { fetchClassCount, fetchGuruCount } from '@/lib/dataMasterAdapters';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
 
@@ -73,14 +74,21 @@ const FacilitiesPage = () => {
   const [aktif, setAktif] = useState(0);
   const [jalan, setJalan] = useState(true);
   const [cms, setCms] = useState([]);
+  // null = belum termuat. Angka contoh apa pun di sini akan tercetak sebagai
+  // klaim jumlah ruang dan guru sekolah pembeli.
+  const [hitungan, setHitungan] = useState({ kelas: null, guru: null });
 
-  useSdnbMotion([]);
+  useSdnbMotion([hitungan.kelas, hitungan.guru, cms.length]);
 
   useEffect(() => {
     let mounted = true;
     fetchWebsiteContentMap({ keys: ['facilities'], publicOnly: true })
       .then((map) => { if (mounted && Array.isArray(map.facilities)) setCms(map.facilities); })
       .catch(() => {});
+    Promise.all([
+      fetchClassCount().then((d) => Number(d?.total) || 0).catch(() => null),
+      fetchGuruCount().then((d) => Number(d?.total) || 0).catch(() => null),
+    ]).then(([kelas, guru]) => { if (mounted) setHitungan({ kelas, guru }); });
     return () => { mounted = false; };
   }, []);
 
@@ -108,6 +116,16 @@ const FacilitiesPage = () => {
   }, [cms]);
 
   const n = source.length || 1;
+
+  const jumlahKelas = hitungan.kelas;
+  const jumlahGuru = hitungan.guru;
+  /* Ruang penunjang dihitung dari daftar Fasilitas yang disunting sekolah. Selama
+   * daftarnya masih contoh bawaan (CMS kosong), angkanya tidak ditampilkan — ia
+   * akan menghitung ruang milik sekolah lain. */
+  const ruangPenunjang = useMemo(() => {
+    if (!Array.isArray(cms) || cms.length === 0) return null;
+    return cms.filter((r) => String(r?.kategori || '').toLowerCase() !== 'belajar').length;
+  }, [cms]);
 
   // auto tour
   useEffect(() => {
@@ -163,6 +181,11 @@ const FacilitiesPage = () => {
     maju: () => geser(1),
     mundur: () => geser(-1),
 
+    /* Judulnya dulu berbunyi "Sepuluh perhentian" — jumlah ruang sekolah CONTOH,
+     * tertulis mati, sementara daftar di bawahnya mengikuti Fasilitas milik
+     * sekolah. Sekolah dengan tiga ruang tetap dijuduli sepuluh. */
+    judulSemuaRuang: `${source.length} perhentian,`,
+
     chip: source.map((s, k) => ({
       nama: s.nama,
       on: k === i ? '1' : '0',
@@ -170,12 +193,25 @@ const FacilitiesPage = () => {
       pick: () => pilih(k),
     })),
 
+    /* Baris ini dulu memuat empat angka mati — 4200 m² luas lahan, 12 ruang kelas,
+     * 10 ruang penunjang, 24 guru dan staf. Semuanya fakta sekolah CONTOH yang
+     * tidak bisa diubah pembeli, jadi setiap salinan yang terjual mengaku punya
+     * lahan dan ruang milik sekolah lain.
+     *
+     * Ketiganya kini diturunkan dari data sekolah sendiri: jumlah kelas dan guru
+     * dari endpoint hitungan, jumlah ruang penunjang dari daftar Fasilitas di
+     * panel Konten. "Luas lahan" DICABUT — tidak ada sumbernya di sistem dan tidak
+     * ada tempat untuk pembeli mengisinya, jadi menampilkannya hanya bisa berupa
+     * karangan. Kalau nanti diperlukan, ia butuh field tersendiri lebih dulu.
+     *
+     * Kartu yang angkanya belum didapat disembunyikan, bukan ditampilkan nol. */
     ringkas: [
-      { n: 4200, suf: ' m²', label: 'Luas lahan' },
-      { n: 12, suf: '', label: 'Ruang kelas' },
-      { n: 10, suf: '', label: 'Ruang penunjang' },
-      { n: 24, suf: '', label: 'Guru dan staf' },
-    ].map((r, k) => ({ ...r, box: `padding:28px 28px 28px ${k === 0 ? '0' : '28px'};border-right:${k === 3 ? 'none' : '1px solid rgba(255,255,255,.16)'}` })),
+      { n: jumlahKelas, suf: '', label: 'Ruang kelas' },
+      { n: ruangPenunjang, suf: '', label: 'Ruang penunjang' },
+      { n: jumlahGuru, suf: '', label: 'Guru dan staf' },
+    ]
+      .filter((r) => r.n !== null)
+      .map((r, k, semua) => ({ ...r, box: `padding:28px 28px 28px ${k === 0 ? '0' : '28px'};border-right:${k === semua.length - 1 ? 'none' : '1px solid rgba(255,255,255,.16)'}` })),
 
     mozaik: source.map((s, k) => ({
       nama: s.nama, kategori: s.kategori, luas: s.luas, ringkas: s.ringkas,

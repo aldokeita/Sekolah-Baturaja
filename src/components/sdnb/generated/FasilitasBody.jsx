@@ -20,7 +20,7 @@ import { s as __dcs } from '@/lib/dcStyle';
 import '@/styles/sdnb-fasilitas.css';
 
 const FasilitasBody = (vals = {}) => {
-  const { chip, jalanDot, jalanLabel, jalanTeks, maju, mozaik, mundur, panggung, progres, ringkas, sorot, tglJalan } = vals;
+  const { chip, jalanDot, jalanLabel, jalanTeks, judulSemuaRuang, maju, mozaik, mundur, panggung, progres, ringkas, sorot, tglJalan } = vals;
   return (
     <>
 <section style={{ maxWidth: "1300px", margin: "0 auto", padding: "10px 28px 0" }}>
@@ -105,7 +105,7 @@ const FasilitasBody = (vals = {}) => {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "24px", flexWrap: "wrap" }}>
         <div>
           <div style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".22em", textTransform: "uppercase", color: "#8f95cf" }}>Semua ruang</div>
-          <h2 style={{ margin: "12px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.08", letterSpacing: "-.038em", fontWeight: "800", color: "#fff" }}>Sepuluh perhentian, <span style={{ background: "linear-gradient(115deg,#8a95ff,#c9a4f5 46%,#f79cc4)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>satu halaman sekolah</span></h2>
+          <h2 style={{ margin: "12px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.08", letterSpacing: "-.038em", fontWeight: "800", color: "#fff" }}>{judulSemuaRuang} <span style={{ background: "linear-gradient(115deg,#8a95ff,#c9a4f5 46%,#f79cc4)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>satu halaman sekolah</span></h2>
         </div>
         <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.66", color: "#9aa1d8" }}>Klik salah satu ruang untuk membawanya ke layar tur di atas.</p>
       </div>
