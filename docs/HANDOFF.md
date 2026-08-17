@@ -1321,8 +1321,14 @@ mencapai mode gelap lewat `filter: invert(...) hue-rotate(...)` (lihat `sdnb-pro
 lewat token. Nada gelap yang dipasang untuk mode terang justru dilawan oleh pembalikan itu.
 
 Contoh terukur di halaman Kontak: status "Kantor sedang buka" **1.18**, tautan aksen 2.82–3.32,
-teks bantuan 2.57. Perlu sapuan tersendiri, dan kemungkinan besar perlu keputusan apakah halaman
-publik tetap memakai pembalikan atau pindah ke token seperti dashboard.
+teks bantuan 2.57.
+
+**KEPUTUSAN pemilik template: biarkan apa adanya.** Mode gelap halaman publik memang direncanakan
+sejak awal dan mekanisme pembalikannya disengaja, bukan tambalan. Jangan mengusulkan memindahkannya
+ke token — hampir 800 warna tertulis mati di markup publik, dan pemiliknya menilai hasil sekarang
+sudah memadai.
+
+Angka-angka di atas disimpan sebagai catatan keadaan, bukan sebagai daftar tugas.
 
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
