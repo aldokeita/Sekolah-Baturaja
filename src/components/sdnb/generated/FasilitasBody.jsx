@@ -50,7 +50,7 @@ const FasilitasBody = (vals = {}) => {
         <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "26px", flexWrap: "wrap" }}>
           <div style={{ maxWidth: "620px", animation: "slidein .6s cubic-bezier(.2,.9,.25,1) both" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <span style={{ padding: "7px 13px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".12em", textTransform: "uppercase", color: "#1a1d3f", background: "rgba(255,255,255,.92)" }}>{sorot.kategori}</span>
+              <span style={{ padding: "7px 13px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.92)" }}>{sorot.kategori}</span>
               <span style={{ fontSize: "12.5px", fontWeight: "700", color: "rgba(255,255,255,.85)", fontVariantNumeric: "tabular-nums" }}>Perhentian {sorot.posisi} &middot; {sorot.luas}</span>
             </div>
             <h2 className="stagetitle" style={{ margin: "16px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "42px", lineHeight: "1.04", letterSpacing: "-.04em", fontWeight: "800", color: "#fff", textShadow: "0 4px 26px rgba(6,10,42,.7)" }}>{sorot.nama}</h2>
@@ -101,8 +101,8 @@ const FasilitasBody = (vals = {}) => {
         <div aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, right: 0, height: "52%", background: "linear-gradient(168deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }}></div>
         {(ringkas || []).map((r, $index) => (<React.Fragment key={$index}>
           <div style={{ ...__dcs(r.box), position: "relative" }}>
-            <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "42px", lineHeight: "1", letterSpacing: "-.045em", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#1d1f33" }}><span data-count={r.n}>0</span><span style={{ fontSize: "19px", color: "#63678a" }}>{r.suf}</span></div>
-            <div style={{ marginTop: "10px", fontSize: "11px", fontWeight: "800", letterSpacing: ".15em", textTransform: "uppercase", color: "#63678a" }}>{r.label}</div>
+            <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "42px", lineHeight: "1", letterSpacing: "-.045em", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "var(--sdnb-teks-judul)" }}><span data-count={r.n}>0</span><span style={{ fontSize: "19px", color: "var(--sdnb-teks-pendamping)" }}>{r.suf}</span></div>
+            <div style={{ marginTop: "10px", fontSize: "11px", fontWeight: "800", letterSpacing: ".15em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>{r.label}</div>
           </div>
         </React.Fragment>))}
       </div>
@@ -113,7 +113,7 @@ const FasilitasBody = (vals = {}) => {
           <div style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".22em", textTransform: "uppercase", color: "#8f95cf" }}>Semua ruang</div>
           <h2 style={{ margin: "12px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.08", letterSpacing: "-.038em", fontWeight: "800", color: "#fff" }}>{judulSemuaRuang} <span style={{ background: "linear-gradient(115deg,#8a95ff,#c9a4f5 46%,#f79cc4)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>satu halaman sekolah</span></h2>
         </div>
-        <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.66", color: "#63678a" }}>Klik salah satu ruang untuk membawanya ke layar tur di atas.</p>
+        <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.66", color: "var(--sdnb-teks-pendamping)" }}>Klik salah satu ruang untuk membawanya ke layar tur di atas.</p>
       </div>
 
       <div className="mos" style={{ marginTop: "28px", display: "grid", gridTemplateColumns: kolomMozaik || "repeat(4,1fr)", gridAutoRows: "200px", gridAutoFlow: "dense", gap: "16px" }}>
@@ -122,7 +122,7 @@ const FasilitasBody = (vals = {}) => {
             <div className="gf" style={__dcs(m.foto)}></div>
             <div style={{ position: "absolute", inset: "0", background: "radial-gradient(120% 80% at 20% 8%,rgba(255,255,255,.26),rgba(255,255,255,0) 56%)" }}></div>
             <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(10,13,38,.84),rgba(10,13,38,0) 58%)" }}></div>
-            <div style={{ position: "absolute", left: "14px", top: "14px", padding: "6px 11px", borderRadius: "999px", fontSize: "10px", fontWeight: "800", letterSpacing: ".11em", textTransform: "uppercase", color: "#1a1d3f", background: "rgba(255,255,255,.86)" }}>{m.kategori}</div>
+            <div style={{ position: "absolute", left: "14px", top: "14px", padding: "6px 11px", borderRadius: "999px", fontSize: "10px", fontWeight: "800", letterSpacing: ".11em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.86)" }}>{m.kategori}</div>
             <div style={{ position: "absolute", left: "0", right: "0", bottom: "0", padding: "18px 18px 16px" }}>
               <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "18px", lineHeight: "1.16", letterSpacing: "-.024em", fontWeight: "800", color: "#fff" }}>{m.nama}</div>
               <div className="gmeta" style={{ marginTop: "7px", fontSize: "12.5px", lineHeight: "1.5", color: "rgba(233,236,255,.86)" }}>{m.luas} &middot; {m.ringkas}</div>
@@ -141,7 +141,7 @@ const FasilitasBody = (vals = {}) => {
             <p style={{ margin: "16px 0 0", fontSize: "15px", lineHeight: "1.7", color: "rgba(255,255,255,.9)" }}>Kabari tata usaha sehari sebelumnya. Seorang guru akan menemani Anda melewati kelas, perpustakaan, musala, dan kebun sekolah.</p>
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "10px", padding: "16px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "800", letterSpacing: "-.01em", color: "#3b3f7a", background: "#fff", boxShadow: "0 18px 38px -16px rgba(20,26,80,.8)" }}>Jadwalkan kunjungan
+            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "10px", padding: "16px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "800", letterSpacing: "-.01em", color: "var(--sdnb-teks-pendamping)", background: "#fff", boxShadow: "0 18px 38px -16px rgba(20,26,80,.8)" }}>Jadwalkan kunjungan
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
             </a>
             <a className="shine" href="/profil/galeri" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "10px", padding: "16px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>Lihat galeri</a>

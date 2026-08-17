@@ -1330,6 +1330,43 @@ sudah memadai.
 
 Angka-angka di atas disimpan sebagai catatan keadaan, bukan sebagai daftar tugas.
 
+### Nada teks halaman publik: tiga nama, bukan 60 nada
+
+Konverter mockup menyalin setiap warna apa adanya ke dalam markup, jadi halaman publik memakai
+**60 nada berbeda untuk tiga peran teks yang sama**. Selisih antar nada sering hanya 1–3% terang —
+tidak ada mata yang bisa membedakan `#171827` dari `#1b1c2c` — tapi masing-masing harus diperiksa
+kontrasnya sendiri. Itu sebabnya sembilan nada gagal ambang bisa bersembunyi di sana sampai disapu
+satu per satu.
+
+Sekarang tiga nama di `:root` (`src/styles/sdnb.css`):
+
+| nama | nilai | rasio di atas #e9edf6 |
+|---|---|---|
+| `--sdnb-teks-judul` | `#1b1c2c` | 14.34 |
+| `--sdnb-teks-badan` | `#33375a` | 9.76 |
+| `--sdnb-teks-pendamping` | `#5f6389` | 4.93 |
+
+Nilainya diambil dari nada yang **paling sering dipakai** di tiap peran, jadi mayoritas halaman tidak
+berubah sedikit pun. **361 deklarasi** diganti di 16 berkas; heks di markup publik turun dari 793 ke
+432, nada unik dari 207 ke 176.
+
+**Halaman baru wajib memakai nama ini**, bukan menuliskan nada sendiri. Dengan tiga nama, kontras
+seluruh situs diperiksa dengan melihat tiga angka.
+
+Yang **sengaja tidak** ikut:
+
+- **Nada dekoratif** (gradasi, warna kategori, hamparan foto) — 100 nada. Di sana ragam warna memang
+  bagian desainnya.
+- **Nada peran-teks yang tersisa: 29 unik, 61 kemunculan.** Semuanya di luar properti warna gaya —
+  27 garis, 18 atribut `stroke` SVG, 6 gradasi, 2 latar. Bukan teks, jadi tidak ikut aturan kontras
+  teks. Penggantinya hanya menyasar bentuk `color:`/`stroke:`/`fill:` di dalam objek style, bukan
+  bentuk atribut `stroke="…"`, supaya tidak ada latar atau garis yang berubah tanpa sengaja.
+
+Nilai gelapnya belum ditetapkan: mode gelap halaman publik memakai pembalikan filter dan pemilik
+template memutuskan membiarkannya. Ketiga nama ini siap dipakai bila keputusan itu berubah.
+
+Inventaris lengkap 207 nada beserta perannya: `docs/inventaris-nada-warna-publik.md`.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

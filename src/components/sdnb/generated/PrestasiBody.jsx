@@ -72,8 +72,8 @@ const PrestasiBody = (vals = {}) => {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 356px", gap: "44px", alignItems: "start" }}>
         <div>
           <div style={{ display: "flex", alignItems: "baseline", gap: "16px", flexWrap: "wrap", paddingBottom: "14px", borderBottom: "2px solid #21243f" }}>
-            <h2 style={{ margin: "0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "#21243f" }}>Daftar penghargaan</h2>
-            <span style={{ fontSize: "12.5px", color: "#5f6389", fontVariantNumeric: "tabular-nums" }}>{jumlah}</span>
+            <h2 style={{ margin: "0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Daftar penghargaan</h2>
+            <span style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)", fontVariantNumeric: "tabular-nums" }}>{jumlah}</span>
           </div>
 
           <div style={{ marginTop: "20px", display: "flex", flexWrap: "wrap", gap: "26px" }}>
@@ -87,14 +87,14 @@ const PrestasiBody = (vals = {}) => {
               <div className="ledger" onClick={d.open}>
                 <div className="lbg" style={__dcs(d.foto)}></div>
                 <div className="lveil"></div>
-                <div className="lyear" style={{ fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "26px", fontWeight: "900", letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums", color: "#2b2e4d" }}>{d.tahun}</div>
+                <div className="lyear" style={{ fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "26px", fontWeight: "900", letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums", color: "var(--sdnb-teks-badan)" }}>{d.tahun}</div>
                 <div style={{ minWidth: "0" }}>
-                  <div style={{ fontSize: "17px", fontWeight: "700", letterSpacing: "-.016em", color: "#191b2c", textWrap: "pretty" }}>{d.judul}</div>
-                  <div style={{ marginTop: "6px", fontSize: "12.5px", color: "#5f6389" }}>{d.oleh}</div>
+                  <div style={{ fontSize: "17px", fontWeight: "700", letterSpacing: "-.016em", color: "var(--sdnb-teks-judul)", textWrap: "pretty" }}>{d.judul}</div>
+                  <div style={{ marginTop: "6px", fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>{d.oleh}</div>
                 </div>
                 <div className="lcol3" style={__dcs(d.medali)}>{d.peringkat}</div>
                 <div className="lcol4" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                  <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#63678a" }}>{d.tingkat}</span>
+                  <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>{d.tingkat}</span>
                   <span className="lgo" style={{ display: "inline-flex", alignItems: "center", color: "var(--sekolah-aksen-teks)" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
                   </span>
@@ -107,13 +107,13 @@ const PrestasiBody = (vals = {}) => {
         <div style={{ position: "sticky", top: "110px", display: "flex", flexDirection: "column", gap: "26px" }}>
           {(grafikTampil) && (<>
           <div>
-            <div style={{ paddingBottom: "14px", borderBottom: "2px solid #21243f", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "#21243f" }}>Per tahun</div>
+            <div style={{ paddingBottom: "14px", borderBottom: "2px solid #21243f", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Per tahun</div>
             <div style={{ marginTop: "26px", display: "flex", alignItems: "flex-end", gap: "10px", height: "170px" }}>
               {(grafik || []).map((g, $index) => (<React.Fragment key={$index}>
                 <div className="bargrp" style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-                  <div style={{ fontSize: "11.5px", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#5b6082" }}>{g.n}</div>
+                  <div style={{ fontSize: "11.5px", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "var(--sdnb-teks-pendamping)" }}>{g.n}</div>
                   <div className="bar" style={__dcs(g.bar)}></div>
-                  <div style={{ fontSize: "10.5px", fontWeight: "700", letterSpacing: ".04em", color: "#63678a", fontVariantNumeric: "tabular-nums" }}>{g.th}</div>
+                  <div style={{ fontSize: "10.5px", fontWeight: "700", letterSpacing: ".04em", color: "var(--sdnb-teks-pendamping)", fontVariantNumeric: "tabular-nums" }}>{g.th}</div>
                 </div>
               </React.Fragment>))}
             </div>
@@ -121,13 +121,13 @@ const PrestasiBody = (vals = {}) => {
           </>)}
 
           <div>
-            <div style={{ paddingBottom: "14px", borderBottom: "2px solid #21243f", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "#21243f" }}>Bidang</div>
+            <div style={{ paddingBottom: "14px", borderBottom: "2px solid #21243f", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Bidang</div>
             <div style={{ marginTop: "16px", display: "flex", flexDirection: "column" }}>
               {(bidang || []).map((b, $index) => (<React.Fragment key={$index}>
                 <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "13px 0", borderBottom: "1px solid rgba(120,132,200,.2)" }}>
-                  <span style={{ flex: "1", fontSize: "13.5px", fontWeight: "600", color: "#3f4468" }}>{b.nama}</span>
+                  <span style={{ flex: "1", fontSize: "13.5px", fontWeight: "600", color: "var(--sdnb-teks-badan)" }}>{b.nama}</span>
                   <span style={__dcs(b.track)}><span style={__dcs(b.fill)}></span></span>
-                  <span style={{ width: "26px", textAlign: "right", fontSize: "12.5px", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#2b2e4d" }}>{b.n}</span>
+                  <span style={{ width: "26px", textAlign: "right", fontSize: "12.5px", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "var(--sdnb-teks-badan)" }}>{b.n}</span>
                 </div>
               </React.Fragment>))}
             </div>
@@ -137,8 +137,8 @@ const PrestasiBody = (vals = {}) => {
     </section>
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "74px 28px 0" }}>
       <div style={{ paddingBottom: "14px", borderBottom: "2px solid #21243f", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "18px", flexWrap: "wrap" }}>
-        <h2 style={{ margin: "0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "#21243f" }}>Tiga capaian teratas</h2>
-        <span style={{ fontSize: "12.5px", color: "#5f6389" }}>Dinilai dari tingkat lomba dan jumlah peserta</span>
+        <h2 style={{ margin: "0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Tiga capaian teratas</h2>
+        <span style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>Dinilai dari tingkat lomba dan jumlah peserta</span>
       </div>
       <div className="podium" style={{ marginTop: "30px", display: "grid", gridTemplateColumns: kolomUntuk((podium || []).length, 3), gap: "22px", alignItems: "end" }}>
         {(podium || []).map((p, $index) => (<React.Fragment key={$index}>
@@ -167,7 +167,7 @@ const PrestasiBody = (vals = {}) => {
             <p style={{ margin: "16px 0 0", fontSize: "15px", lineHeight: "1.7", color: "rgba(214,218,255,.8)" }}>Arsip disimpan tata usaha dan diperbarui setiap selesai lomba. Salinan sertifikat dapat diminta orang tua untuk keperluan pendaftaran sekolah lanjutan.</p>
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#1e2140", background: "#fff" }}>Minta salinan sertifikat</a>
+            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "#fff" }}>Minta salinan sertifikat</a>
             <a className="shine" href="/ekstrakurikuler" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.35)" }}>Lihat ekstrakurikuler</a>
           </div>
         </div>
@@ -192,7 +192,7 @@ const PrestasiBody = (vals = {}) => {
           </button>
           <div style={{ position: "relative", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "78px", lineHeight: ".85", letterSpacing: "-.05em", fontWeight: "900", fontVariantNumeric: "tabular-nums", color: "transparent", WebkitTextStroke: "2px rgba(255,255,255,.5)" }}>{detil.tahun}</div>
           <div style={{ position: "relative", marginTop: "22px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <span style={{ padding: "7px 13px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".12em", textTransform: "uppercase", color: "#20233f", background: "#fff" }}>{detil.peringkat}</span>
+            <span style={{ padding: "7px 13px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "#fff" }}>{detil.peringkat}</span>
             <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "rgba(214,218,255,.8)" }}>{detil.tingkat}</span>
           </div>
           <h3 id="prestasi-modal-title" style={{ position: "relative", margin: "16px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "clamp(24px,3.2vw,36px)", lineHeight: "1.16", letterSpacing: "-.03em", fontWeight: "800", color: "#fff", textWrap: "pretty" }}>{detil.judul}</h3>
@@ -215,7 +215,7 @@ const PrestasiBody = (vals = {}) => {
           </div>
           <div style={{ marginTop: "26px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
             <button onClick={sebelum} style={{ padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#fff", border: "1px solid rgba(255,255,255,.28)", background: "rgba(255,255,255,.08)" }}>Sebelumnya</button>
-            <button onClick={sesudah} style={{ padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#20233f", border: "0", background: "#fff" }}>Berikutnya</button>
+            <button onClick={sesudah} style={{ padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "var(--sdnb-teks-judul)", border: "0", background: "#fff" }}>Berikutnya</button>
           </div>
         </div>
       </div>

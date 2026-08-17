@@ -40,10 +40,10 @@ const NotFoundPage = () => {
         <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' }}>
           Halaman tidak ditemukan
         </div>
-        <h1 style={{ margin: '12px 0 0', fontSize: '34px', lineHeight: 1.12, letterSpacing: '-.03em', fontWeight: 800, color: '#171827' }}>
+        <h1 style={{ margin: '12px 0 0', fontSize: '34px', lineHeight: 1.12, letterSpacing: '-.03em', fontWeight: 800, color: 'var(--sdnb-teks-judul)' }}>
           Alamat ini tidak ada di situs kami.
         </h1>
-        <p style={{ margin: '14px 0 0', maxWidth: '560px', fontSize: '15px', lineHeight: 1.65, color: '#535878' }}>
+        <p style={{ margin: '14px 0 0', maxWidth: '560px', fontSize: '15px', lineHeight: 1.65, color: 'var(--sdnb-teks-pendamping)' }}>
           Mungkin alamatnya salah ketik, atau halamannya sudah dipindahkan. Silakan kembali ke
           beranda, atau hubungi sekolah bila Anda merasa seharusnya ada sesuatu di sini.
         </p>
@@ -51,11 +51,11 @@ const NotFoundPage = () => {
         <p
           style={{
             margin: '20px 0 0', padding: '12px 15px', borderRadius: '14px',
-            fontSize: '13px', color: '#5f6389', wordBreak: 'break-all',
+            fontSize: '13px', color: 'var(--sdnb-teks-pendamping)', wordBreak: 'break-all',
             background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.8)',
           }}
         >
-          Alamat yang diminta: <strong style={{ color: '#3d4166' }}>{pathname}</strong>
+          Alamat yang diminta: <strong style={{ color: 'var(--sdnb-teks-badan)' }}>{pathname}</strong>
         </p>
 
         <div style={{ marginTop: '26px', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
@@ -72,7 +72,7 @@ const NotFoundPage = () => {
           <Link
             to="/kontak"
             style={{
-              ...tombol, color: '#33375a',
+              ...tombol, color: 'var(--sdnb-teks-badan)',
               background: 'rgba(255,255,255,.62)',
               border: '1px solid rgba(255,255,255,.9)',
               boxShadow: '0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)',

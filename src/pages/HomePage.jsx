@@ -52,8 +52,8 @@ const Before = ({ height, deg = '166deg', alpha = '.62' }) => (
 );
 
 const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' };
-const h2Style = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.03em', fontWeight: 800, color: '#171827' };
-const pill = { padding: '6px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, color: '#3f4570', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.85)' };
+const h2Style = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.03em', fontWeight: 800, color: 'var(--sdnb-teks-judul)' };
+const pill = { padding: '6px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.85)' };
 
 const ARROW_R = (size = 16, sw = 2.4) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
@@ -111,10 +111,10 @@ const TestiCard = ({ t }) => (
     </div>
     <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
       <div style={{ position: 'relative', padding: '16px 18px', borderRadius: '18px 18px 18px 6px', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>
-        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.62, color: '#3d4160' }}>&ldquo;{t.quote}&rdquo;</p>
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.62, color: 'var(--sdnb-teks-badan)' }}>&ldquo;{t.quote}&rdquo;</p>
       </div>
       <div style={{ marginTop: 12, paddingLeft: 4 }}>
-        <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-.01em', color: '#1e2035' }}>{t.name}</div>
+        <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-.01em', color: 'var(--sdnb-teks-judul)' }}>{t.name}</div>
         <div style={{ fontSize: 11.5, color: t.roleColor, fontWeight: 600 }}>{t.role}</div>
       </div>
     </div>
@@ -216,20 +216,20 @@ const HomePage = () => {
               berarti hilang: sekolah yang belum terakreditasi tidak boleh dipaksa
               memasang klaim akreditasi sekolah contoh. */}
           {isi.badge && (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '7px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, color: '#4b4f78', background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.8)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 10px 24px -14px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '7px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.8)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 10px 24px -14px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
               <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))' }} />
               {isi.badge}
             </div>
           )}
-          <h1 style={{ margin: '20px 0 0', fontFamily: HEADING_FONT, fontSize: 60, lineHeight: 1.04, letterSpacing: '-.038em', fontWeight: 800, color: '#171827', textWrap: 'balance' }}>
+          <h1 style={{ margin: '20px 0 0', fontFamily: HEADING_FONT, fontSize: 60, lineHeight: 1.04, letterSpacing: '-.038em', fontWeight: 800, color: 'var(--sdnb-teks-judul)', textWrap: 'balance' }}>
             Belajar dengan <span style={GRAD_TEXT}>tenang</span>,<br />tumbuh dengan<br /><span style={GRAD_TEXT}>percaya diri</span>.
           </h1>
-          <p style={{ margin: '22px 0 0', maxWidth: 480, fontSize: 16, lineHeight: 1.65, color: '#535878', textWrap: 'pretty' }}>
+          <p style={{ margin: '22px 0 0', maxWidth: 480, fontSize: 16, lineHeight: 1.65, color: 'var(--sdnb-teks-pendamping)', textWrap: 'pretty' }}>
             {/* Nama sekolah dari panel Identitas, bukan teks mati: paragraf ini
                 dulu menyebut sekolah CONTOH sebagai pemilik halaman pembeli.
                 Kalimat "Enam ratus lebih anak" ikut dicabut — itu jumlah karangan,
                 dan jumlah murid yang sebenarnya sudah tampil di bawah. */}
-            {sekolah.name} mendampingi anak sejak kelas satu lewat <strong style={{ color: '#3b3f6b', fontWeight: 700 }}>kelas kecil</strong>, guru wali yang mengenal setiap murid, dan halaman bermain yang aman.
+            {sekolah.name} mendampingi anak sejak kelas satu lewat <strong style={{ color: 'var(--sdnb-teks-badan)', fontWeight: 700 }}>kelas kecil</strong>, guru wali yang mengenal setiap murid, dan halaman bermain yang aman.
           </p>
           <div style={{ marginTop: 30, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             <Link to="/pendaftaran" className="shine h-bright" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 22px 44px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>
@@ -237,7 +237,7 @@ const HomePage = () => {
               Mulai Pendaftaran
               {ARROW_R()}
             </Link>
-            <Link to="/kontak" className="shine h-glass82" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 24px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', boxShadow: '0 18px 38px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+            <Link to="/kontak" className="shine h-glass82" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 24px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', boxShadow: '0 18px 38px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
               <span aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(170deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
               Jadwal Kunjungan Sekolah
             </Link>
@@ -248,7 +248,7 @@ const HomePage = () => {
                 <div key={i} style={{ width: 34, height: 34, borderRadius: '50%', background: g, border: '2px solid rgba(255,255,255,.9)', marginLeft: i === 0 ? 0 : -11 }} />
               ))}
             </div>
-            <div style={{ fontSize: 12.5, lineHeight: 1.45, color: '#5a5f80' }}>
+            <div style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--sdnb-teks-pendamping)' }}>
               {/* Baris jumlah murid hanya muncul setelah angkanya benar-benar
                   didapat. Menampilkannya lebih dulu berarti memasang "0 siswa
                   aktif" di halaman depan selama pemuatan, atau angka karangan. */}
@@ -310,12 +310,12 @@ const HomePage = () => {
             <div key={s.label} style={{ position: 'relative', padding: '26px 28px' }}>
               {/* Selagi angkanya belum didapat, yang tampil tanda pisah — bukan
                   nol. Nol adalah pernyataan, dan pernyataan yang salah. */}
-              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}>
+              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: 'var(--sdnb-teks-judul)' }}>
                 {s.count === null
                   ? <span style={{ color: '#a3a7c4' }}>—</span>
                   : <><span data-count={s.count}>0</span>{s.suffix}</>}
               </div>
-              <div style={{ marginTop: 3, fontSize: 12.5, color: '#63678a' }}>{s.label}</div>
+              <div style={{ marginTop: 3, fontSize: 12.5, color: 'var(--sdnb-teks-pendamping)' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -328,7 +328,7 @@ const HomePage = () => {
             <div style={kicker}>Program</div>
             <h2 style={h2Style}>Tiga tahap <span style={GRAD_TEXT}>pembelajaran</span></h2>
           </div>
-          <p style={{ maxWidth: 340, margin: 0, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>Setiap tahap punya cara mengajar, penilaian, dan pendampingan yang berbeda, menyesuaikan usia anak.</p>
+          <p style={{ maxWidth: 340, margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>Setiap tahap punya cara mengajar, penilaian, dan pendampingan yang berbeda, menyesuaikan usia anak.</p>
         </div>
 
         {/* Daftar program disunting sekolah, jadi kolomnya ikut isinya. Dipaku tiga
@@ -340,8 +340,8 @@ const HomePage = () => {
               <div style={{ position: 'relative', width: 52, height: 52, borderRadius: 16, background: p.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `${p.shadow},inset 0 1px 0 rgba(255,255,255,.85)` }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{p.icon}</svg>
               </div>
-              <h3 style={{ position: 'relative', margin: '18px 0 0', fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>{p.title}</h3>
-              <p style={{ position: 'relative', margin: '9px 0 0', fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>{p.desc}</p>
+              <h3 style={{ position: 'relative', margin: '18px 0 0', fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: 'var(--sdnb-teks-judul)' }}>{p.title}</h3>
+              <p style={{ position: 'relative', margin: '9px 0 0', fontSize: 14, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>{p.desc}</p>
               <div style={{ position: 'relative', marginTop: 18, display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {p.tags.map((t) => <span key={t} style={pill}>{t}</span>)}
               </div>
@@ -357,7 +357,7 @@ const HomePage = () => {
             <div style={kicker}>Galeri</div>
             <h2 style={h2Style}>Suasana <span style={GRAD_TEXT}>sekolah</span></h2>
           </div>
-          <Link to="/profil/galeri" className="shine h-glass85" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderRadius: 14, fontSize: 13.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 16px 34px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+          <Link to="/profil/galeri" className="shine h-glass85" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderRadius: 14, fontSize: 13.5, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 16px 34px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
             <span aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(170deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
             Lihat semua foto
           </Link>
@@ -376,7 +376,7 @@ const HomePage = () => {
                 {g.image ? <img src={g.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
               </div>
               <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
-              <div style={{ position: 'absolute', left: g.big ? 18 : 14, bottom: g.big ? 18 : 14, padding: g.big ? '8px 14px' : '7px 12px', borderRadius: g.big ? 12 : 11, fontSize: g.big ? 12.5 : 11.5, fontWeight: 700, color: '#2c2f4d', background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{g.caption}</div>
+              <div style={{ position: 'absolute', left: g.big ? 18 : 14, bottom: g.big ? 18 : 14, padding: g.big ? '8px 14px' : '7px 12px', borderRadius: g.big ? 12 : 11, fontSize: g.big ? 12.5 : 11.5, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{g.caption}</div>
             </Link>
           ))}
         </div>
@@ -394,8 +394,8 @@ const HomePage = () => {
           {newsCards.length > 0 && (
           <div style={{ display: 'flex', gap: 8 }}>
             <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah))', boxShadow: '0 12px 26px -12px rgba(95,105,235,.9),inset 0 1px 0 rgba(255,255,255,.5)' }}>Semua</span>
-            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: '#4a4f74', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Prestasi</span>
-            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: '#4a4f74', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Kegiatan</span>
+            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Prestasi</span>
+            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Kegiatan</span>
           </div>
           )}
         </div>
@@ -406,11 +406,11 @@ const HomePage = () => {
             aria-busy={newsStatus === 'loading'}
             style={{ ...glassCard, marginTop: 28, padding: '30px 32px', borderRadius: 24, boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}
           >
-            <h3 style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 17, fontWeight: 800, letterSpacing: '-.015em', color: '#1b1c2c' }}>
+            <h3 style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 17, fontWeight: 800, letterSpacing: '-.015em', color: 'var(--sdnb-teks-judul)' }}>
               {newsStatus === 'loading' ? 'Memuat kabar terbaru…' : 'Belum ada berita'}
             </h3>
             {newsStatus === 'ready' && (
-              <p style={{ margin: '9px 0 0', fontSize: 13.5, lineHeight: 1.6, color: '#5b6082' }}>
+              <p style={{ margin: '9px 0 0', fontSize: 13.5, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>
                 Berita dan pengumuman sekolah akan tampil di sini setelah diterbitkan.
               </p>
             )}
@@ -423,13 +423,13 @@ const HomePage = () => {
                 {n.image ? <img src={n.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
               </div>
               <div style={{ padding: '20px 22px 24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 11.5, fontWeight: 600, color: '#5f6389' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 11.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)' }}>
                   <span style={{ padding: '4px 9px', borderRadius: 8, color: n.catColor, background: n.catBg }}>{n.cat}</span>
                   {n.date}
                 </div>
-                <h3 style={{ margin: '12px 0 0', fontFamily: HEADING_FONT, fontSize: 17, lineHeight: 1.35, fontWeight: 800, letterSpacing: '-.015em', color: '#1b1c2c' }}>{n.title}</h3>
-                <p style={{ margin: '9px 0 0', fontSize: 13.5, lineHeight: 1.6, color: '#5b6082' }}>{n.excerpt}</p>
-                <Link to={n.to || '/berita'} className="shine h-read" style={{ marginTop: 16, position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 13, fontSize: 13, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+                <h3 style={{ margin: '12px 0 0', fontFamily: HEADING_FONT, fontSize: 17, lineHeight: 1.35, fontWeight: 800, letterSpacing: '-.015em', color: 'var(--sdnb-teks-judul)' }}>{n.title}</h3>
+                <p style={{ margin: '9px 0 0', fontSize: 13.5, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>{n.excerpt}</p>
+                <Link to={n.to || '/berita'} className="shine h-read" style={{ marginTop: 16, position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 13, fontSize: 13, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
                   Baca selengkapnya
                   {ARROW_R(14, 2.6)}
                 </Link>
@@ -458,14 +458,14 @@ const HomePage = () => {
         <div style={{ position: 'sticky', top: 110 }}>
           <div style={kicker}>FAQ</div>
           <h2 style={h2Style}>Pertanyaan yang <span style={GRAD_TEXT}>sering diajukan</span></h2>
-          <p style={{ margin: '16px 0 0', fontSize: 14.5, lineHeight: 1.65, color: '#5b6082' }}>Belum menemukan jawabannya? Hubungi tata usaha di (0735) 320145 pada hari kerja pukul 07.30–15.00.</p>
+          <p style={{ margin: '16px 0 0', fontSize: 14.5, lineHeight: 1.65, color: 'var(--sdnb-teks-pendamping)' }}>Belum menemukan jawabannya? Hubungi tata usaha di (0735) 320145 pada hari kerja pukul 07.30–15.00.</p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {faqs.map((f) => (
             <div key={f.q} style={{ ...glassCard, borderRadius: 20, boxShadow: '0 22px 48px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
               <Before height="60%" alpha=".6" />
-              <button type="button" onClick={f.toggle} aria-expanded={f.bodyStyle.gridTemplateRows === '1fr'} style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, padding: '20px 22px', background: 'transparent', border: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', fontSize: 15.5, fontWeight: 700, letterSpacing: '-.012em', color: '#1c1e30' }}>
+              <button type="button" onClick={f.toggle} aria-expanded={f.bodyStyle.gridTemplateRows === '1fr'} style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, padding: '20px 22px', background: 'transparent', border: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', fontSize: 15.5, fontWeight: 700, letterSpacing: '-.012em', color: 'var(--sdnb-teks-judul)' }}>
                 {f.q}
                 <span style={f.iconStyle}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a4f78" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
@@ -473,7 +473,7 @@ const HomePage = () => {
               </button>
               <div style={f.bodyStyle}>
                 <div style={{ minHeight: 0, overflow: 'hidden' }}>
-                  <p style={{ margin: 0, padding: '0 22px 22px', fontSize: 14, lineHeight: 1.68, color: '#565b7d' }}>{f.a}</p>
+                  <p style={{ margin: 0, padding: '0 22px 22px', fontSize: 14, lineHeight: 1.68, color: 'var(--sdnb-teks-pendamping)' }}>{f.a}</p>
                 </div>
               </div>
             </div>
@@ -493,7 +493,7 @@ const HomePage = () => {
               <p style={{ margin: '14px 0 0', fontSize: 15, lineHeight: 1.65, color: 'rgba(255,255,255,.88)' }}>Anak berusia minimal enam tahun pada 1 Juli 2026. Siapkan kartu keluarga dan akta kelahiran, seluruh proses dilakukan daring.</p>
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link to="/pendaftaran" className="shine h-white" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#3b3f7a', background: 'rgba(255,255,255,.9)', boxShadow: '0 20px 40px -16px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)' }}>Isi formulir</Link>
+              <Link to="/pendaftaran" className="shine h-white" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.9)', boxShadow: '0 20px 40px -16px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)' }}>Isi formulir</Link>
               <Link to="/pendaftaran" className="shine h-white30" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.5)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}>Unduh panduan</Link>
             </div>
           </div>

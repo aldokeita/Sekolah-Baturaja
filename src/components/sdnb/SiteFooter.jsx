@@ -44,9 +44,9 @@ const kolomInformasi = (sekolah) => [
   { label: 'FAQ', to: '/#faq' },
 ];
 
-const colLabel = { fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: '#63678a' };
+const colLabel = { fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--sdnb-teks-pendamping)' };
 const colList = { marginTop: 14, display: 'flex', flexDirection: 'column', gap: 9, fontSize: 13.5 };
-const colLink = { color: '#3f4468' };
+const colLink = { color: 'var(--sdnb-teks-badan)' };
 
 // The mockups ship two footers: Beranda uses a four-column one with the
 // newsletter box, every other content page uses this three-column
@@ -69,9 +69,9 @@ export const SiteFooterRingkas = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
             <div style={{ width: 36, height: 36, borderRadius: 12, background: 'linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 12, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.85)' }}>{sekolah.logoAbbr}</div>
-            <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: '-.01em', color: '#1b1c28' }}>{sekolah.name}</div>
+            <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: '-.01em', color: 'var(--sdnb-teks-judul)' }}>{sekolah.name}</div>
           </div>
-          <p style={{ margin: '16px 0 0', maxWidth: 300, fontSize: 13, lineHeight: 1.65, color: '#5f6486' }}>
+          <p style={{ margin: '16px 0 0', maxWidth: 300, fontSize: 13, lineHeight: 1.65, color: 'var(--sdnb-teks-pendamping)' }}>
             {sekolah.address}
           </p>
         </div>
@@ -87,7 +87,7 @@ export const SiteFooterRingkas = () => {
 
         <div>
           <div style={colLabel}>Kontak</div>
-          <div style={{ ...colList, color: '#3f4468' }}>
+          <div style={{ ...colList, color: 'var(--sdnb-teks-badan)' }}>
             <div>{sekolah.phone}</div>
             <div>{sekolah.email}</div>
             <div>{sekolah.officeHours}</div>
@@ -95,7 +95,7 @@ export const SiteFooterRingkas = () => {
         </div>
       </div>
 
-      <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', fontSize: 12, color: '#5f6389' }}>
+      <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', fontSize: 12, color: 'var(--sdnb-teks-pendamping)' }}>
         &copy; {new Date().getFullYear()} {sekolah.name}. Seluruh hak cipta dilindungi.
       </div>
     </div>
@@ -137,9 +137,9 @@ const SiteFooter = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
               <div style={{ width: 36, height: 36, borderRadius: 12, background: 'linear-gradient(140deg,#7d8bff,#c8a4f0 45%,#ffb3d1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 12, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.85)' }}>{sekolah.logoAbbr}</div>
-              <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: '-.01em', color: '#1b1c28' }}>{sekolah.name}</div>
+              <div style={{ fontSize: 14.5, fontWeight: 800, letterSpacing: '-.01em', color: 'var(--sdnb-teks-judul)' }}>{sekolah.name}</div>
             </div>
-            <p style={{ margin: '16px 0 0', maxWidth: 280, fontSize: 13, lineHeight: 1.65, color: '#5f6486' }}>
+            <p style={{ margin: '16px 0 0', maxWidth: 280, fontSize: 13, lineHeight: 1.65, color: 'var(--sdnb-teks-pendamping)' }}>
               {sekolah.address}
             </p>
           </div>
@@ -164,7 +164,7 @@ const SiteFooter = () => {
 
           <div>
             <div style={colLabel}>Buletin sekolah</div>
-            <p style={{ margin: '14px 0 0', fontSize: 13, lineHeight: 1.6, color: '#5f6486' }}>Ringkasan kegiatan dikirim setiap awal bulan.</p>
+            <p style={{ margin: '14px 0 0', fontSize: 13, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>Ringkasan kegiatan dikirim setiap awal bulan.</p>
             <form onSubmit={handleSubscribe} style={{ marginTop: 14, display: 'flex', gap: 8 }}>
               <input
                 type="email"
@@ -172,7 +172,7 @@ const SiteFooter = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 aria-label="Alamat email buletin"
-                style={{ flex: 1, minWidth: 0, padding: '11px 14px', borderRadius: 13, fontFamily: 'inherit', fontSize: 13, color: '#2b2e48', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', outline: 'none', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}
+                style={{ flex: 1, minWidth: 0, padding: '11px 14px', borderRadius: 13, fontFamily: 'inherit', fontSize: 13, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', outline: 'none', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}
               />
               <button type="submit" disabled={sending} className="shine h-bright" style={{ position: 'relative', overflow: 'hidden', padding: '11px 17px', borderRadius: 13, border: 0, cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.45 : 1, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 12px 26px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.55)' }}>
                 Kirim
@@ -181,12 +181,12 @@ const SiteFooter = () => {
           </div>
         </div>
 
-        <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, fontSize: 12, color: '#5f6389' }}>
+        <div style={{ position: 'relative', marginTop: 32, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,.7)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, fontSize: 12, color: 'var(--sdnb-teks-pendamping)' }}>
           <div>&copy; {new Date().getFullYear()} {sekolah.name}. Seluruh hak cipta dilindungi.</div>
           <div style={{ display: 'flex', gap: 18 }}>
-            <Link to="/" className="h-flink" style={{ color: '#5f6389' }}>Kebijakan privasi</Link>
-            <Link to="/" className="h-flink" style={{ color: '#5f6389' }}>Peta situs</Link>
-            <Link to="/kontak" className="h-flink" style={{ color: '#5f6389' }}>Kontak</Link>
+            <Link to="/" className="h-flink" style={{ color: 'var(--sdnb-teks-pendamping)' }}>Kebijakan privasi</Link>
+            <Link to="/" className="h-flink" style={{ color: 'var(--sdnb-teks-pendamping)' }}>Peta situs</Link>
+            <Link to="/kontak" className="h-flink" style={{ color: 'var(--sdnb-teks-pendamping)' }}>Kontak</Link>
           </div>
         </div>
       </div>

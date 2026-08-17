@@ -23,11 +23,37 @@
 /* ── verbatim: html/body/a/* ─────────────────────────────────────────────── */
 html { scroll-behavior: smooth; }
 
+/* ── Nada teks halaman publik ─────────────────────────────────────────────────
+   Tiga peran, tiga nama. Sebelum ini halaman publik memakai **60 nada berbeda**
+   untuk ketiga peran yang sama — hasil konverter mockup yang menyalin setiap
+   warna apa adanya. Selisih antar nada sering hanya 1–3% terang: tidak ada mata
+   yang bisa membedakan `#171827` dari `#1b1c2c`, tapi masing-masing harus
+   diperiksa kontrasnya sendiri. Itu sebabnya sembilan nada gagal ambang
+   keterbacaan bisa bersembunyi di sana sampai disapu satu per satu.
+
+   Nilai yang dipilih adalah nada yang paling sering dipakai di tiap peran, jadi
+   mayoritas halaman tidak berubah sedikit pun. Rasio terhadap latar terang
+   paling gelap yang dipakai halaman publik (#e9edf6): 14.34, 9.76, dan 4.93 —
+   ketiganya lolos ambang 4.5 untuk teks kecil.
+
+   Nada DEKORATIF (gradasi, warna kategori, hamparan foto) sengaja TIDAK ikut
+   diciutkan: di sana ragam warna memang bagian dari desainnya.
+
+   Halaman baru wajib memakai nama ini, bukan menuliskan nada sendiri. */
+/* Dipasang di `:root`, bukan di `.sdnb`: sebagian halaman publik memakai nada
+   ini dari style inline pada elemen yang berada di luar pembungkus `.sdnb`
+   (mis. lembar cetak dan modal yang dirender lewat portal). */
+:root {
+  --sdnb-teks-judul: #1b1c2c;
+  --sdnb-teks-badan: #33375a;
+  --sdnb-teks-pendamping: #5f6389;
+}
+
 .sdnb {
   margin: 0;
   background: #e9edf6;
   font-family: 'Archivo', system-ui, sans-serif;
-  color: #1b1c28;
+  color: var(--sdnb-teks-judul);
   -webkit-font-smoothing: antialiased;
 }
 .sdnb a { color: #4f46e5; text-decoration: none; }

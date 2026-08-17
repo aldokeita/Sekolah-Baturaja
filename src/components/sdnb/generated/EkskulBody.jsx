@@ -31,18 +31,18 @@ const EkskulBody = (vals = {}) => {
       <div>
           <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", padding: "9px 15px", borderRadius: "999px", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-teks)" }}>{heroKicker}</div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", fontSize: "11px", fontWeight: "700", letterSpacing: ".18em", textTransform: "uppercase", color: "#63678a" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "9px", fontSize: "11px", fontWeight: "700", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>
             <span style={{ width: "26px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></span>{heroYear}
           </div>
         </div>
-        <h1 className="bigtitle" style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "92px", lineHeight: ".88", letterSpacing: "-.052em", fontWeight: "800", color: "#171827" }}>{judulJumlah}<br /><span style={{ position: "relative", display: "inline-block", color: "transparent", WebkitTextStroke: "2px var(--sekolah-aksen-pekat)" }}>{heroTitle}<span aria-hidden="true" style={{ position: "absolute", left: "2%", right: "2%", bottom: "9%", height: "14px", borderRadius: "99px", background: "linear-gradient(90deg,rgba(91,108,255,.28),rgba(240,119,159,.32))", zIndex: "-1" }}></span></span><br />{heroSuffix}</h1>
-        <p style={{ margin: "26px 0 0", maxWidth: "470px", fontSize: "16px", lineHeight: "1.7", color: "#4c5175", textWrap: "pretty" }}>{heroDescription}</p>
+        <h1 className="bigtitle" style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "92px", lineHeight: ".88", letterSpacing: "-.052em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>{judulJumlah}<br /><span style={{ position: "relative", display: "inline-block", color: "transparent", WebkitTextStroke: "2px var(--sekolah-aksen-pekat)" }}>{heroTitle}<span aria-hidden="true" style={{ position: "absolute", left: "2%", right: "2%", bottom: "9%", height: "14px", borderRadius: "99px", background: "linear-gradient(90deg,rgba(91,108,255,.28),rgba(240,119,159,.32))", zIndex: "-1" }}></span></span><br />{heroSuffix}</h1>
+        <p style={{ margin: "26px 0 0", maxWidth: "470px", fontSize: "16px", lineHeight: "1.7", color: "var(--sdnb-teks-pendamping)", textWrap: "pretty" }}>{heroDescription}</p>
         {headerStatus?.message && <div role={headerStatus.state === 'error' ? 'alert' : 'status'} aria-live="polite" style={{ marginTop: "16px", display: "inline-flex", alignItems: "center", minHeight: "30px", padding: "7px 11px", borderRadius: "999px", fontSize: "11.5px", fontWeight: "700", color: headerStatus.state === 'error' ? "#9e3e58" : "#5f6389", background: headerStatus.state === 'error' ? "rgba(220,92,126,.12)" : "rgba(255,255,255,.58)", border: "1px solid rgba(120,132,200,.2)" }}>{headerStatus.message}</div>}
         <div style={{ marginTop: "30px", display: "flex", flexWrap: "wrap", gap: "26px" }}>
           {(angka || []).map((a, $index) => (<React.Fragment key={$index}>
             <div>
-              <div aria-busy={a.state === 'loading' || a.state === 'refreshing'} style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", fontWeight: "800", letterSpacing: "-.035em", color: "#1d1f33" }}>{a.state === 'loading' ? '…' : a.state === 'error' ? '—' : <><span data-count={a.n}>0</span>{a.suf}</>}</div>
-              <div style={{ marginTop: "3px", fontSize: "12.5px", color: "#5f6389" }}>{a.label}</div>
+              <div aria-busy={a.state === 'loading' || a.state === 'refreshing'} style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "34px", fontWeight: "800", letterSpacing: "-.035em", color: "var(--sdnb-teks-judul)" }}>{a.state === 'loading' ? '…' : a.state === 'error' ? '—' : <><span data-count={a.n}>0</span>{a.suf}</>}</div>
+              <div style={{ marginTop: "3px", fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>{a.label}</div>
             </div>
           </React.Fragment>))}
         </div>
@@ -56,8 +56,8 @@ const EkskulBody = (vals = {}) => {
 <section className="master" style={{ maxWidth: "1240px", margin: "0 auto", padding: "64px 28px 0", display: "grid", gridTemplateColumns: ".78fr 1.22fr", gap: "34px", alignItems: "start" }}>
       <div>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "14px", paddingBottom: "12px", borderBottom: "2px solid #21243f" }}>
-          <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "#21243f" }}>Indeks kegiatan</h2>
-          <span style={{ fontSize: "12px", color: "#5f6389", fontVariantNumeric: "tabular-nums" }}>{total}</span>
+          <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Indeks kegiatan</h2>
+          <span style={{ fontSize: "12px", color: "var(--sdnb-teks-pendamping)", fontVariantNumeric: "tabular-nums" }}>{total}</span>
         </div>
         <div style={{ marginTop: "6px" }}>
           {(indeks || []).map((i, $index) => (<React.Fragment key={$index}>
@@ -68,7 +68,7 @@ const EkskulBody = (vals = {}) => {
               <span style={__dcs(i.no)}>{i.nomor}</span>
               <span style={{ minWidth: "0" }}>
                 <span style={__dcs(i.nama)}>{i.judul}</span>
-                <span style={{ display: "block", marginTop: "4px", fontSize: "12px", color: "#63678a" }}>{i.hari}</span>
+                <span style={{ display: "block", marginTop: "4px", fontSize: "12px", color: "var(--sdnb-teks-pendamping)" }}>{i.hari}</span>
               </span>
               <span className="ipeek" style={{ display: "inline-flex", color: "var(--sekolah-aksen-teks)" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
@@ -86,7 +86,7 @@ const EkskulBody = (vals = {}) => {
           <div aria-hidden="true" style={{ position: "absolute", right: "-40px", bottom: "-60px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "230px", lineHeight: ".8", fontWeight: "800", letterSpacing: "-.06em", color: "rgba(255,255,255,.16)" }}>{poster.nomor}</div>
           <div style={{ position: "relative", padding: "38px 40px 34px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <span style={{ padding: "7px 13px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".12em", textTransform: "uppercase", color: "#2c2f4d", background: "rgba(255,255,255,.85)" }}>{poster.bidang}</span>
+              <span style={{ padding: "7px 13px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.85)" }}>{poster.bidang}</span>
               <span style={{ fontSize: "12.5px", fontWeight: "700", color: "rgba(255,255,255,.9)" }}>{poster.hari} &middot; {poster.jam}</span>
             </div>
             <h3 style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "44px", lineHeight: "1.02", letterSpacing: "-.04em", fontWeight: "800", color: "#fff", textWrap: "pretty" }}>{poster.judul}</h3>
@@ -96,21 +96,21 @@ const EkskulBody = (vals = {}) => {
 
         <div style={{ marginTop: "18px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
           <div style={{ padding: "24px 26px", borderRadius: "24px", background: "rgba(255,255,255,.58)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
-            <div style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#63678a" }}>Pembina</div>
-            <div style={{ marginTop: "10px", fontSize: "16px", fontWeight: "800", letterSpacing: "-.018em", color: "#1b1c2c" }}>{poster.pembina}</div>
-            <div style={{ marginTop: "18px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#63678a" }}>Tempat latihan</div>
-            <div style={{ marginTop: "8px", fontSize: "13.5px", color: "#4f5478" }}>{poster.tempat}</div>
+            <div style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>Pembina</div>
+            <div style={{ marginTop: "10px", fontSize: "16px", fontWeight: "800", letterSpacing: "-.018em", color: "var(--sdnb-teks-judul)" }}>{poster.pembina}</div>
+            <div style={{ marginTop: "18px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>Tempat latihan</div>
+            <div style={{ marginTop: "8px", fontSize: "13.5px", color: "var(--sdnb-teks-pendamping)" }}>{poster.tempat}</div>
           </div>
           <div style={{ padding: "24px 26px", borderRadius: "24px", background: "rgba(255,255,255,.58)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px" }}>
-              <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#63678a" }}>Anggota</span>
-              <span style={{ fontSize: "13px", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "#2b2e4d" }}>{poster.kuotaTeks}</span>
+              <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>Anggota</span>
+              <span style={{ fontSize: "13px", fontWeight: "800", fontVariantNumeric: "tabular-nums", color: "var(--sdnb-teks-badan)" }}>{poster.kuotaTeks}</span>
             </div>
             <div style={{ marginTop: "14px", height: "9px", borderRadius: "99px", background: "rgba(120,132,200,.2)", overflow: "hidden" }}>
               <div style={__dcs(poster.kuotaBar)}></div>
             </div>
-            <div style={{ marginTop: "16px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "#63678a" }}>Untuk kelas</div>
-            <div style={{ marginTop: "8px", fontSize: "13.5px", color: "#4f5478" }}>{poster.kelas}</div>
+            <div style={{ marginTop: "16px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>Untuk kelas</div>
+            <div style={{ marginTop: "8px", fontSize: "13.5px", color: "var(--sdnb-teks-pendamping)" }}>{poster.kelas}</div>
             <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 18px", borderRadius: "14px", fontSize: "13px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Daftar kegiatan ini</a>
           </div>
         </div>
@@ -118,8 +118,8 @@ const EkskulBody = (vals = {}) => {
     </section>
 <section id="jadwal" style={{ maxWidth: "1240px", margin: "0 auto", padding: "76px 28px 0" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "18px", flexWrap: "wrap", paddingBottom: "12px", borderBottom: "2px solid #21243f" }}>
-        <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "#21243f" }}>Jadwal sepekan</h2>
-        <span style={{ fontSize: "12.5px", color: "#5f6389" }}>Semua latihan selesai paling lambat pukul 16.30</span>
+        <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Jadwal sepekan</h2>
+        <span style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>Semua latihan selesai paling lambat pukul 16.30</span>
       </div>
       <div className="jadwal" style={{ marginTop: "26px", display: "grid", gridTemplateColumns: kolomUntuk((jadwal || []).length, 5), gap: "18px", alignItems: "start" }}>
         {(jadwal || []).map((j, $index) => (<React.Fragment key={$index}>
@@ -153,7 +153,7 @@ const EkskulBody = (vals = {}) => {
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>Tanya pembina
+            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>Tanya pembina
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
             </a>
             <a className="shine" href="/prestasi" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>Lihat prestasi
