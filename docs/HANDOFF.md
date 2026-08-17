@@ -1353,14 +1353,27 @@ berubah sedikit pun. **361 deklarasi** diganti di 16 berkas; heks di markup publ
 **Halaman baru wajib memakai nama ini**, bukan menuliskan nada sendiri. Dengan tiga nama, kontras
 seluruh situs diperiksa dengan melihat tiga angka.
 
+Sapuan kedua menuntaskan bentuk-bentuk yang terlewat pola pertama: warna di dalam **string CSS**
+(`color:#3d4166;` pada gaya berbentuk teks), bentuk **terner** (`color: on ? '#a' : '#b'`), dan
+**atribut SVG** (`stroke="#3d4166"`). Atribut presentasi SVG menerima `var()` — diuji dulu di
+peramban sebelum 16 atribut diganti, dan tidak ada satu ikon pun kehilangan warnanya.
+
+Totalnya: **403 deklarasi** diganti. Heks di markup publik **793 → 390**, nada unik **207 → 160**.
+
+Pemilihan nada memakai penyaring **rona + kejenuhan**, bukan sekadar terang: hanya rona 215–255
+dengan kejenuhan di bawah 45% yang dianggap nada teks netral. Tanpa penyaring itu warna **isyarat**
+ikut terjaring dan diratakan menjadi abu — merah galat `#9e3e58`, hijau "kantor buka" `#1f6b4a`,
+indigo tautan aktif `#4a4fd0`. Ketiganya tetap utuh.
+
 Yang **sengaja tidak** ikut:
 
 - **Nada dekoratif** (gradasi, warna kategori, hamparan foto) — 100 nada. Di sana ragam warna memang
   bagian desainnya.
-- **Nada peran-teks yang tersisa: 29 unik, 61 kemunculan.** Semuanya di luar properti warna gaya —
-  27 garis, 18 atribut `stroke` SVG, 6 gradasi, 2 latar. Bukan teks, jadi tidak ikut aturan kontras
-  teks. Penggantinya hanya menyasar bentuk `color:`/`stroke:`/`fill:` di dalam objek style, bukan
-  bentuk atribut `stroke="…"`, supaya tidak ada latar atau garis yang berubah tanpa sengaja.
+- **Warna isyarat** — merah galat, hijau status, indigo aktif. Meratakannya menjadi abu akan
+  menghapus maknanya.
+- **Sisa 5 nada netral (10 kemunculan)**: 6 garis, 3 gradasi, 1 bayangan. Garis dan gradasi bukan
+  teks, jadi tidak terikat aturan kontras teks. Kalau suatu saat garis ikut diberi nama, itu peran
+  tersendiri (`--sdnb-garis`), bukan dipaksa memakai nama teks.
 
 Nilai gelapnya belum ditetapkan: mode gelap halaman publik memakai pembalikan filter dan pemilik
 template memutuskan membiarkannya. Ketiga nama ini siap dipakai bila keputusan itu berubah.

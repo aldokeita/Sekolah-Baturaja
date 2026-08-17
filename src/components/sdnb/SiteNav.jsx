@@ -138,9 +138,9 @@ const SiteNav = () => {
             style={{ position: 'relative', flex: 'none', width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.62)', boxShadow: '0 10px 24px -12px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}
           >
             {menuTerbuka ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3d4166" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3d4166" strokeWidth="2.6" strokeLinecap="round"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>
             )}
           </button>
 
@@ -151,8 +151,8 @@ const SiteNav = () => {
             aria-label="Ganti tema terang atau gelap"
             style={{ position: 'relative', flex: 'none', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontFamily: 'inherit', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.62)', boxShadow: '0 10px 24px -12px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}
           >
-            <svg className="th-i-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3d4166" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4" /><path d="M12 19.6V22" /><path d="M2 12h2.4" /><path d="M19.6 12H22" /><path d="m4.9 4.9 1.7 1.7" /><path d="m17.4 17.4 1.7 1.7" /><path d="m19.1 4.9-1.7 1.7" /><path d="m6.6 17.4-1.7 1.7" /></svg>
-            <svg className="th-i-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3d4166" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2Z" /></svg>
+            <svg className="th-i-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4" /><path d="M12 19.6V22" /><path d="M2 12h2.4" /><path d="M19.6 12H22" /><path d="m4.9 4.9 1.7 1.7" /><path d="m17.4 17.4 1.7 1.7" /><path d="m19.1 4.9-1.7 1.7" /><path d="m6.6 17.4-1.7 1.7" /></svg>
+            <svg className="th-i-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2Z" /></svg>
           </button>
 
           {user ? (
@@ -194,7 +194,7 @@ const SiteNav = () => {
                   <Link
                     key={l.to}
                     to={l.to}
-                    style={{ padding: '12px 14px', borderRadius: 12, fontSize: 14.5, fontWeight: aktif ? 700 : 600, color: aktif ? '#4a4fd0' : '#2c2f45', background: aktif ? 'rgba(255,255,255,.9)' : 'transparent' }}
+                    style={{ padding: '12px 14px', borderRadius: 12, fontSize: 14.5, fontWeight: aktif ? 700 : 600, color: aktif ? '#4a4fd0' : 'var(--sdnb-teks-badan)', background: aktif ? 'rgba(255,255,255,.9)' : 'transparent' }}
                   >
                     {l.label}
                   </Link>
@@ -211,7 +211,7 @@ const SiteNav = () => {
                   <button type="button" onClick={handleLogout} style={{ padding: '12px 14px', borderRadius: 12, fontFamily: 'inherit', fontSize: 14.5, fontWeight: 700, textAlign: 'left', cursor: 'pointer', color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.72)', border: '1px solid rgba(255,255,255,.95)' }}>Keluar</button>
                 </>
               ) : (
-                <Link to="/login" aria-current={isLogin ? 'page' : undefined} style={{ padding: '12px 14px', borderRadius: 12, fontSize: 14.5, fontWeight: isLogin ? 700 : 600, color: isLogin ? '#4a4fd0' : '#33375a', background: isLogin ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.72)', border: '1px solid rgba(255,255,255,.95)' }}>Login</Link>
+                <Link to="/login" aria-current={isLogin ? 'page' : undefined} style={{ padding: '12px 14px', borderRadius: 12, fontSize: 14.5, fontWeight: isLogin ? 700 : 600, color: isLogin ? '#4a4fd0' : 'var(--sdnb-teks-badan)', background: isLogin ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.72)', border: '1px solid rgba(255,255,255,.95)' }}>Login</Link>
               )}
             </div>
           </div>

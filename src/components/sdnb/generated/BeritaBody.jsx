@@ -91,7 +91,7 @@ const BeritaBody = (vals = {}) => {
           </React.Fragment>))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "9px", padding: "10px 15px", borderRadius: "15px", background: "rgba(255,255,255,.66)", border: "1px solid rgba(255,255,255,.92)", minWidth: "246px" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#63678a" strokeWidth="2.4" strokeLinecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.2-3.2"></path></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-pendamping)" strokeWidth="2.4" strokeLinecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.2-3.2"></path></svg>
           <input onInput={search} placeholder="Cari berita atau pengumuman" style={{ flex: "1", minWidth: "0", border: "0", outline: "none", background: "transparent", fontFamily: "inherit", fontSize: "13.5px", color: "var(--sdnb-teks-badan)" }} />
         </div>
       </div>
@@ -118,7 +118,7 @@ const BeritaBody = (vals = {}) => {
                   <div style={{ marginTop: "18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,.85)" }}>
                     <span style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--sekolah-aksen-teks)" }}>{b.penulis}</span>
                     <span className="aarrow" style={{ width: "34px", height: "34px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3c4166" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7"></path><path d="M9 7h8v8"></path></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7"></path><path d="M9 7h8v8"></path></svg>
                     </span>
                   </div>
                 </div>

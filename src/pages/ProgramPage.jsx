@@ -130,7 +130,7 @@ const ProgramPage = () => {
     pintas: P.map((p) => ({
       label: p[0],
       href: '#program',
-      style: 'display:inline-flex;align-items:center;padding:10px 16px;border-radius:999px;font-size:12.5px;font-weight:700;color:#3d4166;background:rgba(255,255,255,.68);border:1px solid rgba(255,255,255,.95);box-shadow:0 10px 24px -14px rgba(60,70,120,.6)',
+      style: 'display:inline-flex;align-items:center;padding:10px 16px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--sdnb-teks-badan);background:rgba(255,255,255,.68);border:1px solid rgba(255,255,255,.95);box-shadow:0 10px 24px -14px rgba(60,70,120,.6)',
     })),
 
     angka: [

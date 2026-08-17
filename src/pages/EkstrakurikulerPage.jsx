@@ -161,7 +161,7 @@ const EkstrakurikulerPage = () => {
         fotoUrl: e[11],
         pick: () => pilih(i),
         no: `font-family:'Plus Jakarta Sans','Archivo',system-ui,sans-serif;font-size:22px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;transition:color .3s ease;color:${on ? 'var(--sekolah-aksen-pekat)' : '#c2c6dd'}`,
-        nama: `display:block;font-size:15.5px;font-weight:${on ? '800' : '600'};letter-spacing:-.015em;transition:color .3s ease;color:${on ? '#191b2c' : '#3f4468'}`,
+        nama: `display:block;font-size:15.5px;font-weight:${on ? '800' : '600'};letter-spacing:-.015em;transition:color .3s ease;color:${on ? 'var(--sdnb-teks-judul)' : 'var(--sdnb-teks-badan)'}`,
       };
     }),
 
@@ -182,7 +182,7 @@ const EkstrakurikulerPage = () => {
 
     jadwal: HARI.map((h) => ({
       hari: h,
-      head: "padding:12px 14px;border-radius:14px;font-family:'Plus Jakarta Sans','Archivo',system-ui,sans-serif;font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#21243f;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.9)",
+      head: "padding:12px 14px;border-radius:14px;font-family:'Plus Jakarta Sans','Archivo',system-ui,sans-serif;font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--sdnb-teks-judul);background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.9)",
       isi: E.map((e, i) => ({ e, i })).filter((o) => o.e[2] === h).map(({ e, i }) => ({
         nama: e[0],
         jam: e[3],

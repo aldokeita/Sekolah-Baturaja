@@ -85,7 +85,7 @@ const GaleriBody = (vals = {}) => {
                 <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(30,34,70,.5),rgba(30,34,70,0) 52%)" }}></div>
                 <div style={{ position: "absolute", left: "16px", top: "16px", padding: "6px 11px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.68)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,.9)" }}>{f.kat}</div>
                 <div className="gplus" style={{ position: "absolute", right: "14px", top: "14px", width: "34px", height: "34px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.7)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,.95)" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3c4166" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
                 </div>
                 <div style={{ position: "absolute", left: "0", right: "0", bottom: "0", padding: "18px 18px 16px" }}>
                   <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "16.5px", fontWeight: "800", letterSpacing: "-.018em", color: "#fff", textShadow: "0 2px 14px rgba(25,30,70,.5)" }}>{f.nama}</div>
@@ -115,7 +115,7 @@ const GaleriBody = (vals = {}) => {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <button className="shine" onClick={cinePrev} style={{ position: "relative", overflow: "hidden", width: "46px", height: "46px", borderRadius: "15px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "1px solid rgba(255,255,255,.9)", background: "rgba(255,255,255,.66)", boxShadow: "0 14px 30px -14px rgba(60,70,120,.7)" }} aria-label="Sebelumnya">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
             </button>
             <button className="shine" onClick={cineNext} style={{ position: "relative", overflow: "hidden", width: "46px", height: "46px", borderRadius: "15px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 16px 34px -14px rgba(95,105,235,.95)" }} aria-label="Berikutnya">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"></path></svg>

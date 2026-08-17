@@ -468,7 +468,7 @@ const HomePage = () => {
               <button type="button" onClick={f.toggle} aria-expanded={f.bodyStyle.gridTemplateRows === '1fr'} style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, padding: '20px 22px', background: 'transparent', border: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', fontSize: 15.5, fontWeight: 700, letterSpacing: '-.012em', color: 'var(--sdnb-teks-judul)' }}>
                 {f.q}
                 <span style={f.iconStyle}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a4f78" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-pendamping)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                 </span>
               </button>
               <div style={f.bodyStyle}>

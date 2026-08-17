@@ -626,7 +626,7 @@ const ProfilePage = () => {
         <div style={{ marginTop: 26, position: 'relative', display: 'inline-flex', padding: 5, borderRadius: 18, background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.9)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95),0 14px 30px -18px rgba(60,70,120,.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
           <div style={{ position: 'absolute', top: 5, bottom: 5, left: 5, width: PILL_W, borderRadius: 14, background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung))', boxShadow: '0 14px 28px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.5)', transform: `translateX(${tabIdx * PILL_W}px)`, transition: 'transform .42s cubic-bezier(.5,1.4,.4,1)' }} />
           {[['visi', 'Visi'], ['misi', 'Misi'], ['tujuan', 'Tujuan']].map(([k, label]) => (
-            <button key={k} type="button" onClick={() => setTab(k)} style={{ position: 'relative', zIndex: 1, width: PILL_W, padding: '12px 0', border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, transition: 'color .3s ease', color: tab === k ? '#fff' : '#4a4f74' }}>{label}</button>
+            <button key={k} type="button" onClick={() => setTab(k)} style={{ position: 'relative', zIndex: 1, width: PILL_W, padding: '12px 0', border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, transition: 'color .3s ease', color: tab === k ? '#fff' : 'var(--sdnb-teks-pendamping)' }}>{label}</button>
           ))}
         </div>
 
@@ -708,7 +708,7 @@ const ProfilePage = () => {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={() => slide(-1)} className="shine h-glass92" aria-label="Sebelumnya" style={{ position: 'relative', overflow: 'hidden', width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.62)', boxShadow: '0 14px 30px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
             </button>
             <button type="button" onClick={() => slide(1)} className="shine" aria-label="Berikutnya" style={{ position: 'relative', overflow: 'hidden', width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 0, background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 16px 34px -14px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.55)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
@@ -783,7 +783,7 @@ const ProfilePage = () => {
               <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
               <div style={{ position: 'absolute', left: 14, bottom: 14, padding: '7px 12px', borderRadius: 11, fontSize: 12, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.85)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{f.name}</div>
               <div style={{ position: 'absolute', right: 12, top: 12, width: 30, height: 30, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3c4166" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /><path d="M11 8v6" /><path d="M8 11h6" /></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /><path d="M11 8v6" /><path d="M8 11h6" /></svg>
               </div>
             </div>
             );
@@ -835,7 +835,7 @@ const ProfilePage = () => {
                   <h3 style={{ margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 28, lineHeight: 1.16, letterSpacing: '-.028em', fontWeight: 800, color: 'var(--sdnb-teks-judul)' }}>{p.nama}</h3>
                 </div>
                 <button type="button" onClick={closeAll} className="shine" aria-label="Tutup" style={{ position: 'relative', overflow: 'hidden', flex: 'none', width: 38, height: 38, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.7)' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
                 </button>
               </div>
               {/* Deskripsi sekolah, bukan biografi per orang: basis data guru
@@ -876,13 +876,13 @@ const ProfilePage = () => {
               </div>
               <div style={{ display: 'flex', gap: 9, flex: 'none' }}>
                 <button type="button" onClick={() => moveLight(-1)} className="shine" aria-label="Sebelumnya" style={{ position: 'relative', overflow: 'hidden', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.7)' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                 </button>
                 <button type="button" onClick={() => moveLight(1)} className="shine" aria-label="Berikutnya" style={{ position: 'relative', overflow: 'hidden', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 0, background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                 </button>
                 <button type="button" onClick={closeAll} className="shine" aria-label="Tutup" style={{ position: 'relative', overflow: 'hidden', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.7)' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
                 </button>
               </div>
             </div>

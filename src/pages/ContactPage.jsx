@@ -170,7 +170,7 @@ const ContactPage = () => {
         pick: () => setPeran(p),
         style: 'padding:11px 16px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;transition:all .3s ease;' + (on
           ? 'border:0;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung));box-shadow:0 14px 30px -14px rgba(95,105,235,.9)'
-          : 'border:1px solid rgba(255,255,255,.9);color:#3d4166;background:rgba(255,255,255,.5)'),
+          : 'border:1px solid rgba(255,255,255,.9);color:var(--sdnb-teks-badan);background:rgba(255,255,255,.5)'),
       };
     }),
     topikOpsi: contactCopy.topics,
@@ -180,7 +180,7 @@ const ContactPage = () => {
     setTopik: (e) => setTopik(e.target.value),
     setPesan: (e) => setPesan(e.target.value.slice(0, 600)),
     hitungPesan: `${sisa} karakter tersisa`,
-    hitungStyle: `font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;color:${sisa < 80 ? '#c25a7a' : '#63678a'}`,
+    hitungStyle: `font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;color:${sisa < 80 ? '#c25a7a' : 'var(--sdnb-teks-pendamping)'}`,
     bantuan: formHint,
     tombolStyle: 'position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;padding:15px 24px;border-radius:16px;border:0;font-family:inherit;font-size:14.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung));transition:opacity .3s ease,transform .3s ease;box-shadow:0 20px 42px -16px rgba(95,105,235,.9);' + (isiLengkap ? 'cursor:pointer;opacity:1' : 'cursor:not-allowed;opacity:.45'),
     kirim: handleKirim,
@@ -214,8 +214,8 @@ const ContactPage = () => {
         row: `display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border-radius:14px;margin-bottom:${i === contactCopy.hours.length - 1 ? '0' : '4px'};` + (kini
           ? 'background:linear-gradient(120deg,rgba(120,132,255,.16),rgba(240,150,196,.16));border:1px solid rgba(255,255,255,.95)'
           : 'border:1px solid transparent'),
-        hari: `font-size:13.5px;font-weight:${kini ? '800' : '600'};color:${kini ? '#3b40a8' : '#3f4468'}`,
-        waktu: `font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:${w === 'Tutup' ? '#9a7fa8' : kini ? '#3b40a8' : '#5f6486'}`,
+        hari: `font-size:13.5px;font-weight:${kini ? '800' : '600'};color:${kini ? '#3b40a8' : 'var(--sdnb-teks-badan)'}`,
+        waktu: `font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:${w === 'Tutup' ? '#9a7fa8' : kini ? '#3b40a8' : 'var(--sdnb-teks-pendamping)'}`,
       };
     }),
 

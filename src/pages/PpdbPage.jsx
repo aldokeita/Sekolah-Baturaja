@@ -49,7 +49,7 @@ const STEP_DEFS = [
  * src/lib/ppdbContent.js. Tahun ajarannya dari panel Identitas Sekolah. */
 
 const chipStyle = (on) => 'position:relative;overflow:hidden;padding:12px 20px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;transition:all .2s ease;border:1px solid '
-  + (on ? 'rgba(255,255,255,.6)' : 'rgba(255,255,255,.9)') + ';color:' + (on ? '#fff' : '#3f4468') + ';background:'
+  + (on ? 'rgba(255,255,255,.6)' : 'rgba(255,255,255,.9)') + ';color:' + (on ? '#fff' : 'var(--sdnb-teks-badan)') + ';background:'
   + (on ? 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2))' : 'rgba(255,255,255,.62)') + ';box-shadow:'
   + (on ? '0 14px 30px -14px rgba(95,105,235,.9),inset 0 1px 0 rgba(255,255,255,.5)' : 'inset 0 1px 0 rgba(255,255,255,.95)');
 
@@ -241,8 +241,8 @@ const PpdbPage = () => {
         num: passed ? '✓' : String(n), label, hint,
         go: () => { if (!done) go(n); },
         wrap: `display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:14px;cursor:pointer;transition:background .2s ease;background:${active ? 'rgba(255,255,255,.72)' : 'transparent'}`,
-        dot: `flex:none;width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${active || passed ? '#fff' : '#5f6389'};background:${active ? 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2))' : passed ? 'linear-gradient(135deg,#7fd8c0,#6fc9e0)' : 'rgba(255,255,255,.72)'};box-shadow:inset 0 1px 0 rgba(255,255,255,.7)`,
-        title: `font-size:13.5px;font-weight:700;letter-spacing:-.01em;color:${active ? '#1b1c2c' : '#4d5273'}`,
+        dot: `flex:none;width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:${active || passed ? '#fff' : 'var(--sdnb-teks-pendamping)'};background:${active ? 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2))' : passed ? 'linear-gradient(135deg,#7fd8c0,#6fc9e0)' : 'rgba(255,255,255,.72)'};box-shadow:inset 0 1px 0 rgba(255,255,255,.7)`,
+        title: `font-size:13.5px;font-weight:700;letter-spacing:-.01em;color:${active ? 'var(--sdnb-teks-judul)' : 'var(--sdnb-teks-pendamping)'}`,
       };
     }),
 
@@ -323,7 +323,7 @@ const PpdbPage = () => {
     // dua kali karena tombolnya ditekan berulang.
     nextStyle: `position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;padding:14px 24px;border-radius:15px;border:0;font-family:inherit;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung));box-shadow:0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6);transition:opacity .2s ease;cursor:${step === 4 && (!setuju || mengirim) ? 'not-allowed' : 'pointer'};opacity:${step === 4 && (!setuju || mengirim) ? '.42' : '1'}`,
     navStyle: `position:relative;margin-top:30px;padding-top:22px;border-top:1px solid rgba(255,255,255,.75);display:${done ? 'none' : 'flex'};align-items:center;gap:14px`,
-    prevStyle: `position:relative;overflow:hidden;padding:14px 22px;border-radius:15px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;color:#33375a;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 rgba(255,255,255,.95);opacity:${step === 1 ? '.4' : '1'};pointer-events:${step === 1 ? 'none' : 'auto'}`,
+    prevStyle: `position:relative;overflow:hidden;padding:14px 22px;border-radius:15px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;color:var(--sdnb-teks-badan);background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 rgba(255,255,255,.95);opacity:${step === 1 ? '.4' : '1'};pointer-events:${step === 1 ? 'none' : 'auto'}`,
 
     prev: () => go(Math.max(1, step - 1)),
     // Layar "terkirim" hanya muncul setelah server menerimanya — lihat kirim().

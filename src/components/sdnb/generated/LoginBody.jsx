@@ -125,8 +125,8 @@ const LoginBody = (vals = {}) => {
             </div>
           </div>
           <button className="th-toggle th-toggle-l" data-theme-toggle="1" aria-label="Ganti tema terang atau gelap">
-            <svg className="th-i-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3d4166" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2v2.4"></path><path d="M12 19.6V22"></path><path d="M2 12h2.4"></path><path d="M19.6 12H22"></path><path d="m4.9 4.9 1.7 1.7"></path><path d="m17.4 17.4 1.7 1.7"></path><path d="m19.1 4.9-1.7 1.7"></path><path d="m6.6 17.4-1.7 1.7"></path></svg>
-            <svg className="th-i-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3d4166" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2Z"></path></svg>
+            <svg className="th-i-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2v2.4"></path><path d="M12 19.6V22"></path><path d="M2 12h2.4"></path><path d="M19.6 12H22"></path><path d="m4.9 4.9 1.7 1.7"></path><path d="m17.4 17.4 1.7 1.7"></path><path d="m19.1 4.9-1.7 1.7"></path><path d="m6.6 17.4-1.7 1.7"></path></svg>
+            <svg className="th-i-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2Z"></path></svg>
           </button>
           <button className="th-toggle th-toggle-l" onClick={keluar} aria-label="Keluar portal">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>
