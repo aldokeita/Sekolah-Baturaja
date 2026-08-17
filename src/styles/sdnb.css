@@ -57,6 +57,60 @@ html { scroll-behavior: smooth; }
      suatu saat diberi nama juga, itu peran ketiga (`--sdnb-garis-rambut`),
      bukan nama ini yang dipakai ulang. */
   --sdnb-garis: #21243f;
+
+  /* Pil status jam kantor di halaman Kontak. Warna isyarat, jadi ronanya harus
+     tetap hijau/ungu — yang berganti per tema hanya terang teks dan latarnya.
+     Versi terangnya adalah nilai asli mockup. */
+  --sdnb-status-buka-teks: #1f6b4a;
+  --sdnb-status-buka-latar: rgba(150, 235, 195, .42);
+  --sdnb-status-tutup-teks: #6b5170;
+  --sdnb-status-tutup-latar: rgba(220, 205, 240, .5);
+
+}
+
+/* ── Mode gelap ───────────────────────────────────────────────────────────────
+   Sebelum ini mode gelap halaman publik **tidak bekerja di satu halaman pun**
+   kecuali Login. Tujuh aturan `filter: invert(...)` ditulis sebagai
+   `.sdnb-<halaman> .th-content`, padahal susunan aslinya terbalik —
+   `.th-content` adalah LELUHUR `.sdnb-<halaman>`, bukan keturunannya. Ketujuh
+   aturan itu mati sejak ditulis: latarnya menjadi gelap, teksnya tetap warna
+   mode terang, dan judul hero Beranda mencapai rasio **1.04** — hitam di atas
+   hitam. Aturan-aturan mati itu sudah dicabut.
+
+   Sekarang keempat nama punya nilai gelapnya sendiri. Rasio terhadap tiga
+   permukaan gelap yang dipakai halaman publik (#171827 dasar, #252637 kartu,
+   #2e3047 kartu terang):
+
+     judul       15.43 / 13.08 / 11.32   (ambang 4.5)
+     badan       11.11 /  9.42 /  8.16   (ambang 4.5)
+     pendamping   6.80 /  5.77 /  4.99   (ambang 4.5)
+     garis        4.85 /  4.11 /  3.56   (ambang 3.0, elemen antarmuka)
+
+   Diukur pada permukaan paling TERANG di antara ketiganya, bukan pada latar
+   dasar — itu keadaan terburuknya. */
+html[data-theme="dark"] {
+  --sdnb-teks-judul: #eef0f8;
+  --sdnb-teks-badan: #c9cde0;
+  --sdnb-teks-pendamping: #9aa0bd;
+  --sdnb-garis: #7e84ae;
+
+  /* Aksen sekolah sebagai teks juga harus berganti wajah. `--sekolah-aksen-teks`
+     diturunkan untuk latar TERANG; di atas permukaan gelap ia jatuh ke 2.82.
+     Pasangan gelapnya dihitung dari aksen yang sama (rona dan kejenuhan tetap,
+     hanya terangnya naik) di src/lib/schoolIdentity.js.
+
+     `!important` diperlukan karena nilai terang dipasang JavaScript sebagai style
+     inline pada elemen html, dan style inline mengalahkan aturan biasa. */
+  --sekolah-aksen-teks: var(--sekolah-aksen-teks-gelap) !important;
+
+  /* Pil status: hijau tua di atas hijau muda hanya bekerja di latar terang. Di
+     mode gelap latar pudarnya menumpuk di atas permukaan gelap sehingga menjadi
+     hijau tua di atas hijau tua — rasio 1.18. Terangnya dibalik: teks muda di
+     atas latar tua (8.82 dan 7.93). */
+  --sdnb-status-buka-teks: #8fe3b8;
+  --sdnb-status-buka-latar: rgba(24, 74, 52, .55);
+  --sdnb-status-tutup-teks: #d6bce8;
+  --sdnb-status-tutup-latar: rgba(70, 52, 88, .6);
 }
 
 .sdnb {

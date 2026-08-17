@@ -42,6 +42,42 @@ describe('turunkanPalet', () => {
        * terangnya turun 5 poin sampai kontrasnya lolos WCAG AA di atas latar
        * terang. Nilai ini juga tertulis di :root src/index.css. */
       'aksen-teks': '#4255ff',
+      /* Pasangan mode gelapnya: rona dan kejenuhan sama, terangnya NAIK sampai
+       * lolos di atas permukaan gelap paling terang yang dipakai halaman publik
+       * (#2e3047). Dipetakan ke `--sekolah-aksen-teks` di sdnb.css saat tema
+       * gelap. */
+      'aksen-teks-gelap': '#8491ff',
+    });
+  });
+
+  /* Kebalikan pengujian di bawahnya: aksen apa pun harus tetap terbaca sebagai
+   * teks di atas latar GELAP. Warna gelap adalah kasus terburuknya — ia harus
+   * naik jauh — dan itu konsekuensi memilih warna gelap. */
+  describe('aksen-teks-gelap selalu lolos ambang keterbacaan', () => {
+    const LATAR_GELAP = [46, 48, 71];
+    const luminansi = ([r, g, b]) => {
+      const kanal = (v) => {
+        const n = v / 255;
+        return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * kanal(r) + 0.7152 * kanal(g) + 0.0722 * kanal(b);
+    };
+    const keKanal = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const kontras = (hex) => {
+      const la = luminansi(keKanal(hex));
+      const lb = luminansi(LATAR_GELAP);
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    };
+
+    it.each([
+      ['biru bawaan', '#6470ff'],
+      ['hijau', '#2f9e6b'],
+      ['merah', '#e0455f'],
+      ['kuning terang', '#f0b429'],
+      ['biru sangat gelap', '#101a4d'],
+      ['hitam', '#000000'],
+    ])('%s tetap mencapai 4.5:1 di atas latar gelap', (_nama, warna) => {
+      expect(kontras(turunkanPalet(warna, warna, 'solid')['aksen-teks-gelap'])).toBeGreaterThanOrEqual(4.5);
     });
   });
 

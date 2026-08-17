@@ -322,6 +322,27 @@ const gelapkanSampaiTerbaca = (hsl) => {
   return { h: hsl.h, s: hsl.s, l: 0 };
 };
 
+/** Permukaan gelap paling TERANG yang dipakai halaman publik (#2e3047) — keadaan
+ *  terburuk untuk teks di atas latar gelap. */
+const LATAR_ACUAN_GELAP = [46, 48, 71];
+
+/**
+ * Kebalikan `gelapkanSampaiTerbaca`: menaikkan terang sampai kontrasnya terhadap
+ * latar GELAP lolos. Dipakai mode gelap, tempat turunan baca versi terang justru
+ * terlalu gelap — aksen bawaan hanya mencapai 2.82 di atas permukaan gelap.
+ *
+ * Rona dan kejenuhan tidak diubah, jadi aksen sekolah tetap dikenali sebagai
+ * warna yang sama; hanya terangnya yang naik. Pencarian selalu berhenti karena
+ * putih pasti lolos terhadap latar gelap.
+ */
+const terangkanSampaiTerbaca = (hsl) => {
+  for (let l = hsl.l; l <= 100; l += 0.5) {
+    const calon = { h: hsl.h, s: hsl.s, l };
+    if (kontras(keRgb(calon), LATAR_ACUAN_GELAP) >= KONTRAS_MIN) return calon;
+  }
+  return { h: hsl.h, s: hsl.s, l: 100 };
+};
+
 /**
  * Rona (hue) warna akhir yang "dibuka lipatannya" relatif terhadap warna awal.
  *
@@ -401,6 +422,11 @@ export const turunkanPalet = (hexAwal, hexAkhir, mode = AKSEN_GRADASI) => {
   /* Turunan khusus teks kecil. Diambil dari `aksen-pekat`, bukan dari `aksen`,
    * karena itulah warna yang dipakai label dan tautan sebelum ini. */
   palet['aksen-teks'] = keHeks(gelapkanSampaiTerbaca(keHsl(palet['aksen-pekat'])));
+
+  /* Pasangan mode gelapnya. `aksen-teks` dirancang untuk latar terang, dan di
+   * atas permukaan gelap ia justru gagal — aksen bawaan turun ke 2.82. Nilai ini
+   * dipakai lewat pemetaan di sdnb.css pada `html[data-theme="dark"]`. */
+  palet['aksen-teks-gelap'] = keHeks(terangkanSampaiTerbaca(keHsl(palet['aksen-pekat'])));
 
   return palet;
 };

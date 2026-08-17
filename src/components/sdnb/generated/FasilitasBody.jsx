@@ -141,7 +141,7 @@ const FasilitasBody = (vals = {}) => {
             <p style={{ margin: "16px 0 0", fontSize: "15px", lineHeight: "1.7", color: "rgba(255,255,255,.9)" }}>Kabari tata usaha sehari sebelumnya. Seorang guru akan menemani Anda melewati kelas, perpustakaan, musala, dan kebun sekolah.</p>
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "10px", padding: "16px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "800", letterSpacing: "-.01em", color: "var(--sdnb-teks-pendamping)", background: "#fff", boxShadow: "0 18px 38px -16px rgba(20,26,80,.8)" }}>Jadwalkan kunjungan
+            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "10px", padding: "16px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "800", letterSpacing: "-.01em", color: "var(--sdnb-teks-judul)", background: "#fff", boxShadow: "0 18px 38px -16px rgba(20,26,80,.8)" }}>Jadwalkan kunjungan
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
             </a>
             <a className="shine" href="/profil/galeri" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "10px", padding: "16px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>Lihat galeri</a>

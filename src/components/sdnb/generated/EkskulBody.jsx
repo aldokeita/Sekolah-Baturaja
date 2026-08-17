@@ -86,7 +86,7 @@ const EkskulBody = (vals = {}) => {
           <div aria-hidden="true" style={{ position: "absolute", right: "-40px", bottom: "-60px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "230px", lineHeight: ".8", fontWeight: "800", letterSpacing: "-.06em", color: "rgba(255,255,255,.16)" }}>{poster.nomor}</div>
           <div style={{ position: "relative", padding: "38px 40px 34px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <span style={{ padding: "7px 13px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.85)" }}>{poster.bidang}</span>
+              <span style={{ padding: "7px 13px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.85)" }}>{poster.bidang}</span>
               <span style={{ fontSize: "12.5px", fontWeight: "700", color: "rgba(255,255,255,.9)" }}>{poster.hari} &middot; {poster.jam}</span>
             </div>
             <h3 style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "44px", lineHeight: "1.02", letterSpacing: "-.04em", fontWeight: "800", color: "#fff", textWrap: "pretty" }}>{poster.judul}</h3>
@@ -153,7 +153,7 @@ const EkskulBody = (vals = {}) => {
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>Tanya pembina
+            <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>Tanya pembina
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
             </a>
             <a className="shine" href="/prestasi" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 22px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>Lihat prestasi

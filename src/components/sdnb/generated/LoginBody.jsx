@@ -291,9 +291,9 @@ const LoginBody = (vals = {}) => {
             <div style={{ marginTop: "10px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.04", letterSpacing: "-.042em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>{sesi.nama}</div>
             <div style={{ marginTop: "8px", fontSize: "14px", color: "var(--sdnb-teks-pendamping)" }}>Wali kelas &middot; {guru.kelas}</div>
             <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <span style={{ padding: "10px 16px", borderRadius: "999px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.86)", border: "1px solid rgba(255,255,255,.95)" }}>{guru.aktif} murid</span>
+              <span style={{ padding: "10px 16px", borderRadius: "999px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.86)", border: "1px solid rgba(255,255,255,.95)" }}>{guru.aktif} murid</span>
               <span style={{ padding: "10px 16px", borderRadius: "999px", fontSize: "12.5px", fontWeight: "700", color: "#1f7a55", background: "rgba(150,235,195,.42)" }}>Aktif</span>
-              <span style={{ padding: "10px 16px", borderRadius: "999px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.86)", border: "1px solid rgba(255,255,255,.95)" }}>{guru.sesi}</span>
+              <span style={{ padding: "10px 16px", borderRadius: "999px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.86)", border: "1px solid rgba(255,255,255,.95)" }}>{guru.sesi}</span>
             </div>
           </div>
         </div>
@@ -351,7 +351,7 @@ const LoginBody = (vals = {}) => {
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <button style={{ padding: "13px 20px", borderRadius: "15px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "var(--sdnb-teks-badan)", border: "1px solid rgba(255,255,255,.95)", background: "rgba(255,255,255,.8)" }}>Edit profil</button>
+            <button style={{ padding: "13px 20px", borderRadius: "15px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "var(--sdnb-teks-judul)", border: "1px solid rgba(255,255,255,.95)", background: "rgba(255,255,255,.8)" }}>Edit profil</button>
             <span style={__dcs(wali.hadirStyle)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12.5 9.5 18 20 7"></path></svg> Hadir hari ini</span>
           </div>
         </div>

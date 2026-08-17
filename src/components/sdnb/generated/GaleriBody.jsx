@@ -106,7 +106,7 @@ const GaleriBody = (vals = {}) => {
                 <div style={{ position: "absolute", inset: "0", background: "radial-gradient(115% 75% at 22% 10%,rgba(255,255,255,.45),rgba(255,255,255,0) 58%)" }}></div>
                 <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(28,32,66,.62),rgba(28,32,66,0) 55%)" }}></div>
                 <div style={{ position: "absolute", left: "0", right: "0", bottom: "0", padding: "30px 34px 28px" }}>
-                  <div style={{ display: "inline-flex", padding: "6px 12px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}>{f.kat}</div>
+                  <div style={{ display: "inline-flex", padding: "6px 12px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}>{f.kat}</div>
                   <div style={{ marginTop: "12px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "30px", lineHeight: "1.12", letterSpacing: "-.03em", fontWeight: "800", color: "#fff", textShadow: "0 3px 20px rgba(20,25,60,.55)" }}>{f.nama}</div>
                   <div style={{ marginTop: "8px", maxWidth: "520px", fontSize: "13.5px", lineHeight: "1.6", color: "rgba(255,255,255,.9)", textShadow: "0 1px 12px rgba(20,25,60,.6)" }}>{f.ket}</div>
                 </div>

@@ -57,12 +57,12 @@ const BeritaBody = (vals = {}) => {
           <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(24,28,62,.78),rgba(24,28,62,.12) 58%,rgba(24,28,62,0))" }}></div>
           <div style={{ position: "absolute", left: "0", right: "0", bottom: "0", padding: "38px 40px 34px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <span style={{ padding: "7px 13px", borderRadius: "11px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.85)" }}>{lead.kat}</span>
+              <span style={{ padding: "7px 13px", borderRadius: "11px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.85)" }}>{lead.kat}</span>
               <span style={{ fontSize: "12.5px", fontWeight: "600", color: "rgba(255,255,255,.86)" }}>{lead.tanggal} &middot; {lead.baca} menit baca</span>
             </div>
             <h2 style={{ margin: "18px 0 0", maxWidth: "660px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "40px", lineHeight: "1.08", letterSpacing: "-.036em", fontWeight: "800", color: "#fff", textShadow: "0 4px 24px rgba(18,22,55,.5)", textWrap: "pretty" }}>{lead.judul}</h2>
             <p style={{ margin: "14px 0 0", maxWidth: "620px", fontSize: "14.5px", lineHeight: "1.65", color: "rgba(255,255,255,.9)" }}>{lead.ringkas}</p>
-            <div style={{ marginTop: "22px", display: "inline-flex", alignItems: "center", gap: "9px", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)", background: "rgba(255,255,255,.94)", boxShadow: "0 16px 34px -14px rgba(30,36,90,.7)" }}>Baca selengkapnya
+            <div style={{ marginTop: "22px", display: "inline-flex", alignItems: "center", gap: "9px", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.94)", boxShadow: "0 16px 34px -14px rgba(30,36,90,.7)" }}>Baca selengkapnya
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
             </div>
           </div>
@@ -109,7 +109,7 @@ const BeritaBody = (vals = {}) => {
                 <div style={{ position: "relative", height: "172px", overflow: "hidden" }}>
                   <div className="afill" style={__dcs(b.fill)}></div>
                   <div style={{ position: "absolute", inset: "0", background: "radial-gradient(115% 75% at 22% 10%,rgba(255,255,255,.45),rgba(255,255,255,0) 58%)" }}></div>
-                  <div style={{ position: "absolute", left: "14px", top: "14px", padding: "6px 11px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,.9)" }}>{b.kat}</div>
+                  <div style={{ position: "absolute", left: "14px", top: "14px", padding: "6px 11px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,.9)" }}>{b.kat}</div>
                 </div>
                 <div style={{ padding: "20px 22px 22px" }}>
                   <div style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".05em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>{b.tanggal} &middot; {b.baca} menit</div>
@@ -159,7 +159,7 @@ const BeritaBody = (vals = {}) => {
             <p style={{ margin: "12px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "rgba(255,255,255,.9)" }}>Satu rangkuman setiap Jumat: pengumuman, jadwal, dan kegiatan pekan depan.</p>
             <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <input placeholder="Alamat surel orang tua" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", border: "1px solid rgba(255,255,255,.5)", outline: "none", background: "rgba(255,255,255,.2)", fontFamily: "inherit", fontSize: "13.5px", color: "#fff" }} />
-              <button className="shine" style={{ position: "relative", overflow: "hidden", padding: "13px 18px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)", background: "rgba(255,255,255,.94)", boxShadow: "0 14px 30px -14px rgba(30,36,90,.7)" }}>Berlangganan</button>
+              <button className="shine" style={{ position: "relative", overflow: "hidden", padding: "13px 18px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.94)", boxShadow: "0 14px 30px -14px rgba(30,36,90,.7)" }}>Berlangganan</button>
             </div>
             <div style={{ marginTop: "14px", fontSize: "11.5px", color: "rgba(255,255,255,.78)" }}>Alamat surel hanya dipakai untuk kabar sekolah.</div>
           </div>
@@ -189,7 +189,7 @@ const BeritaBody = (vals = {}) => {
           </button>
           <div style={{ position: "absolute", left: "0", right: "0", bottom: "0", padding: "30px 34px 26px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <span style={{ padding: "6px 12px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.88)" }}>{artikel.kat}</span>
+              <span style={{ padding: "6px 12px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.88)" }}>{artikel.kat}</span>
               <span style={{ fontSize: "12.5px", fontWeight: "600", color: "rgba(255,255,255,.88)" }}>{artikel.tanggal} &middot; {artikel.baca} menit baca</span>
             </div>
             <h2 style={{ margin: "14px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "32px", lineHeight: "1.12", letterSpacing: "-.032em", fontWeight: "800", color: "#fff", textShadow: "0 3px 20px rgba(18,22,55,.5)", textWrap: "pretty" }}>{artikel.judul}</h2>
@@ -220,7 +220,7 @@ const BeritaBody = (vals = {}) => {
           <div style={{ marginTop: "30px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap", paddingTop: "22px", borderTop: "1px solid rgba(120,132,200,.22)" }}>
             <div style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>Artikel {artikel.pos}</div>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button className="shine" onClick={prev} style={{ position: "relative", overflow: "hidden", padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "var(--sdnb-teks-badan)", border: "1px solid rgba(120,132,200,.3)", background: "rgba(255,255,255,.7)" }}>Sebelumnya</button>
+              <button className="shine" onClick={prev} style={{ position: "relative", overflow: "hidden", padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "var(--sdnb-teks-judul)", border: "1px solid rgba(120,132,200,.3)", background: "rgba(255,255,255,.7)" }}>Sebelumnya</button>
               <button className="shine" onClick={next} style={{ position: "relative", overflow: "hidden", padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#fff", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Berita berikutnya</button>
             </div>
           </div>

@@ -78,7 +78,7 @@ const ProgramBody = (vals = {}) => {
             <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(24,28,62,.8),rgba(24,28,62,.08) 62%)" }}></div>
             <div style={{ position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", padding: "26px 26px 24px" }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "14px" }}>
-                <span style={{ padding: "7px 12px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.88)" }}>{p.jenis}</span>
+                <span style={{ padding: "7px 12px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.88)" }}>{p.jenis}</span>
                 <span style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "36px", lineHeight: ".9", fontWeight: "800", letterSpacing: "-.04em", color: "rgba(255,255,255,.45)" }}>{p.no}</span>
               </div>
               <div>
@@ -138,7 +138,7 @@ const ProgramBody = (vals = {}) => {
         <div style={{ padding: "26px 28px", borderRadius: "28px", background: "linear-gradient(135deg,rgba(95,108,242,.95),rgba(152,110,235,.9) 48%,rgba(238,142,190,.9))", border: "1px solid rgba(255,255,255,.5)", boxShadow: "0 30px 62px -24px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)" }}>
           <h3 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "21px", lineHeight: "1.18", letterSpacing: "-.026em", fontWeight: "800", color: "#fff" }}>Penilaian tanpa peringkat kelas</h3>
           <p style={{ margin: "12px 0 0", fontSize: "13.5px", lineHeight: "1.66", color: "rgba(255,255,255,.9)" }}>Rapor memuat capaian per tujuan pembelajaran dan catatan wali kelas. Sekolah tidak menerbitkan daftar peringkat murid.</p>
-          <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "9px", padding: "13px 20px", borderRadius: "14px", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)", background: "rgba(255,255,255,.94)", boxShadow: "0 14px 30px -14px rgba(30,36,90,.7)" }}>Tanya wali kelas
+          <a className="shine" href="/kontak" style={{ position: "relative", overflow: "hidden", marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "9px", padding: "13px 20px", borderRadius: "14px", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.94)", boxShadow: "0 14px 30px -14px rgba(30,36,90,.7)" }}>Tanya wali kelas
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg></a>
         </div>
       </div>
@@ -154,7 +154,7 @@ const ProgramBody = (vals = {}) => {
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
           </button>
           <div style={{ position: "absolute", left: "0", right: "0", bottom: "0", padding: "28px 32px 24px" }}>
-            <span style={{ padding: "7px 12px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.9)" }}>{detil.jenis}</span>
+            <span style={{ padding: "7px 12px", borderRadius: "999px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.9)" }}>{detil.jenis}</span>
             <h3 style={{ margin: "14px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "30px", lineHeight: "1.12", letterSpacing: "-.032em", fontWeight: "800", color: "#fff", textWrap: "pretty" }}>{detil.nama}</h3>
           </div>
         </div>
@@ -169,7 +169,7 @@ const ProgramBody = (vals = {}) => {
             </React.Fragment>))}
           </div>
           <div style={{ marginTop: "24px", display: "flex", gap: "10px" }}>
-            <button onClick={sebelum} style={{ padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "var(--sdnb-teks-badan)", border: "1px solid rgba(120,132,200,.3)", background: "rgba(255,255,255,.75)" }}>Sebelumnya</button>
+            <button onClick={sebelum} style={{ padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "var(--sdnb-teks-judul)", border: "1px solid rgba(120,132,200,.3)", background: "rgba(255,255,255,.75)" }}>Sebelumnya</button>
             <button onClick={sesudah} style={{ padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#fff", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Program berikutnya</button>
           </div>
         </div>

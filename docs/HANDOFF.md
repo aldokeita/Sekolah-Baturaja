@@ -1314,21 +1314,74 @@ kini punya pasangan mode gelapnya sendiri.
 Warna yang dipasang lewat **style inline** tidak bisa ikut berganti tema. Untuk itu nilainya
 dititipkan ke properti kustom (`--avatar-inisial`) yang didefinisikan dua kali, satu per tema.
 
-### Mode gelap halaman PUBLIK belum disapu
+### Mode gelap halaman publik: DUA mekanisme, satu hidup satu mati
 
-Dashboard sudah bersih. Halaman publik **belum**, dan mekanismenya berbeda: sebagian halaman
-mencapai mode gelap lewat `filter: invert(...) hue-rotate(...)` (lihat `sdnb-program.css`), bukan
-lewat token. Nada gelap yang dipasang untuk mode terang justru dilawan oleh pembalikan itu.
+Ini sumber kebingungan yang mahal, jadi catat baik-baik.
 
-Contoh terukur di halaman Kontak: status "Kantor sedang buka" **1.18**, tautan aksen 2.82–3.32,
-teks bantuan 2.57.
+**Yang MATI:** tujuh aturan `filter: invert(...)` yang ditulis sebagai
+`.sdnb-<halaman> .th-content`. Susunan aslinya terbalik — `.th-content` dipasang PublicLayout
+sebagai **leluhur** kelas halaman, bukan keturunannya — jadi ketujuhnya tidak pernah berlaku sekali
+pun. Sudah dicabut.
 
-**KEPUTUSAN pemilik template: biarkan apa adanya.** Mode gelap halaman publik memang direncanakan
-sejak awal dan mekanisme pembalikannya disengaja, bukan tambalan. Jangan mengusulkan memindahkannya
-ke token — hampir 800 warna tertulis mati di markup publik, dan pemiliknya menilai hasil sekarang
-sudah memadai.
+**Yang HIDUP:** blok besar di bagian bawah `sdnb.css` yang bekerja dengan **selektor atribut**:
 
-Angka-angka di atas disimpan sebagai catatan keadaan, bukan sebagai daftar tugas.
+```css
+html[data-theme="dark"] body .sdnb.sdnb [style*="background: rgba(255"] { background: var(--sdnb-dark-surface) !important }
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(27, 28, 44"]  { … }
+```
+
+Ia mencocokkan **teks literal atribut `style`**. Permukaan kaca putih dijadikan permukaan gelap,
+dan warna teks sebaris tertentu dinormalkan. Inilah mode gelap publik yang sesungguhnya, dan ia
+memang direncanakan.
+
+**Konsekuensi penting untuk pekerjaan warna:** begitu warna teks sebaris diganti menjadi
+`var(--sdnb-teks-…)`, atribut `style` tidak lagi memuat `color: rgb(...)`, sehingga aturan
+pencocokan atribut itu **berhenti cocok**. Penamaan token dan aturan `[style*=…]` mengurus hal yang
+sama, jadi tokennya harus punya nilai gelap sendiri — dan sekarang punya. Aturan
+`[style*="color: rgb(...)"]` yang menyasar nada yang sudah ditokenkan kini menjadi mati; dibiarkan
+karena masih ada warna sebaris dekoratif yang memakainya, tapi jangan dijadikan acuan.
+
+**Jangan** menambahkan token "teks di atas putih" yang tidak ikut berganti tema: permukaan putih itu
+**ikut dijadikan gelap** oleh aturan di atas, jadi teks di atasnya memang harus ikut menjadi terang.
+Ini sempat dicoba dan salah.
+
+### Cara mengukur kontras mode gelap dengan benar
+
+Audit biasa tidak cukup. `getComputedStyle` mengembalikan warna **sebelum** filter, jadi kalau ada
+`filter` di leluhur, angkanya salah. Alat yang dipakai menerapkan rantai filter (`invert`,
+`hue-rotate`, `saturate`, `brightness`, `contrast`) ke warna teks DAN latarnya dengan matematika
+spesifikasi CSS, baru menghitung rasionya.
+
+Awas juga **HMR yang basi**: beberapa pengukuran sempat menunjukkan nilai lama sampai halaman dimuat
+ulang penuh. Kalau sebuah angka mengejutkan, muat ulang dulu sebelum menyimpulkan.
+
+### Nilai gelap keempat nama teks publik
+
+| nama | terang | gelap | rasio gelap (terburuk) |
+|---|---|---|---|
+| `--sdnb-teks-judul` | `#1b1c2c` | `#eef0f8` | 11.32 |
+| `--sdnb-teks-badan` | `#33375a` | `#c9cde0` | 8.16 |
+| `--sdnb-teks-pendamping` | `#5f6389` | `#9aa0bd` | 4.99 |
+| `--sdnb-garis` | `#21243f` | `#7e84ae` | 3.56 (ambang 3.0) |
+
+Aksen sekolah ikut punya pasangan gelap: `aksen-teks-gelap` di `schoolIdentity.js`, dihitung dengan
+`terangkanSampaiTerbaca` — kebalikan `gelapkanSampaiTerbaca`, menaikkan terang sampai lolos di atas
+permukaan gelap paling terang (#2e3047). Dipetakan ke `--sekolah-aksen-teks` pada tema gelap dengan
+`!important`, karena nilai terangnya dipasang JavaScript sebagai style inline.
+
+Pil status jam kantor di halaman Kontak juga punya pasangan gelap
+(`--sdnb-status-buka-*`, `--sdnb-status-tutup-*`): hijau tua di atas hijau muda hanya bekerja di
+latar terang; di mode gelap terangnya dibalik.
+
+### Catatan lama yang sudah TIDAK BERLAKU
+
+Bagian ini sempat berbunyi "mode gelap publik memakai pembalikan filter, biarkan apa adanya", dengan
+angka kegagalan di halaman Kontak. Kesimpulan itu **salah dua kali**: pembalikannya memang mati (jadi
+bukan itu mekanismenya), dan angka kegagalannya sebagian muncul karena penamaan token mematikan
+aturan `[style*="color: rgb(...)"]` yang selama ini mengerjakan mode gelap.
+
+Keadaan sebenarnya ada di dua bagian di atas. Seluruh dua belas halaman publik sekarang **nol
+pelanggaran kontras di kedua tema**, diukur sambil menggulir penuh.
 
 ### Nada teks halaman publik: tiga nama, bukan 60 nada
 

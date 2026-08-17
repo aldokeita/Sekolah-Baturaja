@@ -143,7 +143,7 @@ const ContactPage = () => {
   const formHint = isiLengkap ? contactCopy.formReadyHint : contactCopy.formValidationHint;
 
   const vals = {
-    statusStyle: `margin-top:18px;display:inline-flex;align-items:center;gap:10px;padding:11px 16px;border-radius:15px;font-size:13px;font-weight:700;color:${buka ? '#1f6b4a' : '#6b5170'};background:${buka ? 'rgba(150,235,195,.42)' : 'rgba(220,205,240,.5)'};border:1px solid rgba(255,255,255,.9)`,
+    statusStyle: `margin-top:18px;display:inline-flex;align-items:center;gap:10px;padding:11px 16px;border-radius:15px;font-size:13px;font-weight:700;color:${buka ? 'var(--sdnb-status-buka-teks)' : 'var(--sdnb-status-tutup-teks)'};background:${buka ? 'var(--sdnb-status-buka-latar)' : 'var(--sdnb-status-tutup-latar)'};border:1px solid rgba(255,255,255,.9)`,
     statusDot: buka ? '#25a06a' : '#a58ac0',
     statusText: buka ? contactCopy.openStatusText : contactCopy.closedStatusText,
     copy: contactCopy,

@@ -122,7 +122,7 @@ const KontakBody = (vals = {}) => {
             <p style={{ margin: "12px 0 0", maxWidth: "460px", fontSize: "14.5px", lineHeight: "1.68", color: "var(--sdnb-teks-pendamping)" }}>{successDescription}</p>
             <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <button className="shine" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13.5px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 16px 34px -14px rgba(95,105,235,.9)" }}>{copy.newMessageLabel}</button>
-              <a className="shine" href="/pendaftaran" style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>{copy.enrollmentButtonLabel}</a>
+              <a className="shine" href="/pendaftaran" style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>{copy.enrollmentButtonLabel}</a>
             </div>
           </div>
         </>)}
@@ -137,7 +137,7 @@ const KontakBody = (vals = {}) => {
           <div aria-hidden="true" style={{ position: "absolute", left: "12%", bottom: "12%", width: "96px", height: "64px", borderRadius: "10px", background: "rgba(160,200,255,.4)", border: "1px solid rgba(255,255,255,.8)" }}></div>
           <div aria-hidden="true" style={{ position: "absolute", right: "14%", top: "14%", width: "80px", height: "56px", borderRadius: "10px", background: "rgba(180,240,220,.45)", border: "1px solid rgba(255,255,255,.8)" }}></div>
           <div style={{ position: "absolute", left: "50%", top: "47%", transform: "translate(-50%,-100%)", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-            <div style={{ padding: "9px 14px", borderRadius: "13px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.92)", border: "1px solid rgba(255,255,255,1)", boxShadow: "0 16px 34px -14px rgba(55,65,120,.6)", whiteSpace: "nowrap" }}>{petaNama}</div>
+            <div style={{ padding: "9px 14px", borderRadius: "13px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.92)", border: "1px solid rgba(255,255,255,1)", boxShadow: "0 16px 34px -14px rgba(55,65,120,.6)", whiteSpace: "nowrap" }}>{petaNama}</div>
             <div style={{ position: "relative", width: "16px", height: "16px", borderRadius: "50%", background: "linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))", border: "3px solid #fff", boxShadow: "0 8px 18px -6px rgba(80,90,190,.8)" }}>
               <span style={{ position: "absolute", inset: "-3px", borderRadius: "50%", background: "rgba(100,112,255,.5)", animation: "ping 2.4s cubic-bezier(0,.2,.8,1) infinite" }}></span>
             </div>
@@ -149,7 +149,7 @@ const KontakBody = (vals = {}) => {
             </div>
             <div style={{ display: "flex", flex: "none", gap: "8px" }}>
               {petaTautan && (
-                <a className="shine" href={petaTautan} target="_blank" rel="noopener noreferrer" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", padding: "11px 15px", borderRadius: "14px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.9)", border: "1px solid rgba(255,255,255,1)", boxShadow: "0 14px 30px -14px rgba(55,65,120,.5)", whiteSpace: "nowrap" }}>{copy.mapButtonLabel}</a>
+                <a className="shine" href={petaTautan} target="_blank" rel="noopener noreferrer" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", padding: "11px 15px", borderRadius: "14px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.9)", border: "1px solid rgba(255,255,255,1)", boxShadow: "0 14px 30px -14px rgba(55,65,120,.5)", whiteSpace: "nowrap" }}>{copy.mapButtonLabel}</a>
               )}
               <button className="shine" onClick={salinAlamat} style={{ position: "relative", overflow: "hidden", flex: "none", padding: "11px 15px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "12.5px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)", whiteSpace: "nowrap" }}>{labelAlamat}</button>
             </div>
@@ -210,7 +210,7 @@ const KontakBody = (vals = {}) => {
             <p style={{ margin: "16px 0 0", fontSize: "15.5px", lineHeight: "1.66", color: "rgba(255,255,255,.9)" }}>{copy.visitDescription}</p>
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <a className="shine" href="#pesan" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>{copy.visitButtonLabel}</a>
+            <a className="shine" href="#pesan" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>{copy.visitButtonLabel}</a>
             <a className="shine" href="/profil/galeri" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>{copy.galleryButtonLabel}</a>
           </div>
         </div>
