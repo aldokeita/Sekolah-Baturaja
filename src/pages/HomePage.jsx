@@ -132,6 +132,8 @@ const HomePage = () => {
   const [photos, setPhotos] = useState([]);
   const [buildingPhoto, setBuildingPhoto] = useState('');
   const [open, setOpen] = useState(0);
+  // 'Semua' atau salah satu kategori yang benar-benar ada pada berita terbitan.
+  const [newsFilter, setNewsFilter] = useState('Semua');
   // Bawaan dipakai lebih dulu supaya halaman tidak kosong selagi menunggu server.
   const [isi, setIsi] = useState(DEFAULT_HOME_CONTENT);
 
@@ -143,7 +145,10 @@ const HomePage = () => {
         // memasukkan murid, dan keduanya harus bisa dibedakan.
         publicFetch('/api/santri/count').then((d) => Number(d?.total) || 0).catch(() => null),
         publicFetch('/api/guru/count').then((d) => Number(d?.total) || 0).catch(() => null),
-        fetchPublishedNews({ limit: 3 }).catch(() => []),
+        // Diambil lebih banyak daripada tiga yang ditampilkan: deretan kategori di
+        // atas kartu menyaring dari kumpulan ini, jadi menarik tepat tiga akan
+        // membuat pilihan kategorinya ikut menyusut sampai tak ada gunanya.
+        fetchPublishedNews({ limit: 12 }).catch(() => []),
         fetchWebsiteContentMap({ keys: ['galleryPhotos', 'schoolBuildingPhoto'], publicOnly: true }).catch(() => ({})),
         fetchHomeContent().catch(() => null),
       ]);
@@ -170,10 +175,26 @@ const HomePage = () => {
 
   useSdnbMotion([counts.siswa, counts.guru, news.length, photos.length]);
 
+  // Kategori diambil dari berita yang benar-benar terbit, sama seperti halaman
+  // Berita (lihat NewsPageCms.jsx). Sebelumnya deretan ini tiga label mati —
+  // "Semua", "Prestasi", "Kegiatan" — yang tidak menyaring apa pun dan tidak ada
+  // hubungannya dengan kategori yang dipakai sekolah.
+  const newsCategories = useMemo(() => {
+    const adaKategori = news.map((item) => item.category).filter(Boolean);
+    return ['Semua', ...Array.from(new Set(adaKategori))];
+  }, [news]);
+
+  // Kategori yang dipilih bisa hilang saat berita dimuat ulang; jangan biarkan
+  // halaman menampilkan nol kartu karena menyaring kategori yang sudah tak ada.
+  const kategoriAktif = newsCategories.includes(newsFilter) ? newsFilter : 'Semua';
+
   const newsCards = useMemo(() => {
     // Kosong tetap kosong. Halaman ini dan halaman Berita harus mengatakan hal
     // yang sama tentang sekolah yang belum menerbitkan apa pun.
-    return news.slice(0, 3).map((item, i) => {
+    const tersaring = kategoriAktif === 'Semua'
+      ? news
+      : news.filter((item) => item.category === kategoriAktif);
+    return tersaring.slice(0, 3).map((item, i) => {
       const base = NEWS_STYLE[i % NEWS_STYLE.length];
       const d = item.date || item.published_at || item.created_at;
       return {
@@ -187,7 +208,7 @@ const HomePage = () => {
         to: '/berita',
       };
     });
-  }, [news]);
+  }, [news, kategoriAktif]);
 
   const galleryTiles = useMemo(() => GALLERY.map((g, i) => ({ ...g, image: photos[i]?.url || '', caption: photos[i]?.caption || g.caption })), [photos]);
 
@@ -390,12 +411,38 @@ const HomePage = () => {
             <h2 style={h2Style}>Kabar <span style={GRAD_TEXT}>terbaru</span></h2>
           </div>
           {/* Disembunyikan saat belum ada berita — deretan kategori di atas
-              tulisan "Belum ada berita" terbaca seperti halaman yang rusak. */}
-          {newsCards.length > 0 && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah))', boxShadow: '0 12px 26px -12px rgba(95,105,235,.9),inset 0 1px 0 rgba(255,255,255,.5)' }}>Semua</span>
-            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Prestasi</span>
-            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Kegiatan</span>
+              tulisan "Belum ada berita" terbaca seperti halaman yang rusak.
+              Disembunyikan juga bila seluruh berita berada di satu kategori:
+              "Semua" dan satu kategori menyaring kumpulan yang sama persis, dan
+              tombol yang tidak pernah mengubah apa pun sama saja dengan hiasan. */}
+          {newsCategories.length > 2 && (
+          <div role="group" aria-label="Saring berita menurut kategori" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {newsCategories.map((kategori) => {
+              const dipilih = kategori === kategoriAktif;
+              return (
+                <button
+                  key={kategori}
+                  type="button"
+                  aria-pressed={dipilih}
+                  onClick={() => setNewsFilter(kategori)}
+                  /* Kelas ini hanya penanda untuk mode gelap: aturan glass di
+                     sdnb.css mengenai pil terpilih karena sorot putih pada
+                     box-shadow-nya, dan mengubah gradiennya jadi transparan. */
+                  className={dipilih ? 'sdnb-news-pill sdnb-news-pill--on' : 'sdnb-news-pill'}
+                  style={dipilih
+                    /* Sorot putih `inset ... rgba(255,255,255,.5)` sengaja TIDAK
+                       dipakai di sini. Aturan mode gelap di sdnb.css mencabut
+                       gradien dari apa pun yang memuat "linear-gradient" dan
+                       "rgba(255" sekaligus — dan pil terpilih pun kehilangan
+                       satu-satunya tanda bahwa ia terpilih. Pada tinggi 30px
+                       sorot itu tidak terlihat; keadaan terpilih terlihat. */
+                    ? { padding: '8px 14px', borderRadius: 999, border: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah))', boxShadow: '0 12px 26px -12px rgba(95,105,235,.9)' }
+                    : { padding: '8px 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}
+                >
+                  {kategori}
+                </button>
+              );
+            })}
           </div>
           )}
         </div>

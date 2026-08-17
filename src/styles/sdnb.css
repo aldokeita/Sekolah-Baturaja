@@ -651,6 +651,20 @@ html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(255, 255, 255"] {
   color: inherit !important;
 }
 
+/* Pil penyaring berita di halaman depan adalah KENDALI, bukan hiasan: keadaan
+ * terpilih harus tetap terlihat di mode gelap. Dua aturan di atas mengenainya
+ * tanpa sengaja — yang pertama karena sorot putih pada box-shadow-nya membuatnya
+ * cocok dengan pola "linear-gradient + rgba(255", yang kedua karena teksnya
+ * memang putih — sehingga gradiennya hilang dan pil terpilih tak berbeda dari
+ * yang lain. Sorot putih itu sudah dicabut dari gaya pilnya di HomePage.jsx;
+ * kelasnya digandakan tiga kali di sini karena aturan glass memakai :not(),
+ * yang membuat kekhususannya (0,6,2) — sebuah kelas tunggal akan kalah. */
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-news-pill--on.sdnb-news-pill--on.sdnb-news-pill--on {
+  background: linear-gradient(135deg, var(--sekolah-aksen), var(--sekolah-aksen-tengah)) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
 /* Shared navigation, dropdown, footer links, and mobile sheet. */
 html[data-theme="dark"] body .sdnb.sdnb .nav-links .h-navlink,
 html[data-theme="dark"] body .sdnb.sdnb .nav-sub,
