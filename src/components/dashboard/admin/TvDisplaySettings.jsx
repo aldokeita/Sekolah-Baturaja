@@ -78,7 +78,9 @@ const TvDisplaySettings = () => {
                 <CardContent className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border">
                         <div className="space-y-3">
-                            <Label className="flex items-center gap-2 font-bold text-primary"><Clock className="w-4 h-4" /> Format Jam</Label>
+                            {/* `text-primary` tidak dipakai: di mode gelap nilainya hanya
+                                mencapai rasio 4.34 di atas kartu. Lihat --admin-aksen-teks. */}
+                            <Label className="flex items-center gap-2 font-bold" style={{ color: 'var(--admin-aksen-teks)' }}><Clock className="w-4 h-4" /> Format Jam</Label>
                             <Select value={config.showSeconds ? 'yes' : 'no'} onValueChange={(val) => setConfig((prev) => ({ ...prev, showSeconds: val === 'yes' }))}>
                                 <SelectTrigger className="bg-white dark:bg-black"><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -88,7 +90,7 @@ const TvDisplaySettings = () => {
                             </Select>
                         </div>
                         <div className="space-y-3">
-                            <Label className="flex items-center gap-2 font-bold text-primary"><Timer className="w-4 h-4" /> Durasi Default (Detik)</Label>
+                            <Label className="flex items-center gap-2 font-bold" style={{ color: 'var(--admin-aksen-teks)' }}><Timer className="w-4 h-4" /> Durasi Default (Detik)</Label>
                             <Input type="number" min="5" className="text-lg font-mono font-bold bg-white dark:bg-black" value={config.transitionTime} onChange={(e) => setConfig((prev) => ({ ...prev, transitionTime: Math.max(5, parseInt(e.target.value, 10) || 18) }))} />
                             <p className="text-[10px] text-muted-foreground">Dipakai bila durasi panel tidak diatur.</p>
                         </div>

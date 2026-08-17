@@ -289,7 +289,7 @@ const ClassmatesList = ({ classmates, todayAttendance }) => {
                                         <span className="text-[10px] font-bold">{statusHariIni}</span>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center text-gray-600">
+                                    <div className="flex flex-col items-center text-gray-600 dark:text-gray-300">
                                         <div className="w-5 h-5 rounded-full border-2 border-dashed border-gray-300"></div>
                                         <span className="whitespace-nowrap text-[10px]">{statusHariIni}</span>
                                     </div>

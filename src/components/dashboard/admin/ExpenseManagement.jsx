@@ -389,10 +389,12 @@ const ExpenseManagement = () => {
                         <YAxis tickFormatter={(value) => `Rp${(value / 1000).toLocaleString('id-ID')}k`} />
                         <Tooltip formatter={(value) => formatRupiah(value)} />
                         <Legend />
-                        {/* Warna garis ini juga dipakai Recharts untuk teks legendanya.
-                            #ef4444 hanya mencapai rasio 3.57 sebagai teks; #b91c1c
-                            mencapai 6.47, dan garisnya tetap terbaca merah. */}
-                        <Line type="monotone" dataKey="Pengeluaran" stroke="#b91c1c" activeDot={{ r: 8 }} />
+                        {/* Warna garis ini juga dipakai Recharts untuk teks legendanya,
+                            jadi ia harus lolos ambang TEKS, bukan hanya ambang garis.
+                            Dipasang lewat token karena nilainya berbeda per tema: merah
+                            tua terbaca di latar terang tapi jatuh ke 2.71 di latar gelap.
+                            Lihat --admin-grafik-bahaya di sdnb-dashboard.css. */}
+                        <Line type="monotone" dataKey="Pengeluaran" stroke="var(--admin-grafik-bahaya)" activeDot={{ r: 8 }} />
                     </LineChart>
                 </ResponsiveContainer>
             </div>

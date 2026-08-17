@@ -1345,6 +1345,34 @@ karena masih ada warna sebaris dekoratif yang memakainya, tapi jangan dijadikan 
 **ikut dijadikan gelap** oleh aturan di atas, jadi teks di atasnya memang harus ikut menjadi terang.
 Ini sempat dicoba dan salah.
 
+### Mode gelap dashboard: setiap perbaikan mode terang perlu pasangannya
+
+Sapuan mode gelap pada keempat dashboard menemukan enam kegagalan, dan **lima di antaranya adalah
+perbaikan mode terang dari sapuan sebelumnya** yang menjadi terlalu gelap di latar gelap. Ini pola,
+bukan kebetulan — catat sebagai aturan kerja:
+
+> **Menurunkan terang sebuah warna untuk mode terang hampir selalu merusaknya di mode gelap.
+> Ukur kedua tema sebelum menyatakan selesai.**
+
+Yang diperbaiki, semuanya dengan menaikkan terang tanpa mengubah rona:
+
+| tempat | mode terang | mode gelap | sebelum |
+|---|---|---|---|
+| garis grafik pengeluaran | `#b91c1c` | `#f87171` | 2.71 |
+| huruf awal avatar kartu guru | `#1d4ed8` / `#be185d` | `#93c5fd` / `#f9a8d4` | 2.80 |
+| huruf awal avatar kepala sekolah | `text-purple-700` | `dark:text-purple-300` | 2.68 |
+| keadaan kosong Manajemen Kelas | `text-slate-600` | `dark:text-slate-300` | 2.47 |
+| status "Belum absen" murid | `text-gray-600` | `dark:text-gray-300` | 2.41 |
+| angka tanggal kalender murid | `text-slate-600` | `dark:text-slate-300` | 3.13 |
+
+Satu temuan bukan warisan: label `text-primary` di Pengaturan TV. Di mode gelap `--primary`
+dipetakan ke `--admin-accent` (72% terang) dan sebagai teks di atas kartu hanya mencapai 4.34.
+**Jangan pakai `text-primary` untuk teks di atas kartu** — pakai `--admin-aksen-teks`, yang bernilai
+turunan baca aksen di mode terang dan 78% terang di mode gelap (5.05).
+
+Nilai grafik dipasang lewat token karena Recharts memakai warna `stroke` **untuk garisnya DAN untuk
+teks legendanya**, jadi warna garis harus lolos ambang teks, bukan ambang garis.
+
 ### Cara mengukur kontras mode gelap dengan benar
 
 Audit biasa tidak cukup. `getComputedStyle` mengembalikan warna **sebelum** filter, jadi kalau ada

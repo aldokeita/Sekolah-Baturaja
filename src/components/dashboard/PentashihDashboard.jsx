@@ -366,7 +366,7 @@ const PentashihDashboard = () => {
                 <div className="flex items-center gap-3 mb-2">
                   <Avatar className="w-12 h-12 border-2 border-white/40 shadow-md">
                     <AvatarImage src={guruData.foto_url} className="object-cover" />
-                    <AvatarFallback className="text-purple-700 font-bold text-lg bg-white">
+                    <AvatarFallback className="text-purple-700 dark:text-purple-300 font-bold text-lg bg-white">
                       {guruData.nama?.charAt(0) || 'P'}
                     </AvatarFallback>
                   </Avatar>

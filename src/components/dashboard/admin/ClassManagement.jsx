@@ -995,7 +995,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
               {/* slate-600, bukan slate-400: keadaan kosong pun harus terbaca.
                   slate-400 hanya mencapai rasio 2.43 dari 4.5 yang diminta. */}
               {classesBySession[session].length === 0 && (
-                  <div className="col-span-full py-8 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-600">
+                  <div className="col-span-full py-8 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-600 dark:text-slate-300">
                       Belum ada kelas untuk sesi {session}.
                   </div>
               )}

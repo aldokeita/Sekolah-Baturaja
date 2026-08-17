@@ -32,6 +32,18 @@
      --admin-text-secondary (40%). */
   --admin-text-muted: 233 15% 45%;      /* #626684 */
 
+  /* Warna garis grafik pengeluaran. Recharts memakai nilai ini untuk garisnya DAN
+     untuk teks legendanya, jadi ia harus lolos ambang teks — dan karena itu perlu
+     nilai berbeda per tema: merah tua terbaca di latar terang (6.47) tapi jatuh ke
+     2.71 di latar gelap. */
+  --admin-grafik-bahaya: #b91c1c;
+
+  /* Aksen dipakai sebagai TEKS di dashboard. Di mode terang turunan bacanya
+     sudah ada (`--sekolah-aksen-teks`); nama ini menyatukan keduanya supaya
+     satu kelas Tailwind tidak perlu tahu temanya. Jangan pakai `text-primary`
+     untuk teks di atas kartu — di mode gelap nilainya hanya 4.34. */
+  --admin-aksen-teks: var(--sekolah-aksen-teks);
+
   /* ── accents ──────────────────────────────────────────────────────────── */
   --admin-accent: 234 100% 68%;         /* var(--sekolah-aksen-pekat) */
   --admin-accent-muted: 234 70% 60%;
@@ -591,6 +603,30 @@ html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
    supaya keduanya sama-sama lolos: 5.27 dan 4.62. */
 html[data-theme="dark"] .sdnb-dash .admin-panel-primary-btn {
   color: hsl(234 45% 12%) !important;
+}
+
+/* Merah tua garis grafik dinaikkan terangnya di mode gelap: 2.71 menjadi 5.38
+   pada permukaan kartu. Ronanya tetap merah, jadi isyaratnya tidak berubah. */
+html[data-theme="dark"] .sdnb-dash,
+html[data-theme="dark"] body.school-admin-context {
+  --admin-grafik-bahaya: #f87171;
+  /* 78% terang, bukan 72% seperti --admin-accent: sebagai teks di atas kartu
+     gelap, 72% hanya mencapai 4.34. Pada 78% menjadi 5.05 di permukaan paling
+     terang. Aksen untuk LATAR tetap 72% supaya tampilannya tidak berubah. */
+  --admin-aksen-teks: hsl(234 100% 78%);
+}
+
+/* Kartu profil guru memakai `--guru-profile-accent-deep` sebagai TEKS di atas
+   permukaan yang terang di mode terang. Di mode gelap permukaannya menjadi
+   gelap dan nada tua itu jatuh ke 2.80 — huruf awal avatar, ikon, dan angka
+   metrik ikut terbawa. Ronanya dipertahankan (biru untuk laki-laki, merah muda
+   untuk perempuan), terangnya dinaikkan: 8.25 dan 8.21 pada permukaan kartu. */
+html[data-theme="dark"] .guru-profile-card {
+  --guru-profile-accent-deep: #93c5fd;
+}
+
+html[data-theme="dark"] .guru-profile-card--female {
+  --guru-profile-accent-deep: #f9a8d4;
 }
 
 /* Nada teks lencana status diturunkan untuk mode terang — dan di mode gelap
