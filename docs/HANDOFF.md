@@ -1118,6 +1118,21 @@ ini akhirnya terlihat, lewat halaman 404 yang baru.
 Sekarang penimpaan hanya terjadi bila judul yang ada memang judul yang ditulis App sendiri (atau
 judul statis dari `index.html`). Begitu sebuah halaman memasang judulnya sendiri, App mundur.
 
+### Modul permainan menyala secara bawaan — KEPUTUSAN, bukan cacat
+
+Pemilik template memutuskan modul permainan **tetap menyala secara bawaan**. Pembeli yang tidak
+menginginkannya menulis satu baris di `.env`:
+
+```
+VITE_ENABLE_GAME_FEATURES=false
+```
+
+Sesudah itu tombol Play Gatcha dan Acak Nama hilang dari dashboard guru maupun layar absensi, dan
+rutenya berganti menjadi halaman "fitur ditunda". **Play Quiz tetap ada** — ia di luar pagar itu
+secara sengaja, karena alat mengajar, bukan permainan hadiah.
+
+Jangan mengubahnya menjadi mati-secara-bawaan tanpa keputusan baru dari pemilik template.
+
 ### `enableGameFeatures` menyala secara BAWAAN
 
 `featureFlags.js` menulis `VITE_ENABLE_GAME_FEATURES !== 'false'` — jadi modul permainan **aktif
