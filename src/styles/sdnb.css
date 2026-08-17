@@ -50,8 +50,24 @@ html { scroll-behavior: smooth; }
 .nav-burger { display: none; }
 @media (max-width: 940px) {
   .nav-links { display: none; }
-  .nav-login { display: none; }
+  /* `!important` wajib: tombol-tombolnya memasang `display` lewat style inline
+     (markup mockup), dan style inline mengalahkan aturan stylesheet biasa.
+     Tanpa ini aturan sembunyinya diam-diam tidak berlaku — bilah navigasi
+     ponsel meluber sampai 509px pada layar 375px, dan tombol Dashboard beserta
+     tombol Keluar terpotong di tepi kanan. */
+  .nav-login { display: none !important; }
   .nav-burger { display: flex; }
+}
+
+/* Di layar ponsel tombol "Daftar SPMB" tidak lagi muat bersama logo, hamburger,
+   dan tombol tema — ia terpotong separuh di tepi kanan, menyisakan satu huruf
+   menggantung. Baris tautan dan tombol Login sudah punya aturan sembunyi di
+   940px, tombol ini terlewat.
+   Tetap ada di dalam menu hamburger, jadi tidak ada yang hilang. */
+@media (max-width: 700px) {
+  /* `!important` wajib: tombolnya memasang `display` lewat style inline (markup
+     mockup), dan style inline mengalahkan aturan stylesheet biasa. */
+  .nav-cta { display: none !important; }
 }
 
 /* ── verbatim: keyframes ─────────────────────────────────────────────────── */

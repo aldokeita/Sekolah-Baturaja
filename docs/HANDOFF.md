@@ -1273,6 +1273,28 @@ terbentuk (28 pratinjau + 28 salinan cetak), tanpa error konsol dan tanpa murid 
 Pemuatan berkelompok lima-lima di `fetchRaporKelas` bekerja seperti rancangannya. Beban bukan
 masalah; yang bermasalah hanya stylesheet cetaknya di atas.
 
+### Style inline mengalahkan aturan sembunyi — periksa dengan `getComputedStyle`
+
+Bilah navigasi publik punya aturan `@media (max-width: 940px) { .nav-login { display: none } }`
+sejak lama, lengkap dengan komentar yang menjelaskan maksudnya. Aturannya **tidak pernah berlaku**:
+tombol-tombolnya memasang `display` lewat `style` inline (warisan markup mockup), dan style inline
+mengalahkan aturan stylesheet biasa. Akibatnya di layar 375px bilahnya meluber sampai 509px —
+tombol Dashboard, Keluar, dan Daftar SPMB terpotong di tepi kanan, satu huruf menggantung.
+
+Halaman tidak ikut menggulir mendatar karena terpotong pembungkusnya, jadi cacat ini tidak terlihat
+dari lebar dokumen. **Yang membuktikannya `getComputedStyle(el).display`, bukan keberadaan
+aturannya di berkas CSS.**
+
+Sekarang ketiganya memakai `!important`, dan tombol Keluar diberi kelas `nav-login` yang tadinya
+tidak ia punya. Ketiganya tetap ada di dalam menu hamburger.
+
+### Baris penyaring dashboard: `auto-fit`, bukan tiga kolom tetap
+
+`.admin-filter-selects` dipaku `repeat(3, 1fr)` padahal beberapa panel hanya punya satu penyaring —
+satu kotak selebar sepertiga baris dengan dua petak kosong di kanannya, paling kentara di ponsel
+tempat kotaknya menciut jadi 95px. Keluarga cacat yang sama dengan grid halaman publik (lihat
+`src/lib/gridKolom.js`) dan baris statistik dashboard murid.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

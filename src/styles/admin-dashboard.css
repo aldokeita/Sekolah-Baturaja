@@ -1078,9 +1078,15 @@
   pointer-events: none;
 }
 
+/* `auto-fit`, bukan tiga kolom tetap. Baris penyaring ini tidak selalu berisi
+   tiga: panel yang hanya punya satu penyaring dulu mendapat satu kotak selebar
+   sepertiga baris dengan dua petak kosong di kanannya — paling kentara di layar
+   ponsel, tempat kotaknya menciut jadi 95px. `auto-fit` melipat jalur yang tidak
+   terpakai. Keluarga cacat yang sama dengan grid halaman publik; lihat
+   src/lib/gridKolom.js. */
 .admin-filter-selects {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
   gap: 0.5rem;
   width: 100%;
 }

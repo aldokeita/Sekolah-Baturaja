@@ -161,7 +161,10 @@ const SiteNav = () => {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></svg>
                 Dashboard
               </Link>
-              <button type="button" onClick={handleLogout} className="th-toggle" aria-label="Keluar" style={{ position: 'relative', flex: 'none', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.62)', boxShadow: '0 10px 24px -12px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+              {/* `nav-login` ikut dipasang supaya tombol ini juga menyingkir di
+                  bawah 940px, sama seperti tombol Dashboard di sebelahnya.
+                  Keluar tetap ada di dalam menu hamburger. */}
+              <button type="button" onClick={handleLogout} className="th-toggle nav-login" aria-label="Keluar" style={{ position: 'relative', flex: 'none', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.62)', boxShadow: '0 10px 24px -12px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b04a5a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
               </button>
             </>
