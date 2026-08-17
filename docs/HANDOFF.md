@@ -1030,8 +1030,14 @@ gejalanya membingungkan: `color` menang sementara `background` kalah.
 sampai **2.32** (`--sekolah-aksen-ujung`). Itu di bawah 4.5 dan **berlaku untuk seluruh tombol
 ajakan bersampul gradien di situs ini**, bukan pil ini saja — tombol hero 14.5px termasuk. Pemindai
 kontras yang dipakai pada sapuan-sapuan sebelumnya melewati latar gradien, jadi angka nol
-pelanggarannya tidak pernah mencakup permukaan ini. Menaikkannya berarti mengubah palet aksen
-sekolah dan mengecat ulang setiap ajakan di situs — **keputusan pemilik, belum diambil.**
+pelanggarannya tidak pernah mencakup permukaan ini.
+
+**Keputusan pemilik: dibiarkan seperti sekarang.** Menaikkannya berarti menggelapkan palet aksen
+sekolah dan mengecat ulang setiap ajakan di situs, dan tampilan yang sekarang sudah disetujui. Jadi
+jangan "memperbaiki" angka ini tanpa diminta — dan jangan pula melaporkannya lagi sebagai temuan
+baru pada sapuan kontras berikutnya. Bila palet aksennya suatu hari diubah, `--sekolah-aksen-teks`
+dan `--sekolah-aksen-teks-gelap` di `src/lib/schoolIdentity.js` sudah menjamin ≥4.5 untuk aksen
+**sebagai teks**; yang tidak dijamin adalah kebalikannya, teks putih **di atas** aksen.
 
 ### Label kolom login harus sesuai dengan yang diterima backend — SUDAH DIPERBAIKI
 
