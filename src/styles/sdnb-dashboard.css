@@ -50,7 +50,14 @@
   position: relative;
   min-height: 100vh;
   font-family: 'Poppins', system-ui, sans-serif;
-  color: #1b1c28;
+  /* Token, bukan heks mati. Warna ini diwarisi setiap teks dashboard yang tidak
+     memasang warnanya sendiri — dan sebagai #1b1c28 ia tetap hitam di mode
+     gelap, sehingga nama murid, judul kartu, dan angka rekap menjadi hitam di
+     atas latar hitam: rasio 1.01, praktis tidak terlihat. Aturan pembalik di
+     bawah hanya menyasar kelas Tailwind tertentu (`text-slate-800` dan
+     kawan-kawan), jadi teks tanpa kelas warna sama sekali tidak pernah
+     tersentuh. Tokennya sudah punya nilai gelap dan terang. */
+  color: hsl(var(--admin-text-primary));
 }
 
 /* Dashboard headings use the Montserrat display face. */
@@ -236,7 +243,7 @@ html[data-theme="dark"] .sdnb-dash {
   --admin-border-subtle: 235 15% 22%;
   --admin-text-primary: 230 30% 96%;
   --admin-text-secondary: 230 16% 76%;
-  --admin-text-muted: 230 13% 60%;
+  --admin-text-muted: 230 13% 68%;
   --admin-accent: 234 100% 72%;
   --admin-accent-muted: 234 70% 62%;
   --admin-accent-soft: 234 30% 18%;
@@ -274,7 +281,7 @@ html[data-theme="dark"] body.school-admin-context {
   --admin-border-subtle: 235 15% 22%;
   --admin-text-primary: 230 30% 96%;
   --admin-text-secondary: 230 16% 76%;
-  --admin-text-muted: 230 13% 60%;
+  --admin-text-muted: 230 13% 68%;
   --admin-accent: 234 100% 72%;
   --admin-accent-muted: 234 70% 62%;
   --admin-accent-soft: 234 30% 18%;
@@ -571,6 +578,52 @@ html[data-theme="dark"] .sdnb-dash .admin-segmented-control-item[data-state="act
 
 html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
   background-color: hsl(var(--admin-border)) !important;
+}
+
+/* Di mode gelap warna aksen sengaja dicerahkan (72% terang, bukan 68%) supaya
+   menonjol di atas permukaan gelap — dan pada nada seterang itu tulisan PUTIH
+   di atasnya hanya mencapai rasio 3.43 dari 4.5 yang diminta WCAG AA. Aksennya
+   dibiarkan terang; yang dibalik hanya tulisannya, menjadi nada gelap serona
+   Hanya berlaku pada elemen yang memakai aksen sebagai LATAR.
+
+   Kedua elemen di bawah memakai nada aksen yang berbeda — tombol panel yang
+   dicerahkan dan lencana topbar yang tidak — jadi nada tulisannya juga berbeda
+   supaya keduanya sama-sama lolos: 5.27 dan 4.62. */
+html[data-theme="dark"] .sdnb-dash .admin-panel-primary-btn {
+  color: hsl(234 45% 12%) !important;
+}
+
+/* Nada teks lencana status diturunkan untuk mode terang — dan di mode gelap
+   nada gelap itu justru jadi terlalu gelap di atas latar lencana yang juga
+   gelap (bahaya turun ke 2.80). Di sini ronanya sama, terangnya dinaikkan.
+   Setiap penyesuaian kontras mode terang perlu diperiksa lagi di mode gelap;
+   keduanya bergerak ke arah yang berlawanan. */
+html[data-theme="dark"] .sdnb-dash .admin-status-badge--success {
+  color: var(--sekolah-aksen-muda) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-status-badge--warning {
+  color: hsl(38 92% 66%) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-status-badge--danger {
+  color: hsl(0 84% 72%) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-status-badge--info {
+  color: hsl(340 80% 74%) !important;
+}
+
+/* Huruf awal avatar dipasang lewat style inline, dan style inline tidak bisa
+   ikut berganti tema — jadi warnanya ditaruh di sebuah properti kustom yang
+   nilainya berbeda per tema. Turunan baca aksen dirancang untuk latar TERANG;
+   di atas latar gelap ia hanya mencapai 2.91, sedangkan aksen mode gelap yang
+   sudah dicerahkan justru pas. */
+.sdnb-dash { --avatar-inisial: var(--sekolah-aksen-teks); }
+html[data-theme="dark"] .sdnb-dash { --avatar-inisial: hsl(234 100% 78%); }
+
+html[data-theme="dark"] .dashboard-topbar__mark {
+  color: hsl(234 45% 8%) !important;
 }
 
 /* Stat cards use the public palette on one solid, readable surface. */

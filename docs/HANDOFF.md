@@ -1295,6 +1295,35 @@ satu kotak selebar sepertiga baris dengan dua petak kosong di kanannya, paling k
 tempat kotaknya menciut jadi 95px. Keluarga cacat yang sama dengan grid halaman publik (lihat
 `src/lib/gridKolom.js`) dan baris statistik dashboard murid.
 
+### Mode gelap dashboard: warna warisan hitam-di-atas-hitam — SUDAH DIPERBAIKI
+
+`.sdnb-dash` memasang `color: #1b1c28` sebagai heks mati. Warna itu diwarisi **setiap** teks
+dashboard yang tidak memasang warnanya sendiri, dan di mode gelap ia tetap hitam di atas latar
+hitam: nama murid, judul kartu, dan angka rekap mencapai rasio **1.01** — praktis tidak terlihat.
+
+Aturan pembalik mode gelap yang sudah ada hanya menyasar kelas Tailwind tertentu
+(`[class~="text-slate-800"]` dan kawan-kawan), jadi teks yang tidak punya kelas warna sama sekali
+tidak pernah tersentuh. Sekarang `.sdnb-dash` memakai `hsl(var(--admin-text-primary))`, yang
+tokennya sudah punya nilai gelap dan terang.
+
+**Perbaikan kontras mode terang WAJIB diperiksa ulang di mode gelap — keduanya bergerak ke arah
+berlawanan.** Nada gelap yang menyelamatkan lencana status di mode terang justru menjatuhkannya ke
+2.80 di mode gelap; tautan WA hijau tua turun ke 2.58; turunan baca aksen turun ke 2.91. Ketiganya
+kini punya pasangan mode gelapnya sendiri.
+
+Warna yang dipasang lewat **style inline** tidak bisa ikut berganti tema. Untuk itu nilainya
+dititipkan ke properti kustom (`--avatar-inisial`) yang didefinisikan dua kali, satu per tema.
+
+### Mode gelap halaman PUBLIK belum disapu
+
+Dashboard sudah bersih. Halaman publik **belum**, dan mekanismenya berbeda: sebagian halaman
+mencapai mode gelap lewat `filter: invert(...) hue-rotate(...)` (lihat `sdnb-program.css`), bukan
+lewat token. Nada gelap yang dipasang untuk mode terang justru dilawan oleh pembalikan itu.
+
+Contoh terukur di halaman Kontak: status "Kantor sedang buka" **1.18**, tautan aksen 2.82–3.32,
+teks bantuan 2.57. Perlu sapuan tersendiri, dan kemungkinan besar perlu keputusan apakah halaman
+publik tetap memakai pembalikan atau pindah ke token seperti dashboard.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya

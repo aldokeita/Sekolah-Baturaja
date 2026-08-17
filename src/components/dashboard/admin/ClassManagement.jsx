@@ -376,7 +376,7 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
     <div ref={ref} data-handler-id={handlerId}>
       <DroppableColumn ref={ref} title={classItem.nama_kelas} onDrop={item => onDropSantri(item, classItem.id)} icon={<Users className="w-5 h-5"/>} capacityText={kapasitas ? `${santriCount}/${kapasitas}` : `${santriCount}`} capacityColor={capacityColor} borderColor={borderColor}>
         <div className="flex justify-between items-start">
-          <div><div className="text-sm text-muted-foreground mb-2">{classItem.guru?.nama || 'Belum ada guru'}{waLink && (<a href={waLink} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-green-800 hover:underline"><Phone className="w-3 h-3 mr-1" /> WA</a>)}</div></div>
+          <div><div className="text-sm text-muted-foreground mb-2">{classItem.guru?.nama || 'Belum ada guru'}{waLink && (<a href={waLink} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-green-800 dark:text-green-400 hover:underline"><Phone className="w-3 h-3 mr-1" /> WA</a>)}</div></div>
         </div>
         <div className="flex justify-end gap-2 mb-2 border-b pb-2 flex-wrap">
           {canManage && (<><Button size="sm" variant="outline" onClick={() => onEdit(classItem)}><Edit className="w-3 h-3"/></Button><Button size="sm" variant="destructive" onClick={() => onDelete(classItem.id)}><Trash2 className="w-3 h-3"/></Button></>)}
