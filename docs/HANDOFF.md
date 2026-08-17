@@ -1409,6 +1409,26 @@ beku (2.32), kartu Galeri (2.32). Dua sebabnya: latar harus dihitung mulai dari 
 transparan harus **dikomposit**, bukan diambil titik warnanya. Untuk latar bergradasi, komposit
 setiap titik sapuan lalu ambil yang terburuk — dan tetap konfirmasi dengan mata.
 
+### Ponsel × mode gelap: satu temuan, dan itu memang harus diperiksa sendiri
+
+Kombinasi lebar × tema harus disapu sebagai kombinasi, bukan satu-satu. Sapuan 375px mode gelap
+menemukan satu hal yang tidak muncul di tiga kombinasi lainnya: `--sdnb-dark-accent` (#7c8aff),
+nada aksen mode gelap untuk teks 13px, hanya mencapai **4.44** di atas permukaan gelap paling
+terang (#2b2d45) — dari 4.5. Dinaikkan ke `#8f9bff` (5.31).
+
+Kenapa hanya muncul di sana: di lebar desktop teks itu duduk di kartu foto yang latarnya gambar,
+jadi pemindai melewatinya; di ponsel kartunya menumpuk dan latarnya menjadi permukaan solid, jadi
+terukur.
+
+Sisanya bersih: dua belas halaman publik dan empat dashboard di 375px mode gelap — nol pelanggaran
+kontras, tidak ada halaman yang menggulir mendatar, tabel lebar tetap menggulir di dalam wadahnya.
+
+**Dua pola positif palsu yang berulang** (jangan dilaporkan sebagai cacat):
+- `grid-template-columns` terbaca `"301px 0px"` — jalur 0px itu implisit, akibat satu anak memakai
+  `grid-column: span 2`. `auto-fit` sudah bekerja benar.
+- Tabel lebar dan bilah tab yang melewati tepi layar, sementara `document.scrollWidth` tetap 375 —
+  itu gulir mendatar di dalam wadahnya sendiri, memang begitu rancangannya.
+
 ### Cara mengukur kontras mode gelap dengan benar
 
 Audit biasa tidak cukup. `getComputedStyle` mengembalikan warna **sebelum** filter, jadi kalau ada

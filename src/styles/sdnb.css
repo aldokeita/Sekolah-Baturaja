@@ -465,7 +465,10 @@ html[data-theme="dark"] body .sdnb.sdnb {
   --sdnb-dark-text: #f3f4fb;
   --sdnb-dark-text-secondary: #c1c4d5;
   --sdnb-dark-text-muted: #9499b2;
-  --sdnb-dark-accent: #7c8aff;
+  /* #8f9bff, bukan #7c8aff: nada ini dipakai untuk teks aksen 13px di atas
+     permukaan gelap yang paling terang (#2b2d45), dan #7c8aff hanya mencapai
+     4.44 dari 4.5 yang diminta. Pada #8f9bff menjadi 5.31. */
+  --sdnb-dark-accent: #8f9bff;
   --sdnb-dark-accent-soft: rgba(91, 108, 255, .16);
   --sdnb-dark-nav-active-bg: #3d456c;
   --sdnb-dark-nav-active-border: #596397;
