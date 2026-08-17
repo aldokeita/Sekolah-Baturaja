@@ -539,8 +539,24 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         </div>
                     </div>
 
-                    {/* RAPOR CONTENT BODY */}
-                    <div className="p-6 md:p-8 space-y-8 bg-white dark:bg-slate-900 m-4 md:m-6 rounded-3xl shadow-xl border border-slate-200/80 dark:border-slate-800 print:m-0 print:p-6 print:border-none print:shadow-none print:bg-white">
+                    {/* RAPOR CONTENT BODY
+                        Lembar ini sudah lama disiapkan untuk dicetak — puluhan
+                        kelas `print:` di dalamnya — tapi tombol Cetak di atas
+                        memanggil `window.print()` polos tanpa aturan yang
+                        menyingkirkan sisa layar, jadi yang keluar seluruh
+                        dashboard beserta dialognya.
+
+                        Aturan penyapunya dipagari `:has()` seperti aturan cetak
+                        lain di aplikasi ini; lihat tabelnya di docs/HANDOFF.md.
+                        Yang dicetak hanya lembar ini, bukan bilah alat periode di
+                        atasnya — pemilih bulan dan tombol tidak termasuk laporan. */}
+                    <style>{`@media print {
+                      body:has(#rapor-akademik-cetak) * { visibility: hidden !important; }
+                      body:has(#rapor-akademik-cetak) #rapor-akademik-cetak,
+                      body:has(#rapor-akademik-cetak) #rapor-akademik-cetak * { visibility: visible !important; }
+                      #rapor-akademik-cetak { position: absolute; left: 0; top: 0; width: 100%; }
+                    }`}</style>
+                    <div id="rapor-akademik-cetak" className="p-6 md:p-8 space-y-8 bg-white dark:bg-slate-900 m-4 md:m-6 rounded-3xl shadow-xl border border-slate-200/80 dark:border-slate-800 print:m-0 print:p-6 print:border-none print:shadow-none print:bg-white">
 
                         {/* Kop / Header Rapor Official */}
                         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-800 text-white p-6 md:p-8 shadow-lg print:bg-none print:text-black print:p-0 print:border-b-2 print:border-black print:rounded-none">

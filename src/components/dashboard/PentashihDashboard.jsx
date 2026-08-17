@@ -254,7 +254,23 @@ const PentashihDashboard = () => {
     : labelStafRole(guruData?.jabatan || 'Wakil Kepala Sekolah');
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 bg-slate-50 dark:bg-slate-950 min-h-screen space-y-8 print:pt-4 print:pb-4 print:bg-white print:dark:bg-white print:text-black">
+    <>
+      {/* Isi dashboard ini sudah lama disiapkan untuk dicetak — tombolnya
+          `print:hidden`, judulnya `print:text-black` — tapi tidak ada satu pun
+          aturan yang menyingkirkan CANGKANG di luarnya, jadi "Cetak PDF" ikut
+          mengeluarkan bilah navigasi dan menu samping.
+
+          Aturan penyapunya dipagari `:has()` seperti empat aturan cetak lain di
+          aplikasi ini; lihat tabelnya di docs/HANDOFF.md. Pengecualiannya ikut
+          dipagari karena `:has()` mewarisi bobot argumennya — pengecualian polos
+          akan kalah dari penyapunya sendiri. */}
+      <style>{`@media print {
+        body:has(#pengawasan-cetak) * { visibility: hidden !important; }
+        body:has(#pengawasan-cetak) #pengawasan-cetak,
+        body:has(#pengawasan-cetak) #pengawasan-cetak * { visibility: visible !important; }
+        #pengawasan-cetak { position: absolute; left: 0; top: 0; width: 100%; }
+      }`}</style>
+    <div id="pengawasan-cetak" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 bg-slate-50 dark:bg-slate-950 min-h-screen space-y-8 print:pt-4 print:pb-4 print:bg-white print:dark:bg-white print:text-black">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6 print:border-b-2">
         <div>
           <div className="flex items-center gap-3 mb-1">
@@ -610,6 +626,7 @@ const PentashihDashboard = () => {
         <ClassManagement userRole="pentashih" />
       </div>
     </div>
+    </>
   );
 };
 

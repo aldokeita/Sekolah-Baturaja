@@ -1191,25 +1191,31 @@ aplikasi, jadi tujuan cadangan yang dipakai.
 **Halaman baru yang bisa dicapai dari lebih dari satu tempat wajib memakai hook ini**, bukan menulis
 tujuannya sendiri. Diuji dari dashboard, dari layar absensi, dan lewat URL langsung.
 
-### EMPAT aturan cetak saling meniadakan — SUDAH DIPERBAIKI
+### ENAM aturan cetak, dulu saling meniadakan — SUDAH DIPERBAIKI
 
-Aplikasi ini punya **empat** aturan cetak yang sama-sama menyapu seluruh halaman. Dua berkas CSS
-yang selalu termuat, dan dua `<style>` sebaris di dalam komponen:
+Aplikasi ini punya **enam** jalur cetak yang masing-masing perlu menyapu seluruh halaman. Dua berkas
+CSS yang selalu termuat, empat `<style>` sebaris di dalam komponen:
 
-| Sumber | Aturan penyapu | Sasaran yang diselamatkan |
-|---|---|---|
-| `rapor-cetak.css` | `body > *:not(#rapor-cetak-root) { display: none }` | lembar rapor |
-| `cetak-bukti.css` | `body * { visibility: hidden }` | `.bukti-cetak` |
-| `PaymentSystem.jsx` | `body * { visibility: hidden }` | `#receipt-content` |
-| `PaymentProofModal.jsx` | `body * { visibility: hidden !important }` | `#payment-proof-content` |
+| Sumber | Sasaran yang diselamatkan |
+|---|---|
+| `rapor-cetak.css` | `#rapor-cetak-root` (lembar rapor sekelas) |
+| `cetak-bukti.css` | `.bukti-cetak` (bukti pendaftaran, rekap SPMB) |
+| `PaymentSystem.jsx` | `#receipt-content` (kuitansi pembayaran) |
+| `PaymentProofModal.jsx` | `#payment-proof-content` (bukti bayar) |
+| `PentashihDashboard.jsx` | `#pengawasan-cetak` (laporan pengawasan sekolah) |
+| `SantriDetailModal.jsx` | `#rapor-akademik-cetak` (rapor akademik & karakter) |
 
-Dua yang terakhir dipasang bersamaan pada panel Pembayaran — PaymentSystem merender
-PaymentProofModal — dan aturan modal memakai `!important` sementara aturan kuitansi tidak, jadi
-**kuitansi pembayaran keluar kosong** ketika modal buktinya sedang terpasang.
+Empat yang pertama sudah ada aturannya tapi tanpa pagar, jadi saling membunuh. Yang paling gawat:
+PaymentSystem merender PaymentProofModal, jadi keduanya selalu terpasang bersamaan di panel
+Pembayaran, dan aturan modal memakai `!important` sementara aturan kuitansi tidak — **kuitansi
+pembayaran keluar kosong**.
 
-Keempatnya kini dipagari dengan pola yang sama. Daftar ini harus bertambah bersama setiap aturan
-cetak baru: **aturan cetak yang menyapu seluruh halaman WAJIB dipagari `:has()` pada sasarannya
-sendiri**, dan pengecualiannya ikut dipagari.
+Dua yang terakhir sebaliknya: isinya sudah lama disiapkan untuk dicetak (puluhan kelas `print:`)
+tapi tombolnya memanggil `window.print()` **polos**, tanpa aturan apa pun yang menyingkirkan
+cangkang di luarnya — yang keluar seluruh layar beserta bilah navigasi dan menu.
+
+Keenamnya kini memakai pola yang sama. **Setiap jalur cetak baru WAJIB dipagari `:has()` pada
+sasarannya sendiri, pengecualiannya ikut dipagari, dan barisnya ditambahkan ke tabel ini.**
 
 Keduanya berlaku bersamaan dan masing-masing membunuh cetakan yang lain: rapor tercetak **kosong**
 karena disembunyikan aturan bukti, dan bukti pendaftaran tercetak **kosong** karena seluruh
@@ -1235,15 +1241,15 @@ sementara tanpa media query, lalu baca `getComputedStyle().visibility` pada wada
 bukti. `visibility: hidden` bersama `display: block` adalah tanda khas halaman kosong yang tetap
 keluar dari mesin cetak.
 
-### Dua tombol cetak tanpa lembar cetaknya sendiri
+### Menguji aturan cetak: awas transisi CSS
 
-`PentashihDashboard.printPdfReport` dan tombol Cetak pada profil perkembangan di
-`SantriDetailModal` memanggil `window.print()` polos, tanpa aturan `@media print` mana pun yang
-memilih apa yang dicetak. Yang keluar seluruh isi layar: bilah navigasi, menu samping, tombol.
+Cara mengujinya tanpa mencetak sungguhan ada di bagian sebelumnya — salin aturannya ke `<style>`
+sementara tanpa media query, lalu baca `getComputedStyle().visibility`.
 
-Bukan halaman kosong, jadi tidak sefatal cacat di atas — tapi juga bukan dokumen yang pantas
-diberikan ke siapa pun. Belum ditangani: menentukan apa yang seharusnya dicetak kedua tombol itu
-keputusan produk, bukan perbaikan cacat.
+**Beri jeda minimal 300 ms sebelum membaca.** Elemen ber-`transition-all` (banyak tombol memakainya,
+mis. `.school-shine-button`) menahan nilai lamanya selama transisi berjalan, dan transisi menang atas
+`!important` di kaskade. Membaca setelah 80 ms memberi "visible" untuk elemen yang sebenarnya sudah
+tersembunyi — kesimpulan salah yang tampak seperti kegagalan kaskade.
 
 ### Cetak rapor sekelas sudah diuji pada beban sebenarnya
 
