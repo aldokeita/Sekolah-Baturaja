@@ -564,12 +564,11 @@ const SantriDashboard = () => {
                   ...(enableTahfizh ? [['Tingkat', santriData.jilid || '-']] : []),
                   ['Poin', santriData.points || 0],
                   ['Level', levelInfo.name],
-                  /* "Sesi" hanya bermakna di sekolah yang benar-benar memakai
-                   * lebih dari satu giliran belajar. Sekolah dasar tidak, jadi
-                   * nilainya selalu "Pagi" — atau "-" bila murid belum masuk
-                   * kelas, dan kartu berisi tanda hubung bukan informasi.
-                   * Ditampilkan hanya bila ada isinya. */
-                  ...(sessionName && sessionName !== '-' ? [['Sesi', sessionName]] : []),
+                  /* Kartu "Sesi" DICABUT, bukan disembunyikan. Sekolah dasar
+                   * hanya punya satu giliran belajar, jadi nilainya selalu
+                   * "Pagi": sebuah kartu yang tidak pernah membedakan apa pun.
+                   * Nilainya masih dipakai di modal absensi (sessionName), yang
+                   * memang perlu mencatat sesi kehadiran. */
                 ].map(([label, value]) => (
                   <div key={label} className="min-w-0 rounded-md border border-white/80 bg-slate-100/90 px-3 py-2.5 shadow-[inset_3px_3px_7px_rgba(15,23,42,0.1),inset_-3px_-3px_7px_rgba(255,255,255,0.9)] backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/85 dark:shadow-[inset_3px_3px_7px_rgba(0,0,0,0.4),inset_-3px_-3px_7px_rgba(51,65,85,0.24)]">
                     <p className="text-[10px] font-bold uppercase text-muted-foreground">{label}</p>

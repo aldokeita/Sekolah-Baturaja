@@ -995,8 +995,43 @@ persis dari halaman Berita.
 yang tampil "Memuat kabar terbaru…". Deretan pil kategori ikut disembunyikan saat kosong — kategori
 di atas tulisan "Belum ada berita" terbaca seperti halaman rusak.
 
-Pil kategori itu **hiasan, bukan penyaring** — menekannya tidak melakukan apa-apa. Itu cacat
-tersendiri yang belum ditangani.
+#### Pil kategori beranda kini penyaring sungguhan — SUDAH DIPERBAIKI
+
+Ketiga pil itu dulu `<span>` mati berlabel tetap "Semua / Prestasi / Kegiatan": menekannya tidak
+melakukan apa-apa, dan labelnya tidak ada hubungannya dengan kategori yang benar-benar dipakai
+sekolah. Sekarang:
+
+- Labelnya **diturunkan dari berita terbitan**, sama seperti halaman Berita (`NewsPageCms.jsx`
+  memakai pola yang sama). Tidak ada daftar kategori yang ditulis di kode.
+- `fetchPublishedNews` di beranda mengambil **12**, bukan 3. Menarik tepat tiga membuat pilihan
+  kategorinya menyusut sampai tak ada gunanya; yang ditampilkan tetap tiga teratas setelah disaring.
+- Deretannya disembunyikan bila `newsCategories.length <= 2`, yaitu bila seluruh berita berada di
+  satu kategori. "Semua" dan satu kategori menyaring kumpulan yang sama persis — tombol yang tidak
+  pernah mengubah apa pun kembali menjadi hiasan.
+- Kategori yang dipilih diperiksa ulang terhadap daftar yang ada (`kategoriAktif`). Tanpa itu,
+  berita yang dimuat ulang bisa menghapus kategori pilihan dan beranda menampilkan nol kartu.
+
+**Jebakan mode gelap yang memakan waktu di sini, catat sebelum menyentuh pil mana pun.** Pil
+terpilih memakai gradien aksen, dan di mode gelap gradiennya HILANG — pil terpilih tak lagi berbeda
+dari yang lain. Penyebabnya dua aturan di `sdnb.css`:
+
+1. `[style*="linear-gradient"][style*="rgba(255"] { background: transparent !important }` — dipasang
+   untuk mencabut sorot putih hiasan. Pil itu cocok bukan karena gradiennya, melainkan karena
+   `box-shadow`-nya memuat `inset 0 1px 0 rgba(255,255,255,.5)`. **Dua pola dalam satu atribut
+   `style` yang sama sudah cukup; keduanya tidak perlu berada di properti yang sama.**
+2. `[style*="color: rgb(255, 255, 255"] { color: inherit !important }`.
+
+Sorot putih itu kini dicabut dari gaya pilnya (pada tinggi 30px memang tak terlihat), dan aturan
+`.sdnb-news-pill--on` memasang kembali gradien dan teks putihnya. Kelasnya **digandakan tiga kali**
+karena aturan (1) memakai `:not()`, sehingga kekhususannya (0,6,2) — satu kelas tunggal kalah, dan
+gejalanya membingungkan: `color` menang sementara `background` kalah.
+
+**Terukur, bukan diperkirakan:** teks putih di atas gradien aksen hanya **3.96** (`--sekolah-aksen`)
+sampai **2.32** (`--sekolah-aksen-ujung`). Itu di bawah 4.5 dan **berlaku untuk seluruh tombol
+ajakan bersampul gradien di situs ini**, bukan pil ini saja — tombol hero 14.5px termasuk. Pemindai
+kontras yang dipakai pada sapuan-sapuan sebelumnya melewati latar gradien, jadi angka nol
+pelanggarannya tidak pernah mencakup permukaan ini. Menaikkannya berarti mengubah palet aksen
+sekolah dan mengecat ulang setiap ajakan di situs — **keputusan pemilik, belum diambil.**
 
 ### Label kolom login harus sesuai dengan yang diterima backend — SUDAH DIPERBAIKI
 
@@ -1031,8 +1066,14 @@ Semuanya di `src/components/dashboard/SantriDashboard.jsx`.
    Sekelas & Kehadiran Hari Ini". Kartu "Sesi" juga hanya tampil bila ada isinya, dan `jilid` teman
    sekelas hanya tampil bila tahfizh dinyalakan.
 
-Kartu "Sesi" **belum dicabut**, hanya disembunyikan saat kosong. Di sekolah dasar nilainya selalu
-"Pagi", jadi kartunya nyaris tanpa informasi — mencabutnya keputusan produk, bukan perbaikan cacat.
+Kartu "Sesi" kini **dicabut**, bukan disembunyikan. Sekolah dasar hanya punya satu giliran belajar,
+jadi nilainya selalu "Pagi": sebuah kartu yang tidak pernah membedakan apa pun. Nilainya sendiri
+masih dihitung — `sessionName` tetap dipakai modal absensi, yang memang perlu mencatat sesi
+kehadiran, jadi jangan ikut mencabut variabelnya.
+
+Barisnya memakai `grid-template-columns: repeat(auto-fit, minmax(130px,1fr))`, jadi kolomnya
+menyusut sendiri. Terukur setelah dicabut, dengan tahfizh mati: dua kartu (Poin, Level) dan
+`"284px 284px 0px 0px"` — dua jalur 0px itu implisit dan wajar, bukan kotak kosong menggantung.
 
 ### Sandi akun demo pegawai bisa menyimpang dari yang didokumentasikan
 
@@ -1071,6 +1112,38 @@ Semuanya kini dipagari. Datanya tetap utuh; yang disembunyikan hanya jalan masuk
 
 **Saat menambah apa pun yang menyebut jilid, tingkat, hafalan, atau muroja'ah, pasang pagarnya di
 tempat yang sama.** Cacat ini muncul dua kali karena pagarnya dipasang per-tombol, bukan per-modul.
+
+Ketiga kalinya adalah **halaman kuis**, dan di sana pagarnya harus dipasang pada SUMBER DATA, bukan
+pada tampilan. `QuizHafalanPage.jsx` punya tiga sumber kategori soal, dan dua di antaranya milik
+program tahfizh:
+
+| Sumber | Pemilik | Dipagari? |
+|---|---|---|
+| `quiz_hafalan_config` (Konfigurasi Game) | sekolah, disunting sendiri | tidak — selalu dipakai |
+| `hafalan_items` (tabel) | program tahfizh (Doa/Surat/Sholat/Tahfizh) | ya |
+| `doaHarian`/`suratPendek`/`bacaanShalat` (`src/data/islamicContent.js`) | program tahfizh | ya |
+
+Selama `VITE_ENABLE_TAHFIZH=false`, bank soal dimulai **kosong** dan halaman mengatakannya
+("Belum ada kategori soal…"), bukan mengisi diri dengan doa dan surat yang tidak diminta sekolah
+umum. Judul yang dibaca orang ikut berubah — "Quiz Kelas", bukan "Quiz Hafalan" — di tiga tempat:
+judul dokumen, judul di kepala halaman, dan tab Konfigurasi Game. **Nama rutenya tetap
+`/quiz-hafalan`**: tautan yang sudah tersebar tidak boleh mati.
+
+#### `requiredCategories` membuat penghapusan oleh administrator tidak pernah berlaku
+
+Cacat kedua di jalur yang sama, dan lebih halus. `QuizHafalanPage.jsx` **dan**
+`GameConfiguration.jsx` sama-sama memasang ulang Doa Harian / Surat Pendek / Bacaan Shalat bila
+ketiganya tidak ditemukan di konfigurasi tersimpan. Akibatnya administrator bisa menghapus sebuah
+kategori, menekan Simpan, memuat ulang — dan kategori itu kembali. Tombol hapusnya bekerja; yang
+membatalkannya adalah kode di kedua sisi.
+
+Sekarang daftar itu hanya wajib selama tahfizh menyala. Diuji sampai tuntas di basis data lokal:
+tambah kategori "Perkalian" berisi satu soal, simpan, muat ulang → hanya "Perkalian" (tanpa
+Doa/Surat/Sholat menyusup); hapus, simpan, muat ulang penuh → tetap kosong.
+
+`addCategory` di panel itu juga memakai `Math.max(0, ...ids)` atas id yang bisa berupa teks
+(`'category-1'`, `'doa-harian'`), yang menghasilkan `NaN` — dua kategori baru akan berbagi id `NaN`
+yang sama. Kini hanya id berupa angka yang dihitung.
 
 ### Modal Detail Murid tidak bisa tahu nama kelas sendiri
 
