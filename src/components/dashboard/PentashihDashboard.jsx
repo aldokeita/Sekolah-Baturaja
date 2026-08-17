@@ -300,7 +300,7 @@ const PentashihDashboard = () => {
           <Button
             size="sm"
             onClick={exportExcelReport}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-md"
+            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold flex items-center gap-1.5 shadow-md"
           >
             <FileSpreadsheet className="w-4 h-4" />
             Ekspor Excel

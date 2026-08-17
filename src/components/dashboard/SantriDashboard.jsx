@@ -264,7 +264,11 @@ const ClassmatesList = ({ classmates, todayAttendance }) => {
                          *
                          * Status sebenarnya juga dipakai apa adanya: absensi
                          * mengenal Hadir, Terlambat, Izin, dan Sakit, dan ketiga
-                         * yang terakhir dulu semuanya tertulis "Hadir". */
+                         * yang terakhir dulu semuanya tertulis "Hadir".
+                         *
+                         * Nada teksnya gray-600, bukan gray-400 seperti mockup:
+                         * tulisannya 10px dan gray-400 hanya mencapai rasio 2.43
+                         * dari 4.5 yang diminta WCAG AA. */
                         const statusHariIni = attendance?.status || 'Belum absen';
                         return (
                             <div key={friend.id} className={cn("flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-sm", isPresent ? "bg-green-50 dark:bg-slate-900/75 border-green-200 dark:border-emerald-400/30" : "bg-gray-50 dark:bg-slate-900/60 border-gray-100 dark:border-white/10")}>
@@ -285,7 +289,7 @@ const ClassmatesList = ({ classmates, todayAttendance }) => {
                                         <span className="text-[10px] font-bold">{statusHariIni}</span>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center text-gray-400">
+                                    <div className="flex flex-col items-center text-gray-600">
                                         <div className="w-5 h-5 rounded-full border-2 border-dashed border-gray-300"></div>
                                         <span className="whitespace-nowrap text-[10px]">{statusHariIni}</span>
                                     </div>

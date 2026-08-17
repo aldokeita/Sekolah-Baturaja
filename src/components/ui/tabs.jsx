@@ -51,6 +51,10 @@ const TabsList = React.forwardRef(({ className, ...props }, ref) => (
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
 
+/* Label tab tidak aktif memakai slate-600, bukan slate-500. Pada latar bilah tab
+ * yang terang, slate-500 hanya mencapai rasio 4.29 dari 4.5 yang diminta WCAG AA
+ * untuk teks 14px — dan bilah ini dipakai di seluruh dashboard. slate-600
+ * mencapai 6.83, dan tab aktif tetap jelas berbeda karena warnanya biru. */
 const TabsTrigger = React.forwardRef(({ className, children, value, ...props }, ref) => {
   const { activeValue, layoutId } = React.useContext(TabsAnimationContext);
   const isActive = activeValue === value;
@@ -60,7 +64,7 @@ const TabsTrigger = React.forwardRef(({ className, children, value, ...props }, 
       ref={ref}
       value={value}
       className={cn(
-        'ui-glass-tabs-trigger relative isolate inline-flex items-center justify-center overflow-hidden whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-semibold ring-offset-background transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-slate-500 hover:text-slate-900 data-[state=active]:text-[#24598e] dark:text-white/55 dark:hover:text-white dark:data-[state=active]:text-white',
+        'ui-glass-tabs-trigger relative isolate inline-flex items-center justify-center overflow-hidden whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-semibold ring-offset-background transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-slate-600 hover:text-slate-900 data-[state=active]:text-[#24598e] dark:text-white/55 dark:hover:text-white dark:data-[state=active]:text-white',
         className
       )}
       {...props}

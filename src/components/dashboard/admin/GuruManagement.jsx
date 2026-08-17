@@ -402,7 +402,9 @@ const GuruManagement = () => {
                 <td className="p-3">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 border cursor-pointer hover:scale-105 transition-transform" style={{ borderColor: 'hsl(var(--admin-border))' }} onClick={() => setPreviewImage(guru.foto_url)}>
-                            <AvatarImage src={guru.foto_url} /><AvatarFallback style={{ backgroundColor: 'hsl(var(--admin-accent-soft))', color: 'hsl(var(--admin-accent))' }} className="text-xs font-bold">{guru.nama.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={guru.foto_url} />{/* Huruf awalnya adalah TEKS di atas latar lembut, jadi memakai turunan
+                                baca aksennya. Aksen mentah hanya mencapai rasio 3.59 pada 12px. */}
+                            <AvatarFallback style={{ backgroundColor: 'hsl(var(--admin-accent-soft))', color: 'var(--sekolah-aksen-teks)' }} className="text-xs font-bold">{guru.nama.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <span className="font-medium" style={{ color: 'hsl(var(--admin-text-primary))' }}>{guru.nama}</span>
                     </div>

@@ -14,7 +14,10 @@
   --admin-border-subtle: 230 40% 93%;
   --admin-text-primary: 236 26% 12%;     /* #171827 */
   --admin-text-secondary: 232 18% 40%;
-  --admin-text-muted: 233 15% 50%;
+  /* 45%, bukan 50% — nada ini dipakai untuk teks terkecil di dashboard dan pada
+     50% hanya mencapai rasio 4.28 dari 4.5 yang diminta. Nilainya harus sama
+     dengan salinannya di sdnb-dashboard.css. */
+  --admin-text-muted: 233 15% 45%;
 
   --admin-accent: 234 100% 68%;          /* #5b6cff */
   --admin-accent-muted: 234 70% 60%;
@@ -591,24 +594,33 @@
   line-height: 1.4;
 }
 
+/* Lencana status memakai warna isyaratnya sebagai LATAR yang sangat pudar dan
+   sebagai TEKS 11px. Warna yang enak sebagai latar hampir selalu terlalu terang
+   sebagai teks: pada nada aslinya keempatnya gagal ambang keterbacaan WCAG AA —
+   sukses 4.17, peringatan 2.13, bahaya 4.20, info 4.29 dari 4.5 yang diminta.
+   Peringatan yang terburuk, dan justru ia menandai tagihan yang perlu ditagih.
+
+   Latarnya dibiarkan memakai nada aslinya supaya lencananya tetap terlihat sama;
+   yang diturunkan hanya nada teksnya. Rona keempatnya tidak berubah, jadi
+   hijau-kuning-merah-biru tetap terbaca sebagai isyarat yang sama. */
 .admin-status-badge--success {
   background-color: hsl(var(--admin-accent-soft));
-  color: hsl(var(--admin-accent));
+  color: var(--sekolah-aksen-teks);
 }
 
 .admin-status-badge--warning {
   background-color: hsl(var(--admin-accent-amber) / 0.12);
-  color: hsl(var(--admin-accent-amber));
+  color: hsl(38 92% 30%);
 }
 
 .admin-status-badge--danger {
   background-color: hsl(0 84% 60% / 0.1);
-  color: hsl(0 84% 55%);
+  color: hsl(0 84% 45%);
 }
 
 .admin-status-badge--info {
   background-color: hsl(var(--admin-accent-secondary) / 0.1);
-  color: hsl(var(--admin-accent-secondary));
+  color: hsl(340 80% 40%);
 }
 
 .admin-status-badge--neutral {
@@ -5969,10 +5981,14 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   background: rgb(255 255 255 / 0.05) !important;
 }
 
+/* Warna aksen sekolah dipakai di sini sebagai TEKS, bukan latar, jadi yang benar
+   turunan bacanya — `--sekolah-aksen-teks`, rona sama tapi cukup gelap untuk
+   lolos ambang keterbacaan. Aksen mentahnya hanya mencapai rasio 4.07 pada label
+   13px, dari 4.5 yang diminta WCAG AA. Lihat catatan palet di docs/HANDOFF.md. */
 .admin-nav-pill.active,
 .admin-segmented-control-item.active,
 .admin-segmented-control-item[data-state="active"] {
-  color: hsl(var(--admin-accent));
+  color: var(--sekolah-aksen-teks);
   border-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;

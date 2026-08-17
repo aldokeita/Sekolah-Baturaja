@@ -367,7 +367,7 @@ const ExpenseManagement = () => {
                             <h3 className="text-sm font-semibold text-[hsl(var(--admin-text-primary))]">Ringkasan total harian</h3>
                             <p className="mt-1 text-xs text-[hsl(var(--admin-text-muted))]">Total nominal per tanggal berdasarkan periode dan pencarian aktif.</p>
                         </div>
-                        <span className="rounded-full bg-[hsl(var(--admin-accent-soft))] px-2.5 py-1 text-xs font-semibold text-[hsl(var(--admin-accent))]">{dailyTotals.length} hari aktif</span>
+                        <span className="rounded-full bg-[hsl(var(--admin-accent-soft))] px-2.5 py-1 text-xs font-semibold text-[var(--sekolah-aksen-teks)]">{dailyTotals.length} hari aktif</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
                         {dailyTotals.map(({ date, total, count }) => (
@@ -389,7 +389,10 @@ const ExpenseManagement = () => {
                         <YAxis tickFormatter={(value) => `Rp${(value / 1000).toLocaleString('id-ID')}k`} />
                         <Tooltip formatter={(value) => formatRupiah(value)} />
                         <Legend />
-                        <Line type="monotone" dataKey="Pengeluaran" stroke="#ef4444" activeDot={{ r: 8 }} />
+                        {/* Warna garis ini juga dipakai Recharts untuk teks legendanya.
+                            #ef4444 hanya mencapai rasio 3.57 sebagai teks; #b91c1c
+                            mencapai 6.47, dan garisnya tetap terbaca merah. */}
+                        <Line type="monotone" dataKey="Pengeluaran" stroke="#b91c1c" activeDot={{ r: 8 }} />
                     </LineChart>
                 </ResponsiveContainer>
             </div>
@@ -442,7 +445,7 @@ const ExpenseManagement = () => {
                                     <td className="whitespace-nowrap font-semibold">{formatRupiah(expense.jumlah)}</td>
                                     <td>
                                         {expense.bukti_url ? (
-                                            <a href={expense.bukti_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-[hsl(var(--admin-accent))] hover:underline" title="Buka bukti transaksi">
+                                            <a href={expense.bukti_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--sekolah-aksen-teks)] hover:underline" title="Buka bukti transaksi">
                                                 <FileText className="h-3.5 w-3.5" /> Lihat
                                             </a>
                                         ) : <span className="text-muted-foreground">-</span>}

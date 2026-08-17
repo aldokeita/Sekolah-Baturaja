@@ -720,7 +720,9 @@ const ContentManagement = () => {
               <TabsTrigger key={group.id} value={group.id} className="min-w-[7.75rem] shrink-0 px-3 py-2 sm:min-w-0">
                 <GroupIcon className="h-4 w-4" aria-hidden="true" />
                 <span>{group.label}</span>
-                <span className="rounded-full bg-slate-200/70 px-1.5 text-[10px] font-bold text-slate-500 dark:bg-white/10 dark:text-white/70" aria-label={`${group.tabs.length} bagian`}>
+                {/* slate-700, bukan slate-500: pada 10px di atas lencana abu, slate-500
+                    hanya mencapai rasio 4.12 dari 4.5 yang diminta. */}
+                <span className="rounded-full bg-slate-200/70 px-1.5 text-[10px] font-bold text-slate-700 dark:bg-white/10 dark:text-white/70" aria-label={`${group.tabs.length} bagian`}>
                   {group.tabs.length}
                 </span>
               </TabsTrigger>

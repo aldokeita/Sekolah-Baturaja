@@ -243,7 +243,7 @@ const SantriAbsensiRecap = () => {
             const record = attendance.find(a => a.attendance_date === dateStr);
             const isPastOrToday = dateToCompare <= today;
 
-            let bgColor = "border-slate-200 bg-slate-50 text-slate-400 dark:border-white/10 dark:bg-slate-900/65 dark:text-slate-500";
+            let bgColor = "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-slate-900/65 dark:text-slate-500";
             let tooltip = "Belum ada sesi/Libur";
 
             if (isPastOrToday) {
@@ -251,7 +251,7 @@ const SantriAbsensiRecap = () => {
                 let computedStatus = getComputedStatus(record, sessionStart);
 
                 if (!isActiveDay) {
-                    bgColor = "border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-slate-900/65 dark:text-slate-500";
+                    bgColor = "border-slate-200 bg-slate-100 text-slate-600 dark:border-white/10 dark:bg-slate-900/65 dark:text-slate-500";
                     tooltip = "Libur Akademik";
                 } else if (computedStatus === 'Hadir') {
                     bgColor = "border-emerald-300 bg-emerald-50 font-bold text-emerald-700 shadow-sm hover:bg-emerald-100 dark:border-emerald-400/35 dark:bg-slate-900/80 dark:text-emerald-300 dark:hover:bg-slate-800";

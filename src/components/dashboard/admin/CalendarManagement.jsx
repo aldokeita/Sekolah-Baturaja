@@ -266,7 +266,7 @@ const CalendarManagement = () => {
           className={`h-24 p-2 rounded-lg border transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden ${bgClass}`}
         >
           <div className="flex justify-between items-start">
-            <span className={`font-bold text-lg ${isEffectiveHoliday ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{d}</span>
+            <span className={`font-bold text-lg ${isEffectiveHoliday ? 'text-slate-600 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{d}</span>
             {statusIcon}
           </div>
           <div className="text-xs font-medium truncate mt-1 flex items-center gap-1">
@@ -368,7 +368,7 @@ const CalendarManagement = () => {
         </div>
         <div className="grid grid-cols-7 gap-4 mb-4 text-center">
             {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(day => (
-                <div key={day} className={`font-semibold text-sm uppercase ${day === 'Min' || (day === 'Sab' && savedSaturdayHoliday) ? 'text-red-400' : 'text-muted-foreground'}`}>{day}</div>
+                <div key={day} className={`font-semibold text-sm uppercase ${day === 'Min' || (day === 'Sab' && savedSaturdayHoliday) ? 'text-red-700 dark:text-red-400' : 'text-muted-foreground'}`}>{day}</div>
             ))}
         </div>
         <div className={`grid grid-cols-7 gap-2 md:gap-4 transition-opacity ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>

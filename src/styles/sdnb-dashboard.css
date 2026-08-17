@@ -25,7 +25,12 @@
   /* ── text ─────────────────────────────────────────────────────────────── */
   --admin-text-primary: 236 26% 12%;    /* #171827 */
   --admin-text-secondary: 232 18% 40%;  /* #535878 */
-  --admin-text-muted: 233 15% 50%;      /* #6d7192 */
+  /* Terangnya diturunkan dari 50% ke 45%. Nada ini dipakai untuk teks paling
+     kecil di dashboard — judul kolom tabel 11px, label, keterangan — dan pada
+     50% ia hanya mencapai rasio 4.28 di atas panel terang, dari 4.5 yang diminta
+     WCAG AA. Pada 45% menjadi 5.04, dan urutannya tetap: masih lebih terang dari
+     --admin-text-secondary (40%). */
+  --admin-text-muted: 233 15% 45%;      /* #626684 */
 
   /* ── accents ──────────────────────────────────────────────────────────── */
   --admin-accent: 234 100% 68%;         /* var(--sekolah-aksen-pekat) */

@@ -362,7 +362,7 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
   // Capacity is per class now. Without one declared there is no denominator to
   // compare against, so the card shows the headcount alone and stays neutral.
   const kapasitas = Number(classItem.kapasitas) > 0 ? Number(classItem.kapasitas) : null;
-  let capacityColor = 'text-blue-600 dark:text-emerald-400';
+  let capacityColor = 'text-blue-700 dark:text-emerald-400';
   let borderColor = 'border-blue-500 dark:border-emerald-500';
   if (kapasitas) {
     if (santriCount > kapasitas) { capacityColor = 'text-red-600 dark:text-red-400'; borderColor = 'border-red-500'; }
@@ -376,7 +376,7 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
     <div ref={ref} data-handler-id={handlerId}>
       <DroppableColumn ref={ref} title={classItem.nama_kelas} onDrop={item => onDropSantri(item, classItem.id)} icon={<Users className="w-5 h-5"/>} capacityText={kapasitas ? `${santriCount}/${kapasitas}` : `${santriCount}`} capacityColor={capacityColor} borderColor={borderColor}>
         <div className="flex justify-between items-start">
-          <div><div className="text-sm text-muted-foreground mb-2">{classItem.guru?.nama || 'Belum ada guru'}{waLink && (<a href={waLink} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-green-600 hover:underline"><Phone className="w-3 h-3 mr-1" /> WA</a>)}</div></div>
+          <div><div className="text-sm text-muted-foreground mb-2">{classItem.guru?.nama || 'Belum ada guru'}{waLink && (<a href={waLink} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-green-800 hover:underline"><Phone className="w-3 h-3 mr-1" /> WA</a>)}</div></div>
         </div>
         <div className="flex justify-end gap-2 mb-2 border-b pb-2 flex-wrap">
           {canManage && (<><Button size="sm" variant="outline" onClick={() => onEdit(classItem)}><Edit className="w-3 h-3"/></Button><Button size="sm" variant="destructive" onClick={() => onDelete(classItem.id)}><Trash2 className="w-3 h-3"/></Button></>)}
@@ -992,8 +992,10 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                   ))}
                 </ClassCard>
               ))}
+              {/* slate-600, bukan slate-400: keadaan kosong pun harus terbaca.
+                  slate-400 hanya mencapai rasio 2.43 dari 4.5 yang diminta. */}
               {classesBySession[session].length === 0 && (
-                  <div className="col-span-full py-8 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
+                  <div className="col-span-full py-8 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-600">
                       Belum ada kelas untuk sesi {session}.
                   </div>
               )}
