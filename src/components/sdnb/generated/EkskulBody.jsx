@@ -55,7 +55,7 @@ const EkskulBody = (vals = {}) => {
     </section>
 <section className="master" style={{ maxWidth: "1240px", margin: "0 auto", padding: "64px 28px 0", display: "grid", gridTemplateColumns: ".78fr 1.22fr", gap: "34px", alignItems: "start" }}>
       <div>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "14px", paddingBottom: "12px", borderBottom: "2px solid #21243f" }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "14px", paddingBottom: "12px", borderBottom: "2px solid var(--sdnb-garis)" }}>
           <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Indeks kegiatan</h2>
           <span style={{ fontSize: "12px", color: "var(--sdnb-teks-pendamping)", fontVariantNumeric: "tabular-nums" }}>{total}</span>
         </div>
@@ -117,7 +117,7 @@ const EkskulBody = (vals = {}) => {
       </div>
     </section>
 <section id="jadwal" style={{ maxWidth: "1240px", margin: "0 auto", padding: "76px 28px 0" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "18px", flexWrap: "wrap", paddingBottom: "12px", borderBottom: "2px solid #21243f" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "18px", flexWrap: "wrap", paddingBottom: "12px", borderBottom: "2px solid var(--sdnb-garis)" }}>
         <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "800", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Jadwal sepekan</h2>
         <span style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>Semua latihan selesai paling lambat pukul 16.30</span>
       </div>

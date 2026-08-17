@@ -71,7 +71,7 @@ const PrestasiBody = (vals = {}) => {
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "64px 28px 0" }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 356px", gap: "44px", alignItems: "start" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "16px", flexWrap: "wrap", paddingBottom: "14px", borderBottom: "2px solid #21243f" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "16px", flexWrap: "wrap", paddingBottom: "14px", borderBottom: "2px solid var(--sdnb-garis)" }}>
             <h2 style={{ margin: "0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Daftar penghargaan</h2>
             <span style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)", fontVariantNumeric: "tabular-nums" }}>{jumlah}</span>
           </div>
@@ -107,7 +107,7 @@ const PrestasiBody = (vals = {}) => {
         <div style={{ position: "sticky", top: "110px", display: "flex", flexDirection: "column", gap: "26px" }}>
           {(grafikTampil) && (<>
           <div>
-            <div style={{ paddingBottom: "14px", borderBottom: "2px solid #21243f", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Per tahun</div>
+            <div style={{ paddingBottom: "14px", borderBottom: "2px solid var(--sdnb-garis)", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Per tahun</div>
             <div style={{ marginTop: "26px", display: "flex", alignItems: "flex-end", gap: "10px", height: "170px" }}>
               {(grafik || []).map((g, $index) => (<React.Fragment key={$index}>
                 <div className="bargrp" style={{ flex: "1", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
@@ -121,7 +121,7 @@ const PrestasiBody = (vals = {}) => {
           </>)}
 
           <div>
-            <div style={{ paddingBottom: "14px", borderBottom: "2px solid #21243f", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Bidang</div>
+            <div style={{ paddingBottom: "14px", borderBottom: "2px solid var(--sdnb-garis)", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Bidang</div>
             <div style={{ marginTop: "16px", display: "flex", flexDirection: "column" }}>
               {(bidang || []).map((b, $index) => (<React.Fragment key={$index}>
                 <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "13px 0", borderBottom: "1px solid rgba(120,132,200,.2)" }}>
@@ -136,7 +136,7 @@ const PrestasiBody = (vals = {}) => {
       </div>
     </section>
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "74px 28px 0" }}>
-      <div style={{ paddingBottom: "14px", borderBottom: "2px solid #21243f", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "18px", flexWrap: "wrap" }}>
+      <div style={{ paddingBottom: "14px", borderBottom: "2px solid var(--sdnb-garis)", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "18px", flexWrap: "wrap" }}>
         <h2 style={{ margin: "0", fontFamily: "'Archivo',system-ui,sans-serif", fontSize: "15px", fontWeight: "900", letterSpacing: ".2em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)" }}>Tiga capaian teratas</h2>
         <span style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>Dinilai dari tingkat lomba dan jumlah peserta</span>
       </div>

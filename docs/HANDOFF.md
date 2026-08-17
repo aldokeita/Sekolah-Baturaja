@@ -1338,13 +1338,18 @@ tidak ada mata yang bisa membedakan `#171827` dari `#1b1c2c` — tapi masing-mas
 kontrasnya sendiri. Itu sebabnya sembilan nada gagal ambang bisa bersembunyi di sana sampai disapu
 satu per satu.
 
-Sekarang tiga nama di `:root` (`src/styles/sdnb.css`):
+Sekarang empat nama di `:root` (`src/styles/sdnb.css`):
 
-| nama | nilai | rasio di atas #e9edf6 |
-|---|---|---|
-| `--sdnb-teks-judul` | `#1b1c2c` | 14.34 |
-| `--sdnb-teks-badan` | `#33375a` | 9.76 |
-| `--sdnb-teks-pendamping` | `#5f6389` | 4.93 |
+| nama | nilai | rasio di atas #e9edf6 | ambang |
+|---|---|---|---|
+| `--sdnb-teks-judul` | `#1b1c2c` | 14.34 | 4.5 (teks) |
+| `--sdnb-teks-badan` | `#33375a` | 9.76 | 4.5 (teks) |
+| `--sdnb-teks-pendamping` | `#5f6389` | 4.93 | 4.5 (teks) |
+| `--sdnb-garis` | `#21243f` | 15.10 | 3.0 (elemen antarmuka) |
+
+`--sdnb-garis` hanya untuk garis pemisah **tegas** di bawah judul bagian — yang 2px. Garis rambut
+(pembatas kartu, garis tabel) memakai `rgba(120,132,200,.2x)`, bukan heks, jadi di luar penamaan ini;
+kalau suatu saat diberi nama juga, itu peran kelima, bukan nama ini yang dipakai ulang.
 
 Nilainya diambil dari nada yang **paling sering dipakai** di tiap peran, jadi mayoritas halaman tidak
 berubah sedikit pun. **361 deklarasi** diganti di 16 berkas; heks di markup publik turun dari 793 ke
@@ -1371,9 +1376,10 @@ Yang **sengaja tidak** ikut:
   bagian desainnya.
 - **Warna isyarat** — merah galat, hijau status, indigo aktif. Meratakannya menjadi abu akan
   menghapus maknanya.
-- **Sisa 5 nada netral (10 kemunculan)**: 6 garis, 3 gradasi, 1 bayangan. Garis dan gradasi bukan
-  teks, jadi tidak terikat aturan kontras teks. Kalau suatu saat garis ikut diberi nama, itu peran
-  tersendiri (`--sdnb-garis`), bukan dipaksa memakai nama teks.
+- **Sisa 4 kemunculan, 2 nada**: gradasi hero Prestasi (`#141634`, `#20224f`) dan satu
+  `conic-gradient` penampung di halaman kuis. Keduanya dekoratif.
+
+Setelah `--sdnb-garis` ditambahkan: heks di markup publik **793 → 383**, nada unik **207 → 158**.
 
 Nilai gelapnya belum ditetapkan: mode gelap halaman publik memakai pembalikan filter dan pemilik
 template memutuskan membiarkannya. Ketiga nama ini siap dipakai bila keputusan itu berubah.

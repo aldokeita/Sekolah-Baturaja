@@ -47,6 +47,16 @@ html { scroll-behavior: smooth; }
   --sdnb-teks-judul: #1b1c2c;
   --sdnb-teks-badan: #33375a;
   --sdnb-teks-pendamping: #5f6389;
+
+  /* Garis pemisah tegas di bawah judul bagian — yang 2px, bukan garis rambut.
+     Perannya berbeda dari teks: ia elemen antarmuka, jadi ambangnya 3.0 bukan
+     4.5. Nilai ini mencapai 15.1 di atas latar terang, jauh di atas keduanya.
+
+     Garis rambut halaman publik (pembatas kartu, garis tabel) memakai
+     `rgba(120,132,200,.2x)` — bukan heks, jadi tidak ikut penamaan ini. Kalau
+     suatu saat diberi nama juga, itu peran ketiga (`--sdnb-garis-rambut`),
+     bukan nama ini yang dipakai ulang. */
+  --sdnb-garis: #21243f;
 }
 
 .sdnb {
