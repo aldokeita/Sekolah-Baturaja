@@ -483,18 +483,20 @@ const HomePage = () => {
 
       {/* ── PPDB CTA ─────────────────────────────────────────────────────── */}
       <section id="ppdb" data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '76px 28px 0' }}>
-        <div style={{ position: 'relative', overflow: 'hidden', padding: '52px 48px', borderRadius: 30, background: 'linear-gradient(135deg,rgba(120,132,255,.9),rgba(160,120,240,.85) 48%,rgba(240,150,196,.85))', border: '1px solid rgba(255,255,255,.55)', boxShadow: '0 40px 80px -28px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)' }}>
+        <div style={{ position: 'relative', overflow: 'hidden', padding: '52px 48px', borderRadius: 30, background: 'var(--sdnb-ajakan)', border: '1px solid rgba(255,255,255,.55)', boxShadow: '0 40px 80px -28px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '58%', background: 'linear-gradient(168deg,rgba(255,255,255,.42),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 36, flexWrap: 'wrap' }}>
             <div style={{ maxWidth: 560 }}>
               <h2 style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.12, letterSpacing: '-.03em', fontWeight: 800, color: '#fff' }}>
                 Pendaftaran gelombang pertama ditutup <span style={{ background: 'linear-gradient(115deg,#fff5b0,#ffd9ec)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>20 Agustus 2026</span>
               </h2>
-              <p style={{ margin: '14px 0 0', fontSize: 15, lineHeight: 1.65, color: 'rgba(255,255,255,.88)' }}>Anak berusia minimal enam tahun pada 1 Juli 2026. Siapkan kartu keluarga dan akta kelahiran, seluruh proses dilakukan daring.</p>
+              {/* Putih 92%, bukan 88%: paragraf 15px di atas gradasi ajakan perlu
+                  margin sedikit lebih lega daripada judulnya yang 38px. */}
+              <p style={{ margin: '14px 0 0', fontSize: 15, lineHeight: 1.65, color: 'rgba(255,255,255,.92)' }}>Anak berusia minimal enam tahun pada 1 Juli 2026. Siapkan kartu keluarga dan akta kelahiran, seluruh proses dilakukan daring.</p>
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <Link to="/pendaftaran" className="shine h-white" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.9)', boxShadow: '0 20px 40px -16px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)' }}>Isi formulir</Link>
-              <Link to="/pendaftaran" className="shine h-white30" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.5)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}>Unduh panduan</Link>
+              <Link to="/pendaftaran" className="shine h-white30" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'var(--sdnb-ajakan-tombol)', border: '1px solid rgba(255,255,255,.5)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}>Unduh panduan</Link>
             </div>
           </div>
         </div>

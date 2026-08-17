@@ -31,13 +31,23 @@ const FasilitasBody = (vals = {}) => {
           </div>
         </React.Fragment>))}
         <div style={{ position: "absolute", inset: "0", background: "radial-gradient(120% 80% at 22% 8%,rgba(255,255,255,.24),rgba(255,255,255,0) 56%)" }}></div>
-        <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(10,13,38,.9) 4%,rgba(10,13,38,.34) 48%,rgba(10,13,38,.55))" }}></div>
+        {/* Kerudung foto: bagian TENGAH dinaikkan dari 34% ke 62%.
+            Di situlah eyebrow dan label "Perhentian" duduk, dan 34% adalah titik
+            paling tipis dari seluruh kerudung — dengan foto halaman sekolah yang
+            terang, tulisan putih di sana hanya mencapai 2.38 dan eyebrow violet
+            pucat 1.33. Diuji dengan menyimulasikan foto terang, bukan dengan foto
+            gelap yang kebetulan ada di data contoh.
+            Pada 62%: putih 5.67 di atas foto terang, dan tetap 18.83 di atas foto
+            gelap — jadi foto gelap tidak dirugikan. */}
+        <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(10,13,38,.9) 4%,rgba(10,13,38,.62) 48%,rgba(10,13,38,.68))" }}></div>
 
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "20px", flexWrap: "wrap" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ width: "34px", height: "2px", background: "linear-gradient(90deg,#7d8bff,var(--sekolah-aksen-ujung))" }}></span>
-              <span style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".24em", textTransform: "uppercase", color: "#b9bef2" }}>Tur fasilitas sekolah</span>
+              {/* #e6e8ff, bukan #b9bef2: violet pucat hanya mencapai 1.33 di atas
+                  foto terang. Nada ini 4.69 pada kerudung yang sudah dipertebal. */}
+              <span style={{ fontSize: "11px", fontWeight: "800", letterSpacing: ".24em", textTransform: "uppercase", color: "#e6e8ff" }}>Tur fasilitas sekolah</span>
             </div>
             <h1 className="ftitle" style={{ margin: "18px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "62px", lineHeight: ".94", letterSpacing: "-.05em", fontWeight: "800", color: "#fff", textShadow: "0 6px 34px rgba(6,10,42,.6)" }}>Berkeliling<br />sekolah.</h1>
           </div>

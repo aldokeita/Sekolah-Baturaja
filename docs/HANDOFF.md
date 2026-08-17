@@ -1373,6 +1373,42 @@ turunan baca aksen di mode terang dan 78% terang di mode gelap (5.05).
 Nilai grafik dipasang lewat token karena Recharts memakai warna `stroke` **untuk garisnya DAN untuk
 teks legendanya**, jadi warna garis harus lolos ambang teks, bukan ambang garis.
 
+### Teks di atas foto dan gradasi: mata, bukan pemindai
+
+Pemindai kontras **melewati** teks yang latarnya foto atau gradasi — latarnya bukan warna tunggal,
+jadi tidak ada satu angka yang bisa dibandingkan. Bagian ini harus diperiksa dengan mata, dan
+sekali diperiksa hasilnya begini.
+
+**Yang benar-benar gagal, dan sudah diperbaiki:**
+
+Panel ajakan SPMB (Beranda, Profil, formulir SPMB) memakai gradasi pastel dengan tulisan putih.
+Terukur di ketiga titik sapuannya, di ujung pink: judul 38px **1.95**, paragraf 15px **1.81**,
+tombol sekunder **1.72** — dari 3.0 dan 4.5 yang diminta. Ronanya dipertahankan, nadanya dipertua
+(`--sdnb-ajakan`), dan tombol sekundernya memakai lapisan tinta gelap alih-alih putih 18%
+(`--sdnb-ajakan-tombol`). Sekarang 5.99–6.73 dan 8.26–8.89.
+
+Hero Fasilitas: bagian **tengah** kerudung fotonya paling tipis (34%) — dan justru di situ eyebrow
+dan label "Perhentian" duduk. Dengan foto halaman sekolah yang terang, putih hanya 2.38 dan eyebrow
+violet pucat 1.33. Tengahnya dinaikkan ke 62% dan eyebrow-nya dijadikan `#e6e8ff`: 5.67 dan 4.69,
+sementara foto gelap tetap 18.83 — jadi foto gelap tidak dirugikan.
+
+**Cara mengujinya:** data contoh kebetulan memakai foto gelap, yang menyembunyikan cacat ini.
+Ganti sementara latar `.kb` dengan gradasi terang (`#f6f7fb`→`#fdfdff`) untuk menirukan foto
+halaman sekolah pukul sepuluh siang. Itu kasus terburuk yang akan diunggah pembeli.
+
+**Yang dibiarkan, sudah dinilai memadai:**
+
+- Huruf bergradasi "percaya diri" (40px): ujung pink-nya melemah dan titik akhirnya nyaris hilang,
+  tapi bentuk hurufnya jelas dan kata-kata awal kalimatnya hitam.
+- "20 Agustus 2026" kuning pucat di atas violet: 2.89 dari 3.0 — nyaris, dan nyaman dibaca.
+
+**Angka bisa MENIPU di sini.** Kalkulator yang memilih titik warna gradasi melaporkan gagal untuk
+hal yang jelas terbaca: tombol putih di atas panel navy (1.04), daftar penghargaan di kartu putih
+beku (2.32), kartu Galeri (2.32). Dua sebabnya: latar harus dihitung mulai dari elemen ITU SENDIRI
+(bukan induknya, kalau tidak tombol putih diukur terhadap panel di belakangnya), dan permukaan
+transparan harus **dikomposit**, bukan diambil titik warnanya. Untuk latar bergradasi, komposit
+setiap titik sapuan lalu ambil yang terburuk — dan tetap konfirmasi dengan mata.
+
 ### Cara mengukur kontras mode gelap dengan benar
 
 Audit biasa tidak cukup. `getComputedStyle` mengembalikan warna **sebelum** filter, jadi kalau ada

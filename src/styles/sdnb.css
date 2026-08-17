@@ -66,6 +66,19 @@ html { scroll-behavior: smooth; }
   --sdnb-status-tutup-teks: #6b5170;
   --sdnb-status-tutup-latar: rgba(220, 205, 240, .5);
 
+  /* Gradasi panel ajakan SPMB. Nada mockup-nya pastel (biru muda → violet →
+     pink muda) dan tulisan putih di atasnya TIDAK terbaca: judul 38px hanya
+     mencapai 1.95 di ujung pink, paragraf 15px 1.81, dan tombol sekundernya
+     1.72 — dari 3.0 dan 4.5 yang diminta. Ini ditemukan dengan MATA, bukan oleh
+     pemindai: pemindai melewati latar bergradasi.
+
+     Ronanya dipertahankan — biru, violet, magenta — hanya dipertua sampai
+     tulisan putih lolos di SELURUH sapuan: 5.99–6.73 untuk putih penuh,
+     5.01–5.61 untuk paragraf. */
+  --sdnb-ajakan: linear-gradient(135deg, #4a55c8, #6d3fc0 48%, #a83a70);
+  /* Tombol sekunder di atas panel itu. Putih 18% terlalu tipis (1.72); lapisan
+     tinta gelap memberi 8.26–8.89 tanpa mengubah bentuk tombolnya. */
+  --sdnb-ajakan-tombol: rgba(20, 24, 70, .28);
 }
 
 /* ── Mode gelap ───────────────────────────────────────────────────────────────

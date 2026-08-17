@@ -807,13 +807,13 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        <div style={{ position: 'relative', overflow: 'hidden', padding: '34px 36px', borderRadius: 26, background: 'linear-gradient(135deg,rgba(120,132,255,.9),rgba(160,120,240,.85) 48%,rgba(240,150,196,.85))', border: '1px solid rgba(255,255,255,.55)', boxShadow: '0 30px 62px -24px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)' }}>
+        <div style={{ position: 'relative', overflow: 'hidden', padding: '34px 36px', borderRadius: 26, background: 'var(--sdnb-ajakan)', border: '1px solid rgba(255,255,255,.55)', boxShadow: '0 30px 62px -24px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(168deg,rgba(255,255,255,.4),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           <h3 style={{ position: 'relative', margin: 0, fontFamily: HEADING_FONT, fontSize: 28, lineHeight: 1.18, letterSpacing: '-.028em', fontWeight: 800, color: '#fff' }}>Ingin melihat langsung?</h3>
           <p style={{ position: 'relative', margin: '14px 0 0', fontSize: 15, lineHeight: 1.62, color: 'rgba(255,255,255,.9)' }}>Kunjungan orang tua dibuka setiap Rabu pukul 09.00. Cukup kabari tata usaha sehari sebelumnya, dan seorang guru akan menemani berkeliling.</p>
           <div style={{ position: 'relative', marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Link to="/pendaftaran" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 15, fontSize: 14, fontWeight: 700, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.92)', boxShadow: '0 16px 34px -14px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)' }}>Daftar PPDB</Link>
-            <a href="#kontak" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 15, fontSize: 14, fontWeight: 700, color: '#fff', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.5)' }}>Hubungi sekolah</a>
+            <a href="#kontak" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 15, fontSize: 14, fontWeight: 700, color: '#fff', background: 'var(--sdnb-ajakan-tombol)', border: '1px solid rgba(255,255,255,.5)' }}>Hubungi sekolah</a>
           </div>
         </div>
       </section>
