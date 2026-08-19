@@ -2576,12 +2576,15 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   opacity: 0.7;
 }
 
-/* Noise texture overlay */
+/* Noise texture overlay.
+   Asetnya lokal (public/noise.svg). Dulu menunjuk grainy-gradients.vercel.app,
+   yang menjawab 404 — jadi lapisan bintik ini tidak pernah tampil sama sekali,
+   dan tidak ada pesan galat yang membuatnya terlihat. */
 .attendance-page__bg::after {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+  background-image: url('/noise.svg');
   opacity: 0.15;
   mix-blend-mode: overlay;
 }

@@ -273,7 +273,10 @@ const RandomNamePage = () => {
                     transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 2 }}
                     className={`absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] transition-colors duration-500 ${isDark ? 'bg-cyan-600/10' : 'bg-purple-300/30'}`}
                 />
-                <div className={`absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-150 mix-blend-overlay ${!isDark && 'invert opacity-10'}`}></div>
+                {/* Aset lokal, lihat public/noise.svg. Dulu menunjuk
+                    grainy-gradients.vercel.app yang menjawab 404, jadi lapisan
+                    bintik ini tidak pernah tampil. */}
+                <div className={`absolute inset-0 bg-[url('/noise.svg')] opacity-20 brightness-150 mix-blend-overlay ${!isDark && 'invert opacity-10'}`}></div>
                 <div className={`absolute inset-0 bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] ${
                     isDark
                     ? 'bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)]'

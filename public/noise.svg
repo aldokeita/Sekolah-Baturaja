@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tekstur bintik untuk lapisan hiasan. Dipakai oleh:
+    - src/styles/admin-dashboard.css  (.attendance-page__bg::after)
+    - src/pages/RandomNamePage.jsx    (lapisan di atas latar gradien)
+
+  Menggantikan https://grainy-gradients.vercel.app/noise.svg, yang SUDAH MATI —
+  alamat itu menjawab 404, jadi bintiknya tidak pernah tampil di kedua tempat.
+  Jangan menunjuk aset hiasan ke host pihak ketiga lagi: kalau host itu hilang,
+  tampilannya rusak diam-diam tanpa satu pun pesan galat yang terlihat pengguna.
+
+  stitchTiles="stitch" wajib ada. Tanpanya, sambungan antar-petak terlihat
+  sebagai garis kisi ketika gambar ini diulang untuk menutupi elemen.
+
+  Kepekatan diatur oleh pemakainya lewat `opacity` dan `mix-blend-mode`, bukan di
+  berkas ini, jadi bintiknya di sini sengaja penuh.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <filter id="bintik">
+    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+  </filter>
+  <rect width="100%" height="100%" filter="url(#bintik)"/>
+</svg>
