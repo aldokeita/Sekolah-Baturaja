@@ -172,3 +172,11 @@ Use the canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `read
 ### Domain docs
 
 This is a single-context repo; use root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
+
+### Coding-behaviour guidelines
+
+`.claude/skills/karpathy-guidelines/` — think before coding, simplicity first, surgical changes,
+goal-driven execution. Project-scoped, so it loads only in this repo. Its closing section maps the
+four principles onto this codebase: which validation chain counts as verification (there is no
+component test framework), and why `docs/HANDOFF.md` must be read before "fixing" anything that
+looks wrong. Upstream is <https://github.com/multica-ai/andrej-karpathy-skills> (MIT).

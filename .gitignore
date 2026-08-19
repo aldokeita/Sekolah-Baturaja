@@ -21,7 +21,13 @@ supabase/.branches/
 !.agents/skills/lpq-creative-web-expert/
 !.agents/skills/lpq-creative-web-expert/SKILL.md
 .codex/
-.claude/
+# `.claude/*`, bukan `.claude/`: git tidak menelusuri direktori yang diabaikan, jadi
+# bentuk berakhiran garis miring membuat negasi di bawahnya tidak pernah berlaku.
+# Setelan lokal (izin, launch.json) tetap diabaikan; hanya skill yang ikut repo.
+.claude/*
+!.claude/skills/
+!.claude/skills/karpathy-guidelines/
+!.claude/skills/karpathy-guidelines/SKILL.md
 .omo/
 
 *.bak
