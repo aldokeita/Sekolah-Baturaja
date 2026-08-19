@@ -1167,6 +1167,35 @@ Doa/Surat/Sholat menyusup); hapus, simpan, muat ulang penuh → tetap kosong.
 (`'category-1'`, `'doa-harian'`), yang menghasilkan `NaN` — dua kategori baru akan berbagi id `NaN`
 yang sama. Kini hanya id berupa angka yang dihitung.
 
+### Tata letak Modal Detail Murid: opsi C, dipilih pemilik
+
+Pemilik menolak tampilan lama dan memilih **opsi C — kartu berkelompok, satu alur** dari tiga
+rancangan yang diajukan. Jangan menatanya ulang jadi tab atau kolom menempel tanpa diminta:
+
+- **Tab (opsi A) ditolak dengan alasan yang terukur.** Guru memakai modal ini untuk MENCARI satu
+  fakta, bukan membacanya berurutan. Menaruh data orang tua di tab lain membuat nomor HP — isi yang
+  paling sering dicari — jadi satu klik lebih jauh.
+- **Kolom ringkasan menempel (opsi B) ditolak** karena memakan 190px lebar; sisa ruangnya tinggal
+  dua kolom isi, dan di layar 13 inci terasa sempit. Satu hal dari B tetap diambil: nomor HP ikut ke
+  baris kepala.
+
+Susunannya, dan urutannya disengaja: kepala modal (nama + kelas + nomor induk + status + tingkat +
+nomor HP dalam satu baris) → tombol → **berkas** → **orang tua dan kontak** → **identitas murid** →
+tingkat mengaji. Kontak mendahului identitas karena lebih sering dipakai daripada tempat lahir.
+
+**Berkas hanya boleh ada di SATU tempat.** Versi pertama rancangan ini memuat daftar yang kurang di
+panel peringatan lalu mengulanginya di kartu kelengkapan — daftar yang sama dua kali, dan modalnya
+bertambah 98px tanpa memberi tahu apa pun yang baru. Sekarang satu blok memuat keempat berkas, dan
+yang berubah hanya bingkainya: kuning berikut jumlah yang kurang bila ada, kartu biasa bila lengkap.
+
+Tinggi isinya 1484px, naik dari 1392px sebelum penataan. Itu ditukar dengan empat bagian berjudul
+dan satu panel yang menuntut tindakan; sebelumnya 20 label berbobot sama tanpa satu pun judul
+kelompok. Jangan "memperbaiki" angka ini dengan menghapus judul kartunya.
+
+Keadaan berkas TIDAK boleh disampaikan lewat warna saja — tiap pil membawa ikon centang atau silang
+plus teks `sr-only`. Kontras terukur di kedua tema, dengan latar semi-transparan ditumpuk lebih dulu:
+label 7.58 dan 7.40, nilai 14.63 dan 17.33, judul peringatan 8.75 dan 14.99.
+
 ### Modal Detail Murid tidak bisa tahu nama kelas sendiri
 
 Baris murid yang dipegang dashboard guru hanya membawa `current_class_id`, dan endpoint detail murid

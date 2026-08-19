@@ -8,7 +8,8 @@ import {
   Award, Edit, Clock, CalendarDays, History, ChevronUp, ChevronDown,
   ChevronLeft, ChevronRight, Check, X, FileText, Download, Loader2,
   BookOpen, Printer, Sparkles, Star, ShieldCheck, CheckCircle2,
-  TrendingUp, BarChart2, HeartHandshake, UserCheck, GraduationCap
+  TrendingUp, BarChart2, HeartHandshake, UserCheck, GraduationCap,
+  AlertTriangle, Phone, Users, Contact, MapPin
 } from 'lucide-react';
 import { fetchAttendance, fetchCalendarContext } from '@/lib/attendanceAdapters';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +37,32 @@ import { enableTahfizh } from '@/lib/featureFlags';
 import SantriDevelopmentProfile from '@/components/dashboard/shared/SantriDevelopmentProfile';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import { getActiveCalendarDates, getCalendarDateDayOfWeek, getCalendarDateRange, isCalendarDateActive } from '@/lib/calendarUtils';
+
+/* Pasangan label dan nilai dipakai belasan kali di modal ini, jadi dijadikan satu
+ * bentuk. Labelnya SENGAJA tidak huruf besar semua dan tidak ber-tracking lebar:
+ * bentuk lama membuat 20 label berteriak sama kencang dengan isinya, sehingga tidak
+ * ada yang menonjol. Sekarang label ringan, nilainya yang tebal.
+ * Memakai dl/dt/dd karena isinya memang pasangan istilah dan keterangan. */
+const Data = ({ label, lebar = false, children }) => (
+    <div className={lebar ? 'sm:col-span-2 lg:col-span-3' : undefined}>
+        {/* slate-600, bukan slate-500: pada 12px label ini hanya mencapai 4.76 dari
+            4.5 yang diminta, dan margin sesempit itu langsung hilang begitu latar
+            kartunya digeser sedikit. Bilah tab di `ui/tabs.jsx` sudah dinaikkan
+            karena alasan yang sama. */}
+        <dt className="text-xs font-medium text-slate-600 dark:text-slate-400">{label}</dt>
+        <dd className="mt-0.5 text-sm font-semibold text-slate-800 dark:text-slate-100">{children || '-'}</dd>
+    </div>
+);
+
+const Kartu = ({ judul, ikon: Ikon, polos = false, children }) => (
+    <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/40">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+            {Ikon && <Ikon className="h-4 w-4 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />}
+            {judul}
+        </h3>
+        {polos ? children : <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">{children}</dl>}
+    </section>
+);
 
 const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }) => {
     const { user, role } = useAuth();
@@ -125,9 +152,11 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
     const BERKAS = [
         ['berkas_foto', 'Foto'],
         ['berkas_akta', 'Akta'],
-        ['berkas_kk', 'Kartu Keluarga'],
+        ['berkas_kk', 'Kartu keluarga'],
         ['berkas_form', 'Formulir'],
     ];
+
+    const berkasKurang = BERKAS.filter(([kunci]) => !isi(kunci)).map(([, label]) => label);
 
     const fetchJilidHistory = useCallback(async () => {
         if (!santri?.id) return;
@@ -270,190 +299,205 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-                    <DialogHeader>
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mr-6">
-                            <div>
-                                <DialogTitle className="text-2xl font-bold font-serif text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                                    <GraduationCap className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                                    Detail Murid: {santri?.nama_lengkap || 'Murid'}
+                    {/* Kepala modal memuat identitas dalam SATU baris: nama, lalu kelas,
+                        nomor induk, status, tingkat, dan nomor HP wali. Sebelumnya
+                        kelima hal itu masing-masing satu baris di dalam dinding data di
+                        bawah, dan foto berukuran 128px mendorong semuanya turun. Nomor HP
+                        ikut ke atas karena itu yang paling sering dicari guru. */}
+                    <DialogHeader className="space-y-0">
+                        <div className="flex items-start gap-3 pr-8">
+                            <Avatar className="h-11 w-11 flex-none border border-slate-200 dark:border-slate-700">
+                                <AvatarImage src={santri?.foto_url} className="object-cover" />
+                                <AvatarFallback className="text-base font-bold">{santri?.nama_lengkap?.charAt(0) || 'S'}</AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                                <DialogTitle className="truncate text-xl font-bold text-slate-800 dark:text-slate-100">
+                                    {santri?.nama_lengkap || 'Murid'}
                                 </DialogTitle>
-                                <DialogDescription>Informasi lengkap & catatan perkembangan akademik murid.</DialogDescription>
+                                <DialogDescription className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{santri.className || santri.class?.nama_kelas || 'Belum masuk kelas'}</span>
+                                    {isi('nomor_induk') && <><span aria-hidden="true">&middot;</span><span className="tabular-nums">{isi('nomor_induk')}</span></>}
+                                    {isi('status') && <><span aria-hidden="true">&middot;</span><span>{isi('status')}</span></>}
+                                    {enableTahfizh && santri.jilid && <><span aria-hidden="true">&middot;</span><span>{santri.jilid}</span></>}
+                                    {isi('no_hp_ortu') && (
+                                        <>
+                                            <span aria-hidden="true">&middot;</span>
+                                            <a
+                                                href={`tel:${String(isi('no_hp_ortu')).replace(/[^\d+]/g, '')}`}
+                                                className="inline-flex items-center gap-1 font-semibold tabular-nums text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100"
+                                            >
+                                                <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+                                                {isi('no_hp_ortu')}
+                                            </a>
+                                        </>
+                                    )}
+                                </DialogDescription>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                                <Button
-                                    variant="default"
-                                    onClick={handleOpenReportView}
-                                    disabled={isLoadingReportData}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md"
-                                >
-                                    {isLoadingReportData ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Printer className="w-4 h-4 mr-2" />}
-                                    Cetak Rapor
-                                </Button>
-                            </div>
+                            <Button
+                                variant="default"
+                                onClick={handleOpenReportView}
+                                disabled={isLoadingReportData}
+                                className="hidden flex-none bg-indigo-600 font-bold text-white hover:bg-indigo-700 sm:inline-flex"
+                            >
+                                {isLoadingReportData ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Printer className="w-4 h-4 mr-2" />}
+                                Cetak Rapor
+                            </Button>
                         </div>
                     </DialogHeader>
 
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-6 pt-4 border-b border-slate-200 dark:border-slate-800 pb-6 relative">
-                        <div className="flex flex-col gap-3 items-center">
-                            <Avatar className="w-32 h-32 flex-shrink-0 border-4 border-slate-100 shadow-md">
-                                <AvatarImage src={santri?.foto_url} className="object-cover" />
-                                <AvatarFallback className="text-4xl font-bold">{santri?.nama_lengkap?.charAt(0) || 'S'}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex gap-2 w-full justify-center">
-                                {/* "Naik Tingkat" dan "Turun" memindahkan murid antar
-                                    jilid — bagian dari program tahfizh opsional, bukan
-                                    kenaikan kelas. Tanpa pagar ini sekolah dasar umum
-                                    mendapat tombol yang tidak berarti apa-apa baginya. */}
-                                {enableTahfizh && (onPromote || onDemote) && (
-                                    <>
-                                        {onPromote && (
-                                            <Button onClick={onPromote} size="sm" className="h-8 flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold" title="Naik Tingkat">
-                                                <ChevronUp className="w-4 h-4 mr-1" /> Naik Tingkat
-                                            </Button>
-                                        )}
-                                        {onDemote && (
-                                            <Button onClick={onDemote} size="sm" variant="outline" className="h-8 flex-1 border-red-200 hover:bg-red-50 text-red-700" title="Turun Tingkat">
-                                                <ChevronDown className="w-4 h-4 mr-1" /> Turun
-                                            </Button>
-                                        )}
-                                    </>
-                                )}
-                                <Button
-                                    size="sm"
-                                    onClick={() => setIsAttendanceRecapOpen(true)}
-                                    className="h-8 bg-gradient-to-r from-indigo-500/15 via-violet-500/20 to-rose-500/15 hover:from-indigo-500/25 hover:to-rose-500/25 text-indigo-800 dark:text-indigo-200 border border-indigo-400/40 dark:border-indigo-700/50 backdrop-blur-md shadow-xs font-bold rounded-xl transition-all duration-200 px-3.5"
-                                >
-                                    <History className="w-4 h-4 mr-1.5 text-indigo-600 dark:text-indigo-400" /> Absensi
-                                </Button>
-                            </div>
-                            {enableTahfizh && jilidDuration !== null && (
-                                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${jilidDuration > 90 ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-blue-100 text-blue-700 border-blue-200'} flex items-center gap-1 mt-1`}>
-                                    <Clock className="w-3 h-3" /> {jilidDuration} Hari di tingkat {santri.jilid}
-                                </div>
-                            )}
+                    <div className="space-y-3 border-b border-slate-200 pb-5 pt-4 dark:border-slate-800">
+                        {/* Tombol dikelompokkan menurut keperluan, bukan didempetkan di
+                            bawah foto seperti sebelumnya. Cetak Rapor muncul di sini hanya
+                            di layar sempit, karena di layar lebar ia sudah ada di kepala
+                            modal — jangan hapus salah satunya, nanti tombolnya hilang di
+                            salah satu ukuran layar. */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setIsAttendanceRecapOpen(true)}
+                                className="h-9 font-semibold"
+                            >
+                                <History className="mr-1.5 h-4 w-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" /> Rekap absensi
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={handleOpenReportView}
+                                disabled={isLoadingReportData}
+                                className="h-9 bg-indigo-600 font-semibold text-white hover:bg-indigo-700 sm:hidden"
+                            >
+                                {isLoadingReportData ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Printer className="mr-1.5 h-4 w-4" />}
+                                Cetak Rapor
+                            </Button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm w-full bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nama Lengkap</p>
-                                <p className="font-bold text-base text-slate-800 dark:text-slate-200">{santri.nama_lengkap}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nama Panggilan</p>
-                                <p className="font-bold text-base text-slate-800 dark:text-slate-200">{santri.nama_panggilan || santri.nama_lengkap?.trim().split(' ')[0] || '-'}</p>
-                            </div>
-                            {/* Tingkat dan riwayat kenaikannya milik program tahfizh
-                                opsional — CLAUDE.md menyebut saklar itu menutup "kolom
-                                Tingkat berikut riwayatnya", dan modal ini terlewat. */}
-                            {enableTahfizh && (
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Tingkat Saat Ini</p>
-                                <p className="font-black text-lg text-purple-600 dark:text-purple-400">{santri.jilid}</p>
-                            </div>
-                            )}
-                            {enableTahfizh && (
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Terakhir Naik Tingkat</p>
-                                <p className="font-bold flex items-center gap-1 text-slate-800 dark:text-slate-200">
-                                    <CalendarDays className="w-4 h-4 text-purple-500" />
-                                    {lastPromotedDate ? new Date(lastPromotedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
-                                </p>
-                            </div>
-                            )}
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Kelas</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{santri.className || santri.class?.nama_kelas || '-'}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nomor Induk</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">{isi('nomor_induk') || '-'}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Jenis Kelamin</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('jenis_kelamin') || '-'}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Tempat &amp; Tanggal Lahir</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">
-                                    {[isi('tempat_lahir'), tanggalPanjang(isi('tanggal_lahir'))].filter((bagian) => bagian && bagian !== '-').join(', ') || '-'}
-                                    {umur !== null && <span className="ml-1 font-semibold text-muted-foreground">({umur} tahun)</span>}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Status</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('status') || '-'}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Tanggal Pendaftaran</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{tanggalPanjang(isi('tanggal_pendaftaran'))}</p>
-                            </div>
-                            {/* Nama ayah dan ibu ditampilkan terpisah. Sebelumnya hanya ada
-                                satu baris "Wali Murid (Ibu)" yang diam-diam jatuh ke nama
-                                ayah bila nama ibu kosong — jadi labelnya bisa berbohong. */}
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nama Ayah</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('nama_ayah') || '-'}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nama Ibu</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('nama_ibu') || '-'}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nomor HP Orang Tua</p>
-                                {isi('no_hp_ortu')
-                                    ? <a href={`tel:${String(isi('no_hp_ortu')).replace(/[^\d+]/g, '')}`} className="font-bold tabular-nums text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100">{isi('no_hp_ortu')}</a>
-                                    : <p className="font-bold text-slate-800 dark:text-slate-200">-</p>}
-                            </div>
-                            <div>
-                                {/* Absensi berjalan terpusat lewat satu mesin pemindai, jadi
-                                    saat kartu seorang murid tidak terbaca, nomor inilah yang
-                                    perlu guru sebutkan ketika melapor. */}
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nomor Kartu (RFID)</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">{isi('rfid_tag') || 'Belum terdaftar'}</p>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Alamat Murid</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('alamat') || '-'}</p>
-                            </div>
-                            <div className="sm:col-span-2">
-                                {/* Falls back to the student's own address — a null
-                                    alamat_ortu means "same address", not "unknown". */}
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Alamat Orang Tua</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">
-                                    {isi('alamat_ortu') || isi('alamat') || '-'}
-                                </p>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Kelengkapan Berkas</p>
-                                <div className="mt-1.5 flex flex-wrap gap-2">
-                                    {BERKAS.map(([kunci, label]) => {
-                                        const lengkap = Boolean(isi(kunci));
-                                        return (
-                                            <span
-                                                key={kunci}
-                                                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold ${lengkap
-                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200'
-                                                    : 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
-                                            >
-                                                {lengkap ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-                                                {label}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            {/* Pekerjaan orang tua ditaruh paling bawah: hampir tidak pernah
-                                dipakai guru, sementara nama dan nomor HP di atas justru yang
-                                dicari. Dulu urutannya kebalikannya. */}
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Pekerjaan Ayah</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('pekerjaan_ayah') || '-'}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Pekerjaan Ibu</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('pekerjaan_ibu') || '-'}</p>
-                            </div>
+                        {/* SATU tempat untuk berkas, bukan dua. Versi pertama rancangan ini
+                            menampilkan yang belum masuk di panel peringatan lalu
+                            mengulanginya lagi di kartu kelengkapan — daftar yang sama dua
+                            kali, dan modalnya jadi lebih panjang tanpa memberi tahu apa pun
+                            yang baru.
+                            Blok ini selalu memuat keempat berkas. Yang berubah hanya
+                            bingkainya: saat ada yang kurang ia memakai bingkai kuning dan
+                            menyebut jumlahnya, saat lengkap ia jadi kartu biasa. Keadaan
+                            tiap berkas ditandai bentuk ikon dan teks tersembunyi untuk
+                            pembaca layar, bukan warna saja. */}
+                        <div className={berkasKurang.length > 0
+                            ? 'border-l-[3px] border-amber-500 bg-amber-50 px-3.5 py-3 dark:border-amber-400 dark:bg-amber-950/30'
+                            : 'rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/40'}>
+                            <h3 className={`flex items-center gap-2 text-sm font-bold ${berkasKurang.length > 0 ? 'text-amber-900 dark:text-amber-200' : 'text-slate-800 dark:text-slate-100'}`}>
+                                {berkasKurang.length > 0
+                                    ? <><AlertTriangle className="h-4 w-4" aria-hidden="true" /> Perlu ditindak · {berkasKurang.length} berkas belum masuk</>
+                                    : <><FileText className="h-4 w-4 text-indigo-500 dark:text-indigo-400" aria-hidden="true" /> Berkas lengkap</>}
+                            </h3>
+                            <ul className="mt-2.5 flex flex-wrap gap-2">
+                                {BERKAS.map(([kunci, label]) => {
+                                    const lengkap = Boolean(isi(kunci));
+                                    return (
+                                        <li
+                                            key={kunci}
+                                            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${lengkap
+                                                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200'
+                                                : 'border-amber-400 bg-white text-amber-900 dark:border-amber-500/60 dark:bg-transparent dark:text-amber-200'}`}
+                                        >
+                                            {lengkap ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <X className="h-3.5 w-3.5" aria-hidden="true" />}
+                                            {label}
+                                            <span className="sr-only">{lengkap ? ' sudah masuk' : ' belum masuk'}</span>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         </div>
+
+                        {/* Kontak didahulukan atas identitas: yang paling sering dicari
+                            guru di modal ini adalah cara menghubungi rumah, bukan tempat
+                            lahir. Urutan lama menaruh biodata lebih dulu. */}
+                        <Kartu judul="Orang tua dan kontak" ikon={Users}>
+                            <Data label="Nama ayah">{isi('nama_ayah')}</Data>
+                            <Data label="Nama ibu">{isi('nama_ibu')}</Data>
+                            <Data label="Nomor HP">
+                                {isi('no_hp_ortu') && (
+                                    <a
+                                        href={`tel:${String(isi('no_hp_ortu')).replace(/[^\d+]/g, '')}`}
+                                        className="inline-flex items-center gap-1 tabular-nums text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100"
+                                    >
+                                        <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+                                        {isi('no_hp_ortu')}
+                                    </a>
+                                )}
+                            </Data>
+                            {/* Pekerjaan orang tua tetap ada, tetapi di belakang nama dan
+                                nomor HP. Guru hampir tidak pernah menindak apa pun dari
+                                pekerjaan; dulu justru inilah yang tampil dan namanya tidak. */}
+                            <Data label="Pekerjaan ayah">{isi('pekerjaan_ayah')}</Data>
+                            <Data label="Pekerjaan ibu">{isi('pekerjaan_ibu')}</Data>
+                            {/* Alamat orang tua kosong berarti "sama dengan alamat murid",
+                                bukan "tidak diketahui". */}
+                            <Data label="Alamat orang tua" lebar>{isi('alamat_ortu') || isi('alamat')}</Data>
+                        </Kartu>
+
+                        <Kartu judul="Identitas murid" ikon={Contact}>
+                            <Data label="Nama panggilan">{santri.nama_panggilan || santri.nama_lengkap?.trim().split(' ')[0]}</Data>
+                            <Data label="Jenis kelamin">{isi('jenis_kelamin')}</Data>
+                            <Data label="Tempat, tanggal lahir">
+                                {[isi('tempat_lahir'), tanggalPanjang(isi('tanggal_lahir'))].filter((bagian) => bagian && bagian !== '-').join(', ') || '-'}
+                                {umur !== null && <span className="ml-1 font-medium text-slate-500 dark:text-slate-400">({umur} tahun)</span>}
+                            </Data>
+                            <Data label="Terdaftar">{tanggalPanjang(isi('tanggal_pendaftaran'))}</Data>
+                            {/* Absensi berjalan terpusat lewat satu mesin pemindai, jadi saat
+                                kartu seorang murid tidak terbaca, nomor inilah yang perlu
+                                guru sebutkan ketika melapor. */}
+                            <Data label="Nomor kartu (RFID)">{isi('rfid_tag') || 'Belum terdaftar'}</Data>
+                            <Data label="Alamat murid" lebar>
+                                <span className="inline-flex items-start gap-1.5">
+                                    <MapPin className="mt-0.5 h-3.5 w-3.5 flex-none text-slate-400" aria-hidden="true" />
+                                    {isi('alamat') || '-'}
+                                </span>
+                            </Data>
+                        </Kartu>
+
+                        {/* Tingkat mengaji dikumpulkan jadi satu kartu bersama tombol naik
+                            dan turun, supaya urusan program tahfizh tidak berserak di
+                            antara data kesekolahan. Seluruh kartu ini ikut saklar tahfizh. */}
+                        {enableTahfizh && (
+                            <Kartu judul="Tingkat mengaji" ikon={BookOpen} polos>
+                                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                                    <div>
+                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Tingkat saat ini</p>
+                                        <p className="mt-0.5 text-sm font-bold text-slate-800 dark:text-slate-100">{santri.jilid || '-'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Terakhir naik tingkat</p>
+                                        <p className="mt-0.5 flex items-center gap-1 text-sm font-bold text-slate-800 dark:text-slate-100">
+                                            <CalendarDays className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+                                            {tanggalPanjang(lastPromotedDate)}
+                                        </p>
+                                    </div>
+                                    {jilidDuration !== null && (
+                                        <div>
+                                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Lama di tingkat ini</p>
+                                            <p className={`mt-0.5 flex items-center gap-1 text-sm font-bold ${jilidDuration > 90 ? 'text-rose-700 dark:text-rose-300' : 'text-slate-800 dark:text-slate-100'}`}>
+                                                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                                                {jilidDuration} hari
+                                            </p>
+                                        </div>
+                                    )}
+                                    {(onPromote || onDemote) && (
+                                        <div className="ml-auto flex gap-2">
+                                            {onPromote && (
+                                                <Button onClick={onPromote} size="sm" className="h-8 bg-indigo-600 font-semibold text-white hover:bg-indigo-700">
+                                                    <ChevronUp className="mr-1 h-4 w-4" aria-hidden="true" /> Naik tingkat
+                                                </Button>
+                                            )}
+                                            {onDemote && (
+                                                <Button onClick={onDemote} size="sm" variant="outline" className="h-8 border-rose-300 font-semibold text-rose-700 hover:bg-rose-50 dark:border-rose-500/50 dark:text-rose-300 dark:hover:bg-rose-950/40">
+                                                    <ChevronDown className="mr-1 h-4 w-4" aria-hidden="true" /> Turun
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </Kartu>
+                        )}
                     </div>
 
                     <div className="pt-6">
