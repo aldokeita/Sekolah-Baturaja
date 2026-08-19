@@ -175,6 +175,12 @@ const GuruDashboard = () => {
   const [isRapatGuruOpen, setIsRapatGuruOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isRecapOpen, setIsRecapOpen] = useState(false);
+  // Subtab dikendalikan, bukan `defaultValue`, karena panel yang sudah dibuka
+  // harus tetap terpasang — dan itu perlu tahu tab mana yang aktif. Hanya tab
+  // yang pernah dibuka yang dipasang, jadi memuat dashboard tetap memanggil API
+  // satu modul saja, bukan keempatnya sekaligus.
+  const [tabAktif, setTabAktif] = useState('jadwal');
+  const [tabSudahDibuka, setTabSudahDibuka] = useState(() => new Set(['jadwal']));
   const [myClasses, setMyClasses] = useState([]);
   const [dailyAttendance, setDailyAttendance] = useState([]);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -270,6 +276,12 @@ const GuruDashboard = () => {
   }, [user]);
 
   useEffect(() => { fetchGuruData(); }, [fetchGuruData]);
+
+  useEffect(() => {
+    setTabSudahDibuka((sebelumnya) => (sebelumnya.has(tabAktif)
+      ? sebelumnya
+      : new Set(sebelumnya).add(tabAktif)));
+  }, [tabAktif]);
 
   const refreshSubmissions = async () => {
       try {
@@ -572,7 +584,17 @@ const GuruDashboard = () => {
             tabel murid harus jadi yang pertama terlihat — jangan tukar kembali
             tanpa diminta, dan jangan pula menyisipkan panel baru di antara
             keduanya: subtab dulu, tabel murid sesudahnya. */}
-        <Tabs defaultValue="jadwal" className="mt-6 md:mt-8">
+        {/* Setiap panel dipasang saat pertama kali dibuka, lalu TETAP terpasang
+            (`forceMount` + disembunyikan lewat CSS). Tanpa ini Radix mencabut
+            panel yang tidak aktif, sehingga setiap kali tab ditengok ulang
+            modulnya dipasang dari nol: memanggil API lagi, menampilkan keadaan
+            kosong, lalu melonjak ke tinggi terisi. Dua lonjakan tinggi beberapa
+            ratus milidetik setelah klik — itulah "getar" yang terasa, dan
+            terlihat karena tabel murid ada DI BAWAH panel ini sejak urutannya
+            ditukar. Terukur: /api/schedule/periode dan /api/schedule/jadwal
+            terpanggil ulang pada setiap perpindahan, dan tabel murid bergeser
+            124px. Sesudah ini, perpindahan tidak memanggil apa pun. */}
+        <Tabs value={tabAktif} onValueChange={setTabAktif} className="mt-6 md:mt-8">
           <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto md:grid-cols-4">
             <TabsTrigger value="jadwal">Jadwal Mengajar</TabsTrigger>
             <TabsTrigger value="nilai">Nilai Asesmen</TabsTrigger>
@@ -580,35 +602,51 @@ const GuruDashboard = () => {
             <TabsTrigger value="wali">Komunikasi Wali</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="jadwal" className="mt-4">
-            {/* Sumbernya endpoint yang sama dengan panel admin, disaring guru_id,
-                dan hanya bisa dibaca — penyuntingan tetap di admin. */}
-            <JadwalSaya
-              guruId={guruData?.id}
-              title="Jadwal Mengajar Saya"
-              emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
-            />
-          </TabsContent>
+          {/* Sengaja TANPA tinggi minimum. Panelnya terukur 162/162/162/318px,
+              jadi memaku tinggi ke yang tertinggi menyisakan 156px ruang kosong
+              di bawah tiga panel — dan angka itu diukur pada basis data yang
+              hampir kosong, sehingga akan salah begitu sekolah punya data
+              sungguhan. Sisa pergerakannya kini satu kali ubah tinggi yang wajar
+              saat berpindah ke panel yang memang lebih tinggi, bukan getar. */}
+          <>
+            {tabSudahDibuka.has('jadwal') && (
+            <TabsContent forceMount value="jadwal" className={cn('mt-4', tabAktif !== 'jadwal' && 'hidden')}>
+              {/* Sumbernya endpoint yang sama dengan panel admin, disaring guru_id,
+                  dan hanya bisa dibaca — penyuntingan tetap di admin. */}
+              <JadwalSaya
+                guruId={guruData?.id}
+                title="Jadwal Mengajar Saya"
+                emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
+              />
+            </TabsContent>
+            )}
 
-          <TabsContent value="nilai" className="mt-4">
-            {/* Kelas & mapel diturunkan dari jadwal mengajar; backend menolak
-                kombinasi yang tidak diampu, bukan sekadar disembunyikan. */}
-            <ModulNilai guruId={guruData?.id} />
-          </TabsContent>
+            {tabSudahDibuka.has('nilai') && (
+            <TabsContent forceMount value="nilai" className={cn('mt-4', tabAktif !== 'nilai' && 'hidden')}>
+              {/* Kelas & mapel diturunkan dari jadwal mengajar; backend menolak
+                  kombinasi yang tidak diampu, bukan sekadar disembunyikan. */}
+              <ModulNilai guruId={guruData?.id} />
+            </TabsContent>
+            )}
 
-          <TabsContent value="konten" className="mt-4">
-            {/* Murid hanya membaca yang berstatus terbit; draf tidak pernah bocor.
-                Konten kelas sengaja tidak menumpang tabel `announcements`, yang
-                memasok situs publik. */}
-            <ModulKontenKelas guruId={guruData?.id} />
-          </TabsContent>
+            {tabSudahDibuka.has('konten') && (
+            <TabsContent forceMount value="konten" className={cn('mt-4', tabAktif !== 'konten' && 'hidden')}>
+              {/* Murid hanya membaca yang berstatus terbit; draf tidak pernah bocor.
+                  Konten kelas sengaja tidak menumpang tabel `announcements`, yang
+                  memasok situs publik. */}
+              <ModulKontenKelas guruId={guruData?.id} />
+            </TabsContent>
+            )}
 
-          <TabsContent value="wali" className="mt-4">
-            {/* Hanya menyiapkan pesan dan membuka WhatsApp guru; tidak ada pesan
-                yang terkirim dari sini dan tidak ada kredensial yang disimpan.
-                Nomor selalu dari basis data, tidak pernah ditanam di kode. */}
-            <ModulKomunikasiWali guruNama={guruData?.nama} />
-          </TabsContent>
+            {tabSudahDibuka.has('wali') && (
+            <TabsContent forceMount value="wali" className={cn('mt-4', tabAktif !== 'wali' && 'hidden')}>
+              {/* Hanya menyiapkan pesan dan membuka WhatsApp guru; tidak ada pesan
+                  yang terkirim dari sini dan tidak ada kredensial yang disimpan.
+                  Nomor selalu dari basis data, tidak pernah ditanam di kode. */}
+              <ModulKomunikasiWali guruNama={guruData?.nama} />
+            </TabsContent>
+            )}
+          </>
         </Tabs>
 
         <div className="mt-6 space-y-8 md:mt-8">
