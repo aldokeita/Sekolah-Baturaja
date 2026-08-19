@@ -1,16 +1,25 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-15 · **Branch:** `feat/vercel-ready`
+**Diperbarui:** 2026-08-19 · **Branch:** `feat/sdnb-migration`
 
-Pekerjaan berjalan di `feat/vercel-ready`, dengan dua remote: `origin` (aldokeita) dan
+Pekerjaan berjalan di `feat/sdnb-migration`, dengan dua remote: `origin` (aldokeita) dan
 `upstream` (npdkdev). Branch ini belum di-merge ke `master`.
 
-**Nama branch itu menyesatkan dan tidak akan diperbaiki di tempatnya.** Proyek ini TIDAK memakai
-Vercel — tidak pernah. Namanya sisa dari produk pendahulu, dan mengganti nama branch yang sudah
-dipush ke dua remote lebih berisiko daripada manfaatnya. Deployment yang benar: satu VPS, satu
-domain, Nginx atau Caddy menyajikan `dist/` dan meneruskan `/api` ke Go di mesin yang sama. Lihat
-`SETUP.md`. Seluruh sebutan Vercel di dokumen dan kode sudah dicabut, `vercel.json` sudah dihapus,
-dan `CLAUDE.md` menyatakannya di paragraf pertama supaya tidak muncul lagi tiap sesi.
+**Branch ini sebelumnya bernama `feat/vercel-ready`**, diganti pada 2026-08-19 atas permintaan
+pemilik. Proyek ini TIDAK memakai Vercel — tidak pernah; namanya sisa dari produk pendahulu.
+Deployment yang benar: satu VPS, satu domain, Nginx atau Caddy menyajikan `dist/` dan meneruskan
+`/api` ke Go di mesin yang sama. Lihat `SETUP.md`. Seluruh sebutan Vercel di dokumen dan kode sudah
+dicabut, `vercel.json` sudah dihapus, dan `CLAUDE.md` menyatakannya di paragraf pertama supaya tidak
+muncul lagi tiap sesi.
+
+Kalau ada klon lama yang masih memakai nama lama, perbaiki dengan:
+
+```bash
+git fetch --prune origin && git branch -m feat/vercel-ready feat/sdnb-migration && git branch -u origin/feat/sdnb-migration
+```
+
+Dua PR merged (#2, #3) masih menunjuk nama lama di riwayatnya. Itu wajar — GitHub menyimpan catatan
+PR yang sudah merged meski branch-nya dihapus.
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
