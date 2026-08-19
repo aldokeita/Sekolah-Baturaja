@@ -567,6 +567,50 @@ const GuruDashboard = () => {
             </div>
           </section>
         )}
+        {/* Seluruh panel subtab berada DI ATAS panel tabel manajemen murid.
+            Urutan ini diminta pemilik. Sebelumnya kebalikannya, dengan alasan
+            tabel murid harus jadi yang pertama terlihat — jangan tukar kembali
+            tanpa diminta, dan jangan pula menyisipkan panel baru di antara
+            keduanya: subtab dulu, tabel murid sesudahnya. */}
+        <Tabs defaultValue="jadwal" className="mt-6 md:mt-8">
+          <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto md:grid-cols-4">
+            <TabsTrigger value="jadwal">Jadwal Mengajar</TabsTrigger>
+            <TabsTrigger value="nilai">Nilai Asesmen</TabsTrigger>
+            <TabsTrigger value="konten">Materi &amp; Tugas</TabsTrigger>
+            <TabsTrigger value="wali">Komunikasi Wali</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="jadwal" className="mt-4">
+            {/* Sumbernya endpoint yang sama dengan panel admin, disaring guru_id,
+                dan hanya bisa dibaca — penyuntingan tetap di admin. */}
+            <JadwalSaya
+              guruId={guruData?.id}
+              title="Jadwal Mengajar Saya"
+              emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
+            />
+          </TabsContent>
+
+          <TabsContent value="nilai" className="mt-4">
+            {/* Kelas & mapel diturunkan dari jadwal mengajar; backend menolak
+                kombinasi yang tidak diampu, bukan sekadar disembunyikan. */}
+            <ModulNilai guruId={guruData?.id} />
+          </TabsContent>
+
+          <TabsContent value="konten" className="mt-4">
+            {/* Murid hanya membaca yang berstatus terbit; draf tidak pernah bocor.
+                Konten kelas sengaja tidak menumpang tabel `announcements`, yang
+                memasok situs publik. */}
+            <ModulKontenKelas guruId={guruData?.id} />
+          </TabsContent>
+
+          <TabsContent value="wali" className="mt-4">
+            {/* Hanya menyiapkan pesan dan membuka WhatsApp guru; tidak ada pesan
+                yang terkirim dari sini dan tidak ada kredensial yang disimpan.
+                Nomor selalu dari basis data, tidak pernah ditanam di kode. */}
+            <ModulKomunikasiWali guruNama={guruData?.nama} />
+          </TabsContent>
+        </Tabs>
+
         <div className="mt-6 space-y-8 md:mt-8">
             {myClasses.map(cls => (
                 <Card key={cls.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-border/50">
@@ -701,46 +745,6 @@ const GuruDashboard = () => {
             ))}
         </div>
 
-        {/* Jadwal dan nilai dipindah ke subtab supaya tabel data murid tetap
-            jadi yang pertama terlihat, bukan terdorong ke bawah dua panel. */}
-        <Tabs defaultValue="jadwal" className="mt-6 md:mt-8">
-          <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto md:grid-cols-4">
-            <TabsTrigger value="jadwal">Jadwal Mengajar</TabsTrigger>
-            <TabsTrigger value="nilai">Nilai Asesmen</TabsTrigger>
-            <TabsTrigger value="konten">Materi &amp; Tugas</TabsTrigger>
-            <TabsTrigger value="wali">Komunikasi Wali</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="jadwal" className="mt-4">
-            {/* Sumbernya endpoint yang sama dengan panel admin, disaring guru_id,
-                dan hanya bisa dibaca — penyuntingan tetap di admin. */}
-            <JadwalSaya
-              guruId={guruData?.id}
-              title="Jadwal Mengajar Saya"
-              emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
-            />
-          </TabsContent>
-
-          <TabsContent value="nilai" className="mt-4">
-            {/* Kelas & mapel diturunkan dari jadwal mengajar; backend menolak
-                kombinasi yang tidak diampu, bukan sekadar disembunyikan. */}
-            <ModulNilai guruId={guruData?.id} />
-          </TabsContent>
-
-          <TabsContent value="konten" className="mt-4">
-            {/* Murid hanya membaca yang berstatus terbit; draf tidak pernah bocor.
-                Konten kelas sengaja tidak menumpang tabel `announcements`, yang
-                memasok situs publik. */}
-            <ModulKontenKelas guruId={guruData?.id} />
-          </TabsContent>
-
-          <TabsContent value="wali" className="mt-4">
-            {/* Hanya menyiapkan pesan dan membuka WhatsApp guru; tidak ada pesan
-                yang terkirim dari sini dan tidak ada kredensial yang disimpan.
-                Nomor selalu dari basis data, tidak pernah ditanam di kode. */}
-            <ModulKomunikasiWali guruNama={guruData?.nama} />
-          </TabsContent>
-        </Tabs>
       </div>
       <Dialog open={Boolean(previewAvatar)} onOpenChange={(open) => { if (!open) setPreviewAvatar(null); }}>
         <DialogContent className="max-w-md overflow-hidden p-0">
