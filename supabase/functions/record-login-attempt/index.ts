@@ -38,8 +38,10 @@ Deno.serve(async (req) => {
       || firstHeaderValue(req.headers.get("cf-connecting-ip"))
       || firstHeaderValue(req.headers.get("x-real-ip"))
       || "unknown";
-    const city = decodeHeader(req.headers.get("cf-ipcity") || req.headers.get("x-vercel-ip-city"));
-    const country = decodeHeader(req.headers.get("cf-ipcountry") || req.headers.get("x-vercel-ip-country"));
+    // Header geo Cloudflare saja. Pasangan `x-vercel-ip-*` dicabut: proyek ini
+    // tidak memakai Vercel, jadi header itu tidak akan pernah ada.
+    const city = decodeHeader(req.headers.get("cf-ipcity"));
+    const country = decodeHeader(req.headers.get("cf-ipcountry"));
     const userAgent = String(req.headers.get("user-agent") || "unknown").slice(0, 500);
 
     const admin = getServiceRoleClient();

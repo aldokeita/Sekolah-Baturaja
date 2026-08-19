@@ -1,5 +1,12 @@
 # Hasil Persiapan Deployment Frontend Staging Vercel
 
+> **WARISAN — JANGAN DIIKUTI.** Dokumen ini catatan sejarah pekerjaan pada produk pendahulu
+> (LPQ Al-Fath Maulana) dan seluruh isinya bertumpu pada Vercel dan Supabase online. **Proyek SDN
+> Baturaja tidak memakai keduanya.** Deployment yang benar: satu VPS, satu domain, Nginx atau Caddy
+> menyajikan `dist/` dan meneruskan `/api` ke Go di mesin yang sama — lihat `SETUP.md`. Isi di bawah
+> dibiarkan utuh karena ia catatan apa yang dulu dikerjakan, bukan petunjuk apa yang harus
+> dikerjakan; jangan menyalin satu langkah pun dari sini.
+
 > Arsip alur kerja yang telah disanitasi. Semua target online lama telah dihapus; dokumen ini bukan bukti deployment LPQ Al-Fath Maulana dan tidak boleh dijalankan sebelum staging baru disetujui.
 
 Tanggal: 2026-06-25

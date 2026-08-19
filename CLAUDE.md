@@ -4,7 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-School management system with an Indonesian-language UI, deployed on Vercel.
+School management system with an Indonesian-language UI.
+
+**Deployment: one VPS, one domain.** Nginx or Caddy serves the static `dist/` build and reverse
+proxies the Go API and PostgreSQL running on the same machine. `SETUP.md` has the steps.
+
+This project has **nothing to do with Vercel** — do not mention it, do not suggest it, do not add
+config for it. Earlier revisions of this file, of `AI_DEVELOPMENT_GUIDE.md`, and of five other docs
+claimed the app was deployed there. It never was. The claim kept resurfacing because this file is
+loaded every session, so it is stated plainly here instead.
+
+The one requirement the web server must satisfy is routing every path to `index.html`; without it,
+deep links like `/berita` return 404 on reload. That is real and host-independent — keep it whatever
+else changes.
 
 The app is **mid-migration**: it began as a different school-management product and is being converted
 into **SDN Baturaja**, a general public elementary school. Legacy data contracts may remain for

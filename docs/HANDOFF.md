@@ -5,6 +5,13 @@
 Pekerjaan berjalan di `feat/vercel-ready`, dengan dua remote: `origin` (aldokeita) dan
 `upstream` (npdkdev). Branch ini belum di-merge ke `master`.
 
+**Nama branch itu menyesatkan dan tidak akan diperbaiki di tempatnya.** Proyek ini TIDAK memakai
+Vercel — tidak pernah. Namanya sisa dari produk pendahulu, dan mengganti nama branch yang sudah
+dipush ke dua remote lebih berisiko daripada manfaatnya. Deployment yang benar: satu VPS, satu
+domain, Nginx atau Caddy menyajikan `dist/` dan meneruskan `/api` ke Go di mesin yang sama. Lihat
+`SETUP.md`. Seluruh sebutan Vercel di dokumen dan kode sudah dicabut, `vercel.json` sudah dihapus,
+dan `CLAUDE.md` menyatakannya di paragraf pertama supaya tidak muncul lagi tiap sesi.
+
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
 

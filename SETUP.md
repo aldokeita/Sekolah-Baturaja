@@ -150,18 +150,61 @@ dashboard di `http://localhost:3000/login`.
 npm run build
 ```
 
-Hasilnya di folder `dist/`. Unggah ke Vercel, Netlify, atau server web apa pun.
+Hasilnya di folder `dist/`.
 
-Kalau memakai Vercel, `vercel.json` sudah disiapkan. Isi pengaturannya:
+Situs dan API tinggal di **satu VPS dengan satu domain**: Nginx atau Caddy menyajikan `dist/` dan
+meneruskan `/api` ke Go yang berjalan di mesin yang sama. Karena satu domain, peramban tidak pernah
+mengirim permintaan lintas-asal, jadi CORS tidak ikut bermain.
 
-| Kolom | Nilai |
-|---|---|
-| Build Command | `npm run build` |
-| Output Directory | `dist` |
-| Environment Variable | `VITE_API_URL` = alamat API Anda |
+`VITE_API_URL` harus berisi **asal domain situs itu sendiri** — skema dan host saja:
 
-Kalau memakai server web sendiri, arahkan **semua** alamat ke `index.html`. Tanpa itu, halaman
-seperti `/berita` akan menunjukkan "404" saat dimuat ulang.
+```
+VITE_API_URL=https://sekolah.contoh.sch.id
+```
+
+Jangan diisi `/api` dan jangan dikosongkan. `src/lib/apiClient.js` menyusun alamat sebagai
+`${VITE_API_URL}${path}` sementara `path` sudah memuat `/api`, jadi `/api` menghasilkan
+`/api/api/…`; dan nilai kosong jatuh ke bawaan `http://localhost:8080` karena barisnya memakai `||`.
+Tanpa garis miring di akhir, supaya tidak muncul `//api/…`.
+
+Contoh Caddy (`/etc/caddy/Caddyfile`) — HTTPS diurus sendiri oleh Caddy:
+
+```
+sekolah.contoh.sch.id {
+    root * /var/www/sekolah/dist
+    handle /api/* {
+        reverse_proxy localhost:8080
+    }
+    handle /files/* {
+        reverse_proxy localhost:8080
+    }
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+}
+```
+
+Contoh Nginx yang setara:
+
+```nginx
+server {
+    server_name sekolah.contoh.sch.id;
+    root /var/www/sekolah/dist;
+
+    location /api/   { proxy_pass http://127.0.0.1:8080; proxy_set_header Host $host; proxy_set_header X-Forwarded-Proto $scheme; }
+    location /files/ { proxy_pass http://127.0.0.1:8080; proxy_set_header Host $host; proxy_set_header X-Forwarded-Proto $scheme; }
+    location /       { try_files $uri /index.html; }
+}
+```
+
+Tiga hal yang wajib benar:
+
+| Hal | Nilai | Kalau salah |
+|---|---|---|
+| `try_files … /index.html` | fallback semua alamat | `/berita` jadi 404 saat dimuat ulang |
+| `X-Forwarded-Proto` | diteruskan ke API | tautan berkas jadi `http://` di situs `https://` |
+| `/files/` | ikut diteruskan ke API | foto guru dan murid tidak muncul |
 
 **API dan database** perlu server yang menyala terus (VPS). Salin folder proyek ke sana, buat
 `backend/.env` seperti bagian 2 tapi dengan `CORS_ORIGIN` berisi domain situs Anda, lalu jalankan
@@ -443,7 +486,7 @@ docker compose up -d --build
 | `docker compose up` langsung berhenti | `POSTGRES_PASSWORD` masih kosong | isi di `backend/.env` |
 | API berhenti sendiri saat menyala | `JWT_SECRET` atau `JWT_REFRESH_SECRET` kosong | isi keduanya dengan nilai berbeda |
 | Port 8080 sudah dipakai | ada aplikasi lain di port itu | matikan aplikasi itu, atau ubah `PORT` di `backend/.env` |
-| `/berita` jadi 404 setelah dimuat ulang | server web belum diarahkan ke `index.html` | pakai `vercel.json`, atau atur *fallback* di server web |
+| `/berita` jadi 404 setelah dimuat ulang | server web belum diarahkan ke `index.html` | atur *fallback* ke `index.html` di server web (lihat bagian build) |
 | Data hilang setelah dimatikan | memakai `down -v` | jangan pakai `-v` kecuali memang ingin mengosongkan |
 | Foto guru tidak muncul | API diakses lewat alamat berbeda dari yang menyimpan foto | pastikan `VITE_API_URL` konsisten sejak awal |
 

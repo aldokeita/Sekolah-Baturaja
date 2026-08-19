@@ -49,15 +49,17 @@ Apply instructions in this order:
 Never silently override an explicit user decision with a stylistic preference from this skill.
 
 ## Project assumptions
-Treat this repository as a React/Vite web application connected to Supabase and deployed through GitHub and Vercel.
+Treat this repository as a React/Vite frontend talking to a Go API over PostgreSQL. There is no
+Supabase client in the app and the project does not use Vercel — both belong to the predecessor
+product. Deployment is one VPS with one domain: Nginx or Caddy serves `dist/` and reverse proxies
+`/api` to Go on the same machine. See `SETUP.md`.
 Default environment model:
 - local source code for implementation;
-- Supabase staging baru milik SDN Baturaja untuk online data dan backend verification;
-- Vercel Preview for experimental branches;
-- Vercel staging project for accepted `master` changes;
+- local PostgreSQL via `backend/docker-compose.yml` for data and backend verification;
+- `npm run dev` in a browser for verifying experimental branches — there is no preview service;
 - production remains untouched unless the user explicitly authorizes it.
 Never print, document, or commit credentials. Frontend may use only publishable browser-safe configuration.
-Never connect to, reuse, or depend on an lembaga sumber repository, Supabase project, Vercel project, domain, credential, account, or operational data.
+Never connect to, reuse, or depend on an lembaga sumber repository, database, domain, credential, account, or operational data.
 
 ## Token-efficient context acquisition
 Start narrow. Read only what is needed to make the next correct decision.
@@ -87,7 +89,7 @@ Approach:
 - define a visual thesis and signature moment;
 - reuse data and behavior;
 - perform desktop, tablet, and mobile visual QA;
-- deploy a Vercel Preview before merging.
+- verify it yourself in a browser against `npm run dev` before merging.
 
 ### C. New product feature
 Examples: achievement system, parent portal, registration, analytics module.
@@ -412,7 +414,7 @@ Run broader integration or E2E tests when changes affect schema, RLS, Auth, Stor
 ### Step 8: Delivery
 - commit only related files;
 - use a focused Conventional Commit message;
-- push the feature branch for Vercel Preview;
+- push the feature branch;
 - do not merge to `master` unless instructed;
 - report concisely.
 
@@ -441,8 +443,8 @@ A task is complete only when applicable criteria are satisfied:
 - accessibility basics pass;
 - relevant tests and build pass;
 - no secret or unrelated file is included;
-- Vercel Preview or staging reflects the intended commit;
-- rollback remains possible through Git history and deployment history.
+- the running dev server reflects the intended commit;
+- rollback remains possible through Git history and a kept copy of the previous `dist/` build.
 
 ## Completion report
 Keep the final report compact. Include only:
