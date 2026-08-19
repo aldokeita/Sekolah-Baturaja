@@ -88,8 +88,46 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
         if (data) setSantriFullData(data);
     }, [santri?.id]);
 
-    const guardianName = santriFullData?.nama_ibu || santriFullData?.nama_ayah || santriFullData?.nama_wali
+    /* Baris yang dilempar pemanggil kadang hanya sebagian kolom — daftar murid per
+     * kelas tidak membawa data orang tua, misalnya. Yang dari endpoint detail
+     * didahulukan karena isinya seluruh kolom. */
+    const isi = (kunci) => santriFullData?.[kunci] ?? santri?.[kunci] ?? null;
+
+    /* Dipakai rapor yang DICETAK, jadi labelnya tidak boleh mengaku-aku. Nilainya
+     * jatuh ke nama ayah bila nama ibu kosong, karena itu label di rapor berbunyi
+     * "Wali Murid" saja — bukan "Wali Murid (Ibu)" seperti sebelumnya, yang bisa
+     * mencetak nama ayah di bawah tulisan "Ibu". */
+    const namaWali = santriFullData?.nama_ibu || santriFullData?.nama_ayah || santriFullData?.nama_wali
         || santri?.nama_ibu || santri?.nama_ayah || santri?.nama_wali || '-';
+
+    const tanggalPanjang = (nilai) => {
+        if (!nilai) return '-';
+        const tanggal = new Date(nilai);
+        if (Number.isNaN(tanggal.getTime())) return '-';
+        return tanggal.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    };
+
+    const umur = useMemo(() => {
+        const lahir = new Date(santriFullData?.tanggal_lahir || santri?.tanggal_lahir || '');
+        if (Number.isNaN(lahir.getTime())) return null;
+        const kini = new Date();
+        let tahun = kini.getFullYear() - lahir.getFullYear();
+        const selisihBulan = kini.getMonth() - lahir.getMonth();
+        // Ulang tahunnya belum lewat tahun ini, jadi kurangi satu.
+        if (selisihBulan < 0 || (selisihBulan === 0 && kini.getDate() < lahir.getDate())) tahun -= 1;
+        return tahun >= 0 && tahun < 130 ? tahun : null;
+    }, [santriFullData, santri]);
+
+    /* Empat penanda berkas sudah lama ada di tabel `santri` tetapi tidak pernah
+     * ditampilkan di tempat yang mudah dilihat wali kelas — padahal inilah yang
+     * dikejar tiap awal tahun. Ditandai dengan ikon, bukan hanya warna, supaya
+     * tetap terbaca oleh yang sulit membedakan warna. */
+    const BERKAS = [
+        ['berkas_foto', 'Foto'],
+        ['berkas_akta', 'Akta'],
+        ['berkas_kk', 'Kartu Keluarga'],
+        ['berkas_form', 'Formulir'],
+    ];
 
     const fetchJilidHistory = useCallback(async () => {
         if (!santri?.id) return;
@@ -327,24 +365,93 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <p className="font-bold text-slate-800 dark:text-slate-200">{santri.className || santri.class?.nama_kelas || '-'}</p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Wali Murid (Ibu)</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{guardianName}</p>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nomor Induk</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">{isi('nomor_induk') || '-'}</p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Pekerjaan Ayah</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{santriFullData?.pekerjaan_ayah || santri.pekerjaan_ayah || '-'}</p>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Jenis Kelamin</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('jenis_kelamin') || '-'}</p>
                             </div>
                             <div>
-                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Pekerjaan Ibu</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{santriFullData?.pekerjaan_ibu || santri.pekerjaan_ibu || '-'}</p>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Tempat &amp; Tanggal Lahir</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">
+                                    {[isi('tempat_lahir'), tanggalPanjang(isi('tanggal_lahir'))].filter((bagian) => bagian && bagian !== '-').join(', ') || '-'}
+                                    {umur !== null && <span className="ml-1 font-semibold text-muted-foreground">({umur} tahun)</span>}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Status</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('status') || '-'}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Tanggal Pendaftaran</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{tanggalPanjang(isi('tanggal_pendaftaran'))}</p>
+                            </div>
+                            {/* Nama ayah dan ibu ditampilkan terpisah. Sebelumnya hanya ada
+                                satu baris "Wali Murid (Ibu)" yang diam-diam jatuh ke nama
+                                ayah bila nama ibu kosong — jadi labelnya bisa berbohong. */}
+                            <div>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nama Ayah</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('nama_ayah') || '-'}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nama Ibu</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('nama_ibu') || '-'}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nomor HP Orang Tua</p>
+                                {isi('no_hp_ortu')
+                                    ? <a href={`tel:${String(isi('no_hp_ortu')).replace(/[^\d+]/g, '')}`} className="font-bold tabular-nums text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100">{isi('no_hp_ortu')}</a>
+                                    : <p className="font-bold text-slate-800 dark:text-slate-200">-</p>}
+                            </div>
+                            <div>
+                                {/* Absensi berjalan terpusat lewat satu mesin pemindai, jadi
+                                    saat kartu seorang murid tidak terbaca, nomor inilah yang
+                                    perlu guru sebutkan ketika melapor. */}
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nomor Kartu (RFID)</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">{isi('rfid_tag') || 'Belum terdaftar'}</p>
+                            </div>
+                            <div className="sm:col-span-2">
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Alamat Murid</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('alamat') || '-'}</p>
                             </div>
                             <div className="sm:col-span-2">
                                 {/* Falls back to the student's own address — a null
                                     alamat_ortu means "same address", not "unknown". */}
                                 <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Alamat Orang Tua</p>
                                 <p className="font-bold text-slate-800 dark:text-slate-200">
-                                    {santriFullData?.alamat_ortu || santri.alamat_ortu || santriFullData?.alamat || santri.alamat || '-'}
+                                    {isi('alamat_ortu') || isi('alamat') || '-'}
                                 </p>
+                            </div>
+                            <div className="sm:col-span-2">
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Kelengkapan Berkas</p>
+                                <div className="mt-1.5 flex flex-wrap gap-2">
+                                    {BERKAS.map(([kunci, label]) => {
+                                        const lengkap = Boolean(isi(kunci));
+                                        return (
+                                            <span
+                                                key={kunci}
+                                                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold ${lengkap
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200'
+                                                    : 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
+                                            >
+                                                {lengkap ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                                                {label}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            {/* Pekerjaan orang tua ditaruh paling bawah: hampir tidak pernah
+                                dipakai guru, sementara nama dan nomor HP di atas justru yang
+                                dicari. Dulu urutannya kebalikannya. */}
+                            <div>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Pekerjaan Ayah</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('pekerjaan_ayah') || '-'}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Pekerjaan Ibu</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{isi('pekerjaan_ibu') || '-'}</p>
                             </div>
                         </div>
                     </div>
@@ -598,8 +705,8 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                 <p className="font-black text-lg text-purple-600 dark:text-purple-400">{santri.jilid || '-'}</p>
                             </div>
                             <div>
-                                <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Wali Murid (Ibu)</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200">{guardianName}</p>
+                                <p className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider">Wali Murid</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200">{namaWali}</p>
                                 <p className="text-xs text-muted-foreground">HP: {santriFullData?.no_hp_ortu || santri.no_hp_ortu || '-'}</p>
                             </div>
                             <div className="sm:col-span-2 md:col-span-4 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex flex-wrap items-center gap-2">
