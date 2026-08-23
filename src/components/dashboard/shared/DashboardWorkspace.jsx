@@ -16,6 +16,7 @@ import PaymentHistory from '../admin/PaymentHistory';
 import ContentManagement from '../admin/ContentManagement';
 import PpdbRegistrations from '../admin/PpdbRegistrations';
 import LoginLogs from '../admin/LoginLogs';
+import WaNotifications from '../admin/WaNotifications';
 import ExpenseManagement from '../admin/ExpenseManagement';
 import ClassManagement from '../admin/ClassManagement';
 import JadwalPelajaran from '../admin/JadwalPelajaran';
@@ -65,6 +66,7 @@ const renderModule = (value) => {
     case 'game-config': return <GameConfiguration />;
     case 'backup': return <BackupRestoreManagement />;
     case 'logs': return <LoginLogs />;
+    case 'wa-notifikasi': return <WaNotifications />;
     default: return null;
   }
 };

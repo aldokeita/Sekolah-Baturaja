@@ -2,8 +2,7 @@ import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, LogIn, FileText,
   CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar,
-  Database, CalendarDays, Inbox,
-} from 'lucide-react';
+  Database, CalendarDays, Inbox, MessageSquare,
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import { enableBackupRestore, enableTahfizh } from '@/lib/featureFlags';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
@@ -40,6 +39,7 @@ const adminTabs = [
   { value: 'game-config', label: 'Konfigurasi', icon: Settings, group: 'konten' },
   { value: 'backup', label: 'Backup & Restore', icon: Database, group: 'sistem' },
   { value: 'logs', label: 'Log Login', icon: LogIn, group: 'sistem' },
+  { value: 'wa-notifikasi', label: 'Notifikasi WA', icon: MessageSquare, group: 'sistem' },
 ].filter(tab => {
   if (tab.value === 'backup') return enableBackupRestore;
   return true;
