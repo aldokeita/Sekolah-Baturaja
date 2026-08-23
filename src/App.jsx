@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -35,14 +35,6 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { publicFetch } from '@/lib/apiClient';
 import { enableDeferredFeatures, enableGameFeatures } from '@/lib/featureFlags';
 import { DEFAULT_LOGO_PATH, isLegacyLogoPath } from '@/lib/schoolAssets';
-
-const RouteLogger = () => {
-  const location = useLocation();
-  useEffect(() => {
-    console.log(`App Routing to: ${location.pathname}${location.search}`);
-  }, [location]);
-  return null;
-};
 
 /* ------------------------------------------------------------------ */
 /* Dynamic logo crossfade helper                                      */
@@ -166,7 +158,6 @@ function App() {
       <AuthProvider>
         <DndProvider backend={HTML5Backend}>
           <Router>
-            <RouteLogger />
             <ScrollToTop />
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
               {/* Jaring terakhir. Boundary di dalam DashboardPage hanya menangkap

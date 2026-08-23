@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,18 +28,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   // Once true, background profile refreshes must NOT unmount children.
   const hasAuthorized = useRef(false);
 
-  useEffect(() => {
-    console.log('ProtectedRoute mounting/updating', {
-      path: location.pathname,
-      isLoading: loading,
-      isProfileLoading: profileLoading,
-      isAuthenticated: !!user,
-      userId: user?.id,
-      role,
-      allowedRoles,
-    });
-  }, [user, loading, profileLoading, location, role, allowedRoles]);
-
   // Record first successful authorization
   if (user && role && roleIsAllowed) {
     hasAuthorized.current = true;
@@ -58,7 +46,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       // Keep current children mounted — do not flash to login mid-session.
       return children;
     }
-    console.log('Unauthorized access attempt to', location.pathname, '- Redirecting to /login');
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
@@ -73,12 +60,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (!roleIsAllowed) {
-    console.warn('Forbidden route access attempt', {
-      path: location.pathname,
-      role,
-      allowedRoles,
-    });
-
     if (location.pathname !== '/dashboard') {
       return <Navigate to="/dashboard" replace />;
     }
@@ -96,7 +77,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     );
   }
 
-  console.log('Access granted to protected route:', location.pathname);
   return children;
 };
 

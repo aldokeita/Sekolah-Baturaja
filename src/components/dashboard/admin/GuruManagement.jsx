@@ -146,7 +146,6 @@ const GuruManagement = () => {
   const handleBackupToExcel = async () => {
     try {
         toast({ title: "Memproses Backup", description: "Sedang menyiapkan data untuk diekspor..." });
-        console.log("Starting Backup to Excel for Guru...");
 
         const allGuru = await fetchGuruList();
 

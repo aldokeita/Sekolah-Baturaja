@@ -324,7 +324,6 @@ const BackupRestoreManagement = () => {
                 }
             }
 
-            console.log("Backup file successfully generated and downloaded.");
             toast({ title: "Backup Berhasil", description: "File backup telah berhasil dibuat dan diunduh.", className: "bg-green-50 dark:bg-green-900 border-green-200" });
         } catch (error) {
             console.error('Execute Backup Full Error:', error);
@@ -363,7 +362,6 @@ const BackupRestoreManagement = () => {
         setProgress('Menganalisis file...');
 
         try {
-            console.log(`Parsing file: ${restoreFile.name}`);
             const reader = new FileReader();
 
             reader.onload = async (e) => {
