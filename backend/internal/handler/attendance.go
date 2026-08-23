@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"lpq-backend/internal/middleware"
+	"lpq-backend/internal/wanotify"
 )
 
 // isValidISODate melaporkan apakah s berformat tanggal YYYY-MM-DD yang sah.
@@ -291,6 +292,15 @@ func (h *AttendanceHandler) insertAttendance(ctx context.Context, in attendanceI
 			return nil, true, nil
 		}
 		return nil, false, err
+	}
+	if a.Role == "santri" && a.Status != nil && *a.Status != "Hadir" {
+		sesi := ""
+		if a.Sesi != nil {
+			sesi = *a.Sesi
+		}
+		// Kabar ke orang tua dikirim lewat outbox; gagal antre tidak boleh
+		// menggagalkan absensi yang sudah tersimpan.
+		wanotify.QueueAbsensi(context.Background(), h.db, a.UserID, *a.Status, a.AttendanceDate, sesi, a.ID)
 	}
 	return &a, false, nil
 }

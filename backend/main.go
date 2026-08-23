@@ -18,6 +18,7 @@ import (
 	"lpq-backend/internal/handler"
 	"lpq-backend/internal/middleware"
 	"lpq-backend/internal/storage"
+	"lpq-backend/internal/wanotify"
 )
 
 func main() {
@@ -34,6 +35,14 @@ func main() {
 		log.Fatalf("db: %v", err)
 	}
 	defer pool.Close()
+
+	// Pekerja notifikasi WhatsApp hanya menyala bila token gateway di-set lewat
+	// environment; tanpa token seluruh fitur WA diam dan aplikasi berperilaku
+	// seperti sebelumnya.
+	waClient := wanotify.NewClient(os.Getenv("WA_GATEWAY_URL"), os.Getenv("WA_GATEWAY_TOKEN"))
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	defer workerCancel()
+	wanotify.StartWorker(workerCtx, pool, waClient)
 
 	store := storage.New(cfg.UploadDir, cfg.JWTSecret, cfg.MaxUploadBytes)
 
@@ -61,6 +70,7 @@ func main() {
 	whatsappHandler := handler.NewWhatsAppHandler(pool)
 	ppdbHandler := handler.NewPpdbHandler(pool)
 	backupHandler := handler.NewBackupHandler(pool)
+	waNotifyHandler := handler.NewWaNotifyHandler(pool)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -161,6 +171,7 @@ func main() {
 		// WhatsApp per-jilid group links. Reads are admin+guru (guru opens
 		// JilidChangeModal from GuruDashboard); writes are admin only.
 		r.Mount("/api/whatsapp", whatsappHandler.Routes())
+	r.Mount("/api/wa", waNotifyHandler.Routes())
 
 		// Backup & restore — admin only (diperiksa di dalam handler).
 		r.Mount("/api/backup", backupHandler.Routes())

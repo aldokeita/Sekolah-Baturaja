@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -15,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"lpq-backend/internal/middleware"
+	"lpq-backend/internal/wanotify"
 )
 
 type PaymentHandler struct {
@@ -590,6 +592,17 @@ func (h *PaymentHandler) CreatePayments(w http.ResponseWriter, r *http.Request) 
 
 	// The UI reads data[0].id from the response, so return whole rows.
 	inserted := []map[string]any{}
+	// Kwitansi WA dikumpulkan selama loop dan baru diantrikan SETELAH commit
+	// sukses — rollback transaksi tidak boleh meninggalkan pesan palsu.
+	type waReceipt struct {
+		santriID string
+		bulan    *int
+		tahun    *int
+		jumlah   float64
+		metode   string
+		refID    string
+	}
+	pendingWA := []waReceipt{}
 	for _, item := range items {
 		var id string
 		var createdAt string
@@ -606,6 +619,23 @@ func (h *PaymentHandler) CreatePayments(w http.ResponseWriter, r *http.Request) 
 		if err != nil {
 			jsonError(w, fmt.Sprintf("gagal menyimpan pembayaran: %v", err), http.StatusInternalServerError)
 			return
+		}
+		if item.Status == "paid" {
+			bln, thn := -1, -1
+			if item.Bulan != nil {
+				bln = *item.Bulan
+			}
+			if item.Tahun != nil {
+				thn = *item.Tahun
+			}
+			pendingWA = append(pendingWA, waReceipt{
+				santriID: item.SantriID,
+				bulan:    item.Bulan,
+				tahun:    item.Tahun,
+				jumlah:   item.Jumlah,
+				metode:   metodeText(item.MetodePembayaran),
+				refID:    fmt.Sprintf("%s:%d:%d", item.SantriID, bln, thn),
+			})
 		}
 		inserted = append(inserted, map[string]any{
 			"id":                 id,
@@ -625,6 +655,9 @@ func (h *PaymentHandler) CreatePayments(w http.ResponseWriter, r *http.Request) 
 	if err := tx.Commit(r.Context()); err != nil {
 		jsonError(w, fmt.Sprintf("gagal menyimpan pembayaran: %v", err), http.StatusInternalServerError)
 		return
+	}
+	for _, wr := range pendingWA {
+		wanotify.QueuePembayaran(context.Background(), h.db, wr.santriID, wr.bulan, wr.tahun, wr.jumlah, wr.metode, wr.refID)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -1483,4 +1516,12 @@ func (h *PaymentHandler) Cashflow(w http.ResponseWriter, r *http.Request) {
 		"paymentCount":     countIn,
 		"expenseCount":     countOut,
 	})
+}
+
+// metodeText membedah *string metode pembayaran untuk pesan kwitansi WA.
+func metodeText(s *string) string {
+	if s == nil {
+		return "-"
+	}
+	return *s
 }

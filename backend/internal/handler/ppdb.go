@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"lpq-backend/internal/middleware"
+	"lpq-backend/internal/wanotify"
 )
 
 // PPDB — pendaftaran murid baru.
@@ -962,6 +963,15 @@ func (h *PpdbHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if body.Status != nil && (*body.Status == "diterima" || *body.Status == "ditolak") {
+		noHpWali := ""
+		if p.NoHpWali != nil {
+			noHpWali = *p.NoHpWali
+		}
+		wanotify.QueuePPDB(context.Background(), h.db,
+			p.NamaLengkap, p.NoHp, noHpWali, p.NomorPendaftaran,
+			*body.Status, p.ID+":"+*body.Status)
+	}
 	jsonOK(w, map[string]any{"data": p})
 }
 
