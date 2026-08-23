@@ -327,7 +327,7 @@ func (h *SantriHandler) BulkCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body []map[string]any
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<20)).Decode(&body); err != nil {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
@@ -335,31 +335,50 @@ func (h *SantriHandler) BulkCreate(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "data kosong", http.StatusBadRequest)
 		return
 	}
+	if len(body) > 1000 {
+		jsonError(w, "maksimal 1000 baris per permintaan", http.StatusBadRequest)
+		return
+	}
 
-	tx, err := h.db.Begin(r.Context())
+	ctx := r.Context()
+	tx, err := h.db.Begin(ctx)
 	if err != nil {
 		jsonError(w, "gagal memulai transaksi", http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback(r.Context())
+	defer tx.Rollback(ctx)
 
+	/* Impor Excel butuh laporan PER BARIS, bukan gagal-semua: satu NISN ganda
+	 * tidak boleh membatalkan 499 baris lain yang benar. Savepoint per baris
+	 * membuat baris rusak dibatalkan sendirian lalu dilewati, sementara seluruh
+	 * proses tetap satu transaksi yang sama. */
 	created := make([]map[string]any, 0, len(body))
-	for _, rec := range body {
-		// insertSantriTx also creates the auth.users + user_profiles rows that
-		// santri.id references, and hashes the password itself.
-		item, err := insertSantriTx(r.Context(), tx, rec)
-		if err != nil {
-			jsonError(w, "gagal menyisipkan santri: "+err.Error(), http.StatusBadRequest)
+	failed := make([]map[string]any, 0)
+	for i, rec := range body {
+		sp := fmt.Sprintf("bulk_santri_%d", i)
+		if _, err := tx.Exec(ctx, "SAVEPOINT "+sp); err != nil {
+			jsonError(w, "gagal menyiapkan simpanan baris", http.StatusInternalServerError)
 			return
 		}
+
+		// insertSantriTx also creates the auth.users + user_profiles rows that
+		// santri.id references, defaults the password to nisn/nis/nomor_induk,
+		// and hashes it.
+		item, err := insertSantriTx(ctx, tx, rec)
+		if err != nil {
+			_, _ = tx.Exec(ctx, "ROLLBACK TO SAVEPOINT "+sp)
+			failed = append(failed, map[string]any{"index": i, "error": err.Error()})
+			continue
+		}
+		_, _ = tx.Exec(ctx, "RELEASE SAVEPOINT "+sp)
 		created = append(created, item)
 	}
-	if err := tx.Commit(r.Context()); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		jsonError(w, "gagal menyimpan data", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	jsonData(w, created)
+	jsonData(w, map[string]any{"inserted": created, "failed": failed})
 }
 
 // PUT /api/santri/{id}
