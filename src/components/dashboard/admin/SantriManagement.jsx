@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import BirthdayNotificationModal from '@/components/dashboard/shared/BirthdayNotificationModal';
 import { motion } from 'framer-motion';
 import {
+  bulkInsertSantri,
   changeSantriCategory,
   createSantri,
   fetchClassList,
@@ -594,13 +595,31 @@ const SantriManagement = () => {
     }, {});
   }, [classesList]);
 
+  const [bulkImporting, setBulkImporting] = useState(false);
+
   const confirmBulkUpload = async () => {
-      if (!uploadReport?.validData) return;
-      toast({
-          title: "Import massal ditunda",
-          description: "Pembuatan akun murid massal perlu operasi backend atomik agar Auth, profil, alias login, dan membership tetap konsisten.",
-          variant: "destructive"
-      });
+      if (!uploadReport?.validData?.length) return;
+      setBulkImporting(true);
+      try {
+          const { inserted, failed } = await bulkInsertSantri(uploadReport.validData);
+          if (failed.length === 0) {
+              toast({ title: 'Impor selesai', description: `${inserted.length} murid berhasil dibuat beserta akun loginnya.` });
+          } else {
+              const detail = failed.slice(0, 3)
+                  .map(f => `Baris ${f.index + 2}: ${f.error}`)
+                  .join('; ');
+              toast({
+                  title: `${inserted.length} berhasil, ${failed.length} gagal`,
+                  description: detail + (failed.length > 3 ? ' …' : ''),
+                  variant: 'destructive',
+              });
+          }
+          setIsReportOpen(false);
+          loadData();
+      } catch (err) {
+          toast({ title: 'Impor gagal', description: err.message, variant: 'destructive' });
+      }
+      setBulkImporting(false);
   };
 
   const handleDownloadData = async () => {

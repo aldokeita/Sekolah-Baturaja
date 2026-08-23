@@ -259,8 +259,17 @@ export const fetchClassCount = async () => {
 };
 
 export const bulkInsertSantri = async (payloads) => {
-  const data = await apiClient.post('/api/santri/bulk', payloads);
-  return (data || []).map(mapSantriForLegacyUi);
+  const res = await apiClient.post('/api/santri/bulk', payloads);
+  return {
+    inserted: (res?.inserted || []).map(mapSantriForLegacyUi),
+    failed: res?.failed || [],
+  };
+};
+
+/** Impor massal guru. Respons: { inserted:[{item, password_awal?}], failed:[{index,email,error}] } */
+export const bulkInsertGuru = async (rows) => {
+  const res = await apiClient.post('/api/guru/bulk', { rows });
+  return { inserted: res?.inserted || [], failed: res?.failed || [] };
 };
 
 export const updateSantriJilid = async (id, jilid) => {

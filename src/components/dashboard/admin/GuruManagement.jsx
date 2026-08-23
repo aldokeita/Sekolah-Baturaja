@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from '@/components/ui/card';
 import BirthdayNotificationModal from '@/components/dashboard/shared/BirthdayNotificationModal';
 import * as XLSX from 'xlsx';
-import {
+  bulkInsertGuru,
   createGuru,
   deleteGuru,
   fetchGuruList,
@@ -21,6 +21,7 @@ import {
   pickGuruProfileFields,
   updateGuru,
 } from '@/lib/dataMasterAdapters';
+import ExcelImportDialog from '@/components/dashboard/shared/ExcelImportDialog';
 import { getStorageErrorMessage, resolveAvatarRecords, uploadAvatar } from '@/lib/storageAdapters';
 import { getBirthdaysThisMonth } from '@/lib/birthdayUtils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,6 +69,7 @@ const GuruManagement = () => {
   const [guruList, setGuruList] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGuru, setEditingGuru] = useState(null);
+  const [isExcelImportOpen, setIsExcelImportOpen] = useState(false);
   const [formData, setFormData] = useState({});
   const [filters, setFilters] = useState({ search: '', isNotulen: 'all', rfidStatus: 'all' });
   const photoInputRef = React.useRef(null);
@@ -351,9 +353,14 @@ const GuruManagement = () => {
             </div>
             )}
             {isAdmin && (
-              <button onClick={handleAdd} className="admin-panel-primary-btn">
-                  <Plus className="w-4 h-4"/> Tambah Guru
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setIsExcelImportOpen(true)} className="admin-action-cluster-btn">
+                  <Upload className="w-4 h-4"/> Impor Excel
+                </button>
+                <button onClick={handleAdd} className="admin-panel-primary-btn">
+                    <Plus className="w-4 h-4"/> Tambah Guru
+                </button>
+              </div>
             )}
           </div>
       </div>
@@ -573,6 +580,24 @@ const GuruManagement = () => {
             </div>
         </DialogContent>
       </Dialog>
+
+      <ExcelImportDialog
+        open={isExcelImportOpen}
+        onClose={() => setIsExcelImportOpen(false)}
+        title="Impor Guru"
+        description="Unduh template, isi data guru, lalu unggah. Password kosong akan dibuat acak dan ditampilkan setelah impor."
+        columns={[
+          { header: 'Nama Lengkap*', key: 'nama', required: true, example: 'Budi Santoso' },
+          { header: 'Email*', key: 'email', required: true, example: 'budi@sekolah.sch.id' },
+          { header: 'Password (opsional)', key: 'password', example: '' },
+          { header: 'Role (guru/pentashih/tata_usaha/admin)', key: 'role', example: 'guru' },
+          { header: 'Jabatan', key: 'jabatan', example: 'Guru Kelas' },
+          { header: 'No HP', key: 'no_hp', example: '08123456789' },
+          { header: 'Jenis Kelamin', key: 'jenis_kelamin', example: 'Laki-laki' },
+        ]}
+        submitBulk={bulkInsertGuru}
+        onImported={fetchGuru}
+      />
     </div>
   );
 };
