@@ -3,6 +3,7 @@ import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, LogIn, FileText,
   CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar,
   Database, CalendarDays, Inbox, MessageSquare,
+} from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import { enableBackupRestore, enableTahfizh } from '@/lib/featureFlags';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
