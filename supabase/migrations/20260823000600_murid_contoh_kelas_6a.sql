@@ -68,17 +68,30 @@ BEGIN
         VALUES (v_murid.id, 'santri'::public.app_role, v_murid.nama, 'active')
         ON CONFLICT (id) DO NOTHING;
 
+        -- `angkatan` dan `default_spp_amount` disamakan dengan sepuluh murid contoh
+        -- lainnya. Tanpa keduanya, keempat murid ini terlihat lebih kosong daripada
+        -- teman-temannya di tabel Data Murid (kolom Angkatan bertanda hubung) dan
+        -- kasir tidak punya nominal SPP bawaan untuk mereka.
+        --
+        -- `jilid` SENGAJA dibiarkan NULL. Murid lain memakai 'Jilid 1'/'Jilid 2',
+        -- label metode Qiroati, padahal `tahfizh_config` sekolah ini menyetel
+        -- metode 'iqro' yang tingkatnya 'Iqro 1'..'Iqro 6'. Jadi nilai yang ada
+        -- justru tidak terdaftar di metode sekolahnya sendiri, dan menyalinnya
+        -- hanya memperbanyak data yang tidak cocok. Diisi setelah pemilik memutuskan
+        -- metode mana yang benar.
         INSERT INTO public.santri (
             id, nama_lengkap, nama_panggilan, jenis_kelamin, tempat_lahir, tanggal_lahir,
             tanggal_pendaftaran, nis, nisn, nomor_induk, nama_ayah, nama_ibu, no_hp_ortu,
-            alamat, kategori, status, password, current_class_id, order_in_class
+            alamat, kategori, status, password, current_class_id, order_in_class,
+            angkatan, default_spp_amount
         )
         VALUES (
             v_murid.id, v_murid.nama, v_murid.panggilan, v_murid.jk, 'Baturaja', v_murid.lahir,
             DATE '2026-08-14', v_murid.nis, v_murid.nisn, v_murid.induk, v_murid.ayah, v_murid.ibu, v_murid.hp,
             v_murid.alamat, 'Anak', 'Aktif',
             extensions.crypt(v_murid.nis, extensions.gen_salt('bf', 12)),
-            v_kelas, v_murid.urut
+            v_kelas, v_murid.urut,
+            '2026/2027', 75000.00
         )
         ON CONFLICT (id) DO NOTHING;
 
