@@ -239,8 +239,15 @@ Lakukan hal yang sama untuk akun contoh lain yang akan Anda pakai. Semuanya bers
 | Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
 | Wakil Kepala Sekolah | `pentashih@sdnbaturaja.sch.id` | `pentashih123` |
 
-Murid masuk memakai **nomor induk**, bukan email. Murid contoh bernomor `2026041` bersandi
-`santri123`.
+Murid masuk memakai **nomor induk**, bukan email, dan **sandi awalnya sama dengan nomor induknya
+sendiri**. Murid contoh bernomor `2026041`, jadi sandinya juga `2026041`.
+
+Aturan itu berlaku untuk semua murid, bukan hanya yang contoh: murid yang ditambahkan lewat aplikasi
+atau lewat impor Excel langsung mendapat sandi awal dari nomor induknya. Yang perlu Anda sadari,
+**nama pengguna dan sandinya jadi sama**, sehingga siapa pun yang tahu nomor induk seorang murid bisa
+masuk sebagai murid itu. Nomor induk memang tidak dirahasiakan — ia tertulis di daftar kelas dan
+berkas sekolah. Jadi anggap akun murid sebagai kemudahan, bukan pengamanan, dan mintalah murid atau
+walinya menggantinya bila sekolah Anda memerlukannya.
 
 ### 7.3 · Ganti data contoh
 

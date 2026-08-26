@@ -146,11 +146,18 @@ end $$;
 -- seed because the seed runs first and cannot reference a row this file creates.
 -- Without the placement she shows up under "Murid Belum Masuk Kelas", which
 -- reads like a defect on a fresh install.
+-- Sandinya SAMA DENGAN nomor induknya, mengikuti aturan yang berlaku untuk semua
+-- murid: `insertSantriTx` memberi sandi awal dari nisn/nis/nomor_induk, dan
+-- migrasi 20260823000200 menyamakan murid lama. Berkas ini berjalan SETELAH
+-- migrasi, jadi kalau di sini dipakai sandi lain, satu-satunya murid demo akan
+-- jadi pengecualian dari aturannya sendiri — dan itulah yang terjadi sebelumnya
+-- dengan 'santri123'. Jangan kembalikan ke sandi tetap.
 do $$
 declare
   sid uuid := 'a1fa7a10-0000-0000-0000-000000000014';
   cls uuid := 'b2fa7a20-0000-0000-0000-000000000002';
-  hashed text := extensions.crypt('santri123', extensions.gen_salt('bf', 12));
+  induk text := '2026041';
+  hashed text := extensions.crypt(induk, extensions.gen_salt('bf', 12));
 begin
   insert into auth.users (id, email)
   values (sid, 'murid@sdnbaturaja.sch.id')
@@ -158,7 +165,7 @@ begin
 
   insert into public.santri (id, nomor_induk, nama_lengkap, nama_panggilan,
                              kategori, jenis_kelamin, status, password)
-  values (sid, '2026041', 'Naila Rahmadani', 'Naila', 'Anak', 'Perempuan', 'Aktif', hashed)
+  values (sid, induk, 'Naila Rahmadani', 'Naila', 'Anak', 'Perempuan', 'Aktif', hashed)
   on conflict (id) do update set
     nomor_induk = excluded.nomor_induk,
     nama_lengkap        = excluded.nama_lengkap,

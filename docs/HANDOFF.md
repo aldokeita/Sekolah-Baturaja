@@ -1844,9 +1844,22 @@ Pakai murid uji `1234567890`, jangan murid demo, supaya data demo tetap utuh.
 | Tata Usaha | `tatausaha@sdnbaturaja.sch.id` | `tatausaha123` |
 | Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
 | Wakil Kepala Sekolah | `pentashih@sdnbaturaja.sch.id` | `pentashih123` |
-| Murid | `2026041` atau `Naila` | `santri123` |
+| Murid | `2026041` atau `Naila` | `2026041` — sama dengan nomor induknya |
 
 Sumber: `backend/init/03_dummy_accounts.sql`. Bukan kredensial produksi.
+
+**Sandi murid = nomor induknya, dan itu berlaku untuk SEMUA murid.** `santri123` sudah mati. Untuk
+murid contoh lain di `supabase/seed.sql`, sandinya juga nomor identitasnya sendiri — perhatikan bahwa
+yang dipakai adalah **nisn lebih dulu**, baru nis, baru nomor_induk (urutan `insertSantriTx`), jadi
+untuk Ahmad Fauzan sandinya `9000000001`, bukan `SBR2026001`.
+
+Memeriksa tanpa menampilkan sandi:
+
+```sql
+select nama_lengkap,
+       password = extensions.crypt(coalesce(nullif(trim(nisn),''), nullif(trim(nis),''), nullif(trim(nomor_induk),'')), password) as cocok
+from public.santri where deleted_at is null;
+```
 
 ### Superadmin sengaja TIDAK ada di tabel itu
 
