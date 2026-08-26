@@ -166,9 +166,20 @@ begin
   values (sid, 'murid@sdnbaturaja.sch.id')
   on conflict (id) do update set email = excluded.email;
 
+  -- `jilid` diisi di sini, BUKAN lewat migrasi. Migrasi berjalan sebelum berkas
+  -- init ini, jadi migrasi apa pun yang mencoba menyetel tingkat Naila akan
+  -- berjalan saat barisnya belum ada dan tidak mengubah apa-apa.
+  --
+  -- 'Jilid 2' menyamai murid Kelas 2A, tempat ia ditaruh bila kelas seed ada.
+  -- Nilai itu terdaftar di tangga yang disetel migrasi 20260823000700 (Jilid 1
+  -- sampai Jilid 6, lalu Al-Qur'an) dan posisinya di tengah, jadi tombol Naik
+  -- maupun Turun Tingkat sama-sama punya tujuan.
+  --
+  -- Sengaja TIDAK masuk daftar `on conflict do update`: kalau sekolah sudah
+  -- menetapkan tingkatnya sendiri, jangan ditimpa tiap container dinyalakan.
   insert into public.santri (id, nomor_induk, nama_lengkap, nama_panggilan,
-                             kategori, jenis_kelamin, status, password)
-  values (sid, induk, 'Naila Rahmadani', 'Naila', 'Anak', 'Perempuan', 'Aktif', hashed)
+                             kategori, jenis_kelamin, status, password, jilid)
+  values (sid, induk, 'Naila Rahmadani', 'Naila', 'Anak', 'Perempuan', 'Aktif', hashed, 'Jilid 2')
   on conflict (id) do update set
     nomor_induk = excluded.nomor_induk,
     nama_lengkap        = excluded.nama_lengkap,
