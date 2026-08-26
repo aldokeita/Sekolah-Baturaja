@@ -147,11 +147,14 @@ end $$;
 -- Without the placement she shows up under "Murid Belum Masuk Kelas", which
 -- reads like a defect on a fresh install.
 -- Sandinya SAMA DENGAN nomor induknya, mengikuti aturan yang berlaku untuk semua
--- murid: `insertSantriTx` memberi sandi awal dari nisn/nis/nomor_induk, dan
--- migrasi 20260823000200 menyamakan murid lama. Berkas ini berjalan SETELAH
--- migrasi, jadi kalau di sini dipakai sandi lain, satu-satunya murid demo akan
--- jadi pengecualian dari aturannya sendiri — dan itulah yang terjadi sebelumnya
+-- murid: `insertSantriTx` memberi sandi awal dari nis/nisn/nomor_induk, dan
+-- migrasi 20260823000300 menyamakan murid lama. Naila tidak punya NIS maupun
+-- NISN, jadi yang terpakai nomor induknya. Berkas ini berjalan SETELAH migrasi,
+-- jadi kalau di sini dipakai sandi lain, satu-satunya murid demo akan jadi
+-- pengecualian dari aturannya sendiri — dan itulah yang terjadi sebelumnya
 -- dengan 'santri123'. Jangan kembalikan ke sandi tetap.
+--
+-- Nama penggunanya nama panggilannya, 'Naila'.
 do $$
 declare
   sid uuid := 'a1fa7a10-0000-0000-0000-000000000014';

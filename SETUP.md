@@ -239,15 +239,27 @@ Lakukan hal yang sama untuk akun contoh lain yang akan Anda pakai. Semuanya bers
 | Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
 | Wakil Kepala Sekolah | `pentashih@sdnbaturaja.sch.id` | `pentashih123` |
 
-Murid masuk memakai **nomor induk**, bukan email, dan **sandi awalnya sama dengan nomor induknya
-sendiri**. Murid contoh bernomor `2026041`, jadi sandinya juga `2026041`.
+Murid masuk memakai **nama panggilan** sebagai nama pengguna, dan **NIS sebagai sandi**. Bukan email.
 
-Aturan itu berlaku untuk semua murid, bukan hanya yang contoh: murid yang ditambahkan lewat aplikasi
-atau lewat impor Excel langsung mendapat sandi awal dari nomor induknya. Yang perlu Anda sadari,
-**nama pengguna dan sandinya jadi sama**, sehingga siapa pun yang tahu nomor induk seorang murid bisa
-masuk sebagai murid itu. Nomor induk memang tidak dirahasiakan — ia tertulis di daftar kelas dan
-berkas sekolah. Jadi anggap akun murid sebagai kemudahan, bukan pengamanan, dan mintalah murid atau
-walinya menggantinya bila sekolah Anda memerlukannya.
+Kalau seorang murid belum punya NIS, sandinya diambil dari NISN, lalu dari nomor induk — urutannya
+NIS, NISN, nomor induk. Murid contoh Naila tidak punya NIS, jadi sandinya nomor induknya, `2026041`.
+
+| Murid | Nama pengguna | Sandi |
+|---|---|---|
+| Naila Rahmadani | `Naila` | `2026041` (nomor induk, tidak punya NIS) |
+| Ahmad Fauzan | `Ahmad` | `26001` (NIS) |
+
+Aturan ini berlaku untuk semua murid, bukan hanya yang contoh: murid yang ditambahkan lewat aplikasi
+maupun lewat impor Excel langsung mendapat sandi awal dari nomornya. Nama panggilan diisi otomatis
+dari kata pertama nama lengkap kalau dibiarkan kosong.
+
+**Yang perlu Anda sadari.** Nama panggilan dan NIS keduanya bukan rahasia — keduanya tertulis di
+daftar kelas dan berkas sekolah. Siapa pun yang tahu keduanya bisa masuk sebagai murid itu, dan akun
+murid memuat riwayat pembayaran serta catatan karakter. Ini konvensi yang lazim di sekolah Indonesia,
+tetapi anggaplah akun murid sebagai kemudahan, bukan pengamanan.
+
+Satu hal lagi: **murid belum bisa mengganti sandinya sendiri.** Yang boleh diubah murid hanya nama
+panggilan, nomor HP, dan alamat. Kalau sekolah Anda perlu murid mengganti sandi, itu belum ada.
 
 ### 7.3 · Ganti data contoh
 

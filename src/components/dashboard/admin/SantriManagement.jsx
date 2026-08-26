@@ -458,18 +458,19 @@ const SantriManagement = () => {
             // 16. RFID
             santri.rfid_tag = row[15];
 
-            /* Sandi awal murid = nomor induknya. Urutannya HARUS sama dengan
-               `insertSantriTx` di backend/internal/handler/santri.go — nisn, nis,
-               nomor_induk — supaya murid yang masuk lewat impor dan murid yang
-               dibuat lewat API tidak berakhir dengan aturan berbeda.
+            /* Sandi awal murid = nomor induknya, NIS didahulukan. Urutannya HARUS
+               sama dengan `insertSantriTx` di backend/internal/handler/santri.go —
+               nis, nisn, nomor_induk — supaya murid yang masuk lewat impor dan
+               murid yang dibuat lewat API tidak berakhir dengan sandi berbeda.
                Nama panggilan DICABUT dari daftar ini. Ia dulu jadi pilihan
                terakhir, sehingga murid tanpa nomor bisa mendapat sandi berupa
                namanya sendiri — jauh lebih mudah diterka daripada nomor induk,
-               dan bertentangan dengan aturan yang diminta pemilik. Sekarang baris
-               tanpa satu pun nomor ditolak, bukan diberi sandi lemah. */
+               dan sekarang nama panggilan justru dipakai sebagai nama pengguna,
+               jadi keduanya akan sama persis. Baris tanpa satu pun nomor
+               ditolak, bukan diberi sandi lemah. */
             if (!santri.password) {
-                 const fallback = santri.nisn || santri.nis || santri.nomor_induk;
-                 if (!fallback) throw new Error('Sandi tidak bisa dibuat otomatis — NISN, NIS, atau Nomor Induk harus diisi minimal satu');
+                 const fallback = santri.nis || santri.nisn || santri.nomor_induk;
+                 if (!fallback) throw new Error('Sandi tidak bisa dibuat otomatis — NIS, NISN, atau Nomor Induk harus diisi minimal satu');
                  santri.password = fallback;
             }
 
@@ -728,9 +729,9 @@ const SantriManagement = () => {
     }
 
     /* Urutan sama dengan impor Excel di atas dan dengan `insertSantriTx` di
-       backend: nisn, nis, nomor_induk. Sebelumnya nomor_induk terlewat di sini,
+       backend: nis, nisn, nomor_induk. Sebelumnya nomor_induk terlewat di sini,
        jadi murid yang hanya punya nomor induk terkirim tanpa sandi. */
-    if (!finalFormData.password) finalFormData.password = finalFormData.nisn || finalFormData.nis || finalFormData.nomor_induk;
+    if (!finalFormData.password) finalFormData.password = finalFormData.nis || finalFormData.nisn || finalFormData.nomor_induk;
 
     if (finalFormData.password && finalFormData.password.length < 4) {
         toast({ title: "Validasi Password Gagal", description: "Password minimal 4 karakter.", variant: "destructive" });

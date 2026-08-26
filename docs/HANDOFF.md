@@ -1844,22 +1844,47 @@ Pakai murid uji `1234567890`, jangan murid demo, supaya data demo tetap utuh.
 | Tata Usaha | `tatausaha@sdnbaturaja.sch.id` | `tatausaha123` |
 | Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
 | Wakil Kepala Sekolah | `pentashih@sdnbaturaja.sch.id` | `pentashih123` |
-| Murid | `2026041` atau `Naila` | `2026041` — sama dengan nomor induknya |
+| Murid | `Naila` (nama panggilan) | `2026041` — nomor induknya, dia tidak punya NIS |
 
 Sumber: `backend/init/03_dummy_accounts.sql`. Bukan kredensial produksi.
 
-**Sandi murid = nomor induknya, dan itu berlaku untuk SEMUA murid.** `santri123` sudah mati. Untuk
-murid contoh lain di `supabase/seed.sql`, sandinya juga nomor identitasnya sendiri — perhatikan bahwa
-yang dipakai adalah **nisn lebih dulu**, baru nis, baru nomor_induk (urutan `insertSantriTx`), jadi
-untuk Ahmad Fauzan sandinya `9000000001`, bukan `SBR2026001`.
+### Login murid: nama panggilan + NIS
+
+Keputusan pemilik. **Nama panggilan** sebagai nama pengguna, **NIS** sebagai sandi. Urutan pengambilan
+sandi: **nis → nisn → nomor_induk**. Jadi sandi Ahmad Fauzan `26001` (NIS), BUKAN `9000000001` (NISN)
+dan bukan `SBR2026001`. `santri123` sudah lama mati.
+
+Urutan itu tertulis di **empat** tempat dan semuanya harus sama. Kalau salah satu digeser sendiri,
+murid yang masuk lewat jalur berbeda mendapat sandi berbeda — tanpa satu pun pesan galat:
+
+| Tempat | Peran |
+|---|---|
+| `insertSantriTx` di `backend/internal/handler/santri.go` | tambah satu murid dan impor massal lewat API |
+| impor Excel di `SantriManagement.jsx` | menyiapkan payload sebelum dikirim |
+| formulir tambah murid di `SantriManagement.jsx` | jalur satu murid dari UI |
+| migrasi `20260823000300` | murid yang sudah ada |
+
+`resolveUser` menerima nisn, nis, nomor_induk, **maupun** nama panggilan sebagai nama pengguna, jadi
+keempatnya tetap bisa dipakai masuk; label di halaman login hanya menyebut yang dipilih pemilik untuk
+diberitahukan ke murid. Nama panggilan kembar aman: semua kandidat dikumpulkan lalu sandinya yang
+memutuskan, dan dua murid tidak mungkin bersandi sama karena nomornya berbeda.
 
 Memeriksa tanpa menampilkan sandi:
 
 ```sql
 select nama_lengkap,
-       password = extensions.crypt(coalesce(nullif(trim(nisn),''), nullif(trim(nis),''), nullif(trim(nomor_induk),'')), password) as cocok
+       password = extensions.crypt(coalesce(nullif(trim(nis),''), nullif(trim(nisn),''), nullif(trim(nomor_induk),'')), password) as cocok
 from public.santri where deleted_at is null;
 ```
+
+**Jangan pasang ambang panjang sandi di halaman login.** Ambang lama di `LoginPage.jsx` — nama
+pengguna lebih dari 3 huruf, sandi lebih dari 5 karakter — mengunci akun yang sah begitu konvensi ini
+berlaku: nama panggilan "Ani" hanya 3 huruf dan NIS lima angka seperti `26001` tidak akan lolos,
+sehingga tombol Masuk mati walau yang diketik benar. Sekarang cukup keduanya terisi.
+
+**Murid tidak bisa mengganti sandinya sendiri.** `santriSelfEditable` di `santri.go` hanya memuat
+`nama_panggilan`, `no_hp_ortu`, dan `alamat`. Itu juga sebabnya menyetel ulang sandi seluruh murid
+lewat migrasi tidak menghapus pilihan siapa pun — tidak ada pilihan yang bisa dibuat murid.
 
 ### Superadmin sengaja TIDAK ada di tabel itu
 

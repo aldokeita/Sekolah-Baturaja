@@ -362,7 +362,7 @@ func (h *SantriHandler) BulkCreate(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// insertSantriTx also creates the auth.users + user_profiles rows that
-		// santri.id references, defaults the password to nisn/nis/nomor_induk,
+		// santri.id references, defaults the password to nis/nisn/nomor_induk,
 		// and hashes it.
 		item, err := insertSantriTx(ctx, tx, rec)
 		if err != nil {
@@ -685,10 +685,17 @@ func insertSantriTx(ctx context.Context, tx pgx.Tx, body map[string]any) (map[st
 		profile[k] = v
 	}
 
-	// Murid login pakai NISN/NIS; jadikan salah satunya password awal supaya akun
-	// baru langsung bisa dipakai. Login self-heals hash-nya saat pertama dipakai.
+	// Sandi awal murid = nomor induknya, supaya akun baru langsung bisa dipakai.
+	//
+	// NIS DIDAHULUKAN atas NISN, atas keputusan pemilik. NIS adalah nomor internal
+	// sekolah yang pendek — itu yang dihafal murid dan yang dibagikan sekolah;
+	// NISN sepuluh angka lebih sering hanya dipakai untuk urusan Dapodik.
+	// Urutan ini HARUS sama dengan impor Excel dan formulir tambah murid di
+	// src/components/dashboard/admin/SantriManagement.jsx. Kalau salah satu
+	// digeser sendiri, murid yang masuk lewat jalur berbeda akan mendapat sandi
+	// berbeda, dan tidak ada satu pun pesan galat yang memberi tahu.
 	if _, ok := profile["password"]; !ok {
-		for _, key := range []string{"nisn", "nis", "nomor_induk"} {
+		for _, key := range []string{"nis", "nisn", "nomor_induk"} {
 			if v := strings.TrimSpace(asString(profile[key])); v != "" {
 				profile["password"] = v
 				break
