@@ -35,8 +35,14 @@ import '@/styles/login-page.css';
  * dari mockup, dan keduanya tidak pernah bisa masuk: pegawai yang menuruti
  * labelnya selalu ditolak. Contoh emailnya memakai domain example.sch.id supaya
  * tidak menyodorkan alamat sekolah tertentu sebagai milik pembeli. */
+/* Murid masuk memakai NAMA PANGGILAN, dan sandinya nomor induknya sendiri.
+ * `resolveUser` menerima nisn, nis, nomor_induk, MAUPUN nama panggilan sebagai
+ * nama pengguna, jadi keempatnya tetap bekerja — label ini menyebut yang dipilih
+ * pemilik untuk diberitahukan ke murid. Nama panggilan yang sama dipakai dua
+ * murid tidak jadi masalah: auth.go mengumpulkan semua kandidat lalu sandinya
+ * yang memutuskan, dan sandi keduanya berbeda karena nomor induknya berbeda. */
 const PERAN = [
-  ['Orang tua', 'Nomor induk murid', 'Contoh: 2026041'],
+  ['Orang tua', 'Nama panggilan murid', 'Contoh: Naila'],
   ['Guru', 'Email', 'Contoh: nama@example.sch.id'],
   ['Tata usaha', 'Email', 'Contoh: nama@example.sch.id'],
 ];
@@ -69,7 +75,13 @@ const LoginPage = () => {
   }, [user, navigate, location.state]);
 
   const cur = PERAN.find((p) => p[0] === peran) || PERAN[0];
-  const siap = akun.trim().length > 3 && sandi.length > 5;
+  /* Cukup keduanya terisi. Ambang lama — nama pengguna lebih dari 3 huruf dan
+   * sandi lebih dari 5 — mengunci akun yang sah begitu murid memakai nama
+   * panggilan dan nomor induk: "Ani" hanya 3 huruf, dan NIS lima angka seperti
+   * 26001 tidak akan pernah lolos, sehingga tombol Masuk tidak bisa ditekan
+   * sama sekali. Panjang sandi yang sah ditentukan backend dan panel admin
+   * (minimal 4 karakter saat dibuat), bukan diterka di halaman login. */
+  const siap = akun.trim().length > 0 && sandi.length > 0;
 
   const masuk = async () => {
     if (!siap || busy) { if (!siap) pesan('Lengkapi akun dan kata sandi'); return; }
