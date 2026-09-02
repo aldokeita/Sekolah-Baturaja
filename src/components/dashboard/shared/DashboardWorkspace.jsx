@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { Users, DollarSign, TrendingDown, Fingerprint, Tv, Gamepad2, Shuffle } from 'lucide-react';
+import { Users, DollarSign, TrendingDown, Fingerprint, Tv, Gamepad2, Shuffle, CalendarCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ import AdminModuleNav from './AdminModuleNav';
 
 import { fetchSantriCount, fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import { FINANCE_DATA_CHANGED_EVENT, fetchCashflowSummary } from '@/lib/financeAdapters';
+import { fetchAttendanceTodaySummary } from '@/lib/attendanceAdapters';
 import { resolveAvatarRecord } from '@/lib/storageAdapters';
 import { enableGameFeatures, enableWaNotifications } from '@/lib/featureFlags';
 import { fetchAppConfig, APP_CONFIG_KEYS } from '@/lib/appConfigAdapters';
@@ -101,6 +102,11 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
     totalPemasukanBulanIni: 0,
     totalPengeluaranBulanIni: 0,
   });
+  /* Kehadiran hari ini dipisah dari `stats` karena sumbernya berbeda umur:
+   * jumlah murid dan uang bulan ini berubah jarang, sedangkan angka ini berubah
+   * sepanjang pagi saat murid memindai kartunya. Memisahkannya memungkinkan
+   * kartu ini disegarkan sendiri tanpa memuat ulang seluruh ringkasan. */
+  const [kehadiran, setKehadiran] = useState(null);
 
   const [showIncome, setShowIncome] = useState(false);
   const [showExpense, setShowExpense] = useState(false);
@@ -109,6 +115,35 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
   const [isSantriModalOpen, setIsSantriModalOpen] = useState(false);
 
   const hasSantriTab = tabs.some((t) => t.value === 'santri');
+  const hasRekapAbsensiTab = tabs.some((t) => t.value === 'rekap-absensi');
+
+  /* Isi kartu Kehadiran Hari Ini.
+   *
+   * Tiga keadaan yang harus dibedakan, karena ketiganya bukan hal yang sama:
+   *
+   *   endpoint gagal      → "—" dan sebab yang jujur
+   *   belum ada yang absen → "Belum ada" , bukan "0%" yang seolah semua bolos
+   *                          padahal jam masuk mungkin belum tiba
+   *   sudah berjalan       → persen, plus jumlahnya supaya persennya bermakna
+   *                          dan kelas yang paling banyak kosong
+   */
+  const ringkasanKehadiran = useMemo(() => {
+    if (!kehadiran) return { nilai: '—', keterangan: 'Data kehadiran belum bisa dibaca' };
+    const { total = 0, tercatat = 0, terlambat = 0, per_kelas: perKelas = [] } = kehadiran;
+    if (total === 0) return { nilai: '—', keterangan: 'Belum ada murid aktif' };
+    if (tercatat === 0) return { nilai: 'Belum ada', keterangan: `0 dari ${total} murid absen hari ini` };
+
+    const persen = Math.round((tercatat / total) * 100);
+    const bagian = [`${tercatat} dari ${total} murid`];
+    if (terlambat > 0) bagian.push(`${terlambat} terlambat`);
+    // Kelas paling banyak kosong hanya disebut bila memang ada yang kosong dan
+    // kelasnya lebih dari satu — pada sekolah satu kelas, menyebutnya sia-sia.
+    const terkosong = [...perKelas].sort((a, b) => (b.belum_absen || 0) - (a.belum_absen || 0))[0];
+    if (perKelas.length > 1 && terkosong?.belum_absen > 0) {
+      bagian.push(`${terkosong.nama_kelas} kosong ${terkosong.belum_absen}`);
+    }
+    return { nilai: `${persen}%`, keterangan: bagian.join(' · ') };
+  }, [kehadiran]);
 
   useEffect(() => {
     let active = true;
@@ -131,9 +166,13 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
         const currentMonth = today.getMonth() + 1;
         const currentYear = today.getFullYear();
 
-        const [santriCount, financeSummary] = await Promise.all([
+        // Kehadiran ikut diambil di sini tapi kegagalannya TIDAK menjatuhkan
+        // ringkasan: kalau endpointnya bermasalah, tiga kartu lain tetap tampil
+        // dan kartu kehadiran yang menyebut keadaannya sendiri.
+        const [santriCount, financeSummary, hadirHariIni] = await Promise.all([
           fetchSantriCount().then(d => d?.total || 0),
           fetchCashflowSummary({ year: currentYear, month: currentMonth }),
+          fetchAttendanceTodaySummary().catch(() => null),
         ]);
 
         if (!active || requestId !== latestRequest) return;
@@ -142,6 +181,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
           totalPemasukanBulanIni: financeSummary.totalPemasukan,
           totalPengeluaranBulanIni: financeSummary.totalPengeluaran,
         });
+        setKehadiran(hadirHariIni);
       } catch (err) {
         if (!active || requestId !== latestRequest) return;
         setError(err.message);
@@ -258,9 +298,13 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
       )}
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 relative z-10">
+      {/* Lima kartu. Pada lebar lg satu kartu turun ke baris kedua; barisnya baru
+          rapi penuh di xl. Itu ditukar dengan angka kehadiran yang terlihat tanpa
+          membuka menu apa pun — yang dicari kepala sekolah setiap pagi. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 mb-8 relative z-10">
         {isLoading ? (
           <>
+            <Skeleton className="h-28 rounded-xl admin-skeleton-shimmer" />
             <Skeleton className="h-28 rounded-xl admin-skeleton-shimmer" />
             <Skeleton className="h-28 rounded-xl admin-skeleton-shimmer" />
             <Skeleton className="h-28 rounded-xl admin-skeleton-shimmer" />
@@ -273,6 +317,14 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
               value={stats.totalSantri}
               icon={Users}
               variant="students"
+            />
+            <AdminStatCard
+              label="Kehadiran Hari Ini"
+              value={ringkasanKehadiran.nilai}
+              hint={ringkasanKehadiran.keterangan}
+              icon={CalendarCheck}
+              variant="students"
+              onClick={hasRekapAbsensiTab ? () => setActiveTab('rekap-absensi') : undefined}
             />
             <AdminStatCard
               label="Pemasukan"

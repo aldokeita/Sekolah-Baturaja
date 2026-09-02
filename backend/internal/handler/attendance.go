@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -70,6 +71,7 @@ func (h *AttendanceHandler) Routes() chi.Router {
 	// Stats
 	r.Get("/guru-stats", h.GuruStats)
 	r.Get("/santri-stats", h.SantriStats)
+	r.Get("/today-summary", h.TodaySummary)
 
 	// Kiosk self check-in
 	r.Post("/self-checkin", h.SelfCheckin)
@@ -588,6 +590,100 @@ func (h *AttendanceHandler) Today(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonOK(w, map[string]any{"data": list})
+}
+
+/* GET /api/attendance/today-summary
+ *
+ * Kehadiran murid hari ini untuk seluruh sekolah, dipecah per kelas. Ini angka
+ * yang dicari kepala sekolah setiap pagi: berapa persen murid sudah hadir, dan
+ * kelas mana yang paling banyak kosong.
+ *
+ * Dibuat terpisah dan TIDAK memakai /today yang sudah ada: endpoint itu
+ * mengembalikan seluruh baris absensi hari ini tanpa penyaring peran maupun
+ * pembatas pemanggil, jadi memakainya untuk kartu ringkasan berarti mengirim
+ * absensi tiap guru ke layar yang hanya butuh hitungan murid.
+ *
+ * Hitungannya per MURID, bukan per baris absensi. Satu hari sekolah menulis satu
+ * baris per mata pelajaran, jadi menghitung baris akan melipatgandakan orangnya.
+ * DISTINCT ON mengambil catatan paling awal tiap murid — status pagi itulah yang
+ * menentukan ia hadir atau terlambat, bukan jam pelajaran terakhirnya.
+ */
+func (h *AttendanceHandler) TodaySummary(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	role := middleware.RoleFromCtx(ctx)
+	if !middleware.CanManage(role) && role != "pentashih" && role != "guru" {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	rows, err := h.db.Query(ctx, `
+		WITH murid AS (
+			SELECT s.id, s.current_class_id
+			FROM santri s
+			WHERE s.deleted_at IS NULL
+			  AND (s.status IS NULL OR s.status ILIKE 'aktif' OR s.status ILIKE 'active')
+		), hari_ini AS (
+			SELECT DISTINCT ON (a.user_id) a.user_id, a.status
+			FROM attendance a
+			WHERE a.attendance_date = CURRENT_DATE
+			  AND (a.role IS NULL OR a.role = 'santri')
+			ORDER BY a.user_id, a.check_in_timestamp NULLS LAST
+		)
+		SELECT COALESCE(c.nama_kelas, 'Belum berkelas') AS nama_kelas,
+		       count(m.id)                                             AS total,
+		       count(h.user_id) FILTER (WHERE h.status ILIKE 'hadir')     AS hadir,
+		       count(h.user_id) FILTER (WHERE h.status ILIKE 'terlambat') AS terlambat,
+		       count(h.user_id)                                        AS tercatat
+		FROM murid m
+		LEFT JOIN classes c   ON c.id = m.current_class_id
+		LEFT JOIN hari_ini h  ON h.user_id = m.id
+		GROUP BY c.nama_kelas, c.sort_order
+		ORDER BY c.sort_order NULLS LAST, c.nama_kelas
+	`)
+	if err != nil {
+		log.Printf("today-summary: query gagal: %v", err)
+		jsonError(w, "gagal menghitung kehadiran hari ini", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type kelasRingkas struct {
+		NamaKelas string `json:"nama_kelas"`
+		Total     int    `json:"total"`
+		Hadir     int    `json:"hadir"`
+		Terlambat int    `json:"terlambat"`
+		Tercatat  int    `json:"tercatat"`
+		BelumAbsen int   `json:"belum_absen"`
+	}
+
+	perKelas := make([]kelasRingkas, 0, 12)
+	var total, hadir, terlambat, tercatat int
+	for rows.Next() {
+		var k kelasRingkas
+		if err := rows.Scan(&k.NamaKelas, &k.Total, &k.Hadir, &k.Terlambat, &k.Tercatat); err != nil {
+			jsonError(w, "gagal membaca kehadiran hari ini", http.StatusInternalServerError)
+			return
+		}
+		k.BelumAbsen = k.Total - k.Tercatat
+		perKelas = append(perKelas, k)
+		total += k.Total
+		hadir += k.Hadir
+		terlambat += k.Terlambat
+		tercatat += k.Tercatat
+	}
+	if err := rows.Err(); err != nil {
+		jsonError(w, "gagal membaca kehadiran hari ini", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, map[string]any{"data": map[string]any{
+		"total":       total,
+		"hadir":       hadir,
+		"terlambat":   terlambat,
+		"tercatat":    tercatat,
+		"belum_absen": total - tercatat,
+		"per_kelas":   perKelas,
+	}})
 }
 
 func (h *AttendanceHandler) Dates(w http.ResponseWriter, r *http.Request) {

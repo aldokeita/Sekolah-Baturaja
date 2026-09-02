@@ -42,11 +42,29 @@ Audit menyeluruh terhadap kelayakan pakai di sekolah — 55 panel admin, lima da
 1. ~~Kolom **agama** pada data murid~~ — selesai, migrasi `20260902000100_kolom_agama_murid.sql`
 2. Surat keterangan + nomor surat berurutan + arsip (aktif sekolah, pindah, SKTM)
 3. Cetak buku induk murid
-4. Cetak kartu pelajar
+4. ~~Cetak kartu pelajar~~ — selesai. `KartuPelajarCetak.jsx` + `kartu-pelajar-cetak.css`,
+   ukuran ID-1 85,6×54 mm, sepuluh per lembar A4. Dua pintu masuk: centang murid di Data Murid
+   (tombol massal) dan tombol **Kartu** pada tiap kelas di Manajemen Kelas.
 5. Mutasi keluar dengan surat pindah
-6. Kehadiran hari ini pada kartu ringkasan dashboard
+6. ~~Kehadiran hari ini pada kartu ringkasan dashboard~~ — selesai. Endpoint baru
+   `GET /api/attendance/today-summary` (staf saja), kartu ke-5 di `DashboardWorkspace`, bisa
+   diklik untuk membuka Rekap Murid.
 7. Data kepegawaian lengkap (SK, TMT, pangkat/golongan, sertifikasi, masa kerja, pendidikan)
 8. Jurnal mengajar guru
+
+**Dua perangkap yang ditemukan saat mengerjakan kartu pelajar — jangan diulang:**
+
+- `resolveAvatarUrl` **selalu** mengembalikan tautan bertanda tangan, bahkan untuk murid yang
+  belum pernah mengunggah foto: ia menyusun path dari id murid ketika `avatar_path` kosong, dan
+  penandatanganan tidak memeriksa keberadaan berkas. Jadi "punya foto" TIDAK boleh disimpulkan
+  dari `foto_url`. Yang jujur hanya `avatar_path` — lihat `punyaFotoAsli` di `KartuPelajarCetak.jsx`.
+  Panel Data Murid juga sudah mengisi `foto_url` barisnya dengan tautan itu sebelum diteruskan.
+- Nama kelas tidak ada pada baris dari endpoint DAFTAR murid (hanya `current_class_id`); `class_nama`
+  hanya datang dari endpoint DETAIL. Komponen yang mencetak nama kelas dari daftar harus memetakan
+  sendiri lewat `fetchClassList`.
+- Berkas gaya cetak ketiga (`kartu-pelajar-cetak.css`) ikut dipagari `:has()` seperti dua yang lain.
+  Tanpa pagar itu, di produksi — tempat seluruh CSS digabung menjadi satu berkas — ketiganya saling
+  menyapu dan hasil cetaknya kertas kosong.
 
 **Ditolak / ditunda pemilik:** absen manual satu kelas sebagai cadangan · inventaris sarana
 prasarana · perpustakaan · tabungan murid · laporan berkepala surat untuk dinas · nama item

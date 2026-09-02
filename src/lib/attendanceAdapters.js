@@ -99,6 +99,16 @@ export const markAttendanceAbsent = async (id, correctionReason) => {
     });
 };
 
+/* Kehadiran murid hari ini untuk seluruh sekolah, dipecah per kelas.
+ *
+ * Satu panggilan, sudah terhitung di sisi server per MURID (bukan per baris
+ * absensi — satu hari sekolah menulis satu baris per mata pelajaran). Staf saja;
+ * murid menerima 403. */
+export const fetchAttendanceTodaySummary = async () => {
+    const data = await apiClient.get('/api/attendance/today-summary');
+    return data || { total: 0, hadir: 0, terlambat: 0, tercatat: 0, belum_absen: 0, per_kelas: [] };
+};
+
 export const fetchAttendance = async (filters = {}) => {
     const params = new URLSearchParams();
     if (filters.user_id) params.set('user_id', filters.user_id);

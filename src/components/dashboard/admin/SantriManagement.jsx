@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Archive, Plus, Edit, Search, Upload, ArrowUpDown, FileCheck, Download, XCircle, Trophy, Users, Filter, FileSpreadsheet, ArrowRightLeft, User, Phone, GraduationCap, FileText, Lock, Star, Bell, Cake, Copy, BookOpen, CheckCircle } from 'lucide-react';
+import { Archive, Plus, Edit, Search, Upload, ArrowUpDown, FileCheck, Download, XCircle, Trophy, Users, Filter, FileSpreadsheet, ArrowRightLeft, User, Phone, GraduationCap, FileText, Lock, Star, Bell, Cake, Copy, BookOpen, CheckCircle, Contact as IdCard } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,6 +40,7 @@ import DataPagination from '@/components/dashboard/shared/DataPagination';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
 import { enableTahfizh } from '@/lib/featureFlags';
 import RaporCetak from '@/components/dashboard/shared/RaporCetak';
+import KartuPelajarCetak from '@/components/dashboard/shared/KartuPelajarCetak';
 
 const PAGE_SIZE = 10;
 
@@ -514,6 +515,7 @@ const SantriManagement = () => {
   const [totalSantri, setTotalSantri] = useState(0);
   // Murid yang rapornya sedang dibuka; null berarti dialognya tertutup.
   const [raporSantriId, setRaporSantriId] = useState(null);
+  const [kartuTerbuka, setKartuTerbuka] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [formData, setFormData] = useState({
     nama_lengkap: '', nama_panggilan: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
@@ -976,6 +978,14 @@ const SantriManagement = () => {
     return sortableItems;
   }, [santriList, filters, sortConfig, classGuruMap]);
 
+  /* Baris utuh milik murid yang dicentang, bukan sekadar id-nya: dialog kartu
+   * memerlukan nama, nomor, kelas, tanggal lahir, dan alamat, dan semuanya sudah
+   * ada di baris ini — jadi tidak perlu memanggil server lagi. */
+  const muridTerpilih = useMemo(
+    () => sortedAndFilteredSantri.filter((s) => selectedSantri.has(s.id)),
+    [sortedAndFilteredSantri, selectedSantri],
+  );
+
   return (
     <div>
       <div className="admin-panel-header">
@@ -1014,6 +1024,13 @@ const SantriManagement = () => {
                     </button>
                     <button onClick={handleDelete} className="admin-bulk-btn admin-bulk-btn--delete">
                         <Archive className="w-3.5 h-3.5"/> Arsipkan ({selectedSantri.size})
+                    </button>
+                    {/* Kartu pelajar dicetak dari pilihan, bukan dari seluruh
+                        daftar: sekolah mencetak per kelas, per angkatan, atau
+                        untuk beberapa murid yang kartunya hilang — dan ketiganya
+                        sudah bisa disiapkan lewat penyaring lalu centang. */}
+                    <button onClick={() => setKartuTerbuka(true)} className="admin-bulk-btn">
+                        <IdCard className="w-3.5 h-3.5"/> Kartu Pelajar ({selectedSantri.size})
                     </button>
                 </div>
             )}
@@ -1162,6 +1179,12 @@ const SantriManagement = () => {
         onPindahMurid={setRaporSantriId}
         open={Boolean(raporSantriId)}
         onOpenChange={(terbuka) => { if (!terbuka) setRaporSantriId(null); }}
+      />
+
+      <KartuPelajarCetak
+        open={kartuTerbuka}
+        onOpenChange={setKartuTerbuka}
+        daftarMurid={muridTerpilih}
       />
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

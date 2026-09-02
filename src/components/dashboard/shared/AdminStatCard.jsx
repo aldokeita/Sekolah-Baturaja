@@ -46,6 +46,9 @@ const MaskedValue = ({ value, show, prefix = "Rp " }) => (
  * - onToggleMask: function — mask toggle handler
  * - prefix: string — currency prefix (default "Rp ")
  * - onClick: function — click handler (for clickable cards)
+ * - hint: string — one short line under the value, for the detail that makes the
+ *   number readable ("41 dari 50 murid"). Kosong berarti barisnya tidak muncul,
+ *   jadi kartu lain tidak berubah tinggi.
  * - className: string — additional classes
  */
 const AdminStatCard = ({
@@ -58,6 +61,7 @@ const AdminStatCard = ({
   onToggleMask,
   prefix = "Rp ",
   onClick,
+  hint,
   className = '',
 }) => {
   const supportedVariants = new Set(['students', 'income', 'expense', 'kiosk']);
@@ -99,6 +103,14 @@ const AdminStatCard = ({
             value
           )}
         </p>
+        {hint && (
+          <p
+            className="mt-1 text-[11px] leading-tight"
+            style={{ color: 'hsl(var(--admin-text-muted))' }}
+          >
+            {hint}
+          </p>
+        )}
       </div>
       {Icon && (
         <Icon className="admin-stat-card-icon" aria-hidden="true" />

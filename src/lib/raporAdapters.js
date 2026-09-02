@@ -166,6 +166,23 @@ export const getRaporErrorMessage = (error) => {
   return message;
 };
 
+/* Kepala sekolah yang menandatangani dokumen sekolah — rapor maupun kartu
+ * pelajar. Namanya diambil dari Data Guru, bukan ditulis di komponen cetak,
+ * supaya dokumen pembeli tidak ditandatangani atas nama sekolah contoh.
+ *
+ * Dua jalur pengenalan, karena sekolah mengisinya dengan dua cara: lewat peran
+ * "Kepala Sekolah" pada akunnya, atau lewat kolom jabatan. Jabatan yang memuat
+ * "wakil" sengaja ditolak — yang menandatangani kepala sekolahnya sendiri.
+ *
+ * Dipakai bersama oleh fetchKonteksRapor dan KartuPelajarCetak, jadi aturannya
+ * tinggal di satu tempat. */
+export const cariKepalaSekolah = (daftarGuru) => (daftarGuru || []).find((g) => {
+  const roles = Array.isArray(g?.roles) ? g.roles : [];
+  if (roles.includes('Kepala Sekolah')) return true;
+  const jabatan = String(g?.jabatan || '');
+  return /kepala\s+sekolah/i.test(jabatan) && !/wakil/i.test(jabatan);
+}) || null;
+
 /**
  * Bahan rapor yang SAMA untuk setiap murid: daftar periode, daftar kelas, daftar
  * guru, dan skala predikat sekolah.
@@ -186,12 +203,7 @@ export const fetchKonteksRapor = async () => {
   ]);
 
   const skalaPredikat = normalisasiPredikat(konfigurasi?.[APP_CONFIG_KEYS.RAPOR_PREDIKAT]);
-  const kepalaSekolah = (daftarGuru || []).find((g) => {
-    const roles = Array.isArray(g?.roles) ? g.roles : [];
-    if (roles.includes('Kepala Sekolah')) return true;
-    const jabatan = String(g?.jabatan || '');
-    return /kepala\s+sekolah/i.test(jabatan) && !/wakil/i.test(jabatan);
-  }) || null;
+  const kepalaSekolah = cariKepalaSekolah(daftarGuru);
 
   return {
     daftarPeriode: daftarPeriode || [],
