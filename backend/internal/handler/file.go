@@ -123,7 +123,6 @@ func (h *FileHandler) handleUpload(w http.ResponseWriter, r *http.Request, bucke
 	}
 	defer file.Close()
 
-	mimeType := header.Header.Get("Content-Type")
 	path := r.FormValue("path")
 	if path == "" {
 		jsonError(w, "path wajib diisi", http.StatusBadRequest)
@@ -134,14 +133,23 @@ func (h *FileHandler) handleUpload(w http.ResponseWriter, r *http.Request, bucke
 		jsonError(w, msg, http.StatusForbidden)
 		return
 	}
+	// Ekstensi diperiksa sebelum berkasnya dibaca: tidak ada gunanya membaca isi
+	// berkas yang namanya saja sudah ditolak.
+	if !storage.ExtensionAllowed(bucket, path) {
+		jsonError(w, "ekstensi file tidak diizinkan", http.StatusUnsupportedMediaType)
+		return
+	}
 
-	// Baca sebagian untuk deteksi MIME lebih akurat
+	/* Tipe berkas ditentukan dari ISI, bukan dari header Content-Type kiriman.
+	 *
+	 * Yang lama memakai header itu bila terisi dan hanya jatuh ke hasil deteksi
+	 * bila kosong — artinya pengirim sendiri yang memutuskan berkasnya lolos
+	 * penyaringan atau tidak. Cukup mengaku "image/png" untuk menyimpan isi apa
+	 * pun. Hasil deteksi sekarang satu-satunya yang dipakai; nilai kiriman
+	 * sengaja tidak dibaca sama sekali. */
 	buf := make([]byte, 512)
 	n, _ := file.Read(buf)
-	detected := http.DetectContentType(buf[:n])
-	if mimeType == "" {
-		mimeType = detected
-	}
+	mimeType := http.DetectContentType(buf[:n])
 	// Rewind tidak mungkin pada multipart — gabung buf dan sisa file
 	combined := io.MultiReader(bytes.NewReader(buf[:n]), file)
 
@@ -149,6 +157,8 @@ func (h *FileHandler) handleUpload(w http.ResponseWriter, r *http.Request, bucke
 		switch err {
 		case storage.ErrInvalidPath:
 			jsonError(w, "path tidak valid", http.StatusBadRequest)
+		case storage.ErrInvalidExt:
+			jsonError(w, "ekstensi file tidak diizinkan", http.StatusUnsupportedMediaType)
 		case storage.ErrInvalidMime:
 			jsonError(w, "tipe file tidak diizinkan", http.StatusUnsupportedMediaType)
 		case storage.ErrFileTooLarge:
@@ -181,11 +191,54 @@ func (h *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+/* authorizeSignedURL menentukan siapa yang boleh MENERBITKAN tautan bertanda
+ * tangan. Sebelumnya tidak ada pemeriksaan sama sekali: pemegang akun apa pun,
+ * termasuk murid, bisa menerbitkan tautan ke bucket dan path mana pun. Itu
+ * membatalkan satu-satunya penjagaan bucket privat, dan `documents` menyimpan
+ * pindaian akta kelahiran serta kartu keluarga.
+ *
+ * Aturannya dibedakan per bucket, karena keduanya privat untuk alasan berbeda:
+ *
+ *   avatars   — foto profil. Ditampilkan lintas pengguna di seluruh aplikasi:
+ *               daftar teman sekelas, daftar guru, kartu wali kelas. Jadi setiap
+ *               pengguna yang sudah masuk boleh menandatanganinya. Yang dijaga
+ *               di sini bukan kerahasiaan foto, melainkan supaya bucket ini
+ *               tidak bisa dibaca tanpa akun sama sekali.
+ *
+ *   documents — arsip pribadi. Staf saja.
+ *   music     — hanya dipakai pemutar di dashboard staf. Staf saja.
+ */
+func authorizeSignedURL(r *http.Request, bucket string) (ok bool, message string) {
+	role := middleware.RoleFromCtx(r.Context())
+	if role == "" {
+		return false, "sesi tidak valid"
+	}
+	if middleware.CanManage(role) {
+		return true, ""
+	}
+	switch bucket {
+	case storage.BucketAvatars, storage.BucketWebsiteAssets:
+		return true, ""
+	case storage.BucketDocuments, storage.BucketMusic:
+		// Guru dan pentashih ikut mengurus dokumen kemuridan, jadi keduanya
+		// disertakan; murid tidak.
+		if role == "guru" || role == "pentashih" {
+			return true, ""
+		}
+		return false, "hanya staf yang dapat membuka arsip ini"
+	}
+	return false, "bucket tidak dikenal"
+}
+
 func (h *FileHandler) SignedURL(w http.ResponseWriter, r *http.Request) {
 	bucket := r.URL.Query().Get("bucket")
 	path := r.URL.Query().Get("path")
 	if bucket == "" || path == "" {
 		jsonError(w, "bucket dan path wajib diisi", http.StatusBadRequest)
+		return
+	}
+	if ok, msg := authorizeSignedURL(r, bucket); !ok {
+		jsonError(w, msg, http.StatusForbidden)
 		return
 	}
 	// r.URL.Scheme selalu kosong pada request sisi server — hanya r.Host yang

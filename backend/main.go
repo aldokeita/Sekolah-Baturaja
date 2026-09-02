@@ -76,6 +76,7 @@ func main() {
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
 	r.Use(chimw.RealIP)
+	r.Use(securityHeaders)
 	r.Use(corsMiddleware)
 
 	// ── Public: auth ─────────────────────────────────────────────────────────
@@ -208,6 +209,33 @@ func main() {
 	if err := srv.Shutdown(ctx2); err != nil {
 		log.Printf("shutdown error: %v", err)
 	}
+}
+
+/* securityHeaders memasang penjagaan sisi peramban pada SETIAP jawaban API.
+ *
+ * Sebelumnya tidak ada satu pun. Yang paling menentukan adalah nosniff: tanpa
+ * itu peramban boleh mengabaikan Content-Type yang dikirim server dan menebak
+ * sendiri dari isi berkas, sehingga penyaringan tipe di storage.go bisa
+ * dilangkahi begitu saja.
+ *
+ * CSP di sini sengaja ketat sampai melarang segalanya. Yang dilayani proses ini
+ * hanya JSON dan berkas media — tidak ada halaman HTML miliknya sendiri, tidak
+ * ada skrip yang perlu jalan di alamatnya. Situsnya sendiri disajikan Caddy atau
+ * Nginx dari `dist/`, dan CSP ini tidak menyentuhnya.
+ *
+ * X-Frame-Options DENY menutup peluang alamat API dipasang di dalam kerangka
+ * situs orang lain. */
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Content-Security-Policy",
+			"default-src 'none'; img-src 'self' data:; media-src 'self'; frame-ancestors 'none'; base-uri 'none'")
+		h.Set("Cross-Origin-Resource-Policy", "same-site")
+		next.ServeHTTP(w, r)
+	})
 }
 
 // corsMiddleware allows one or more origins. CORS_ORIGIN accepts a
