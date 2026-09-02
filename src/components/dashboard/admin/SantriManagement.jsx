@@ -1256,7 +1256,12 @@ const SantriManagement = () => {
                             atau NIS (lihat handleSubmit), sama seperti perilaku impor massal.
                             Dulu field ini `required`, sehingga browser memblokir submit tanpa
                             pesan apa pun dan pengisian otomatis itu mustahil tercapai. */}
-                        <div className="admin-edit-field"><label>Password</label><Input type="text" value={formData.password || ''} onChange={(e) => setFormData({ ...formData, password: e.target.value })} disabled={Boolean(editingSantri)} placeholder={editingSantri ? 'Reset password melalui alur admin terpisah' : 'Kosongkan untuk memakai NISN'} /></div>
+                        <div className="admin-edit-field"><label>Password</label><Input type="text" value={formData.password || ''} onChange={(e) => setFormData({ ...formData, password: e.target.value })} disabled={Boolean(editingSantri)}                             /* Kalimat lamanya berbunyi "Reset password melalui alur
+                               admin terpisah" — alur itu tidak pernah dibuat, dan
+                               `/api/auth/reset-password` yang dirujuk adapter juga
+                               tidak ada di backend. Sekarang menyebut tempat yang
+                               benar-benar bisa dituju. */
+                            placeholder={editingSantri ? 'Ubah di Manajemen Login Murid' : 'Kosongkan untuk memakai NIS'} /></div>
                         </div>
                     </div>
                 </div>
