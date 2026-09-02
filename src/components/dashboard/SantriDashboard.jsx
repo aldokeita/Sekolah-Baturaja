@@ -34,7 +34,7 @@ import {
   JUZ_TAHFIZH_TARGETS,
   progressStatusToComplete
 } from '@/lib/academicAdapters';
-import { fetchSantriDetail, fetchSantriList, updateSantri } from '@/lib/dataMasterAdapters';
+import { fetchClassmates, fetchSantriDetail, updateSantri } from '@/lib/dataMasterAdapters';
 import { fetchAttendance } from '@/lib/attendanceAdapters';
 import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
@@ -440,7 +440,10 @@ const SantriDashboard = () => {
 
         const [hafalanRows, submissionRows, attendanceRows] = await Promise.all([
             fetchHafalanProgress([santri.id]).catch(() => null),
-            fetchMurojaahSubmissions({ santriId: santri.id }).catch(() => null),
+            // Adapternya menerima id apa adanya, bukan objek berisi opsi. Dikirim
+            // sebagai objek, query-nya jadi santri_id=[object Object] dan backend
+            // menjawab 500 — riwayat setoran murid selalu kosong.
+            fetchMurojaahSubmissions(santri.id).catch(() => null),
             fetchAttendance({ user_id: santri.id, date: todayStr }).catch(() => null)
         ]);
         const hafalanData = { data: hafalanRows };
@@ -459,12 +462,13 @@ const SantriDashboard = () => {
         }
 
         if (santri.current_class_id) {
-            // Classmates come from santri.current_class_id, the same column the
-            // class roster endpoints treat as authoritative.
-            const [classmateRows, friendsAttendance] = await Promise.all([
-                fetchSantriList({ classId: santri.current_class_id, activeOnly: true, notDeleted: true, limit: 200 }).catch(() => null),
-                fetchAttendance({ class_id: santri.current_class_id, date: todayStr, limit: 200 }).catch(() => null)
-            ]);
+            /* Rosternya dibaca lewat /api/santri/classmates, bukan daftar murid
+             * biasa. GET /api/santri memang mengunci seorang murid pada barisnya
+             * sendiri, jadi panggilan lama mengembalikan satu baris — dirinya —
+             * dan panel "Teman Sekelas" tampak seolah hanya memuat yang absen.
+             * Absensi hari ini juga ikut dalam jawaban yang sama, karena
+             * /api/attendance mengunci murid dengan cara yang serupa. */
+            const classmateRows = await fetchClassmates().catch(() => null);
             if (classmateRows) {
                 const classmatesWithAvatars = await Promise.all(classmateRows.map(async (mate) => ({
                     ...mate,
@@ -476,8 +480,12 @@ const SantriDashboard = () => {
                     }),
                 })));
                 setClassmates(classmatesWithAvatars);
+                setClassmatesAttendance(
+                    classmatesWithAvatars
+                        .filter(mate => mate.status_hari_ini)
+                        .map(mate => ({ user_id: mate.id, status: mate.status_hari_ini }))
+                );
             }
-            if (friendsAttendance) setClassmatesAttendance(friendsAttendance);
         }
     }
     if (Array.isArray(itemsResult)) {

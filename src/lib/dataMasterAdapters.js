@@ -204,6 +204,17 @@ export const fetchSantriList = async (filters = {}) => {
   return (data || []).map(mapSantriForLegacyUi);
 };
 
+/* Teman sekelas murid yang sedang masuk, beserta status kehadiran hari ini.
+ *
+ * Dipakai HANYA oleh dashboard murid. Daftar murid biasa (/api/santri) mengunci
+ * seorang murid pada barisnya sendiri, sehingga panel "Teman Sekelas" dulu
+ * hanya berisi dirinya sendiri. Endpoint ini mengirim kolom yang tampil saja —
+ * nama, foto, tingkat mengaji, status hari ini. */
+export const fetchClassmates = async () => {
+  const data = await apiClient.get('/api/santri/classmates');
+  return data || [];
+};
+
 // Same filters as fetchSantriList, but also returns the unpaginated total.
 export const fetchSantriPage = async (filters = {}) => {
   const { data, total } = await apiClient.get(

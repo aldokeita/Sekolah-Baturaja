@@ -36,6 +36,8 @@ func (h *SantriHandler) Routes() chi.Router {
 	r.Get("/", h.List)
 	// by-rfid before /{id} so "by-rfid" is not read as an id.
 	r.Get("/by-rfid/{rfid}", h.ByRFID)
+	// classmates before /{id} for the same reason.
+	r.Get("/classmates", h.Classmates)
 	r.Get("/{id}", h.Detail)
 	r.Post("/", h.Create)
 	r.Put("/{id}", h.Update)
@@ -241,6 +243,88 @@ func (h *SantriHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("X-Total-Count", strconv.Itoa(total))
+	jsonData(w, items)
+}
+
+/* GET /api/santri/classmates
+ *
+ * Daftar teman sekelas milik murid yang sedang masuk, beserta status kehadiran
+ * hari ini. Endpoint terpisah karena GET /api/santri memang mengunci seorang
+ * murid pada barisnya sendiri (lihat cabang `role == "santri"` di List) — dan
+ * pengunciannya benar: baris santri lengkap memuat alamat, nomor telepon orang
+ * tua, dan tarif SPP, yang tidak boleh terbaca teman sekelasnya.
+ *
+ * Jadi yang dikembalikan di sini hanya kolom yang memang tampil di panel
+ * "Teman Sekelas & Kehadiran Hari Ini": nama, foto, tingkat mengaji, dan status
+ * hari ini. `nama_panggilan` sengaja TIDAK dikirim — itu username login murid.
+ */
+func (h *SantriHandler) Classmates(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	role := middleware.RoleFromCtx(ctx)
+	userID := middleware.UserIDFromCtx(ctx)
+
+	if role != "santri" || userID == "" {
+		// Peran pengelola sudah punya roster penuh lewat List; tidak perlu jalur
+		// kedua yang harus dijaga terpisah.
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	var classID *string
+	err := h.db.QueryRow(ctx,
+		`SELECT current_class_id::text FROM santri WHERE id = $1`, userID).Scan(&classID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			jsonError(w, "santri tidak ditemukan", http.StatusNotFound)
+			return
+		}
+		jsonError(w, "gagal membaca kelas murid", http.StatusInternalServerError)
+		return
+	}
+	if classID == nil || *classID == "" {
+		// Belum ditempatkan di kelas mana pun — bukan error, memang belum ada teman.
+		jsonData(w, []any{})
+		return
+	}
+
+	/* DISTINCT ON: satu murid bisa punya beberapa baris absensi dalam sehari,
+	 * satu per mata pelajaran. Yang dipakai adalah check-in paling awal, sehingga
+	 * statusnya "Terlambat" ketika ia memang datang terlambat pagi itu, bukan
+	 * "Hadir" karena jam pelajaran berikutnya tercatat lagi.
+	 *
+	 * Rosternya dibaca dari current_class_id MAUPUN class_memberships aktif, sama
+	 * seperti pemeriksaan hak akses guru di List — keduanya dipakai di kode ini. */
+	rows, err := h.db.Query(ctx, `
+		SELECT * FROM (
+			SELECT DISTINCT ON (s.id)
+			       s.id::text AS id,
+			       s.nama_lengkap,
+			       s.avatar_path,
+			       s.foto_url,
+			       s.jilid,
+			       s.order_in_class,
+			       a.status AS status_hari_ini
+			FROM santri s
+			LEFT JOIN attendance a
+			       ON a.user_id = s.id AND a.attendance_date = CURRENT_DATE
+			WHERE s.deleted_at IS NULL
+			  AND (s.status IS NULL OR s.status ILIKE 'aktif' OR s.status ILIKE 'active')
+			  AND (s.current_class_id = $1
+			       OR s.id IN (SELECT santri_id FROM class_memberships
+			                   WHERE class_id = $1 AND status = 'active'))
+			ORDER BY s.id, a.check_in_timestamp NULLS LAST
+		) t
+		ORDER BY t.order_in_class NULLS LAST, t.nama_lengkap
+	`, *classID)
+	if err != nil {
+		jsonError(w, "gagal mengambil teman sekelas", http.StatusInternalServerError)
+		return
+	}
+	items, err := pgx.CollectRows(rows, rowToMap)
+	if err != nil {
+		jsonError(w, "gagal membaca teman sekelas", http.StatusInternalServerError)
+		return
+	}
 	jsonData(w, items)
 }
 
