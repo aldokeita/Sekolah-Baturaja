@@ -459,7 +459,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                             dan turun, supaya urusan program tahfizh tidak berserak di
                             antara data kesekolahan. Seluruh kartu ini ikut saklar tahfizh. */}
                         {enableTahfizh && (
-                            <Kartu judul="Tingkat mengaji" ikon={BookOpen} polos>
+                            <Kartu judul="Tingkat mengaji — bukan kelas" ikon={BookOpen} polos>
                                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                                     <div>
                                         <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Tingkat saat ini</p>
@@ -484,8 +484,8 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                                     {(onPromote || onDemote) && (
                                         <div className="ml-auto flex gap-2">
                                             {onPromote && (
-                                                <Button onClick={onPromote} size="sm" className="h-8 bg-indigo-600 font-semibold text-white hover:bg-indigo-700">
-                                                    <ChevronUp className="mr-1 h-4 w-4" aria-hidden="true" /> Naik tingkat
+                                                <Button onClick={onPromote} size="sm" className="h-8 bg-indigo-600 font-semibold text-white hover:bg-indigo-700" title="Menaikkan tingkat mengaji, bukan kelas">
+                                                    <ChevronUp className="mr-1 h-4 w-4" aria-hidden="true" /> Naik tingkat mengaji
                                                 </Button>
                                             )}
                                             {onDemote && (

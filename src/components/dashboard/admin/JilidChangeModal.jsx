@@ -64,10 +64,18 @@ const JilidChangeModal = ({ isOpen, onClose, santri, direction, currentJilid, ne
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         {direction === 'up' ? <ChevronRight className="text-green-500"/> : <AlertTriangle className="text-orange-500"/>}
-                        Konfirmasi {direction === 'up' ? 'Kenaikan' : 'Penurunan'} Jilid
+                        {/* "Tingkat mengaji", bukan "Jilid" dan bukan "Tingkat" saja.
+                            "Jilid" itu istilah Qiroati, sementara metode mengaji di
+                            `tahfizh_config` bisa Iqro, Ummi, Wafa, atau Tilawati —
+                            sekolah yang memakai Iqro tidak mengenal kata jilid.
+                            "Tingkat" saja juga tidak cukup: ia tertukar dengan
+                            KENAIKAN KELAS, dan pemilik sendiri sempat menyangka
+                            tombol ini menaikkan kelas murid. */}
+                        Konfirmasi {direction === 'up' ? 'Kenaikan' : 'Penurunan'} Tingkat Mengaji
                     </DialogTitle>
                     <DialogDescription>
-                        Mengubah jilid dari <strong>{currentJilid}</strong> ke <strong>{nextJilid}</strong>.
+                        Mengubah tingkat mengaji dari <strong>{currentJilid}</strong> ke <strong>{nextJilid}</strong>.
+                        Kelas murid tidak berubah.
                     </DialogDescription>
                 </DialogHeader>
 

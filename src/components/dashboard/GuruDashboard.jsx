@@ -716,8 +716,11 @@ const GuruDashboard = () => {
                                                 <td className="py-3 px-4 flex items-center gap-2 group">
                                                     <span className={cn("px-2 py-1 rounded text-xs font-bold bg-primary/10 text-primary")}>{santri.jilid}</span>
                                                     <div className="flex gap-1 opacity-100">
-                                                        <Button onClick={() => initiateJilidChange(santri, 'up')} size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-green-100 rounded-full" title="Naik Jilid"><ChevronUp className="h-4 w-4 text-green-600" /></Button>
-                                                        <Button onClick={() => initiateJilidChange(santri, 'down')} size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-red-100 rounded-full" title="Turun Jilid"><ChevronDown className="h-4 w-4 text-red-600" /></Button>
+                                                        {/* Judulnya menyebut MENGAJI. Tombol ini tidak menaikkan
+                                                            kelas murid, dan letaknya persis di sebelah kolom kelas,
+                                                            jadi "Naik Tingkat" saja terbaca sebagai kenaikan kelas. */}
+                                                        <Button onClick={() => initiateJilidChange(santri, 'up')} size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-green-100 rounded-full" title="Naik tingkat mengaji (bukan naik kelas)" aria-label={`Naikkan tingkat mengaji ${santri.nama_lengkap}`}><ChevronUp className="h-4 w-4 text-green-600" /></Button>
+                                                        <Button onClick={() => initiateJilidChange(santri, 'down')} size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-red-100 rounded-full" title="Turun tingkat mengaji (bukan turun kelas)" aria-label={`Turunkan tingkat mengaji ${santri.nama_lengkap}`}><ChevronDown className="h-4 w-4 text-red-600" /></Button>
                                                     </div>
                                                 </td>
                                                 )}
