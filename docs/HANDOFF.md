@@ -41,7 +41,12 @@ Audit menyeluruh terhadap kelayakan pakai di sekolah — 55 panel admin, lima da
 
 1. ~~Kolom **agama** pada data murid~~ — selesai, migrasi `20260902000100_kolom_agama_murid.sql`
 2. Surat keterangan + nomor surat berurutan + arsip (aktif sekolah, pindah, SKTM)
-3. Cetak buku induk murid
+3. ~~Cetak buku induk murid~~ — selesai. `BukuIndukCetak.jsx` + `buku-induk-cetak.css`, satu murid
+   satu halaman A4, enam bagian (murid, orang tua, pendidikan, riwayat kelas, berkas, keluar/tamat).
+   Bagian keluar sengaja bergaris kosong untuk diisi pena bertahun-tahun kemudian. Riwayat kelasnya
+   memakai penyaring baru `GET /api/classes/mutations?santri_id=` — tanpa itu riwayat murid lama
+   hilang begitu sekolah melewati 200 mutasi. Terukur 231mm dari 277mm ruang cetak, jadi masih
+   menyisakan tempat untuk belasan baris riwayat.
 4. ~~Cetak kartu pelajar~~ — selesai. `KartuPelajarCetak.jsx` + `kartu-pelajar-cetak.css`,
    ukuran ID-1 85,6×54 mm, sepuluh per lembar A4. Dua pintu masuk: centang murid di Data Murid
    (tombol massal) dan tombol **Kartu** pada tiap kelas di Manajemen Kelas.

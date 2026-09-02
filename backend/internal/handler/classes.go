@@ -469,8 +469,23 @@ func (h *ClassesHandler) AllMutations(w http.ResponseWriter, r *http.Request) {
 	}
 	limit, offset := paginate(r)
 
-	q := mutationLogQuery + fmt.Sprintf(mutationLogOrder, 1, 2)
-	rows, err := h.db.Query(r.Context(), q, limit, offset)
+	/* Penyaring satu murid. Dipakai buku induk, yang perlu riwayat kelas SEORANG
+	 * murid — bukan seluruh sekolah. Tanpa penyaring ini, buku induk harus
+	 * mengunduh seluruh catatan mutasi (dibatasi 200 baris oleh paginate) lalu
+	 * menyaringnya sendiri di peramban, dan riwayat murid lama akan hilang
+	 * begitu sekolah melewati 200 mutasi. */
+	q := mutationLogQuery
+	args := make([]any, 0, 3)
+	if santriID := r.URL.Query().Get("santri_id"); santriID != "" {
+		q += "\n\tWHERE cm.santri_id = $1"
+		args = append(args, santriID)
+		q += fmt.Sprintf(mutationLogOrder, 2, 3)
+	} else {
+		q += fmt.Sprintf(mutationLogOrder, 1, 2)
+	}
+	args = append(args, limit, offset)
+
+	rows, err := h.db.Query(r.Context(), q, args...)
 	if err != nil {
 		jsonError(w, "gagal mengambil riwayat mutasi", http.StatusInternalServerError)
 		return

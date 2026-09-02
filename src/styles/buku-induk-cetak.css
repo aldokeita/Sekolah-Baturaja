@@ -1,0 +1,315 @@
+/*
+ * Buku induk murid. Satu murid satu halaman A4.
+ *
+ * Buku induk adalah catatan resmi sekolah yang disimpan bertahun-tahun, jadi
+ * tampilannya lebih tenang daripada rapor: tanpa gradasi, tanpa warna latar
+ * penuh, hanya garis dan tipografi. Warna aksen sekolah tetap dipakai — pada
+ * garis kepala dan judul bagian saja — supaya dokumennya tetap milik sekolah
+ * yang bersangkutan tanpa menghabiskan tinta printer sekolah.
+ */
+
+.induk-lembar {
+  --induk-aksen: var(--sekolah-aksen, #6470ff);
+  --induk-aksen-pekat: var(--sekolah-aksen-pekat, #4a55d6);
+  --induk-garis: #c9cddd;
+  --induk-garis-lembut: #e4e7f0;
+  --induk-teks: #16172a;
+  --induk-teks-lembut: #55596f;
+
+  background: #fff;
+  color: var(--induk-teks);
+  width: 100%;
+  max-width: 190mm;
+  margin: 0 auto;
+  padding: 12mm 12mm 10mm;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 10pt;
+  line-height: 1.4;
+}
+
+/* ── Kepala ────────────────────────────────────────────────────────────────── */
+
+.induk-kop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2pt solid var(--induk-aksen-pekat);
+}
+
+.induk-kop__lambang {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13pt;
+  color: #fff;
+  background: var(--induk-aksen-pekat);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.induk-kop__nama {
+  margin: 0;
+  font-size: 14pt;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.induk-kop__alamat {
+  margin: 1px 0 0;
+  font-size: 8pt;
+  color: var(--induk-teks-lembut);
+}
+
+.induk-judul {
+  margin: 8px 0 10px;
+  text-align: center;
+}
+
+.induk-judul__utama {
+  margin: 0;
+  font-size: 13pt;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.induk-judul__nomor {
+  margin: 2px 0 0;
+  font-size: 9.5pt;
+  color: var(--induk-teks-lembut);
+}
+
+/* ── Bagian ────────────────────────────────────────────────────────────────── */
+
+.induk-bagian {
+  margin-top: 9px;
+  break-inside: avoid;
+}
+
+.induk-bagian__judul {
+  margin: 0 0 4px;
+  padding-bottom: 2px;
+  font-size: 9.5pt;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--induk-aksen-pekat);
+  border-bottom: 0.6pt solid var(--induk-garis);
+}
+
+/* Dua kolom data. Label rata kiri dengan lebar tetap supaya titik dua-nya
+   sejajar — itu yang membuat halaman terisi rapat tetap terbaca. */
+.induk-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8mm;
+  row-gap: 1px;
+  margin: 0;
+}
+
+.induk-data--satu-kolom {
+  grid-template-columns: 1fr;
+}
+
+.induk-baris {
+  display: flex;
+  gap: 4px;
+  font-size: 9.5pt;
+  padding: 1.5px 0;
+  border-bottom: 0.4pt dotted var(--induk-garis-lembut);
+}
+
+.induk-baris--lebar {
+  grid-column: 1 / -1;
+}
+
+.induk-baris dt {
+  flex: none;
+  width: 34mm;
+  margin: 0;
+  color: var(--induk-teks-lembut);
+}
+
+.induk-baris dd {
+  margin: 0;
+  min-width: 0;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+/* ── Foto ──────────────────────────────────────────────────────────────────── */
+
+.induk-atas {
+  display: flex;
+  gap: 6mm;
+  align-items: flex-start;
+}
+
+.induk-atas__isi {
+  flex: 1;
+  min-width: 0;
+}
+
+.induk-foto {
+  position: relative;
+  flex: none;
+  width: 30mm;
+  height: 40mm;
+  border: 0.5pt solid var(--induk-garis);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7.5pt;
+  color: var(--induk-teks-lembut);
+  text-align: center;
+  background: #f6f7fb;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.induk-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #f6f7fb;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ── Tabel riwayat ─────────────────────────────────────────────────────────── */
+
+.induk-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+}
+
+.induk-tabel th,
+.induk-tabel td {
+  border: 0.5pt solid var(--induk-garis);
+  padding: 2.5px 4px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.induk-tabel th {
+  font-weight: 700;
+  background: #f6f7fb;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.induk-tabel__kosong {
+  color: var(--induk-teks-lembut);
+  font-style: italic;
+}
+
+/* Baris kosong untuk diisi tangan. Buku induk selalu punya bagian yang baru
+   terisi bertahun-tahun kemudian — keluar sekolah, tamat, pindah — dan sekolah
+   mengisinya dengan pena pada lembar yang sudah tercetak. */
+.induk-isian {
+  border-bottom: 0.5pt solid var(--induk-garis);
+  height: 5.5mm;
+}
+
+/* ── Tanda tangan ──────────────────────────────────────────────────────────── */
+
+.induk-ttd {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  break-inside: avoid;
+}
+
+.induk-ttd__kotak {
+  width: 62mm;
+  text-align: center;
+  font-size: 9.5pt;
+}
+
+.induk-ttd__ruang {
+  height: 17mm;
+}
+
+.induk-ttd__nama {
+  font-weight: 700;
+  border-top: 0.5pt solid var(--induk-teks);
+  padding-top: 2px;
+}
+
+.induk-ttd__jabatan {
+  color: var(--induk-teks-lembut);
+  font-size: 8.5pt;
+}
+
+.induk-pratinjau {
+  background: #eef0f7;
+  padding: 6mm 0;
+  overflow: auto;
+}
+
+.induk-pratinjau .induk-lembar + .induk-lembar {
+  margin-top: 6mm;
+}
+
+/* ── Cetak ─────────────────────────────────────────────────────────────────── */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  /* DIPAGARI `:has()`, sama seperti tiga berkas gaya cetak lain di aplikasi ini
+     (rapor-cetak.css, cetak-bukti.css, kartu-pelajar-cetak.css). `npm run build`
+     menggabungkan seluruh CSS menjadi satu berkas sehingga di produksi keempatnya
+     SELALU aktif bersamaan; tanpa pagar, satu penyapu membunuh yang lain dan
+     hasil cetaknya kertas kosong. Yang diperiksa ISI akarnya, bukan
+     keberadaannya. */
+  body:has(#induk-cetak-root .induk-lembar) > *:not(#induk-cetak-root) {
+    display: none !important;
+  }
+
+  html,
+  body,
+  #induk-cetak-root {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  #induk-cetak-root,
+  #induk-cetak-root * {
+    visibility: visible !important;
+  }
+
+  .induk-lembar {
+    max-width: none;
+    padding: 0 !important;
+  }
+
+  .induk-pratinjau {
+    background: #fff !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Satu murid satu halaman. `page-break-before` ikut dipasang karena mesin
+     cetak lama hanya mengenal yang itu. */
+  .induk-pratinjau .induk-lembar + .induk-lembar {
+    margin-top: 0 !important;
+    break-before: page;
+    page-break-before: always;
+  }
+}

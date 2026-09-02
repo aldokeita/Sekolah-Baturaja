@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, Clock, BarChart2, GripVertical, FileSpreadsheet, FileText, Filter, ArrowRight, Phone, Eye, User, Settings, GraduationCap, ListOrdered, Contact as IdCard } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, Clock, BarChart2, GripVertical, FileSpreadsheet, FileText, Filter, ArrowRight, Phone, Eye, User, Settings, GraduationCap, ListOrdered, BookMarked, Contact as IdCard } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,6 +41,7 @@ import { getTingkatLevels } from '@/lib/tahfizhLevels';
 import { enableTahfizh } from '@/lib/featureFlags';
 import RaporKelasCetak from '@/components/dashboard/shared/RaporKelasCetak';
 import KartuPelajarCetak from '@/components/dashboard/shared/KartuPelajarCetak';
+import BukuIndukCetak from '@/components/dashboard/shared/BukuIndukCetak';
 
 const ItemTypes = {
   SANTRI: 'santri',
@@ -351,7 +352,7 @@ const DroppableColumn = React.forwardRef(({ title, children, onDrop, icon, isOve
 });
 DroppableColumn.displayName = 'DroppableColumn';
 
-const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete, onShowDetails, onShowPerformance, onCetakRapor, onCetakKartu, santriCount, canManage }) => {
+const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete, onShowDetails, onShowPerformance, onCetakRapor, onCetakKartu, onCetakInduk, santriCount, canManage }) => {
   const ref = useRef(null);
   const [{ handlerId }, drop] = useDrop({
     accept: ItemTypes.CLASS,
@@ -390,6 +391,11 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
             {onCetakKartu && santriCount > 0 && (
               <Button size="sm" variant="outline" onClick={() => onCetakKartu(classItem)} title={`Cetak kartu pelajar seluruh murid ${classItem.nama_kelas}`}>
                 <IdCard className="w-3 h-3 mr-1"/> Kartu
+              </Button>
+            )}
+            {onCetakInduk && santriCount > 0 && (
+              <Button size="sm" variant="outline" onClick={() => onCetakInduk(classItem)} title={`Cetak buku induk seluruh murid ${classItem.nama_kelas}`}>
+                <BookMarked className="w-3 h-3 mr-1"/> Induk
               </Button>
             )}
             <Button size="sm" onClick={() => onShowDetails(classItem)} title="Detail Kelas"><BarChart2 className="w-3 h-3 mr-1"/> Detail</Button>
@@ -431,8 +437,9 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const [isReorderOpen, setIsReorderOpen] = useState(false);
   // Kelas yang rapor sekelasnya sedang dibuka; null berarti dialognya tertutup.
   const [kelasRapor, setKelasRapor] = useState(null);
-  // Sama polanya untuk kartu pelajar sekelas.
+  // Sama polanya untuk kartu pelajar dan buku induk sekelas.
   const [kelasKartu, setKelasKartu] = useState(null);
+  const [kelasInduk, setKelasInduk] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSantri, setSelectedSantri] = useState(null);
   const [jilidChangeData, setJilidChangeData] = useState(null);
@@ -992,7 +999,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {classesBySession[session].map((classItem) => (
-                <ClassCard key={classItem.id} index={classes.findIndex(c => c.id === classItem.id)} classItem={classItem} onDropSantri={handleDropSantri} onEdit={handleEdit} onDelete={confirmDeleteClass} onShowDetails={handleShowPerformance} onShowPerformance={handleShowPerformance} onCetakRapor={setKelasRapor} onCetakKartu={setKelasKartu} santriCount={(santriByClass[classItem.id] || []).length} canManage={canManage}>
+                <ClassCard key={classItem.id} index={classes.findIndex(c => c.id === classItem.id)} classItem={classItem} onDropSantri={handleDropSantri} onEdit={handleEdit} onDelete={confirmDeleteClass} onShowDetails={handleShowPerformance} onShowPerformance={handleShowPerformance} onCetakRapor={setKelasRapor} onCetakKartu={setKelasKartu} onCetakInduk={setKelasInduk} santriCount={(santriByClass[classItem.id] || []).length} canManage={canManage}>
                   {(santriByClass[classItem.id] || []).map((santri, santriIndex) => (
                     <DraggableSantri
                         key={santri.id}
@@ -1122,6 +1129,12 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
           namaKelas={kelasKartu?.nama_kelas}
           open={Boolean(kelasKartu)}
           onOpenChange={(terbuka) => { if (!terbuka) setKelasKartu(null); }}
+        />
+        <BukuIndukCetak
+          classId={kelasInduk?.id}
+          namaKelas={kelasInduk?.nama_kelas}
+          open={Boolean(kelasInduk)}
+          onOpenChange={(terbuka) => { if (!terbuka) setKelasInduk(null); }}
         />
         <ConfirmationDialog isOpen={confirmDialog.isOpen} onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })} onConfirm={confirmDialog.onConfirm} title={confirmDialog.title} description={confirmDialog.description} />
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Archive, Plus, Edit, Search, Upload, ArrowUpDown, FileCheck, Download, XCircle, Trophy, Users, Filter, FileSpreadsheet, ArrowRightLeft, User, Phone, GraduationCap, FileText, Lock, Star, Bell, Cake, Copy, BookOpen, CheckCircle, Contact as IdCard } from 'lucide-react';
+import { Archive, Plus, Edit, Search, Upload, ArrowUpDown, FileCheck, Download, XCircle, Trophy, Users, Filter, FileSpreadsheet, ArrowRightLeft, User, Phone, GraduationCap, FileText, Lock, Star, Bell, Cake, Copy, BookOpen, CheckCircle, BookMarked, Contact as IdCard } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -41,6 +41,7 @@ import { getTingkatLevels } from '@/lib/tahfizhLevels';
 import { enableTahfizh } from '@/lib/featureFlags';
 import RaporCetak from '@/components/dashboard/shared/RaporCetak';
 import KartuPelajarCetak from '@/components/dashboard/shared/KartuPelajarCetak';
+import BukuIndukCetak from '@/components/dashboard/shared/BukuIndukCetak';
 
 const PAGE_SIZE = 10;
 
@@ -516,6 +517,7 @@ const SantriManagement = () => {
   // Murid yang rapornya sedang dibuka; null berarti dialognya tertutup.
   const [raporSantriId, setRaporSantriId] = useState(null);
   const [kartuTerbuka, setKartuTerbuka] = useState(false);
+  const [indukTerbuka, setIndukTerbuka] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [formData, setFormData] = useState({
     nama_lengkap: '', nama_panggilan: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
@@ -1032,6 +1034,9 @@ const SantriManagement = () => {
                     <button onClick={() => setKartuTerbuka(true)} className="admin-bulk-btn">
                         <IdCard className="w-3.5 h-3.5"/> Kartu Pelajar ({selectedSantri.size})
                     </button>
+                    <button onClick={() => setIndukTerbuka(true)} className="admin-bulk-btn">
+                        <BookMarked className="w-3.5 h-3.5"/> Buku Induk ({selectedSantri.size})
+                    </button>
                 </div>
             )}
             <div className="admin-action-cluster">
@@ -1184,6 +1189,12 @@ const SantriManagement = () => {
       <KartuPelajarCetak
         open={kartuTerbuka}
         onOpenChange={setKartuTerbuka}
+        daftarMurid={muridTerpilih}
+      />
+
+      <BukuIndukCetak
+        open={indukTerbuka}
+        onOpenChange={setIndukTerbuka}
         daftarMurid={muridTerpilih}
       />
 

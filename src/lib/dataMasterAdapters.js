@@ -435,6 +435,17 @@ export const fetchAllClassMutations = async (options = MAX_CLASS_MUTATION_LIMIT)
   return data || [];
 };
 
+/* Riwayat mutasi kelas SEORANG murid, terbaru lebih dulu. Dipakai buku induk.
+ * Penyaringnya dikerjakan server, bukan di peramban — catatan mutasi seluruh
+ * sekolah dibatasi 200 baris, jadi menyaring sendiri akan menghilangkan riwayat
+ * murid lama begitu sekolah melewati angka itu. */
+export const fetchSantriClassMutations = async (santriId, limit = 50) => {
+  if (!santriId) return [];
+  const params = new URLSearchParams({ santri_id: santriId, limit: String(limit) });
+  const data = await apiClient.get(`/api/classes/mutations?${params.toString()}`);
+  return data || [];
+};
+
 export const deleteClassMutation = async (id) => {
   await apiClient.delete(`/api/classes/mutations/${id}`);
 };
