@@ -71,6 +71,7 @@ export const pickSantriProfileFields = (input) => {
     nama_panggilan: input.nama_panggilan?.trim() || null,
     kategori: input.kategori || 'Anak',
     jenis_kelamin: input.jenis_kelamin || null,
+    agama: input.agama || null,
     tanggal_lahir: input.tanggal_lahir || null,
     tempat_lahir: input.tempat_lahir || null,
     alamat: input.alamat || null,

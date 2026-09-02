@@ -74,23 +74,34 @@ export const buatPredikatDari = (daftar) => {
 /** Pemakai yang tidak punya konfigurasi sekolah tetap mendapat skala bawaan. */
 export const predikatDari = buatPredikatDari(PREDIKAT_BAWAAN);
 
-/* Status kehadiran yang dicetak di rapor. Rapor Indonesia menyebut tiga alasan
- * ketidakhadiran — Sakit, Izin, dan Tanpa Keterangan — jadi status yang tersimpan
- * dipetakan ke tiga ember itu. Status di luar daftar dihitung sebagai hadir, bukan
- * dibuang, supaya jumlah barisnya tetap utuh. */
-const EMBER_KEHADIRAN = Object.freeze({
-  sakit: ['sakit'],
-  izin: ['izin', 'dispensasi'],
-  alpa: ['tidak hadir', 'alpha', 'alpa', 'ghaib', 'absen'],
-});
+/* Status kehadiran yang dicetak di rapor.
+ *
+ * Rapor ini dulu mencetak tiga baris — Sakit, Izin, dan Tanpa Keterangan — meniru
+ * rapor Indonesia pada umumnya. Masalahnya, TIDAK ADA satu layar pun di aplikasi
+ * ini yang bisa menyimpan status Sakit atau Izin: status absensi hanya lahir dari
+ * pemindai RFID (Hadir/Terlambat) dan dari tombol admin "tandai tidak hadir".
+ * Jadi dua baris pertama selalu tercetak 0 hari, dan murid yang benar-benar sakit
+ * tercetak pada baris Tanpa Keterangan — tuduhan bolos di dokumen resmi.
+ *
+ * Atas keputusan pemilik, keduanya dicabut dan rapor menyisakan SATU baris:
+ * jumlah hari murid tidak hadir. Angka itu nyata karena berasal dari catatan
+ * pemindai. Kalau kelak ada layar untuk mengisi sakit dan izin, pemisahannya bisa
+ * dikembalikan — lihat docs/HANDOFF.md.
+ *
+ * Status yang tersimpan tetap dipetakan longgar supaya data lama (termasuk baris
+ * 'Sakit' atau 'Izin' yang mungkin pernah masuk lewat impor) tetap terhitung
+ * sebagai tidak hadir, bukan hilang begitu saja. */
+const STATUS_TIDAK_HADIR = Object.freeze([
+  'tidak hadir', 'alpha', 'alpa', 'ghaib', 'absen', 'sakit', 'izin', 'dispensasi',
+]);
 
 export const ringkasKehadiran = (summary = {}) => {
-  const hasil = { hadir: 0, sakit: 0, izin: 0, alpa: 0 };
+  const hasil = { hadir: 0, tidakHadir: 0 };
   Object.entries(summary).forEach(([status, jumlah]) => {
     const kunci = String(status || '').trim().toLowerCase();
     const n = Number(jumlah) || 0;
-    const ember = Object.keys(EMBER_KEHADIRAN).find((k) => EMBER_KEHADIRAN[k].includes(kunci));
-    hasil[ember || 'hadir'] += n;
+    if (STATUS_TIDAK_HADIR.includes(kunci)) hasil.tidakHadir += n;
+    else hasil.hadir += n;
   });
   return hasil;
 };

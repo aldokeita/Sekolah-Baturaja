@@ -5,7 +5,7 @@ import {
   Database, CalendarDays, Inbox, MessageSquare, ArrowUpRight,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
-import { enableBackupRestore, enableTahfizh } from '@/lib/featureFlags';
+import { enableBackupRestore, enableTahfizh, enableWaNotifications } from '@/lib/featureFlags';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 
 // Full module set for the Administrator. The Tata Usaha dashboard reuses the
@@ -46,6 +46,9 @@ const adminTabs = [
   { value: 'wa-notifikasi', label: 'Notifikasi WA', icon: MessageSquare, group: 'sistem' },
 ].filter(tab => {
   if (tab.value === 'backup') return enableBackupRestore;
+  // Notifikasi WA disembunyikan sampai sekolah punya gerbang WhatsApp dan
+  // migrasi wa_outbox diterapkan; lihat enableWaNotifications.
+  if (tab.value === 'wa-notifikasi') return enableWaNotifications;
   return true;
 });
 

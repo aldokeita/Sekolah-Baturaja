@@ -614,6 +614,8 @@ docker compose logs --tail 100 api
 |---|---|---|
 | `VITE_API_URL` | ya | alamat API, tanpa garis miring di akhir |
 | `VITE_ENABLE_TAHFIZH` | tidak | bawaan `false` |
+| `VITE_ENABLE_KELAS_KONTEN` | tidak | bawaan `false`. Papan Materi & Tugas kelas untuk guru |
+| `VITE_ENABLE_WA_NOTIFICATIONS` | tidak | bawaan `false`. Perlu gerbang WhatsApp berbayar dan migrasi `wa_outbox` |
 | `VITE_ENABLE_DEFERRED_FEATURES` | tidak | bawaan `false` |
 | `VITE_ENABLE_EDGE_FUNCTIONS` | tidak | biarkan `false` |
 

@@ -7,6 +7,52 @@ Pekerjaan berjalan di `feat/sdnb-migration`, dengan dua remote: `origin` (aldoke
 `cbdb30a`, bukan fast-forward karena `main` masih memegang tiga merge PR revisi lama). Pohon
 berkas `main` identik dengan branch, dan `main` sudah ada di kedua remote.
 
+## Keputusan pemilik atas audit kelayakan pakai (2026-09-02)
+
+Audit menyeluruh terhadap kelayakan pakai di sekolah — 55 panel admin, lima dashboard, 49 tabel,
+54 jalur API diuji langsung. Keputusan pemiliknya, **jangan dibalik tanpa dimintanya**:
+
+**Dicabut / dimatikan:**
+
+- **Sakit & Izin murid DICABUT.** Tidak ada layar yang pernah bisa menyimpan kedua status itu —
+  absensi hanya lahir dari pemindai RFID (Hadir/Terlambat) dan tombol admin (Tidak Hadir) — jadi
+  rapor selalu mencetak 0 hari sementara murid yang benar-benar sakit tercetak "Tanpa keterangan".
+  Rapor kini menyisakan dua baris: Hadir dan Tidak hadir. Lihat `ringkasKehadiran` di
+  `src/lib/raporAdapters.js`. Penyaring Izin/Sakit di Performa Kelas dan keterangan warna di
+  kalender absensi ikut dibersihkan. **Absensi rapat guru TIDAK tersentuh** — di sana Izin dan Sakit
+  memang bisa diisi dan berfungsi.
+- **Materi & Tugas kelas DIMATIKAN** lewat `VITE_ENABLE_KELAS_KONTEN` (bawaan `false`). Alasannya
+  bukan kerusakan: di SD, guru mengabari orang tua lewat grup WhatsApp. Modulnya utuh — tabel
+  `kelas_konten`, handler Go beserta jalur baca muridnya, panel guru `ModulKontenKelas` — dan
+  disimpan untuk jenjang SMP/SMA.
+- **Notifikasi WA DIMATIKAN** lewat `VITE_ENABLE_WA_NOTIFICATIONS` (bawaan `false`). Panelnya
+  menjawab 500 karena migrasi `20260823000100_wa_outbox.sql` **ditulis tetapi belum diterapkan** —
+  tabel `wa_outbox` tidak ada. Menyalakannya berarti menerapkan migrasi itu DULU, lalu menyediakan
+  gerbang WhatsApp berbayar (`WA_GATEWAY_URL`, `WA_GATEWAY_TOKEN`).
+- **Forum DICABUT.** Rute `/api/forum`, pendaftaran handlernya di `main.go`, dan
+  `src/lib/forumAdapters.js` dihapus. Sebelumnya setiap pemegang akun termasuk murid bisa memposting
+  lewat API padahal tidak ada layar untuk membaca atau memoderasinya. Tabel `forum_topics` dan
+  `forum_replies` sengaja dibiarkan; `internal/handler/forum.go` juga masih ada.
+- **Tab Nilai untuk murid TIDAK dikerjakan** atas keputusan pemilik, walau jalur bacanya sudah siap
+  di `nilai.go` (`nilaiScope`, cabang murid). Orang tua melihat nilai saat rapor dicetak.
+- Tabel `notifications` tidak dipakai siapa pun — sisa arsitektur lama, dibiarkan.
+
+**Ditambahkan atas permintaan pemilik** (kolom agama sudah selesai; tujuh sisanya menyusul):
+
+1. ~~Kolom **agama** pada data murid~~ — selesai, migrasi `20260902000100_kolom_agama_murid.sql`
+2. Surat keterangan + nomor surat berurutan + arsip (aktif sekolah, pindah, SKTM)
+3. Cetak buku induk murid
+4. Cetak kartu pelajar
+5. Mutasi keluar dengan surat pindah
+6. Kehadiran hari ini pada kartu ringkasan dashboard
+7. Data kepegawaian lengkap (SK, TMT, pangkat/golongan, sertifikasi, masa kerja, pendidikan)
+8. Jurnal mengajar guru
+
+**Ditolak / ditunda pemilik:** absen manual satu kelas sebagai cadangan · inventaris sarana
+prasarana · perpustakaan · tabungan murid · laporan berkepala surat untuk dinas · nama item
+pembayaran bisa diganti (istilah "SPP" di SD negeri) — yang terakhir menuntut mencabut `CHECK`
+constraint `payment_item_settings_key_check`.
+
 ## Sisa temuan audit keamanan — belum dikerjakan
 
 Cabang `upstream/feat/paas-template-image` (12 commit, terakhir 2026-08-16, 279 commit di belakang

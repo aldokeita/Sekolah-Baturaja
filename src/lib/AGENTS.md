@@ -21,7 +21,6 @@ Komponen **TIDAK BOLEH** memanggil API langsung. Semua request harus melalui ada
 | `appConfigAdapters.js` | Konfigurasi aplikasi | `/api/config/*` |
 | `dataMasterAdapters.js` | Santri, guru, kelas, mutasi | `/api/santri/*`, `/api/guru/*`, `/api/classes/*` |
 | `financeAdapters.js` | Expense & cashflow | `/api/expenses/*` |
-| `forumAdapters.js` | Forum diskusi | `/api/forum/*` |
 | `gamificationAdapters.js` | Poin & reward santri | `/api/gamification/*` |
 | `loginSecurityAdapters.js` | Log login & rate limit | `/api/auth/login-logs/*` |
 | `mediaPlayerAdapters.js` | Musik/media player | `/api/media/*` |

@@ -54,7 +54,7 @@ import StudentTransferModal from '@/components/dashboard/guru/StudentTransferMod
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
-import { enableGameFeatures, enableTahfizh } from '@/lib/featureFlags';
+import { enableGameFeatures, enableKelasKonten, enableTahfizh } from '@/lib/featureFlags';
 import { labelStafRole } from '@/lib/staf';
 
 const ProfileConstellationScene = lazy(() => import('@/components/dashboard/santri/SantriLevelScene'));
@@ -598,10 +598,16 @@ const GuruDashboard = () => {
             DOM (tanpa recharts, ResizeObserver, atau offsetWidth), jadi
             `display:none` tidak membuat ukurannya salah saat ditampilkan. */}
         <Tabs value={tabAktif} onValueChange={setTabAktif} className="mt-6 md:mt-8">
-          <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto md:grid-cols-4">
+          <TabsList className={cn(
+            'grid w-full grid-cols-2 sm:inline-flex sm:w-auto',
+            enableKelasKonten ? 'md:grid-cols-4' : 'md:grid-cols-3',
+          )}>
             <TabsTrigger value="jadwal">Jadwal Mengajar</TabsTrigger>
             <TabsTrigger value="nilai">Nilai Asesmen</TabsTrigger>
-            <TabsTrigger value="konten">Materi &amp; Tugas</TabsTrigger>
+            {/* Materi & Tugas dicabut atas keputusan pemilik: di SD, guru
+                mengabari orang tua lewat grup WhatsApp. Modulnya utuh dan
+                disimpan untuk jenjang SMP/SMA — lihat enableKelasKonten. */}
+            {enableKelasKonten && <TabsTrigger value="konten">Materi &amp; Tugas</TabsTrigger>}
             <TabsTrigger value="wali">Komunikasi Wali</TabsTrigger>
           </TabsList>
 
@@ -628,12 +634,14 @@ const GuruDashboard = () => {
               <ModulNilai guruId={guruData?.id} />
             </TabsContent>
 
-            <TabsContent forceMount value="konten" className={cn('mt-4', tabAktif !== 'konten' && 'hidden')}>
-              {/* Murid hanya membaca yang berstatus terbit; draf tidak pernah bocor.
-                  Konten kelas sengaja tidak menumpang tabel `announcements`, yang
-                  memasok situs publik. */}
-              <ModulKontenKelas guruId={guruData?.id} />
-            </TabsContent>
+            {enableKelasKonten && (
+              <TabsContent forceMount value="konten" className={cn('mt-4', tabAktif !== 'konten' && 'hidden')}>
+                {/* Murid hanya membaca yang berstatus terbit; draf tidak pernah bocor.
+                    Konten kelas sengaja tidak menumpang tabel `announcements`, yang
+                    memasok situs publik. */}
+                <ModulKontenKelas guruId={guruData?.id} />
+              </TabsContent>
+            )}
 
             <TabsContent forceMount value="wali" className={cn('mt-4', tabAktif !== 'wali' && 'hidden')}>
               {/* Hanya menyiapkan pesan dan membuka WhatsApp guru; tidak ada pesan

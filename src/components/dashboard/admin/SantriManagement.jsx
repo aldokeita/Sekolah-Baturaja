@@ -46,6 +46,13 @@ const PAGE_SIZE = 10;
 
 const getSelectedClassId = (input) => input?.current_class_id || input?.id_kelas || null;
 
+/* Enam agama yang tercatat pada dokumen kependudukan menurut Permendagri
+ * 118/2017, ditambah "Kepercayaan" untuk penghayat kepercayaan terhadap Tuhan
+ * Yang Maha Esa — yang sejak putusan MK 97/PUU-XIV/2016 juga dicantumkan di
+ * kartu keluarga. Daftarnya tinggal di sini, bukan di skema database, supaya
+ * perubahannya tidak menuntut migrasi. */
+const AGAMA_PILIHAN = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Kepercayaan'];
+
 const BULK_IMPORT_COLUMNS = [
   'Nama Lengkap',
   'Nama Panggilan',
@@ -644,7 +651,7 @@ const SantriManagement = () => {
 
       const dataToExport = (data || []).map(s => ({
           'Nama Lengkap': s.nama_lengkap, 'Nama Panggilan': s.nama_panggilan, 'NISN': s.nisn, 'NIS': s.nis, 'Tempat Lahir': s.tempat_lahir,
-          'Tanggal Lahir': s.tanggal_lahir, 'Jenis Kelamin': s.jenis_kelamin, 'Alamat': s.alamat, 'Angkatan': s.angkatan,
+          'Tanggal Lahir': s.tanggal_lahir, 'Jenis Kelamin': s.jenis_kelamin, 'Agama': s.agama, 'Alamat': s.alamat, 'Angkatan': s.angkatan,
           'Nama Ibu': s.nama_ibu, 'Nama Ayah': s.nama_ayah, 'No. HP Wali': s.no_hp_ortu,
           'Pekerjaan Ayah': s.pekerjaan_ayah, 'Pekerjaan Ibu': s.pekerjaan_ibu, 'Alamat Orang Tua': s.alamat_ortu || s.alamat,
           'No. KK': s.no_kk, 'No. NIK': s.no_nik, 'Status': s.status, 'RFID': s.rfid_tag
@@ -1190,6 +1197,12 @@ const SantriManagement = () => {
                         <div className="admin-edit-field"><label>Nama Lengkap</label><Input type="text" value={formData.nama_lengkap || ''} onChange={(e) => setFormData({ ...formData, nama_lengkap: e.target.value })} required /></div>
                         <div className="admin-edit-field"><label>Nama Panggilan</label><Input type="text" value={formData.nama_panggilan || ''} onChange={handleNicknameChange} /></div>
                         <div className="admin-edit-field"><label>Jenis Kelamin</label><Select value={formData.jenis_kelamin} onValueChange={val => setFormData({ ...formData, jenis_kelamin: val })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Laki-laki">Laki-laki</SelectItem><SelectItem value="Perempuan">Perempuan</SelectItem></SelectContent></Select></div>
+                        {/* Agama dibutuhkan untuk memilah kelas Pendidikan Agama dan
+                            selalu diminta buku induk. Dibiarkan boleh kosong: data
+                            murid lama tidak boleh tiba-tiba mengaku beragama tertentu.
+                            Daftarnya dari Permendagri 118/2017 — enam agama yang
+                            tercatat pada dokumen kependudukan, plus Kepercayaan. */}
+                        <div className="admin-edit-field"><label>Agama</label><Select value={formData.agama || ''} onValueChange={val => setFormData({ ...formData, agama: val })}><SelectTrigger><SelectValue placeholder="Belum diisi" /></SelectTrigger><SelectContent>{AGAMA_PILIHAN.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div>
                         <div className="admin-edit-field"><label>Tempat Lahir</label><Input type="text" value={formData.tempat_lahir || ''} onChange={(e) => setFormData({ ...formData, tempat_lahir: e.target.value })} /></div>
                         <div className="admin-edit-field"><label>Tanggal Lahir</label><Input type="date" value={formData.tanggal_lahir || ''} onChange={(e) => setFormData({ ...formData, tanggal_lahir: e.target.value })} required /></div>
                         <div className="admin-edit-field"><label>Angkatan</label><Input type="text" placeholder="2024/2025" value={formData.angkatan || ''} onChange={(e) => setFormData({ ...formData, angkatan: e.target.value })} /></div>

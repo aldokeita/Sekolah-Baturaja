@@ -37,7 +37,7 @@ import AdminModuleNav from './AdminModuleNav';
 import { fetchSantriCount, fetchSantriDetail } from '@/lib/dataMasterAdapters';
 import { FINANCE_DATA_CHANGED_EVENT, fetchCashflowSummary } from '@/lib/financeAdapters';
 import { resolveAvatarRecord } from '@/lib/storageAdapters';
-import { enableGameFeatures } from '@/lib/featureFlags';
+import { enableGameFeatures, enableWaNotifications } from '@/lib/featureFlags';
 import { fetchAppConfig, APP_CONFIG_KEYS } from '@/lib/appConfigAdapters';
 import { applyTahfizhConfig } from '@/lib/tahfizhLevels';
 import '@/styles/sdnb-dashboard.css';
@@ -68,7 +68,10 @@ const renderModule = (value) => {
     case 'game-config': return <GameConfiguration />;
     case 'backup': return <BackupRestoreManagement />;
     case 'logs': return <LoginLogs />;
-    case 'wa-notifikasi': return <WaNotifications />;
+    // Tab-nya sudah disaring keluar di AdminDashboard saat flag mati; cabang ini
+    // ikut dijaga supaya alamat tab lama yang tersimpan di pranala tidak
+    // memunculkan panel yang belum bisa dipakai.
+    case 'wa-notifikasi': return enableWaNotifications ? <WaNotifications /> : null;
     default: return null;
   }
 };

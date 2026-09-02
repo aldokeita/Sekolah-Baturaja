@@ -65,7 +65,6 @@ func main() {
 	mmqHandler := handler.NewMMQHandler(pool)
 	gamificationHandler := handler.NewGamificationHandler(pool)
 	mediaPlayerHandler := handler.NewMediaPlayerHandler(pool)
-	forumHandler := handler.NewForumHandler(pool)
 	loginLogsHandler := handler.NewLoginLogsHandler(pool, cfg)
 	whatsappHandler := handler.NewWhatsAppHandler(pool)
 	ppdbHandler := handler.NewPpdbHandler(pool)
@@ -157,10 +156,18 @@ func main() {
 		r.Mount("/api/mmq", mmqHandler.Routes())
 		r.Mount("/api/config", configHandler.Routes())
 
-		// Forum — authenticated only. The handler derives author identity from
-		// the JWT, so it must sit inside this group; mounting it publicly would
-		// leave posts with no verifiable author.
-		r.Mount("/api/forum", forumHandler.Routes())
+		/* Forum DICABUT atas keputusan pemilik.
+		 *
+		 * Halaman publiknya hilang saat pindah ke template SDN Baturaja, tetapi
+		 * rute, handler, dan adapternya tetap hidup — sehingga setiap pemegang
+		 * akun, termasuk murid, bisa membuat topik dan balasan lewat API padahal
+		 * TIDAK ADA satu layar pun tempat isinya bisa dibaca, dimoderasi, atau
+		 * dihapus.
+		 *
+		 * Tabel `forum_topics` dan `forum_replies` sengaja dibiarkan di basis
+		 * data supaya tidak ada baris yang hilang; handler-nya masih ada di
+		 * internal/handler/forum.go bila kelak dibutuhkan. Yang dicabut hanya
+		 * pintunya. */
 
 		// Gamification (leaderboard + points public config above, mutations here)
 		r.Mount("/api/gamification", gamificationHandler.Routes())

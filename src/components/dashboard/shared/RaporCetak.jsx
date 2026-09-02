@@ -94,7 +94,7 @@ export const LembarRapor = ({ data, sekolah, narasi }) => {
     rataKeseluruhan, predikatKeseluruhan, kehadiran, waliKelas, kepalaSekolah,
   } = data;
 
-  const totalHari = kehadiran.hadir + kehadiran.sakit + kehadiran.izin + kehadiran.alpa;
+  const totalHari = kehadiran.hadir + kehadiran.tidakHadir;
 
   return (
     <div className="rapor-lembar">
@@ -202,13 +202,15 @@ export const LembarRapor = ({ data, sekolah, narasi }) => {
 
       <div className="rapor-dua-kolom">
         <div>
-          <h2 className="rapor-bagian__judul">Ketidakhadiran</h2>
+          <h2 className="rapor-bagian__judul">Kehadiran</h2>
+          {/* Dua baris, bukan empat. Baris Sakit dan Izin dicabut karena tidak
+              ada layar yang bisa mengisinya — keduanya selalu tercetak 0 hari
+              sementara murid yang sakit tercetak sebagai tanpa keterangan.
+              Lihat ringkasKehadiran di src/lib/raporAdapters.js. */}
           <table className="rapor-tabel">
             <tbody>
-              <tr><td>Sakit</td><td className="rapor-angka">{kehadiran.sakit} hari</td></tr>
-              <tr><td>Izin</td><td className="rapor-angka">{kehadiran.izin} hari</td></tr>
-              <tr><td>Tanpa keterangan</td><td className="rapor-angka">{kehadiran.alpa} hari</td></tr>
               <tr><td>Hadir</td><td className="rapor-angka">{kehadiran.hadir} hari</td></tr>
+              <tr><td>Tidak hadir</td><td className="rapor-angka">{kehadiran.tidakHadir} hari</td></tr>
             </tbody>
           </table>
           {totalHari === 0 && (

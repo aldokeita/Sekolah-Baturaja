@@ -442,8 +442,9 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                                                 <SelectItem value="hadir">Hadir</SelectItem>
                                                 <SelectItem value="terlambat">Terlambat</SelectItem>
                                                 <SelectItem value="alpha">Alpha/Tidak Hadir</SelectItem>
-                                                <SelectItem value="izin">Izin</SelectItem>
-                                                <SelectItem value="sakit">Sakit</SelectItem>
+                                                {/* Pilihan Izin dan Sakit dicabut: tidak ada layar yang
+                                                    bisa menyimpan kedua status itu, jadi penyaringnya
+                                                    selalu memberi hasil kosong. */}
                                             </SelectContent>
                                         </Select>
                                         <Input type="date" className="w-[140px]" value={detailFilter.startDate} onChange={(e) => setDetailFilter(prev => ({...prev, startDate: e.target.value}))} />

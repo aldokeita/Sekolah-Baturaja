@@ -438,6 +438,7 @@ const SantriDetailModal = ({ santri, isOpen, onOpenChange, onPromote, onDemote }
                         <Kartu judul="Identitas murid" ikon={Contact}>
                             <Data label="Nama panggilan">{santri.nama_panggilan || santri.nama_lengkap?.trim().split(' ')[0]}</Data>
                             <Data label="Jenis kelamin">{isi('jenis_kelamin')}</Data>
+                            <Data label="Agama">{isi('agama')}</Data>
                             <Data label="Tempat, tanggal lahir">
                                 {[isi('tempat_lahir'), tanggalPanjang(isi('tanggal_lahir'))].filter((bagian) => bagian && bagian !== '-').join(', ') || '-'}
                                 {umur !== null && <span className="ml-1 font-medium text-slate-500 dark:text-slate-400">({umur} tahun)</span>}

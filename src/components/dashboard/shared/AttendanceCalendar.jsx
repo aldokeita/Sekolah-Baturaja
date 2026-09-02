@@ -191,7 +191,10 @@ const AttendanceCalendar = ({ attendanceData }) => {
          <div className="mt-4 flex items-center flex-wrap gap-4 text-xs text-muted-foreground">
              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> Hadir</div>
              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-amber-500"></div> Terlambat</div>
-             <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-rose-500"></div> Alpha/Izin/Sakit</div>
+             {/* Dulu berbunyi "Alpha/Izin/Sakit". Izin dan Sakit tidak bisa
+                 dicatat di aplikasi ini, jadi menyebutnya di keterangan warna
+                 menjanjikan yang tidak ada. */}
+             <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-rose-500"></div> Tidak Hadir</div>
              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-700"></div> Tidak Ada Data</div>
          </div>
       </CardContent>
