@@ -210,6 +210,50 @@ Tiga hal yang wajib benar:
 `backend/.env` seperti bagian 2 tapi dengan `CORS_ORIGIN` berisi domain situs Anda, lalu jalankan
 `docker compose up -d --build`. Pasang HTTPS di depannya dengan Caddy atau Nginx.
 
+### 6.1 · Backup otomatis
+
+**Lakukan ini sebelum ada data sungguhan.** Sekolah menyimpan data pribadi murid dan riwayat
+pembayaran; satu disk rusak tanpa backup berarti kehilangan permanen.
+
+Panel Backup & Restore di dalam aplikasi **tidak cukup** untuk ini. Ia mengekspor 13 tabel sebagai
+JSON dari peramban, dan jadwal pelajaran, nilai, periode ajaran, `user_profiles`, serta tabel rapor
+tidak termasuk. Ia berguna untuk memindahkan satu tabel, bukan untuk menyelamatkan sekolah.
+
+Skripnya sudah ada di proyek. Jalankan di VPS, dari akar proyek:
+
+```bash
+chmod +x scripts/backup-sekolah.sh
+./scripts/backup-sekolah.sh
+```
+
+Hasilnya dua berkas bercap waktu di folder `backup/`: dump basis data dan arsip berkas unggahan.
+**Keduanya sama pentingnya.** Basis data hanya menyimpan jalur foto, jadi memulihkan dump tanpa
+arsip unggahan menghasilkan sistem yang jalan dengan semua foto hilang, tanpa satu pun pesan galat.
+
+Jadwalkan setiap malam pukul 01.00 lewat cron. Jalankan `crontab -e` lalu tambahkan satu baris —
+ganti `/opt/sekolah` dengan lokasi proyek Anda:
+
+```
+0 1 * * * cd /opt/sekolah && ./scripts/backup-sekolah.sh >> /var/log/backup-sekolah.log 2>&1
+```
+
+Skripnya keluar dengan status gagal bila dump-nya kosong atau rusak, sehingga cron mengirim surel
+dan kegagalannya tidak lewat tanpa disadari. Yang lama dihapus **hanya setelah** yang baru terbukti
+baik, dan bawaannya menyimpan 30 hari. Ubah dengan argumen kedua:
+`./scripts/backup-sekolah.sh backup 60`.
+
+**Satu hal yang skrip ini tidak bisa lakukan untuk Anda:** backup yang hanya tersimpan di server
+yang sama tidak melindungi dari server itu sendiri hilang. Salin folder `backup/` ke luar — Google
+Drive, `rsync` ke komputer sekolah, atau penyimpanan objek. Sebulan sekali, coba pulihkan satu
+backup ke basis data kosong; backup yang belum pernah dicoba belum tentu backup.
+
+Memulihkan:
+
+```bash
+gunzip -c backup/db-20260901-010000.sql.gz | docker compose -f backend/docker-compose.yml exec -T db psql -U postgres -d lpq_db
+docker run --rm --volumes-from "$(docker compose -f backend/docker-compose.yml ps -q api)" -v "$PWD/backup":/backup alpine:3 tar xzf /backup/uploads-20260901-010000.tar.gz -C /app/uploads
+```
+
 ---
 
 ## 7 · Jadikan milik sekolah Anda
