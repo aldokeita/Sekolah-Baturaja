@@ -64,6 +64,11 @@ func (h *ClassesHandler) Count(w http.ResponseWriter, r *http.Request) {
 var classesEditable = map[string]bool{
 	"nama_kelas": true, "sesi": true, "id_guru": true, "kategori": true,
 	"is_active": true, "sort_order": true, "kapasitas": true,
+	// `tingkat` WAJIB ada di sini. Migrasi 20260823001000 mengisinya untuk rombel
+	// yang sudah ada, tetapi tanpa baris ini rombel BARU selalu bertingkat NULL —
+	// dan panel Kenaikan Kelas melewati rombel bertingkat NULL, jadi kelas yang
+	// baru dibuat sekolah tidak akan pernah ikut naik. Diam, tanpa galat.
+	"tingkat": true,
 }
 
 // canSeeRoster reports whether the role may view full class rosters and member

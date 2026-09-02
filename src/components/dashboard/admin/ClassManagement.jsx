@@ -622,7 +622,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
   const resetForm = () => {
       const sessions = Object.keys(sessionTimes);
-      setFormData({ nama_kelas: '', sesi: sessions[0] || '', id_guru: null, notes: '', kapasitas: '', kategori });
+      setFormData({ nama_kelas: '', sesi: sessions[0] || '', id_guru: null, notes: '', kapasitas: '', tingkat: '', kategori });
       setEditingClass(null);
   };
 
@@ -636,6 +636,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
           id_guru: classItem.id_guru,
           notes: classItem.notes || '',
           kapasitas: classItem.kapasitas ?? '',
+          tingkat: classItem.tingkat ?? '',
           kategori
       });
       setIsFormOpen(true);
@@ -748,11 +749,16 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
     // Empty string means "no limit declared" — send null so the column stays
     // NULL rather than tripping the kapasitas > 0 check with a 0.
     const parsedKapasitas = parseInt(formData.kapasitas, 10);
+    /* `tingkat` menentukan apakah rombel ini ikut Kenaikan Kelas, dan kosong
+       berarti TIDAK ikut. Karena itu dikirim sebagai null, bukan 0: nol akan
+       menabrak batasan tingkat BETWEEN 1 AND 12. */
+    const parsedTingkat = parseInt(formData.tingkat, 10);
     const classData = {
       nama_kelas: formData.nama_kelas,
       sesi: formData.sesi,
       id_guru: formData.id_guru || null,
       kapasitas: Number.isFinite(parsedKapasitas) && parsedKapasitas > 0 ? parsedKapasitas : null,
+      tingkat: Number.isFinite(parsedTingkat) && parsedTingkat >= 1 && parsedTingkat <= 12 ? parsedTingkat : null,
       kategori,
     };
     if (!editingClass) {
@@ -1030,6 +1036,25 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                   value={formData.kapasitas ?? ''}
                   onChange={e => setFormData({ ...formData, kapasitas: e.target.value })}
                 />
+              </div>
+              <div>
+                <label>Tingkat <span className="text-xs text-muted-foreground font-normal">(kelas berapa)</span></label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="12"
+                  placeholder="Contoh: 2 untuk Kelas 2A dan 2B"
+                  value={formData.tingkat ?? ''}
+                  onChange={e => setFormData({ ...formData, tingkat: e.target.value })}
+                />
+                {/* Angka ini yang dipakai Kenaikan Kelas untuk menyusun usulan
+                    tujuan, bukan nama kelasnya — supaya rombel bernama "2 Melati"
+                    tetap terbaca sebagai tingkat 2. Dikosongkan berarti rombel ini
+                    tidak ikut kenaikan kelas otomatis, misalnya kelompok khusus. */}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Dipakai panel Kenaikan Kelas. Rombel paralel memakai tingkat yang sama:
+                  Kelas 2A dan Kelas 2B keduanya tingkat 2. Kosongkan bila rombel ini tidak ikut kenaikan kelas.
+                </p>
               </div>
               <div><label>Catatan</label><Textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })}/></div>
               <DialogFooter><Button type="submit">Simpan</Button></DialogFooter>
