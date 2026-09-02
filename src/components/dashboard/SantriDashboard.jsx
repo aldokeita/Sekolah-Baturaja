@@ -601,6 +601,11 @@ const SantriDashboard = () => {
             <div className="no-scrollbar overflow-x-auto pb-1">
               <TabsList className="h-auto min-w-max rounded-lg bg-white p-1 shadow-sm dark:border dark:border-white/10 dark:bg-slate-950/80">
                 <TabsTrigger value="overview" className="whitespace-nowrap">Ringkasan</TabsTrigger>
+                {/* Jadwal ditaruh persis di sebelah Ringkasan, atas permintaan
+                    pemilik. Sebelumnya ia terselip di bawah bagian perkembangan
+                    belajar di dalam Ringkasan — murid harus menggulir melewati
+                    hafalan dan karakter untuk melihat jadwal pelajarannya. */}
+                <TabsTrigger value="jadwal" className="whitespace-nowrap">Jadwal Pelajaran</TabsTrigger>
                 <TabsTrigger value="attendance" className="whitespace-nowrap">Rekap Absensi</TabsTrigger>
                 <TabsTrigger value="payments" className="whitespace-nowrap">Riwayat Pembayaran</TabsTrigger>
                 {enableTahfizh && <TabsTrigger value="learning" className="whitespace-nowrap">Muroja'ah & Video</TabsTrigger>}
@@ -614,8 +619,11 @@ const SantriDashboard = () => {
                      <div className="flex items-end justify-between gap-4">
                        <div>
                          <p className="text-xs font-bold uppercase tracking-wider text-primary">Perkembangan belajar</p>
+                         {/* Judulnya tidak lagi menyebut jadwal: jadwalnya sudah
+                             pindah ke tabnya sendiri, jadi menyebutnya di sini
+                             menjanjikan sesuatu yang tidak ada di bagian ini. */}
                          <h2 className="mt-1 text-xl font-black text-foreground sm:text-2xl">
-                           {enableTahfizh ? 'Progres hafalan dan karakter' : 'Jadwal dan perkembangan karakter'}
+                           {enableTahfizh ? 'Progres hafalan dan karakter' : 'Perkembangan karakter'}
                          </h2>
                        </div>
                        <BarChart3 className="hidden h-7 w-7 text-primary/60 sm:block" aria-hidden="true" />
@@ -642,17 +650,19 @@ const SantriDashboard = () => {
                          />
                        </>
                      )}
-                     {/* Jadwal kelas tempat murid berada, hanya bisa dibaca. */}
-                     <JadwalSaya
-                       classId={santriData.current_class_id || santriData.id_kelas}
-                       title="Jadwal Pelajaran Kelas"
-                       emptyText="Belum ada jadwal pelajaran untuk kelas ini."
-                     />
-
                      <SantriDevelopmentProfile santriId={santriData.id} editable={false} collapsible />
                    </div>
                  </div>
              </TabsContent>
+
+            <TabsContent value="jadwal">
+                {/* Jadwal kelas tempat murid berada, hanya bisa dibaca. */}
+                <JadwalSaya
+                  classId={santriData.current_class_id || santriData.id_kelas}
+                  title="Jadwal Pelajaran Kelas"
+                  emptyText="Belum ada jadwal pelajaran untuk kelas ini."
+                />
+            </TabsContent>
 
             <TabsContent value="attendance">
                 <SantriAbsensiRecap />
