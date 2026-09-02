@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -43,6 +44,8 @@ func (h *SantriHandler) Routes() chi.Router {
 	r.Put("/{id}/jilid", h.UpdateJilid)
 	r.Put("/{id}/order", h.UpdateOrder)
 	r.Post("/move-class", h.MoveClass)
+	r.Post("/promote-class", h.PromoteClass)
+	r.Get("/promotion-runs", h.PromotionRuns)
 	r.Post("/{id}/archive", h.Archive)
 	r.Post("/{id}/restore", h.Restore)
 	r.Get("/{id}/transfer-destinations", h.TransferDestinations)
@@ -78,6 +81,10 @@ var santriCreatable = func() map[string]bool {
 }()
 
 // Fields a santri may edit on their own record.
+// Di tingkat paket, bukan di dalam handler: pola ini tetap dan tidak perlu
+// dikompilasi ulang setiap permintaan masuk.
+var tahunAjaranPattern = regexp.MustCompile(`^[0-9]{4}/[0-9]{4}$`)
+
 var santriSelfEditable = map[string]bool{
 	"nama_panggilan": true, "no_hp_ortu": true, "alamat": true,
 }
@@ -656,6 +663,308 @@ func (h *SantriHandler) MoveClass(w http.ResponseWriter, r *http.Request) {
 		"from_class_id": fromClass,
 		"to_class_id":   body.TargetClassID,
 	})
+}
+
+// PromoteClass POST /api/santri/promote-class — kenaikan kelas satu tahun ajaran
+// untuk BANYAK rombel sekaligus.
+//
+// Sebelum ini sekolah hanya punya `move-class` yang memindahkan satu murid, jadi
+// menaikkan enam rombel berarti ratusan kali buka-ubah-simpan setiap awal tahun.
+//
+// Petanya DIKIRIM PEMANGGIL, tidak diturunkan di sini. Sekolah berbeda-beda
+// kebijakannya: ada yang mempertahankan rombel (2B ke 3B), ada yang mengacak
+// ulang setiap tahun supaya kelasnya seimbang, ada yang menggabung dua rombel
+// jadi satu. Panel di aplikasi mengusulkan peta berdasarkan `classes.tingkat`
+// lalu admin menyetujui atau mengubahnya; backend menjalankan apa yang disetujui.
+// Menebak kebijakan di sini berarti memaksakan satu cara ke semua sekolah.
+//
+// Menulis dengan pola yang SAMA dengan MoveClass — catat di class_mutations,
+// perbarui current_class_id, tutup keanggotaan lama lalu buka yang baru. Jangan
+// dibuat jalur kedua: detail kelas membaca rosternya dari class_memberships, dan
+// dua cara menulis berarti dua cara untuk tidak sinkron.
+//
+// Semuanya dalam SATU transaksi. Kenaikan kelas setengah jalan lebih buruk
+// daripada gagal seluruhnya: sebagian murid pindah, sebagian tidak, dan tidak
+// ada yang tahu batasnya di mana.
+func (h *SantriHandler) PromoteClass(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if !middleware.CanManage(middleware.RoleFromCtx(ctx)) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	userID := middleware.UserIDFromCtx(ctx)
+
+	var body struct {
+		TahunAjaranAsal   string `json:"tahun_ajaran_asal"`
+		TahunAjaranTujuan string `json:"tahun_ajaran_tujuan"`
+		Peta              []struct {
+			FromClassID string `json:"from_class_id"`
+			ToClassID   string `json:"to_class_id"`
+		} `json:"peta"`
+		LulusClassIDs    []string `json:"lulus_class_ids"`
+		TinggalSantriIDs []string `json:"tinggal_santri_ids"`
+		Catatan          string   `json:"catatan"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&body); err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	if !tahunAjaranPattern.MatchString(body.TahunAjaranAsal) || !tahunAjaranPattern.MatchString(body.TahunAjaranTujuan) {
+		jsonError(w, "tahun ajaran harus berformat 2026/2027", http.StatusBadRequest)
+		return
+	}
+	if len(body.Peta) == 0 && len(body.LulusClassIDs) == 0 {
+		jsonError(w, "tidak ada rombel yang dinaikkan maupun dilulusdkan", http.StatusBadRequest)
+		return
+	}
+	if body.TinggalSantriIDs == nil {
+		body.TinggalSantriIDs = []string{}
+	}
+
+	// Dicek lebih dulu supaya pesannya jelas. Batasan unik di
+	// class_promotion_runs tetap menjadi pengaman sesungguhnya bila dua admin
+	// menekan tombolnya pada saat yang sama.
+	var sudahPernah bool
+	if err := h.db.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM class_promotion_runs WHERE tahun_ajaran_asal = $1)`,
+		body.TahunAjaranAsal).Scan(&sudahPernah); err != nil {
+		jsonError(w, "gagal memeriksa riwayat kenaikan kelas", http.StatusInternalServerError)
+		return
+	}
+	if sudahPernah {
+		jsonError(w, "kenaikan kelas tahun ajaran "+body.TahunAjaranAsal+" sudah pernah dijalankan", http.StatusConflict)
+		return
+	}
+
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		jsonError(w, "gagal memulai transaksi", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	// Murid aktif di sebuah rombel, kecuali yang ditandai tinggal kelas.
+	muridDi := func(classID string) ([]string, error) {
+		rows, err := tx.Query(ctx, `
+			SELECT s.id::text
+			FROM santri s
+			WHERE s.current_class_id = $1
+			  AND s.deleted_at IS NULL
+			  AND (s.status IS NULL OR s.status ILIKE 'aktif' OR s.status ILIKE 'active')
+			  AND NOT (s.id = ANY($2::uuid[]))
+			ORDER BY s.order_in_class NULLS LAST, s.nama_lengkap
+		`, classID, body.TinggalSantriIDs)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var ids []string
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				return nil, err
+			}
+			ids = append(ids, id)
+		}
+		return ids, rows.Err()
+	}
+
+	/* SELURUH roster asal dibaca LEBIH DULU, sebelum satu pun tulisan.
+	 *
+	 * Ini bukan penghematan, ini pembetulan cacat. Versi pertama membaca dan
+	 * memindahkan per rombel secara berurutan, dan murid Kelas 1A yang baru
+	 * dipindahkan ke 2A langsung ikut terbawa saat langkah 2A ke 3A memb aca
+	 * rombelnya. Efeknya beranting: pada uji dengan 15 murid, hasilnya 33 kali
+	 * naik dan 14 murid lulus — murid kelas satu pun ikut dinyatakan lulus.
+	 *
+	 * Karena `current_class_id` hanya satu, membaca semuanya di awal juga
+	 * menjamin tiap murid muncul di tepat satu daftar asal. */
+	rosterAsal := make(map[string][]string, len(body.Peta)+len(body.LulusClassIDs))
+	bacaRoster := func(classID string) bool {
+		if _, sudah := rosterAsal[classID]; sudah {
+			return true
+		}
+		ids, err := muridDi(classID)
+		if err != nil {
+			jsonError(w, "gagal membaca murid rombel asal", http.StatusInternalServerError)
+			return false
+		}
+		rosterAsal[classID] = ids
+		return true
+	}
+	for _, langkah := range body.Peta {
+		if langkah.FromClassID != "" && !bacaRoster(langkah.FromClassID) {
+			return
+		}
+	}
+	for _, classID := range body.LulusClassIDs {
+		if classID != "" && !bacaRoster(classID) {
+			return
+		}
+	}
+
+	alasan := "Kenaikan kelas " + body.TahunAjaranAsal + " ke " + body.TahunAjaranTujuan
+	jumlahNaik, jumlahLulus := 0, 0
+	rincian := make([]map[string]any, 0, len(body.Peta)+len(body.LulusClassIDs))
+
+	for _, langkah := range body.Peta {
+		if langkah.FromClassID == "" || langkah.ToClassID == "" {
+			jsonError(w, "peta kenaikan memuat rombel kosong", http.StatusBadRequest)
+			return
+		}
+		if langkah.FromClassID == langkah.ToClassID {
+			jsonError(w, "rombel asal dan tujuan tidak boleh sama", http.StatusBadRequest)
+			return
+		}
+		var tujuanAda bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM classes WHERE id = $1)`, langkah.ToClassID).Scan(&tujuanAda); err != nil {
+			jsonError(w, "gagal memeriksa rombel tujuan", http.StatusInternalServerError)
+			return
+		}
+		if !tujuanAda {
+			jsonError(w, "rombel tujuan tidak ditemukan", http.StatusBadRequest)
+			return
+		}
+
+		ids := rosterAsal[langkah.FromClassID]
+		if len(ids) == 0 {
+			rincian = append(rincian, map[string]any{"from_class_id": langkah.FromClassID, "to_class_id": langkah.ToClassID, "jumlah": 0})
+			continue
+		}
+
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO class_mutations (santri_id, from_class_id, to_class_id, reason, created_by, mutation_date)
+			SELECT id::uuid, $2, $3, $4, $5, now() FROM unnest($1::uuid[]) AS id
+		`, ids, langkah.FromClassID, langkah.ToClassID, alasan, userID); err != nil {
+			jsonError(w, "gagal mencatat mutasi kenaikan kelas", http.StatusInternalServerError)
+			return
+		}
+		if _, err := tx.Exec(ctx, `
+			UPDATE class_memberships SET status = 'moved', end_date = CURRENT_DATE, updated_by = $2
+			WHERE santri_id = ANY($1::uuid[]) AND status = 'active'
+		`, ids, userID); err != nil {
+			jsonError(w, "gagal menutup keanggotaan lama", http.StatusInternalServerError)
+			return
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO class_memberships (santri_id, class_id, start_date, status, created_by, updated_by)
+			SELECT id::uuid, $2, CURRENT_DATE, 'active', $3, $3 FROM unnest($1::uuid[]) AS id
+		`, ids, langkah.ToClassID, userID); err != nil {
+			jsonError(w, "gagal membuat keanggotaan baru", http.StatusInternalServerError)
+			return
+		}
+		if _, err := tx.Exec(ctx, `
+			UPDATE santri SET current_class_id = $2, updated_by = $3, updated_at = now()
+			WHERE id = ANY($1::uuid[])
+		`, ids, langkah.ToClassID, userID); err != nil {
+			jsonError(w, "gagal memindahkan murid", http.StatusInternalServerError)
+			return
+		}
+
+		jumlahNaik += len(ids)
+		rincian = append(rincian, map[string]any{"from_class_id": langkah.FromClassID, "to_class_id": langkah.ToClassID, "jumlah": len(ids)})
+	}
+
+	// Rombel yang lulus. Kelasnya DIKOSONGKAN, bukan dibiarkan: murid yang lulus
+	// tetapi masih tercatat di Kelas 6A akan muncul di roster rombel itu bersama
+	// murid baru tahun depan.
+	for _, classID := range body.LulusClassIDs {
+		if classID == "" {
+			continue
+		}
+		ids := rosterAsal[classID]
+		if len(ids) == 0 {
+			rincian = append(rincian, map[string]any{"from_class_id": classID, "lulus": 0})
+			continue
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO class_mutations (santri_id, from_class_id, to_class_id, reason, created_by, mutation_date)
+			SELECT id::uuid, $2, NULL, $3, $4, now() FROM unnest($1::uuid[]) AS id
+		`, ids, classID, "Lulus "+body.TahunAjaranAsal, userID); err != nil {
+			jsonError(w, "gagal mencatat kelulusan", http.StatusInternalServerError)
+			return
+		}
+		if _, err := tx.Exec(ctx, `
+			UPDATE class_memberships SET status = 'graduated', end_date = CURRENT_DATE, updated_by = $2
+			WHERE santri_id = ANY($1::uuid[]) AND status = 'active'
+		`, ids, userID); err != nil {
+			jsonError(w, "gagal menutup keanggotaan murid lulus", http.StatusInternalServerError)
+			return
+		}
+		if _, err := tx.Exec(ctx, `
+			UPDATE santri SET status = 'Lulus', current_class_id = NULL, updated_by = $2, updated_at = now()
+			WHERE id = ANY($1::uuid[])
+		`, ids, userID); err != nil {
+			jsonError(w, "gagal menandai murid lulus", http.StatusInternalServerError)
+			return
+		}
+		jumlahLulus += len(ids)
+		rincian = append(rincian, map[string]any{"from_class_id": classID, "lulus": len(ids)})
+	}
+
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO class_promotion_runs
+			(tahun_ajaran_asal, tahun_ajaran_tujuan, jumlah_naik, jumlah_tinggal, jumlah_lulus, catatan, dijalankan_oleh)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, body.TahunAjaranAsal, body.TahunAjaranTujuan, jumlahNaik, len(body.TinggalSantriIDs), jumlahLulus,
+		nullIfBlank(body.Catatan), userID); err != nil {
+		jsonError(w, "gagal mencatat kenaikan kelas", http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		jsonError(w, "gagal menyimpan kenaikan kelas", http.StatusInternalServerError)
+		return
+	}
+	jsonData(w, map[string]any{
+		"tahun_ajaran_asal":   body.TahunAjaranAsal,
+		"tahun_ajaran_tujuan": body.TahunAjaranTujuan,
+		"jumlah_naik":         jumlahNaik,
+		"jumlah_tinggal":      len(body.TinggalSantriIDs),
+		"jumlah_lulus":        jumlahLulus,
+		"rincian":             rincian,
+	})
+}
+
+// PromotionRuns GET /api/santri/promotion-runs — riwayat kenaikan kelas, supaya
+// panel tahu tahun ajaran mana yang sudah dijalankan.
+func (h *SantriHandler) PromotionRuns(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if !middleware.CanManage(middleware.RoleFromCtx(ctx)) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	rows, err := h.db.Query(ctx, `
+		SELECT row_to_json(t) FROM (
+			SELECT r.*, g.nama AS dijalankan_oleh_nama
+			FROM class_promotion_runs r
+			LEFT JOIN guru g ON g.id = r.dijalankan_oleh
+			ORDER BY r.dijalankan_pada DESC
+		) t
+	`)
+	if err != nil {
+		jsonError(w, "gagal membaca riwayat kenaikan kelas", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+	out := make([]json.RawMessage, 0)
+	for rows.Next() {
+		var raw json.RawMessage
+		if err := rows.Scan(&raw); err != nil {
+			jsonError(w, "gagal membaca riwayat kenaikan kelas", http.StatusInternalServerError)
+			return
+		}
+		out = append(out, raw)
+	}
+	jsonData(w, out)
+}
+
+func nullIfBlank(s string) any {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	return s
 }
 
 func (h *SantriHandler) insertSantri(ctx context.Context, body map[string]any) (map[string]any, error) {
