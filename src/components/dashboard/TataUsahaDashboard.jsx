@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, FileText,
-  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, CalendarDays, Inbox,
+  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, CalendarDays, Inbox, Mail,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
@@ -21,6 +21,9 @@ const tataUsahaTabs = [
   { value: 'santri', label: 'Data Murid', icon: Users, group: 'data' },
   { value: 'ppdb', label: 'Pendaftaran SPMB', icon: Inbox, group: 'data' },
   { value: 'guru', label: 'Data Guru', icon: BookUser, group: 'data' },
+  // Surat keluar dan mutasi keluar murid — pekerjaan harian tata usaha, yang
+  // sebelum ini seluruhnya dikerjakan di luar aplikasi.
+  { value: 'surat', label: 'Surat & Mutasi', icon: Mail, group: 'data' },
   { value: 'kelas', label: 'Manajemen Kelas', icon: BookOpen, group: 'akademik' },
   { value: 'jadwal-pelajaran', label: 'Jadwal Pelajaran', icon: CalendarDays, group: 'akademik' },
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },

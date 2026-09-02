@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, LogIn, FileText,
   CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar,
-  Database, CalendarDays, Inbox, MessageSquare, ArrowUpRight,
+  Database, CalendarDays, Inbox, MessageSquare, ArrowUpRight, Mail,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import { enableBackupRestore, enableTahfizh, enableWaNotifications } from '@/lib/featureFlags';
@@ -14,6 +14,9 @@ const adminTabs = [
   { value: 'santri', label: 'Data Murid', icon: Users, group: 'data' },
   { value: 'ppdb', label: 'Pendaftaran SPMB', icon: Inbox, group: 'data' },
   { value: 'guru', label: 'Data Guru', icon: BookUser, group: 'data' },
+  // Surat keluar dan mutasi keluar murid — pekerjaan harian tata usaha, yang
+  // sebelum ini seluruhnya dikerjakan di luar aplikasi.
+  { value: 'surat', label: 'Surat & Mutasi', icon: Mail, group: 'data' },
   { value: 'kelas', label: 'Manajemen Kelas', icon: BookOpen, group: 'akademik' },
   // Dipakai sekali setahun, tetapi menyentuh seluruh murid sekaligus — jadi ia
   // berhak punya tempat sendiri, bukan disembunyikan di dalam Manajemen Kelas.

@@ -1,0 +1,240 @@
+/*
+ * Surat keterangan sekolah. Dipakai dua kali: pratinjau di dalam dialog, dan
+ * halaman yang keluar dari printer.
+ *
+ * Tata letaknya mengikuti kebiasaan surat dinas sekolah: kepala surat bergaris
+ * ganda, nomor dan perihal di kiri atas, badan surat rata kiri-kanan, lalu blok
+ * tanda tangan di kanan bawah. Tanpa hiasan — surat yang keluar dari sekolah
+ * dibaca petugas bank, dinas, dan sekolah lain, dan yang mereka cari nomor,
+ * nama, serta tanda tangan.
+ */
+
+.surat-lembar {
+  --surat-aksen: var(--sekolah-aksen, #6470ff);
+  --surat-aksen-pekat: var(--sekolah-aksen-pekat, #4a55d6);
+  --surat-teks: #16172a;
+  --surat-teks-lembut: #55596f;
+
+  background: #fff;
+  color: var(--surat-teks);
+  width: 100%;
+  max-width: 190mm;
+  margin: 0 auto;
+  /* 25mm di kiri mengikuti kebiasaan surat dinas: ruang untuk dilubangi dan
+     dijepit di ordner tanpa memakan teks. */
+  padding: 14mm 18mm 14mm 25mm;
+  box-sizing: border-box;
+  font-family: 'Times New Roman', Georgia, serif;
+  font-size: 12pt;
+  line-height: 1.5;
+}
+
+/* ── Kepala surat ──────────────────────────────────────────────────────────── */
+
+.surat-kop {
+  display: flex;
+  align-items: center;
+  gap: 5mm;
+  padding-bottom: 3mm;
+  /* Garis ganda: tebal lalu tipis, ciri kepala surat dinas. */
+  border-bottom: 3pt double var(--surat-aksen-pekat);
+  text-align: center;
+}
+
+.surat-kop__lambang {
+  flex: none;
+  width: 18mm;
+  height: 18mm;
+  border-radius: 3mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 12pt;
+  color: #fff;
+  background: var(--surat-aksen-pekat);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.surat-kop__teks {
+  flex: 1;
+  min-width: 0;
+}
+
+.surat-kop__pemerintah {
+  margin: 0;
+  font-size: 11pt;
+  letter-spacing: 0.02em;
+}
+
+.surat-kop__nama {
+  margin: 0;
+  font-size: 16pt;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+}
+
+.surat-kop__alamat {
+  margin: 1mm 0 0;
+  font-size: 9.5pt;
+  color: var(--surat-teks-lembut);
+}
+
+/* ── Judul & nomor ─────────────────────────────────────────────────────────── */
+
+.surat-judul {
+  margin: 7mm 0 5mm;
+  text-align: center;
+}
+
+.surat-judul__utama {
+  margin: 0;
+  font-size: 13pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.surat-judul__nomor {
+  margin: 1.5mm 0 0;
+  font-size: 11.5pt;
+}
+
+/* ── Badan ─────────────────────────────────────────────────────────────────── */
+
+.surat-badan {
+  text-align: justify;
+}
+
+.surat-badan p {
+  margin: 0 0 3mm;
+}
+
+.surat-identitas {
+  margin: 3mm 0 3mm 10mm;
+}
+
+.surat-identitas__baris {
+  display: flex;
+  gap: 2mm;
+}
+
+.surat-identitas__label {
+  flex: none;
+  width: 42mm;
+}
+
+.surat-identitas__nilai {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+/* ── Tanda tangan ──────────────────────────────────────────────────────────── */
+
+.surat-ttd {
+  margin-top: 8mm;
+  display: flex;
+  justify-content: flex-end;
+  break-inside: avoid;
+}
+
+.surat-ttd__kotak {
+  width: 70mm;
+  text-align: center;
+}
+
+.surat-ttd__ruang {
+  height: 20mm;
+}
+
+.surat-ttd__nama {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.surat-ttd__nip {
+  font-size: 10.5pt;
+}
+
+.surat-batal {
+  margin-top: 6mm;
+  padding: 3mm 4mm;
+  border: 1.5pt solid #b91c1c;
+  color: #b91c1c;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 10.5pt;
+  font-weight: 700;
+  text-align: center;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.surat-pratinjau {
+  background: #eef0f7;
+  padding: 6mm 0;
+  overflow: auto;
+}
+
+.surat-pratinjau .surat-lembar + .surat-lembar {
+  margin-top: 6mm;
+}
+
+/* ── Cetak ─────────────────────────────────────────────────────────────────── */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  /* DIPAGARI `:has()`. Ini berkas gaya cetak KELIMA di aplikasi ini, bersama
+     rapor-cetak.css, cetak-bukti.css, kartu-pelajar-cetak.css, dan
+     buku-induk-cetak.css. Semuanya menyapu seluruh halaman, dan `npm run build`
+     menggabungkan CSS menjadi satu berkas sehingga di produksi kelimanya selalu
+     aktif bersamaan. Tanpa pagar ini, satu penyapu membunuh yang lain dan yang
+     keluar dari printer kertas kosong. Yang diperiksa ISI akarnya. */
+  body:has(#surat-cetak-root .surat-lembar) > *:not(#surat-cetak-root) {
+    display: none !important;
+  }
+
+  html,
+  body,
+  #surat-cetak-root {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  #surat-cetak-root,
+  #surat-cetak-root * {
+    visibility: visible !important;
+  }
+
+  /* Margin halaman diserahkan ke padding lembar (@page margin 0 di atas), supaya
+     ruang 25mm di kiri untuk ordner tetap terjaga apa pun bawaan pencetaknya. */
+  .surat-lembar {
+    max-width: none;
+    min-height: 297mm;
+  }
+
+  .surat-pratinjau {
+    background: #fff !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .surat-pratinjau .surat-lembar + .surat-lembar {
+    margin-top: 0 !important;
+    break-before: page;
+    page-break-before: always;
+  }
+}

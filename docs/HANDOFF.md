@@ -40,7 +40,37 @@ Audit menyeluruh terhadap kelayakan pakai di sekolah — 55 panel admin, lima da
 **Ditambahkan atas permintaan pemilik** (kolom agama sudah selesai; tujuh sisanya menyusul):
 
 1. ~~Kolom **agama** pada data murid~~ — selesai, migrasi `20260902000100_kolom_agama_murid.sql`
-2. Surat keterangan + nomor surat berurutan + arsip (aktif sekolah, pindah, SKTM)
+2. ~~Surat keterangan + nomor surat berurutan + arsip~~ dan ~~mutasi keluar dengan surat pindah~~ —
+   selesai, keduanya sekaligus karena surat pindah terbit dari peristiwa mutasi. Migrasi
+   `20260902000200_surat_dan_mutasi_keluar.sql`, handler `backend/internal/handler/surat.go`,
+   panel `SuratManagement.jsx`, lembar cetak `SuratCetak.jsx` + `surat-cetak.css`, tab
+   **Surat & Mutasi** untuk admin dan tata usaha.
+
+   Yang mengikat dan jangan dibalik:
+
+   - **Nomor surat ditentukan SERVER**, tidak pernah dikirim klien. Deretnya satu per tahun untuk
+     semua jenis, berulang dari 1 setiap Januari — itu cara buku agenda surat sekolah bekerja.
+   - **Surat yang salah DIBATALKAN, tidak dihapus.** Nomor yang lompat adalah pertanyaan pertama
+     pengawas. Lembar cetaknya diberi cap pembatalan; nomornya tidak pernah dipakai ulang.
+   - **`PUT /api/surat/{id}` sengaja tidak menerima nomor, jenis, tahun, atau murid.** Surat yang
+     sudah bernomor adalah catatan resmi; yang salah dibatalkan lalu diterbitkan ulang.
+   - **Mutasi keluar menerbitkan suratnya LEBIH DULU, sebelum murid dinonaktifkan.** Urutannya
+     menentukan: penerbitan menyalin kelas murid dari `current_class_id`, dan pencatatan keluar
+     mengarsipkannya. Dibalik, surat pindahnya menyebut murid tanpa kelas — padahal kelas terakhir
+     itulah yang dicari sekolah tujuan.
+   - Baris kepala surat di atas nama sekolah (`PEMERINTAH KABUPATEN …`) **kosong secara bawaan** dan
+     diisi sekolah lewat Pengaturan Surat. Menebaknya dari alamat akan mencetak nama pemerintah
+     daerah yang salah pada surat resmi.
+   - Surat keterangan tidak mampu memuat kalimat bahwa ia **bukan pengganti SKTM kelurahan/desa**.
+     Yang berkekuatan administratif diterbitkan kelurahan; sekolah hanya bisa menerangkan apa yang
+     diketahuinya.
+
+   **Perangkap yang sudah kena sekali:** bentrokan nomor pada penyimpanan serentak muncul saat baris
+   hasil `INSERT ... RETURNING` DIBACA, bukan saat `Query` dikirim — pgx menunda galat server sampai
+   hasilnya dipindai. Versi pertama hanya memeriksa galat `Query`, jadi pengulangannya tidak pernah
+   aktif dan satu dari enam penyimpanan serentak menjawab 500. Sekarang keduanya diperiksa lewat
+   `bentrokNomor` (kode SQLSTATE, bukan pencarian teks). Sepuluh penyimpanan serentak: nol gagal,
+   sepuluh nomor berurutan.
 3. ~~Cetak buku induk murid~~ — selesai. `BukuIndukCetak.jsx` + `buku-induk-cetak.css`, satu murid
    satu halaman A4, enam bagian (murid, orang tua, pendidikan, riwayat kelas, berkas, keluar/tamat).
    Bagian keluar sengaja bergaris kosong untuk diisi pena bertahun-tahun kemudian. Riwayat kelasnya
@@ -50,7 +80,7 @@ Audit menyeluruh terhadap kelayakan pakai di sekolah — 55 panel admin, lima da
 4. ~~Cetak kartu pelajar~~ — selesai. `KartuPelajarCetak.jsx` + `kartu-pelajar-cetak.css`,
    ukuran ID-1 85,6×54 mm, sepuluh per lembar A4. Dua pintu masuk: centang murid di Data Murid
    (tombol massal) dan tombol **Kartu** pada tiap kelas di Manajemen Kelas.
-5. Mutasi keluar dengan surat pindah
+5. ~~Mutasi keluar dengan surat pindah~~ — selesai bersama nomor 2 di atas.
 6. ~~Kehadiran hari ini pada kartu ringkasan dashboard~~ — selesai. Endpoint baru
    `GET /api/attendance/today-summary` (staf saja), kartu ke-5 di `DashboardWorkspace`, bisa
    diklik untuk membuka Rekap Murid.

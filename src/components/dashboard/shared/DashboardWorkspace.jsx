@@ -17,6 +17,7 @@ import ContentManagement from '../admin/ContentManagement';
 import PpdbRegistrations from '../admin/PpdbRegistrations';
 import LoginLogs from '../admin/LoginLogs';
 import WaNotifications from '../admin/WaNotifications';
+import SuratManagement from '../admin/SuratManagement';
 import ExpenseManagement from '../admin/ExpenseManagement';
 import ClassManagement from '../admin/ClassManagement';
 import KenaikanKelas from '../admin/KenaikanKelas';
@@ -68,6 +69,7 @@ const renderModule = (value) => {
     case 'tv-settings': return <TvDisplaySettings />;
     case 'game-config': return <GameConfiguration />;
     case 'backup': return <BackupRestoreManagement />;
+    case 'surat': return <SuratManagement />;
     case 'logs': return <LoginLogs />;
     // Tab-nya sudah disaring keluar di AdminDashboard saat flag mati; cabang ini
     // ikut dijaga supaya alamat tab lama yang tersimpan di pranala tidak

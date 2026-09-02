@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"log"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -48,6 +50,7 @@ func (h *SantriHandler) Routes() chi.Router {
 	r.Post("/move-class", h.MoveClass)
 	r.Post("/promote-class", h.PromoteClass)
 	r.Get("/promotion-runs", h.PromotionRuns)
+	r.Post("/{id}/mutasi-keluar", h.MutasiKeluar)
 	r.Post("/{id}/archive", h.Archive)
 	r.Post("/{id}/restore", h.Restore)
 	r.Get("/{id}/transfer-destinations", h.TransferDestinations)
@@ -541,6 +544,149 @@ func (h *SantriHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonData(w, map[string]any{"id": id, "status": "Nonaktif"})
+}
+
+/* POST /api/santri/{id}/mutasi-keluar
+ *
+ * Mencatat murid keluar dari sekolah — pindah, lulus, atau berhenti — dalam satu
+ * tindakan: tanggal keluar, alasan, sekolah tujuan, penonaktifan akunnya, dan
+ * (bila diminta) surat pindah beserta nomor agendanya.
+ *
+ * Sebelum ini yang tersedia hanya "arsipkan" dengan satu kolom alasan berupa
+ * teks bebas. Tidak ada tanggal keluar, tidak ada tujuan, dan tidak ada nomor
+ * surat — padahal ketiganya yang ditanyakan sekolah tujuan saat meminta berkas,
+ * dan yang diperiksa dinas pada buku mutasi.
+ *
+ * Suratnya diterbitkan lewat SuratHandler.terbitkanSurat, jalur yang sama dengan
+ * surat yang dibuat manual, supaya penomorannya hanya hidup di satu tempat.
+ */
+func (h *SantriHandler) MutasiKeluar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if !middleware.CanManage(middleware.RoleFromCtx(ctx)) {
+		jsonError(w, "hanya admin dan tata usaha yang dapat mencatat mutasi keluar", http.StatusForbidden)
+		return
+	}
+	id := chi.URLParam(r, "id")
+
+	var body struct {
+		TanggalKeluar string `json:"tanggal_keluar"`
+		AlasanKeluar  string `json:"alasan_keluar"`
+		SekolahTujuan string `json:"sekolah_tujuan"`
+		Keterangan    string `json:"keterangan"`
+		BuatSurat     bool   `json:"buat_surat"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32<<10)).Decode(&body); err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	body.AlasanKeluar = strings.TrimSpace(body.AlasanKeluar)
+	if body.AlasanKeluar == "" {
+		jsonError(w, "alasan keluar wajib diisi", http.StatusBadRequest)
+		return
+	}
+	tanggal := strings.TrimSpace(body.TanggalKeluar)
+	if tanggal == "" {
+		tanggal = time.Now().Format("2006-01-02")
+	}
+	if !isValidISODate(tanggal) {
+		jsonError(w, "tanggal keluar tidak valid", http.StatusBadRequest)
+		return
+	}
+	// Pindah sekolah tanpa tujuan bukan catatan yang berguna: yang pertama
+	// ditanyakan orang tua saat meminta surat justru nama sekolah tujuannya.
+	if strings.EqualFold(body.AlasanKeluar, "pindah") && strings.TrimSpace(body.SekolahTujuan) == "" {
+		jsonError(w, "sekolah tujuan wajib diisi untuk murid yang pindah", http.StatusBadRequest)
+		return
+	}
+
+	/* Suratnya diterbitkan LEBIH DULU, sebelum muridnya dinonaktifkan.
+	 *
+	 * Urutannya menentukan: terbitkanSurat menyalin kelas murid dari
+	 * `current_class_id`, dan pencatatan keluar mengosongkan kelas itu. Kalau
+	 * dibalik, surat pindahnya menyebut murid tanpa kelas — padahal justru kelas
+	 * terakhir yang perlu diketahui sekolah tujuan. */
+	var suratID *string
+	var surat map[string]any
+	if body.BuatSurat {
+		suratHandler := NewSuratHandler(h.db)
+		data, _ := json.Marshal(map[string]string{
+			"sekolah_tujuan": strings.TrimSpace(body.SekolahTujuan),
+			"alasan_keluar":  body.AlasanKeluar,
+			"tanggal_keluar": tanggal,
+		})
+		penerima := strings.TrimSpace(body.SekolahTujuan)
+		item, status, msg := suratHandler.terbitkanSurat(ctx, suratBody{
+			Jenis:        "pindah",
+			SantriID:     &id,
+			Penerima:     &penerima,
+			Isi:          nullableString(strings.TrimSpace(body.Keterangan)),
+			TanggalSurat: &tanggal,
+			Data:         data,
+		}, middleware.UserIDFromCtx(ctx))
+		if msg != "" {
+			jsonError(w, msg, status)
+			return
+		}
+		surat = item
+		if v, ok := item["id"].(string); ok {
+			suratID = &v
+		}
+	}
+
+	/* Penonaktifannya memakai jalur arsip yang sudah ada — status Nonaktif plus
+	 * deleted_at — supaya murid keluar hilang dari daftar aktif dan rekap tanpa
+	 * membuat keadaan baru yang harus dipahami setiap panel. Seluruh riwayatnya
+	 * tetap utuh dan bisa dipulihkan. */
+	ct, err := h.db.Exec(ctx, `
+		UPDATE santri SET
+			tanggal_keluar  = $2,
+			alasan_keluar   = $3,
+			sekolah_tujuan  = NULLIF($4, ''),
+			surat_pindah_id = COALESCE($5, surat_pindah_id),
+			archive_reason  = $6,
+			archived_by     = $7,
+			status          = 'Nonaktif',
+			deleted_at      = COALESCE(deleted_at, now()),
+			updated_by      = $7
+		WHERE id = $1
+	`, id, tanggal, body.AlasanKeluar, strings.TrimSpace(body.SekolahTujuan), suratID,
+		ringkasAlasanKeluar(body.AlasanKeluar, body.SekolahTujuan),
+		nullIfBlank(middleware.UserIDFromCtx(ctx)))
+	if err != nil {
+		log.Printf("mutasi keluar: simpan gagal: %v", err)
+		jsonError(w, "gagal mencatat mutasi keluar", http.StatusInternalServerError)
+		return
+	}
+	if ct.RowsAffected() == 0 {
+		jsonError(w, "murid tidak ditemukan", http.StatusNotFound)
+		return
+	}
+
+	jsonData(w, map[string]any{
+		"id":             id,
+		"tanggal_keluar": tanggal,
+		"alasan_keluar":  body.AlasanKeluar,
+		"sekolah_tujuan": strings.TrimSpace(body.SekolahTujuan),
+		"surat":          surat,
+	})
+}
+
+// ringkasAlasanKeluar menyusun teks archive_reason supaya dialog arsip yang sudah
+// ada tetap menjelaskan dirinya sendiri tanpa perlu membaca kolom baru.
+func ringkasAlasanKeluar(alasan, tujuan string) string {
+	tujuan = strings.TrimSpace(tujuan)
+	if tujuan == "" {
+		return "Mutasi keluar: " + alasan
+	}
+	return "Mutasi keluar: " + alasan + " ke " + tujuan
+}
+
+func nullableString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 // GET /api/santri/count — public.

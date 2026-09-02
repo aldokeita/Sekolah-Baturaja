@@ -43,6 +43,9 @@ var validConfigKeys = map[string]struct{}{
 	"rapor_predikat": {},
 	// Saklar & template notifikasi WhatsApp otomatis (lihat internal/wanotify).
 	"wa_notify_config": {},
+	// Kode klasifikasi dan kode sekolah untuk nomor surat keluar. Tiap sekolah
+	// punya tata naskahnya sendiri, jadi formatnya tidak boleh tinggal di kode.
+	"surat_config": {},
 }
 
 func (h *AppConfigHandler) Routes() http.Handler {

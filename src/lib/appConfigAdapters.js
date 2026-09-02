@@ -9,6 +9,8 @@ export const APP_CONFIG_KEYS = {
   HAFALAN_VIDEOS: 'hafalanVideos',
   TAHFIZH: 'tahfizh_config',
   RAPOR_PREDIKAT: 'rapor_predikat',
+  // Kode klasifikasi dan kode sekolah pada nomor surat keluar.
+  SURAT: 'surat_config',
 };
 
 export const getAppConfigErrorMessage = (error) => {

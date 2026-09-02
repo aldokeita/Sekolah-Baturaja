@@ -70,6 +70,7 @@ func main() {
 	ppdbHandler := handler.NewPpdbHandler(pool)
 	backupHandler := handler.NewBackupHandler(pool)
 	waNotifyHandler := handler.NewWaNotifyHandler(pool)
+	suratHandler := handler.NewSuratHandler(pool)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -155,6 +156,11 @@ func main() {
 		r.Mount("/api/kontak-wali", kontakWaliHandler.Routes())
 		r.Mount("/api/mmq", mmqHandler.Routes())
 		r.Mount("/api/config", configHandler.Routes())
+
+		// Agenda surat keluar sekolah. Penomorannya ditentukan server; hak akses
+		// diperiksa di dalam handler (admin + tata usaha menulis, kepala sekolah
+		// membaca).
+		r.Mount("/api/surat", suratHandler.Routes())
 
 		/* Forum DICABUT atas keputusan pemilik.
 		 *
