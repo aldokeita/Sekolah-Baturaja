@@ -84,8 +84,48 @@ Audit menyeluruh terhadap kelayakan pakai di sekolah — 55 panel admin, lima da
 6. ~~Kehadiran hari ini pada kartu ringkasan dashboard~~ — selesai. Endpoint baru
    `GET /api/attendance/today-summary` (staf saja), kartu ke-5 di `DashboardWorkspace`, bisa
    diklik untuk membuka Rekap Murid.
-7. Data kepegawaian lengkap (SK, TMT, pangkat/golongan, sertifikasi, masa kerja, pendidikan)
-8. Jurnal mengajar guru
+7. ~~Data kepegawaian lengkap~~ — selesai. Migrasi `20260902000300` menambah `nip`,
+   `status_kepegawaian`, `pangkat_golongan`, `tmt`, `nomor_sk`, `tanggal_sk`,
+   `pendidikan_terakhir`, `jurusan`, `tahun_sertifikasi`, `bidang_sertifikasi` pada `guru`;
+   bagian **Kepegawaian** di form Data Guru; seluruhnya ikut ekspor Excel.
+
+   - Semua kolom boleh NULL, dan itu disengaja: satu SD punya guru PNS, PPPK, dan honorer
+     sekaligus, dan yang wajib diisi berbeda untuk masing-masing. NIP unik hanya bila diisi
+     (indeks parsial) — honorer tidak punya NIP.
+   - **Masa kerja DIHITUNG dari TMT** (`masaKerjaDari` di `dataMasterAdapters.js`), tidak
+     disimpan. Angka masa kerja yang tersimpan usang setiap tahun dan tidak ada yang ingat
+     memperbaruinya.
+   - **Status sertifikasi tetap di `status_guru`.** Migrasi `20260902000300` sempat menambah
+     boolean `sertifikasi` — itu keliru, karena panel Data Guru sudah punya "Status Sertifikasi"
+     yang tersimpan di `status_guru` dan dipakai penyaring serta ekspor. Dua kolom yang menyatakan
+     hal sama cepat atau lambat akan berbeda, dan pertanyaannya menjadi "yang mana yang benar?".
+     Kolomnya dicabut migrasi `20260902000400`. `tahun_sertifikasi` dan `bidang_sertifikasi`
+     tetap — keduanya keterangan, bukan pengulangan.
+
+8. ~~Jurnal mengajar guru~~ — selesai. Migrasi `20260902000500` (tabel `jurnal_mengajar`),
+   handler `jurnal.go`, modul guru `ModulJurnalMengajar.jsx` (tab **Jurnal Mengajar** di dashboard
+   guru), panel pemeriksaan `JurnalMengajarPanel.jsx` (tab akademik untuk admin dan tata usaha).
+
+   - **Guru menulis, atasan membaca.** Panel admin sengaja tidak menyediakan penyuntingan: catatan
+     yang bisa diubah atasannya bukan lagi catatan guru. Kepala sekolah ditolak 403 saat menulis.
+   - **Satu pertemuan satu catatan**, dijaga indeks unik
+     `(guru_id, class_id, mata_pelajaran_id, tanggal, COALESCE(jam_ke,''))`. Penyimpanan ganda
+     menjawab 409 beserta kalimat yang menyuruh membuka jurnal yang sudah ada.
+   - **Kelas, mata pelajaran, periode, dan tanggal tidak bisa disunting** setelah tersimpan.
+     Mengubahnya sama dengan memindahkan catatan satu pertemuan menjadi pertemuan lain.
+   - Daftar "Kelengkapan per guru" disusun dari **jadwal**, bukan dari seluruh Data Guru. Versi
+     pertama memakai seluruh daftar guru sehingga Administrator dan tata usaha ikut tercantum
+     "0 jurnal" — berisik tepat di tempat yang seharusnya menunjuk satu-dua nama.
+
+   **Perangkap yang kena, dan sudah ada saudaranya di kode lain:** `guruMengampu` mula-mula
+   memeriksa `jadwal_pelajaran.guru_id` saja, sehingga wali kelas ditolak dari jurnalnya sendiri.
+   Baris jadwal boleh dibuat TANPA guru dan artinya "diajar wali kelasnya" — keadaan yang paling
+   umum di SD — dan `schedule.go` sudah lama memakai `COALESCE(j.guru_id, c.id_guru)`.
+   Pemeriksaan jurnal kini memakai aturan yang sama.
+
+   **Catatan untuk pekerjaan berikutnya:** `nilai.go` (`guruMengajar`) masih memeriksa
+   `j.guru_id` saja, jadi wali kelas yang barisnya tanpa guru kemungkinan ditolak saat memasukkan
+   nilai. Belum diuji dan belum disentuh — jangan diperbaiki tanpa mengujinya lebih dulu.
 
 **Dua perangkap yang ditemukan saat mengerjakan kartu pelajar — jangan diulang:**
 

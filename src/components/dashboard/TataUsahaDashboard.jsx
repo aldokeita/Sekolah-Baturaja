@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, FileText,
-  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, CalendarDays, Inbox, Mail,
+  CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar, CalendarDays, Inbox, Mail, BookText,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
@@ -28,6 +28,8 @@ const tataUsahaTabs = [
   { value: 'jadwal-pelajaran', label: 'Jadwal Pelajaran', icon: CalendarDays, group: 'akademik' },
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },
+  // Jurnal mengajar: dibaca di sini, ditulis guru dari dashboardnya.
+  { value: 'jurnal-mengajar', label: 'Jurnal Mengajar', icon: BookText, group: 'akademik' },
   { value: 'rapat-guru', label: 'Rapat Guru', icon: Users, group: 'akademik' },
   ...(enableTahfizh ? [{ value: 'metode-mengaji', label: 'Metode Mengaji', icon: BookOpen, group: 'akademik' }] : []),
   { value: 'academic-calendar', label: 'Kalender', icon: Calendar, group: 'akademik' },

@@ -47,7 +47,10 @@ func (h *GuruHandler) Routes() chi.Router {
 const guruSafeColumns = `g.id, g.nama, g.email, g.no_hp, g.alamat, g.foto_url,
 	g.rfid_tag, g.jabatan, g.roles, g.is_notulen, g.jenis_kelamin,
 	g.tanggal_lahir, g.status_guru, g.status, g.nuptk, g.created_at, g.updated_at,
-	g.deleted_at, g.created_by, g.updated_by, g.avatar_path`
+	g.deleted_at, g.created_by, g.updated_by, g.avatar_path,
+	g.nip, g.status_kepegawaian, g.pangkat_golongan, g.tmt,
+	g.nomor_sk, g.tanggal_sk, g.pendidikan_terakhir, g.jurusan,
+	g.tahun_sertifikasi, g.bidang_sertifikasi`
 
 // Columns a client may set/update on guru.
 var guruEditable = map[string]bool{
@@ -61,6 +64,17 @@ var guruEditable = map[string]bool{
 	// tanpa pesan dan kolomnya selamanya tampil "-". Kolom `nuptk` dibuat oleh
 	// migrasi 20260815000500 dan sekarang benar-benar tersimpan.
 	"nuptk": true,
+	/* Data kepegawaian — yang diminta pengawas saat berkunjung. Sebelumnya tidak
+	 * ada satu pun kolomnya, sehingga sekolah menyimpannya di berkas Excel
+	 * terpisah yang tidak pernah sama dengan isi aplikasi. Dibuat oleh migrasi
+	 * 20260902000300. */
+	"nip": true, "status_kepegawaian": true, "pangkat_golongan": true,
+	"tmt": true, "nomor_sk": true, "tanggal_sk": true,
+	"pendidikan_terakhir": true, "jurusan": true,
+	/* Status sertifikasinya sendiri tetap di `status_guru`, kolom yang sudah lama
+	 * dipakai penyaring dan ekspor. Dua kolom yang menyatakan hal sama cepat atau
+	 * lambat akan berbeda — lihat migrasi 20260902000400. */
+	"tahun_sertifikasi": true, "bidang_sertifikasi": true,
 }
 
 // guruCreatable is guruEditable plus id, which Create supplies itself from the

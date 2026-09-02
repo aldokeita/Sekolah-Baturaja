@@ -16,6 +16,7 @@ import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import GuruAttendanceRecap from '@/components/dashboard/admin/GuruAttendanceRecap';
 import AttendanceDetailsModal from '@/components/dashboard/shared/AttendanceDetailsModal';
 import ModulNilai from '@/components/dashboard/shared/ModulNilai';
+import ModulJurnalMengajar from '@/components/dashboard/shared/ModulJurnalMengajar';
 import ModulKontenKelas from '@/components/dashboard/shared/ModulKontenKelas';
 import ModulKomunikasiWali from '@/components/dashboard/shared/ModulKomunikasiWali';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -600,7 +601,7 @@ const GuruDashboard = () => {
         <Tabs value={tabAktif} onValueChange={setTabAktif} className="mt-6 md:mt-8">
           <TabsList className={cn(
             'grid w-full grid-cols-2 sm:inline-flex sm:w-auto',
-            enableKelasKonten ? 'md:grid-cols-4' : 'md:grid-cols-3',
+            enableKelasKonten ? 'md:grid-cols-5' : 'md:grid-cols-4',
           )}>
             <TabsTrigger value="jadwal">Jadwal Mengajar</TabsTrigger>
             <TabsTrigger value="nilai">Nilai Asesmen</TabsTrigger>
@@ -608,6 +609,7 @@ const GuruDashboard = () => {
                 mengabari orang tua lewat grup WhatsApp. Modulnya utuh dan
                 disimpan untuk jenjang SMP/SMA — lihat enableKelasKonten. */}
             {enableKelasKonten && <TabsTrigger value="konten">Materi &amp; Tugas</TabsTrigger>}
+            <TabsTrigger value="jurnal">Jurnal Mengajar</TabsTrigger>
             <TabsTrigger value="wali">Komunikasi Wali</TabsTrigger>
           </TabsList>
 
@@ -642,6 +644,13 @@ const GuruDashboard = () => {
                 <ModulKontenKelas guruId={guruData?.id} />
               </TabsContent>
             )}
+
+            <TabsContent forceMount value="jurnal" className={cn('mt-4', tabAktif !== 'jurnal' && 'hidden')}>
+              {/* Catatan guru untuk kepala sekolah — bukan papan untuk murid.
+                  Kelas dan mata pelajaran diturunkan dari jadwal mengajarnya,
+                  dan backend menolak kombinasi yang tidak diampu. */}
+              <ModulJurnalMengajar guruId={guruData?.id} />
+            </TabsContent>
 
             <TabsContent forceMount value="wali" className={cn('mt-4', tabAktif !== 'wali' && 'hidden')}>
               {/* Hanya menyiapkan pesan dan membuka WhatsApp guru; tidak ada pesan

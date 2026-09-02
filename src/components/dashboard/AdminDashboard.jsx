@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, LogIn, FileText,
   CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar,
-  Database, CalendarDays, Inbox, MessageSquare, ArrowUpRight, Mail,
+  Database, CalendarDays, Inbox, MessageSquare, ArrowUpRight, Mail, BookText,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import { enableBackupRestore, enableTahfizh, enableWaNotifications } from '@/lib/featureFlags';
@@ -24,6 +24,8 @@ const adminTabs = [
   { value: 'jadwal-pelajaran', label: 'Jadwal Pelajaran', icon: CalendarDays, group: 'akademik' },
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },
+  // Jurnal mengajar: dibaca di sini, ditulis guru dari dashboardnya.
+  { value: 'jurnal-mengajar', label: 'Jurnal Mengajar', icon: BookText, group: 'akademik' },
   { value: 'rapat-guru', label: 'Rapat Guru', icon: Users, group: 'akademik' },
   ...(enableTahfizh ? [{ value: 'metode-mengaji', label: 'Metode Mengaji', icon: BookOpen, group: 'akademik' }] : []),
   /* Panel Bisyaroh DICABUT permanen, bukan disembunyikan di balik flag.

@@ -19,6 +19,7 @@ import {
   deleteGuru,
   fetchGuruList,
   getOperationalRoleFromGuruForm,
+  masaKerjaDari,
   pickGuruProfileFields,
   updateGuru,
 } from '@/lib/dataMasterAdapters';
@@ -55,6 +56,14 @@ const mengajar = (guru) => (Array.isArray(guru?.roles) ? guru.roles : []).some((
 // seolah-olah mengatakannya. Nilai di luar kosakata sertifikasi dianggap belum
 // terdata, bukan diterjemahkan menjadi "Belum Bersertifikat".
 const SERTIFIKASI_SAH = ['Bersertifikat', 'Belum Bersertifikat'];
+
+/* Pilihan kepegawaian. Ditulis sebagai daftar di sini, bukan enum di basis data:
+ * sebutan kepegawaian berubah mengikuti aturan pusat — "PPPK" sendiri baru ada
+ * sejak 2021 — dan enum PostgreSQL menuntut migrasi setiap kali daftarnya
+ * bergeser. Sekolah yang memakai sebutan lain tetap bisa menyimpannya karena
+ * kolomnya teks. */
+const STATUS_KEPEGAWAIAN = ['PNS', 'PPPK', 'GTT', 'PTT', 'Guru Honorer', 'Tenaga Honorer'];
+const PENDIDIKAN_TERAKHIR = ['SMA/SMK', 'D-II', 'D-III', 'D-IV', 'S-1', 'S-2', 'S-3'];
 const labelSertifikasi = (guru) => {
   if (!mengajar(guru)) return '—';
   return SERTIFIKASI_SAH.includes(guru?.status_guru) ? guru.status_guru : 'Belum terdata';
@@ -112,7 +121,9 @@ const GuruManagement = () => {
   const resetForm = () => {
     setFormData({
       nama: '', jabatan: '', email: '', no_hp: '', alamat: '', rfid_tag: '', is_notulen: false, foto_url: '', avatar_path: '', password: '',
-      roles: [], jenis_kelamin: 'Laki-laki', status_guru: '', nuptk: '', tanggal_lahir: ''
+      roles: [], jenis_kelamin: 'Laki-laki', status_guru: '', nuptk: '', tanggal_lahir: '',
+      nip: '', status_kepegawaian: '', pangkat_golongan: '', tmt: '', nomor_sk: '', tanggal_sk: '',
+      pendidikan_terakhir: '', jurusan: '', tahun_sertifikasi: '', bidang_sertifikasi: '',
     });
     setEditingGuru(null);
   };
@@ -129,7 +140,19 @@ const GuruManagement = () => {
         jenis_kelamin: guru.jenis_kelamin || 'Laki-laki',
         status_guru: SERTIFIKASI_SAH.includes(guru.status_guru) ? guru.status_guru : '',
         nuptk: guru.nuptk || '',
-        tanggal_lahir: guru.tanggal_lahir || ''
+        tanggal_lahir: guru.tanggal_lahir || '',
+        // Tanggal dipotong ke YYYY-MM-DD: input type="date" menolak cap waktu
+        // penuh dan tampil kosong tanpa memberi tahu apa pun.
+        tmt: String(guru.tmt || '').slice(0, 10),
+        tanggal_sk: String(guru.tanggal_sk || '').slice(0, 10),
+        nip: guru.nip || '',
+        status_kepegawaian: guru.status_kepegawaian || '',
+        pangkat_golongan: guru.pangkat_golongan || '',
+        nomor_sk: guru.nomor_sk || '',
+        pendidikan_terakhir: guru.pendidikan_terakhir || '',
+        jurusan: guru.jurusan || '',
+        tahun_sertifikasi: guru.tahun_sertifikasi ?? '',
+        bidang_sertifikasi: guru.bidang_sertifikasi || '',
     });
     setIsDialogOpen(true);
   };
@@ -170,12 +193,28 @@ const GuruManagement = () => {
             'NUPTK': guru.nuptk || '-',
             'Jenis Kelamin': guru.jenis_kelamin || '-',
             'Tanggal Lahir': guru.tanggal_lahir ? new Date(guru.tanggal_lahir).toLocaleDateString('id-ID') : '-',
+            // Kolom kepegawaian ikut diekspor: berkas inilah yang dibawa sekolah
+            // saat pengawas meminta daftar PTK, dan tanpa kolom ini ia harus
+            // disalin ulang ke Excel terpisah — yang justru ingin dihentikan.
+            'NIP': guru.nip || '-',
+            'Status Kepegawaian': guru.status_kepegawaian || '-',
+            'Pangkat/Golongan': guru.pangkat_golongan || '-',
+            'TMT': guru.tmt ? new Date(guru.tmt).toLocaleDateString('id-ID') : '-',
+            'Masa Kerja': masaKerjaDari(guru.tmt) || '-',
+            'Nomor SK': guru.nomor_sk || '-',
+            'Tanggal SK': guru.tanggal_sk ? new Date(guru.tanggal_sk).toLocaleDateString('id-ID') : '-',
+            'Pendidikan Terakhir': guru.pendidikan_terakhir || '-',
+            'Jurusan': guru.jurusan || '-',
+            'Tahun Sertifikasi': guru.tahun_sertifikasi || '-',
+            'Bidang Sertifikasi': guru.bidang_sertifikasi || '-',
         }));
 
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wscols = [
             {wch: 5}, {wch: 30}, {wch: 25}, {wch: 15}, {wch: 40}, {wch: 20},
             {wch: 15}, {wch: 20}, {wch: 25}, {wch: 20}, {wch: 15}, {wch: 15},
+            {wch: 22}, {wch: 18}, {wch: 22}, {wch: 14}, {wch: 16},
+            {wch: 24}, {wch: 14}, {wch: 18}, {wch: 16}, {wch: 16}, {wch: 22},
         ];
         ws['!cols'] = wscols;
 
@@ -499,6 +538,62 @@ const GuruManagement = () => {
                  )}
 
                  <div className="col-span-full space-y-1.5"><label htmlFor="alamat" className="text-xs font-medium uppercase text-muted-foreground">Alamat</label><Textarea id="alamat" value={formData.alamat || ''} onChange={handleInputChange} /></div>
+
+                 {/* ── Kepegawaian ──────────────────────────────────────────
+                     Yang diminta pengawas saat berkunjung. Semuanya boleh
+                     kosong: satu SD bisa punya guru PNS, PPPK, dan honorer
+                     sekaligus, dan yang wajib diisi berbeda untuk
+                     masing-masing. Memaksa salah satunya akan menghalangi
+                     sekolah menyimpan data guru honorer yang memang belum punya
+                     SK maupun golongan. */}
+                 <div className="col-span-full font-semibold text-lg border-b pb-2 mt-2 text-primary">Kepegawaian</div>
+
+                 <div className="space-y-1.5"><label htmlFor="nip" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3"/> NIP</label><Input id="nip" value={formData.nip || ''} onChange={handleInputChange} placeholder="Kosongkan bila honorer" /></div>
+
+                 <div className="space-y-1.5"><label className="text-xs font-medium uppercase text-muted-foreground">Status Kepegawaian</label>
+                    <Select value={formData.status_kepegawaian || ''} onValueChange={val => setFormData(prev => ({...prev, status_kepegawaian: val}))}>
+                        <SelectTrigger><SelectValue placeholder="Belum diisi" /></SelectTrigger>
+                        <SelectContent>
+                            {STATUS_KEPEGAWAIAN.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                 </div>
+
+                 <div className="space-y-1.5"><label htmlFor="pangkat_golongan" className="text-xs font-medium uppercase text-muted-foreground">Pangkat / Golongan</label><Input id="pangkat_golongan" value={formData.pangkat_golongan || ''} onChange={handleInputChange} placeholder="Penata Muda / III-a" /></div>
+
+                 <div className="space-y-1.5">
+                    <label htmlFor="tmt" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3"/> TMT</label>
+                    <Input id="tmt" type="date" value={formData.tmt || ''} onChange={handleInputChange} />
+                    {/* Masa kerja DIHITUNG dari TMT, bukan disimpan: angka yang
+                        tersimpan usang setiap tahun dan tidak ada yang ingat
+                        memperbaruinya. */}
+                    {masaKerjaDari(formData.tmt) && (
+                      <p className="text-[10px] text-muted-foreground">Masa kerja {masaKerjaDari(formData.tmt)}.</p>
+                    )}
+                 </div>
+
+                 <div className="space-y-1.5"><label htmlFor="nomor_sk" className="text-xs font-medium uppercase text-muted-foreground">Nomor SK</label><Input id="nomor_sk" value={formData.nomor_sk || ''} onChange={handleInputChange} /></div>
+                 <div className="space-y-1.5"><label htmlFor="tanggal_sk" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3"/> Tanggal SK</label><Input id="tanggal_sk" type="date" value={formData.tanggal_sk || ''} onChange={handleInputChange} /></div>
+
+                 <div className="space-y-1.5"><label className="text-xs font-medium uppercase text-muted-foreground">Pendidikan Terakhir</label>
+                    <Select value={formData.pendidikan_terakhir || ''} onValueChange={val => setFormData(prev => ({...prev, pendidikan_terakhir: val}))}>
+                        <SelectTrigger><SelectValue placeholder="Belum diisi" /></SelectTrigger>
+                        <SelectContent>
+                            {PENDIDIKAN_TERAKHIR.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                 </div>
+                 <div className="space-y-1.5"><label htmlFor="jurusan" className="text-xs font-medium uppercase text-muted-foreground">Jurusan</label><Input id="jurusan" value={formData.jurusan || ''} onChange={handleInputChange} placeholder="PGSD" /></div>
+
+                 {/* Keterangan sertifikasi hanya ditanyakan bila statusnya memang
+                     Bersertifikat — statusnya sendiri tetap satu kolom di atas
+                     (Status Sertifikasi), bukan diulang di sini. */}
+                 {formData.status_guru === 'Bersertifikat' && (
+                   <>
+                     <div className="space-y-1.5"><label htmlFor="tahun_sertifikasi" className="text-xs font-medium uppercase text-muted-foreground">Tahun Sertifikasi</label><Input id="tahun_sertifikasi" type="number" min="1950" max="2200" value={formData.tahun_sertifikasi ?? ''} onChange={handleInputChange} placeholder="2019" /></div>
+                     <div className="space-y-1.5"><label htmlFor="bidang_sertifikasi" className="text-xs font-medium uppercase text-muted-foreground">Bidang Sertifikasi</label><Input id="bidang_sertifikasi" value={formData.bidang_sertifikasi || ''} onChange={handleInputChange} placeholder="Guru Kelas SD" /></div>
+                   </>
+                 )}
 
                  <div className="col-span-full font-semibold text-lg border-b pb-2 mt-2 text-primary">Akses & Sistem</div>
 

@@ -149,7 +149,47 @@ export const pickGuruProfileFields = (input, role = 'guru') => ({
   // pemilih field ini pun tidak meneruskannya.
   nuptk: input.nuptk || null,
   status: input.status || 'active',
+  /* Data kepegawaian. Semuanya boleh kosong: satu SD bisa punya guru PNS, PPPK,
+   * dan honorer sekaligus, dan yang wajib diisi berbeda untuk masing-masing.
+   * Memaksa salah satunya akan menghalangi sekolah menyimpan data guru honorer
+   * yang memang belum punya SK maupun golongan. */
+  nip: input.nip?.trim() || null,
+  status_kepegawaian: input.status_kepegawaian || null,
+  pangkat_golongan: input.pangkat_golongan?.trim() || null,
+  tmt: input.tmt || null,
+  nomor_sk: input.nomor_sk?.trim() || null,
+  tanggal_sk: input.tanggal_sk || null,
+  pendidikan_terakhir: input.pendidikan_terakhir || null,
+  jurusan: input.jurusan?.trim() || null,
+  // Status sertifikasinya tetap `status_guru` di atas — satu sumber. Yang di
+  // bawah ini keterangannya, yang belum bisa dibawa kolom itu.
+  // Kolomnya integer, jadi string kosong harus jadi null — bukan '' yang akan
+  // ditolak basis data dengan galat yang tidak menjelaskan apa pun ke petugas.
+  tahun_sertifikasi: String(input.tahun_sertifikasi ?? '').trim() === ''
+    ? null
+    : Number(input.tahun_sertifikasi) || null,
+  bidang_sertifikasi: input.bidang_sertifikasi?.trim() || null,
 });
+
+/* Masa kerja dihitung dari TMT, tidak disimpan sebagai angka.
+ *
+ * Angka masa kerja yang tersimpan usang setiap tahun dan tidak ada yang ingat
+ * memperbaruinya; yang tetap benar adalah tanggalnya. */
+export const masaKerjaDari = (tmt) => {
+  const iso = String(tmt || '').slice(0, 10);
+  if (!iso) return '';
+  const mulai = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(mulai.getTime())) return '';
+  const kini = new Date();
+  let bulan = (kini.getFullYear() - mulai.getFullYear()) * 12 + (kini.getMonth() - mulai.getMonth());
+  if (kini.getDate() < mulai.getDate()) bulan -= 1;
+  if (bulan < 0) return '';
+  const tahun = Math.floor(bulan / 12);
+  const sisa = bulan % 12;
+  if (tahun === 0) return `${sisa} bulan`;
+  if (sisa === 0) return `${tahun} tahun`;
+  return `${tahun} tahun ${sisa} bulan`;
+};
 
 export const getOperationalRoleFromGuruForm = (input) => {
   const roles = input.roles || [];

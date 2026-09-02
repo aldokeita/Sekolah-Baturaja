@@ -71,6 +71,7 @@ func main() {
 	backupHandler := handler.NewBackupHandler(pool)
 	waNotifyHandler := handler.NewWaNotifyHandler(pool)
 	suratHandler := handler.NewSuratHandler(pool)
+	jurnalHandler := handler.NewJurnalHandler(pool)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -161,6 +162,11 @@ func main() {
 		// diperiksa di dalam handler (admin + tata usaha menulis, kepala sekolah
 		// membaca).
 		r.Mount("/api/surat", suratHandler.Routes())
+
+		// Jurnal mengajar guru. Guru menulis untuk kelas yang diampunya menurut
+		// jadwal dan membaca miliknya sendiri; kepala sekolah dan pengelola
+		// membaca seluruhnya. Diperiksa di dalam handler.
+		r.Mount("/api/jurnal-mengajar", jurnalHandler.Routes())
 
 		/* Forum DICABUT atas keputusan pemilik.
 		 *
