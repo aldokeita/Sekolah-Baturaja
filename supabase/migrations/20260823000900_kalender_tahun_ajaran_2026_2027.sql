@@ -36,11 +36,21 @@
 --
 -- Aman dijalankan berulang. Baris Agustus 2026 yang sudah ada tidak tersentuh.
 
+-- Diisi DUA TAHUN KALENDER PENUH, bukan hanya Juli 2026 sampai Juni 2027.
+--
+-- Tahun ajarannya memang Juli sampai Juni, jadi mengisi tepat dua belas bulan
+-- itu terasa lebih rapi. Tapi panel Kalender bekerja per tahun KALENDER, dan ia
+-- memperingatkan admin bila sebagian bulan dalam satu tahun belum diatur —
+-- karena campuran seperti itu membuat rekap kehadiran tidak seragam. Mengisi
+-- hanya bulan tahun ajaran berarti pembeli membuka panel dan langsung disambut
+-- peringatan "6 bulan 2026 belum diatur", padahal tidak ada yang salah.
+--
+-- Bulan di luar tahun ajaran tidak membahayakan apa pun: tidak ada kehadiran
+-- yang dicatat di sana, dan setelannya hanya menentukan status hari Sabtu.
 INSERT INTO public.academic_calendar_month_settings (year, month, saturday_is_holiday)
 SELECT y, m, false
-FROM (VALUES (2026, 7), (2026, 8), (2026, 9), (2026, 10), (2026, 11), (2026, 12),
-             (2027, 1), (2027, 2), (2027, 3), (2027, 4), (2027, 5), (2027, 6)
-     ) AS t(y, m)
+FROM generate_series(2026, 2027) AS y
+CROSS JOIN generate_series(1, 12) AS m
 ON CONFLICT (year, month) DO NOTHING;
 
 -- Catatan untuk yang membaca nanti: kalau suatu saat perlu menambah tanggal ke
