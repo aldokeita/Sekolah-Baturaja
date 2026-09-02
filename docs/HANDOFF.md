@@ -81,9 +81,13 @@ Audit menyeluruh terhadap kelayakan pakai di sekolah — 55 panel admin, lima da
    ukuran ID-1 85,6×54 mm, sepuluh per lembar A4. Dua pintu masuk: centang murid di Data Murid
    (tombol massal) dan tombol **Kartu** pada tiap kelas di Manajemen Kelas.
 5. ~~Mutasi keluar dengan surat pindah~~ — selesai bersama nomor 2 di atas.
-6. ~~Kehadiran hari ini pada kartu ringkasan dashboard~~ — selesai. Endpoint baru
-   `GET /api/attendance/today-summary` (staf saja), kartu ke-5 di `DashboardWorkspace`, bisa
-   diklik untuk membuka Rekap Murid.
+6. ~~Kehadiran hari ini~~ — selesai. Endpoint baru `GET /api/attendance/today-summary` (staf saja).
+   Tempatnya **di panel Rekap Murid**, bukan di kartu ringkasan dashboard: sempat menjadi kartu
+   kelima di `DashboardWorkspace`, tetapi kelimanya membuat empat kartu lain menyempit dan
+   keterangan angkanya terpotong. Dipindahkan atas keputusan pemilik. Di Rekap Murid ruangnya
+   cukup untuk persentase, jumlah, keterlambatan, dan rincian per kelas sekaligus — komponen
+   `KehadiranHariIni` di `AttendanceRecap.jsx`, menyegarkan sendiri setiap dua menit.
+   **Jangan dikembalikan ke ringkasan dashboard.**
 7. ~~Data kepegawaian lengkap~~ — selesai. Migrasi `20260902000300` menambah `nip`,
    `status_kepegawaian`, `pangkat_golongan`, `tmt`, `nomor_sk`, `tanggal_sk`,
    `pendidikan_terakhir`, `jurusan`, `tahun_sertifikasi`, `bidang_sertifikasi` pada `guru`;

@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchClassList, fetchSantriPage } from '@/lib/dataMasterAdapters';
-import { fetchAttendance, fetchAttendanceDates, fetchCalendarContext } from '@/lib/attendanceAdapters';
+import {
+  fetchAttendance,
+  fetchAttendanceDates,
+  fetchAttendanceTodaySummary,
+  fetchCalendarContext,
+} from '@/lib/attendanceAdapters';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -22,6 +27,120 @@ import { getActiveCalendarDates } from '@/lib/calendarUtils';
 
 const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 const PAGE_SIZE = 10;
+
+/**
+ * Kehadiran murid HARI INI, seluruh sekolah, dipecah per kelas.
+ *
+ * Angka yang dicari kepala sekolah setiap pagi, dan sengaja terpisah dari rekap
+ * bulanan di bawahnya: rekap bulanan menjawab "bagaimana bulan ini", yang ini
+ * menjawab "siapa yang belum datang sekarang".
+ *
+ * Tiga keadaan dibedakan, karena ketiganya bukan hal yang sama:
+ *
+ *   gagal dibaca         → "—" beserta sebabnya
+ *   belum ada yang absen → "Belum ada", BUKAN "0%" yang seolah semua bolos
+ *                          padahal jam masuk mungkin belum tiba
+ *   sudah berjalan       → persentase, jumlahnya, dan kelas yang paling kosong
+ *
+ * Menyegarkan sendiri setiap dua menit. Angkanya berubah sepanjang pagi saat
+ * murid memindai kartunya, dan panel ini justru dibuka pada saat itu.
+ */
+const KehadiranHariIni = () => {
+    const [data, setData] = useState(null);
+    const [gagal, setGagal] = useState(false);
+    const [memuat, setMemuat] = useState(true);
+
+    const muat = useCallback(async () => {
+        try {
+            setData(await fetchAttendanceTodaySummary());
+            setGagal(false);
+        } catch {
+            setGagal(true);
+        } finally {
+            setMemuat(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        muat();
+        const timer = setInterval(muat, 120000);
+        return () => clearInterval(timer);
+    }, [muat]);
+
+    const total = data?.total || 0;
+    const tercatat = data?.tercatat || 0;
+    const terlambat = data?.terlambat || 0;
+    const perKelas = data?.per_kelas || [];
+    const persen = total > 0 ? Math.round((tercatat / total) * 100) : 0;
+
+    const nilai = (() => {
+        if (gagal) return '—';
+        if (total === 0) return '—';
+        if (tercatat === 0) return 'Belum ada';
+        return `${persen}%`;
+    })();
+
+    const keterangan = (() => {
+        if (gagal) return 'Data kehadiran belum bisa dibaca.';
+        if (total === 0) return 'Belum ada murid aktif.';
+        if (tercatat === 0) return `0 dari ${total} murid tercatat absen hari ini. Jam masuk mungkin belum tiba.`;
+        const bagian = [`${tercatat} dari ${total} murid sudah tercatat`];
+        if (terlambat > 0) bagian.push(`${terlambat} terlambat`);
+        return `${bagian.join(' · ')}.`;
+    })();
+
+    // Warnanya mengikuti ambang yang sama dengan tabel rekap di bawah, supaya
+    // hijau-kuning-merah berarti hal yang sama di seluruh panel ini.
+    const nadaPersen = persen >= 71
+        ? 'text-emerald-700 dark:text-emerald-400'
+        : persen >= 41 ? 'text-amber-700 dark:text-amber-400' : 'text-red-700 dark:text-red-400';
+
+    return (
+        <div className="admin-form-section">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h3 className="mb-1 flex items-center gap-2 text-lg font-semibold" style={{ color: 'hsl(var(--admin-text-primary))' }}>
+                        <TrendingUp className="w-5 h-5" style={{ color: 'hsl(var(--admin-accent))' }} /> Kehadiran Hari Ini
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{memuat ? 'Menghitung…' : keterangan}</p>
+                </div>
+                <div className="text-right">
+                    <p className={cn('text-3xl font-black leading-none', tercatat > 0 && !gagal ? nadaPersen : 'text-muted-foreground')}>
+                        {memuat ? '…' : nilai}
+                    </p>
+                    <button type="button" onClick={muat} className="mt-1 text-xs text-muted-foreground underline hover:text-foreground">
+                        Muat ulang
+                    </button>
+                </div>
+            </div>
+
+            {!memuat && !gagal && perKelas.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                    {perKelas.map((k) => {
+                        const persenKelas = k.total > 0 ? Math.round((k.tercatat / k.total) * 100) : 0;
+                        return (
+                            <div key={k.nama_kelas} className="rounded-lg border px-3 py-2" style={{ borderColor: 'hsl(var(--admin-border))' }}>
+                                <p className="truncate text-xs font-semibold" style={{ color: 'hsl(var(--admin-text-primary))' }}>{k.nama_kelas}</p>
+                                <p className="text-sm font-bold">
+                                    {k.tercatat}<span className="text-muted-foreground">/{k.total}</span>
+                                    <span className="ml-1 text-xs font-medium text-muted-foreground">{persenKelas}%</span>
+                                </p>
+                                {/* Yang belum absen disebut angkanya, bukan hanya
+                                    tersirat dari selisih — itu yang perlu ditindak. */}
+                                {k.belum_absen > 0 && (
+                                    <p className="text-[11px] text-amber-700 dark:text-amber-400">{k.belum_absen} belum absen</p>
+                                )}
+                                {k.terlambat > 0 && (
+                                    <p className="text-[11px] text-muted-foreground">{k.terlambat} terlambat</p>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
 
 export const SantriRecapDetailModal = ({ santri, isOpen, onClose }) => {
     const [year, setYear] = useState(new Date().getFullYear());
@@ -440,6 +559,14 @@ const AttendanceRecap = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Kehadiran HARI INI, terpisah dari rekap bulanan di bawahnya.
+                Sebelumnya ini kartu kelima di ringkasan dashboard; di sana ia
+                menyempitkan empat kartu lain dan keterangannya terpotong.
+                Tempatnya di sini, dan ruangnya cukup untuk menyebut persentase,
+                jumlah, keterlambatan, dan kelas yang paling banyak kosong
+                sekaligus — tanpa memaksa siapa pun membaca tabel bulanan dulu. */}
+            <KehadiranHariIni />
 
             <div className="admin-filter-bar">
                 <div className="flex items-center gap-2 flex-wrap">
