@@ -1,10 +1,11 @@
 
+// Dua shift masuk sekolah dasar. Nilai angka lama (1='Pagi 2', 3='Sore',
+// 4='Malam') berasal dari produk madrasah sebelumnya dan tidak dipakai lagi;
+// baris lama yang masih menyimpannya dipetakan lewat LEGACY_SESSION_ALIASES di
+// AttendanceStatusLogic agar tetap terbaca.
 export const SESSION_MAP = {
   0: 'Pagi',
-  1: 'Pagi 2',
-  2: 'Siang',
-  3: 'Sore',
-  4: 'Malam'
+  1: 'Siang',
 };
 
 export const getSessionName = (sessionValue) => {

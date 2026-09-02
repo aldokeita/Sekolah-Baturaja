@@ -25,8 +25,6 @@ const DashboardPage = () => {
   useAdminBodyClass(Boolean(role));
 
   useEffect(() => {
-      console.log('DashboardPage mounted, Context State:', { role, userId: user?.id });
-
       const fetchProfile = async () => {
           setIsLoadingProfile(true);
           try {
@@ -56,8 +54,6 @@ const DashboardPage = () => {
   const usesSdnbTheme = role === 'admin' || role === 'superadmin' || role === 'tata_usaha';
 
   const renderDashboard = () => {
-    console.log('Rendering dashboard based on role:', role);
-
     if (isLoadingProfile) {
         return (
           <div className="admin-loading-container">
@@ -83,7 +79,7 @@ const DashboardPage = () => {
     } else if (role === 'guru') {
       return <GuruDashboard />;
     } else if (role === 'santri') {
-      return <SantriDashboard isAdult={santriProfile?.kategori === 'Dewasa'} />;
+      return <SantriDashboard />;
     } else if (role === 'pentashih') {
       return <PentashihDashboard />;
     } else if (user && !role) {

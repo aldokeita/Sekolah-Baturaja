@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Montserrat:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -25,6 +25,9 @@
   --sekolah-aksen-muda: #a5b4fc;
   --sekolah-aksen-samar: #c7d2fe;
   --sekolah-aksen-rgb: 100 112 255;
+  /* Aksen untuk teks kecil di atas latar terang. Rona dan kejenuhannya sama
+     dengan --sekolah-aksen-pekat, terangnya diturunkan sampai lolos WCAG AA. */
+  --sekolah-aksen-teks: #4255ff;
 }
 
 @layer base {
@@ -38,7 +41,19 @@
     --popover: 0 0% 100%;
     --popover-foreground: 221 83% 24%;
 
-    --primary: 217 91% 54%; /* Vibrant Royal Blue #2563EB */
+    /* Terangnya diturunkan dari 54% ke 46%, dan itu memperbaiki DUA arah sekaligus.
+       Sebagai warna teks (`text-primary`) 54% hanya mencapai rasio 4.41 dari 4.5
+       yang diminta WCAG AA; sebagai latar tombol (`bg-primary` dengan tulisan
+       putih) ia hanya 4.44 — jadi kedua pemakaiannya gagal.
+
+       46%, bukan 50%: di atas putih 50% sudah cukup, tapi warna ini juga dipakai
+       di atas kartu yang latarnya bernada — dan di sana ia turun lagi sekitar 15%
+       sehingga kembali di bawah ambang. Diukur pada kartu kelas yang paling
+       bernada, bukan pada putih.
+
+       Ini warna tetap aplikasi, bukan warna pilihan sekolah — aksen sekolah ada
+       di `--sekolah-aksen`. */
+    --primary: 217 91% 46%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 221 83% 24%; /* Deep Navy Blue #1E3A8A */

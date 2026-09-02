@@ -92,6 +92,18 @@ const CalendarManagement = () => {
   }, [fetchHolidays]);
 
   const selectedMonthNumber = selectedMonth + 1;
+
+  /* Bulan yang belum punya setelan sendiri. Ini yang paling berbahaya di panel
+   * ini: bulan tanpa baris memakai DEFAULT_SATURDAY_IS_HOLIDAY, jadi sekolah yang
+   * mengatur sebagian bulan mendapat rekap yang tidak seragam TANPA pesan galat
+   * apa pun. Yang salah baru terlihat saat rapor dicetak.
+   *
+   * Dihitung dari daftar bulan, bukan dari jumlah barisnya, supaya namanya bisa
+   * disebutkan — "empat bulan belum diatur" tidak menolong siapa pun mencari
+   * bulan mana. */
+  const bulanBelumDiatur = months
+    .map((nama, i) => ({ nama, nomor: i + 1 }))
+    .filter(({ nomor }) => !monthSettings[nomor]);
   const savedMonthSetting = monthSettings[selectedMonthNumber];
   const savedSaturdayHoliday = getSaturdayHolidayForMonth(monthSettings, selectedMonthNumber);
   const hasSavedMonthSetting = Boolean(savedMonthSetting);
@@ -174,6 +186,52 @@ const CalendarManagement = () => {
     } finally {
       setIsSavingSetting(false);
     }
+  };
+
+  /* Menerapkan kebijakan Sabtu ke SELURUH dua belas bulan sekaligus.
+   *
+   * Sebelumnya saklarnya hanya per bulan, jadi sekolah lima hari harus memilih
+   * bulan, memilih kebijakan, dan menekan Simpan dua belas kali. Bukan sulit,
+   * tetapi berulang — dan bulan yang terlewat diam-diam memakai bawaan, sehingga
+   * rekapnya berbeda dari bulan lain tanpa satu pun peringatan. Itu baru terlihat
+   * saat rapor dicetak.
+   *
+   * Disimpan satu per satu, bukan sekali kirim: endpoint-nya memang per bulan
+   * (`PUT /calendar-settings/{year}/{month}`), dan menambah endpoint massal
+   * berarti menyentuh backend untuk hal yang tidak menuntutnya. Yang gagal
+   * dilaporkan berikut nama bulannya, jadi admin tahu mana yang harus diulang
+   * alih-alih menebak. */
+  const handleApplyYearSetting = async () => {
+    const label = saturdayHolidayDraft ? 'Senin–Jumat (Sabtu libur)' : 'Senin–Sabtu (Sabtu hari sekolah)';
+    if (!window.confirm(`Terapkan kebijakan "${label}" ke dua belas bulan tahun ${selectedYear}? Agenda dan libur per tanggal tidak berubah.`)) return;
+
+    setIsSavingSetting(true);
+    const berhasil = {};
+    const gagal = [];
+    for (let bulan = 1; bulan <= 12; bulan += 1) {
+      try {
+        const saved = await saveCalendarMonthSetting({
+          year: selectedYear,
+          month: bulan,
+          saturdayIsHoliday: saturdayHolidayDraft,
+        });
+        berhasil[bulan] = saved || { year: selectedYear, month: bulan, saturday_is_holiday: saturdayHolidayDraft };
+      } catch {
+        gagal.push(months[bulan - 1]);
+      }
+    }
+    setMonthSettings((previous) => ({ ...previous, ...berhasil }));
+    setIsSavingSetting(false);
+
+    if (gagal.length === 0) {
+      toast({ title: 'Berhasil', description: `Kebijakan hari Sabtu diterapkan ke dua belas bulan ${selectedYear}.` });
+      return;
+    }
+    toast({
+      title: `${gagal.length} bulan gagal disimpan`,
+      description: `Belum tersimpan: ${gagal.join(', ')}. Bulan lainnya sudah tersimpan.`,
+      variant: 'destructive',
+    });
   };
 
   const handleResetMonthSetting = async () => {
@@ -266,7 +324,7 @@ const CalendarManagement = () => {
           className={`h-24 p-2 rounded-lg border transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden ${bgClass}`}
         >
           <div className="flex justify-between items-start">
-            <span className={`font-bold text-lg ${isEffectiveHoliday ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{d}</span>
+            <span className={`font-bold text-lg ${isEffectiveHoliday ? 'text-slate-600 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{d}</span>
             {statusIcon}
           </div>
           <div className="text-xs font-medium truncate mt-1 flex items-center gap-1">
@@ -353,6 +411,16 @@ const CalendarManagement = () => {
                 {isSavingSetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Simpan
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleApplyYearSetting}
+                disabled={isLoading || isSavingSetting}
+                title={`Terapkan kebijakan ini ke dua belas bulan tahun ${selectedYear}`}
+              >
+                {isSavingSetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarCheck className="mr-2 h-4 w-4" />}
+                Terapkan ke seluruh tahun
+              </Button>
               {hasSavedMonthSetting && (
                 <Button
                   variant="outline"
@@ -366,9 +434,31 @@ const CalendarManagement = () => {
             </div>
           </div>
         </div>
+
+        {/* Peringatan bulan yang belum diatur. Bulan tanpa setelan sendiri memakai
+            aturan bawaan, dan itu tidak salah — yang berbahaya adalah SEBAGIAN
+            bulan diatur dan sebagian tidak, karena rekap kehadirannya lalu tidak
+            seragam sepanjang tahun tanpa satu pun pesan galat. Karena itu
+            peringatan ini hanya muncul saat campuran, bukan saat semua bulan
+            belum diatur — sekolah yang belum menyentuh panel ini sama sekali
+            memang konsisten memakai bawaan. */}
+        {!isLoading && bulanBelumDiatur.length > 0 && bulanBelumDiatur.length < months.length && (
+          <div className="mb-4 border-l-[3px] border-amber-500 bg-amber-50 px-3.5 py-3 dark:border-amber-400 dark:bg-amber-950/30">
+            <p className="flex items-center gap-2 text-sm font-bold text-amber-900 dark:text-amber-200">
+              <CalendarOff className="h-4 w-4" aria-hidden="true" />
+              {bulanBelumDiatur.length} bulan {selectedYear} belum diatur
+            </p>
+            <p className="mt-1 text-xs text-amber-900/90 dark:text-amber-200/90">
+              {bulanBelumDiatur.map((b) => b.nama).join(', ')} memakai aturan bawaan
+              {DEFAULT_SATURDAY_IS_HOLIDAY ? ' (Sabtu libur)' : ' (Sabtu hari sekolah)'}, sementara bulan lain
+              sudah diatur sendiri. Rekap kehadiran jadi tidak seragam sepanjang tahun.
+              Tekan &ldquo;Terapkan ke seluruh tahun&rdquo; untuk menyamakan.
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-7 gap-4 mb-4 text-center">
             {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(day => (
-                <div key={day} className={`font-semibold text-sm uppercase ${day === 'Min' || (day === 'Sab' && savedSaturdayHoliday) ? 'text-red-400' : 'text-muted-foreground'}`}>{day}</div>
+                <div key={day} className={`font-semibold text-sm uppercase ${day === 'Min' || (day === 'Sab' && savedSaturdayHoliday) ? 'text-red-700 dark:text-red-400' : 'text-muted-foreground'}`}>{day}</div>
             ))}
         </div>
         <div className={`grid grid-cols-7 gap-2 md:gap-4 transition-opacity ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>

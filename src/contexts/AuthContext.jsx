@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import apiClient, { clearTokens } from '@/lib/apiClient';
 import { useToast } from '@/hooks/use-toast';
+import { recordLoginAttempt } from '@/lib/loginSecurityAdapters';
 
 const AuthContext = createContext(undefined);
 
@@ -92,10 +93,21 @@ export const AuthProvider = ({ children }) => {
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Username atau password salah.');
+      if (!res.ok) {
+        // Percobaan gagal dicatat sebelum error dilempar; inilah baris yang
+        // membuat panel Log Aktivitas Login ada gunanya sebagai alat keamanan.
+        // Sengaja tanpa await agar kegagalan jaringan pencatatan tidak menunda
+        // atau menggagalkan umpan balik login ke pengguna.
+        recordLoginAttempt({ username, status: 'failed' });
+        throw new Error(json.error || 'Username atau password salah.');
+      }
 
       apiClient.setTokens(json);
       setSession(json);
+
+      // Setelah token terpasang, supaya backend bisa mengaitkan catatan ini ke
+      // user_id dan role dari Bearer token, bukan sekadar username percobaan.
+      recordLoginAttempt({ username, status: 'success' });
 
       const profileResult = await loadUserProfile();
       if (profileResult.error) throw profileResult.error;

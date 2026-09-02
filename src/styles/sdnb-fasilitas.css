@@ -51,7 +51,14 @@ html[data-theme="light"] .sdnb-fasilitas .th-i-moon {display:none}
 html[data-theme="light"] .sdnb-fasilitas body {background:#eef1f8}
 html[data-theme="light"] .sdnb-fasilitas .th-bg {background:linear-gradient(160deg,#eef1f8 0%,#e7edf7 44%,#f4eef4 100%) !important}
 html[data-theme="light"] .sdnb-fasilitas .th-orb {opacity:.5}
-html[data-theme="light"] .sdnb-fasilitas .th-content {filter:invert(.92) hue-rotate(180deg) saturate(1.75) brightness(1.12) contrast(.94)}
+/* Aturan `filter: invert(...)` untuk mode gelap DICABUT. Selektornya
+   `.sdnb-fasilitas .th-content` mencari .th-content DI DALAM kelas halaman,
+   padahal susunan aslinya terbalik: .th-content dipasang PublicLayout sebagai
+   leluhur kelas halaman. Aturan itu mati sejak ditulis — latarnya gelap,
+   teksnya tetap warna mode terang, rasio serendah 1.04.
+   Mode gelap sekarang dikerjakan token teks di sdnb.css; JANGAN dihidupkan
+   kembali, karena pembalikan menyeluruh akan melawan token itu.
+   Aturan .th-bg dan .th-orb di atas mati karena sebab yang sama. */
 
 /* --- hover states lifted out of style-hover="..." attributes --- */
 

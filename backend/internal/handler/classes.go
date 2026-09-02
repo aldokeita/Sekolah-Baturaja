@@ -64,6 +64,11 @@ func (h *ClassesHandler) Count(w http.ResponseWriter, r *http.Request) {
 var classesEditable = map[string]bool{
 	"nama_kelas": true, "sesi": true, "id_guru": true, "kategori": true,
 	"is_active": true, "sort_order": true, "kapasitas": true,
+	// `tingkat` WAJIB ada di sini. Migrasi 20260823001000 mengisinya untuk rombel
+	// yang sudah ada, tetapi tanpa baris ini rombel BARU selalu bertingkat NULL —
+	// dan panel Kenaikan Kelas melewati rombel bertingkat NULL, jadi kelas yang
+	// baru dibuat sekolah tidak akan pernah ikut naik. Diam, tanpa galat.
+	"tingkat": true,
 }
 
 // canSeeRoster reports whether the role may view full class rosters and member
@@ -96,7 +101,45 @@ func (h *ClassesHandler) List(w http.ResponseWriter, r *http.Request) {
 		add("cl.is_active = $%d", active)
 	}
 	if v := r.URL.Query().Get("id_guru"); v != "" {
-		add("cl.id_guru = $%d", v)
+		// Seorang guru sampai ke satu kelas lewat dua jalur: menjadi wali kelasnya
+		// (`cl.id_guru`) atau mengajar di sana menurut `jadwal_pelajaran`. Dulu hanya
+		// jalur pertama yang dihitung, sehingga guru mata pelajaran melihat daftar
+		// kelasnya kosong padahal ia berhak memberi nilai dan materi di kelas itu.
+		//
+		// Pelebaran ini HANYA berlaku saat guru menanyakan kelasnya sendiri. Admin
+		// yang menyaring `id_guru=X` tetap memperoleh arti lama, yaitu kelas yang
+		// diwalikan X — kalau tidak, kolom wali kelas di panel admin akan ikut
+		// menampilkan kelas yang sekadar diajar X.
+		if middleware.RoleFromCtx(ctx) == "guru" && v == middleware.UserIDFromCtx(ctx) {
+			args = append(args, v)
+			i := len(args)
+			where = append(where, fmt.Sprintf(
+				"(cl.id_guru = $%d OR cl.id IN (SELECT class_id FROM jadwal_pelajaran WHERE guru_id = $%d))",
+				i, i))
+		} else {
+			add("cl.id_guru = $%d", v)
+		}
+	}
+
+	// Seorang guru hanya boleh melihat kelas yang benar-benar dipegangnya, baik
+	// sebagai wali kelas maupun lewat jadwal mengajar.
+	//
+	// Tanpa ini `GET /api/classes?include_santri=true` tanpa penyaring apa pun
+	// mengembalikan SELURUH kelas beserta rosternya kepada guru mana pun — nama
+	// setiap murid di sekolah terbaca hanya dengan menghapus parameternya. Itu
+	// berselisih dengan `santri.List`, yang sudah lama membatasi guru ke kelasnya
+	// sendiri; dua pintu ke data yang sama tidak boleh berbeda aturannya.
+	//
+	// Pentashih sengaja TIDAK dibatasi: perannya memang meninjau murid lintas
+	// kelas, sejalan dengan policy santri_pentashih_select.
+	if role == "guru" {
+		if uid := middleware.UserIDFromCtx(ctx); uid != "" {
+			args = append(args, uid)
+			i := len(args)
+			where = append(where, fmt.Sprintf(
+				"(cl.id_guru = $%d OR cl.id IN (SELECT class_id FROM jadwal_pelajaran WHERE guru_id = $%d))",
+				i, i))
+		}
 	}
 
 	includeGuru := r.URL.Query().Get("include_guru") == "true"
@@ -170,7 +213,7 @@ func (h *ClassesHandler) activeSantriByClass(ctx context.Context, classIDs []str
 		return map[string][]map[string]any{}, nil
 	}
 	rows, err := h.db.Query(ctx, `
-		SELECT id, nama_lengkap, nama_panggilan, nomor_induk_qiroati, foto_url,
+		SELECT id, nama_lengkap, nama_panggilan, nomor_induk, foto_url,
 		       avatar_path, jilid, sesi_mengaji, kategori, points, jenis_kelamin,
 		       order_in_class, current_class_id
 		FROM santri
@@ -226,7 +269,7 @@ func (h *ClassesHandler) Detail(w http.ResponseWriter, r *http.Request) {
 	if canSeeRoster(role) {
 		memberRows, err := h.db.Query(ctx, `
 			SELECT cm.id, cm.santri_id, cm.order_in_class, cm.status,
-			       s.nama_lengkap, s.nama_panggilan, s.nomor_induk_qiroati, s.foto_url
+			       s.nama_lengkap, s.nama_panggilan, s.nomor_induk, s.foto_url
 			FROM class_memberships cm
 			JOIN santri s ON s.id = cm.santri_id
 			WHERE cm.class_id = $1 AND cm.status = 'active'

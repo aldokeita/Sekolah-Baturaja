@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { calculateTimeDifference, determineAttendanceStatus } from '@/utils/AttendanceStatusLogic';
 
-const MMQAttendanceModal = ({ isOpen, onClose, record, onSave, onDelete }) => {
+const RapatGuruAttendanceModal = ({ isOpen, onClose, record, onSave, onDelete }) => {
     const { toast } = useToast();
     const [formData, setFormData] = useState({
         status: 'Tidak Hadir',
@@ -56,8 +56,8 @@ const MMQAttendanceModal = ({ isOpen, onClose, record, onSave, onDelete }) => {
                 finalStatus = formData.status || 'Tidak Hadir';
             }
 
-            // Build payload to send to the parent component (MMQManagement)
-            // It will call saveMMQAttendance via the useMMQAttendance hook.
+            // Build payload to send to the parent component (RapatGuruManagement)
+            // It will call saveRapatGuruAttendance via the useRapatGuruAttendance hook.
             const updatedData = {
                 id: record.id,
                 guru_id: record.guru_id,
@@ -116,7 +116,7 @@ const MMQAttendanceModal = ({ isOpen, onClose, record, onSave, onDelete }) => {
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Edit Absensi MMQ</DialogTitle>
+                    <DialogTitle>Edit Absensi Rapat Guru</DialogTitle>
                 </DialogHeader>
 
                 <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg mb-4 border">
@@ -197,4 +197,4 @@ const MMQAttendanceModal = ({ isOpen, onClose, record, onSave, onDelete }) => {
     );
 };
 
-export default MMQAttendanceModal;
+export default RapatGuruAttendanceModal;

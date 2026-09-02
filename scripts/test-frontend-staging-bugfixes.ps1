@@ -78,10 +78,10 @@ Add-Check "avatar upload uses direct Storage first and authenticated Edge fallba
   if ($text -notmatch "Edge Function upload juga gagal") { throw "direct and Edge Function errors are not both surfaced" }
 }
 
-Add-Check "edge functions allow Vercel staging origins" {
+Add-Check "edge function CORS only allows listed origins" {
   $text = Read-Text "supabase/functions/_shared/cors.ts"
-  if ($text -notmatch "vercel\\.app") { throw "Vercel origins are not allowed by Edge Function CORS" }
   if ($text -notmatch "ALLOWED_ORIGINS") { throw "custom allowed origins env is missing" }
+  if ($text -match "vercel\.app") { throw "wildcard Vercel origin is back; this project does not use Vercel" }
 }
 
 Add-Check "santri login supports nickname alias without custom JWT" {

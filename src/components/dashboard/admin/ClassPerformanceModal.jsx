@@ -18,6 +18,10 @@ import { getActiveCalendarDates } from '@/lib/calendarUtils';
 
 const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
+// Label untuk murid yang tingkat mengajinya belum diisi. Kalimat, bukan tanda
+// hubung: ini muncul di legenda grafik, tempat "-" tidak menjelaskan apa pun.
+const TANPA_TINGKAT = 'Belum ada tingkat';
+
 const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
     const [jilidData, setJilidData] = useState([]);
     const [attendanceData, setAttendanceData] = useState([]);
@@ -68,9 +72,16 @@ const ClassPerformanceModal = ({ isOpen, onClose, classItem }) => {
                 setTotalSantri(resolvedSantriList.length);
                 const santriIds = resolvedSantriList.map(s => s.id);
 
-                // Jilid Distribution
+                /* Distribusi tingkat. Murid yang tingkatnya belum diisi diberi label
+                   sendiri, TIDAK dibiarkan menjadi kunci objek apa adanya: `counts[null]`
+                   menjadikan kuncinya teks "null", dan grafik lingkarannya benar-benar
+                   mencetak "null (33%)" ke wajah pengguna. Itu terjadi pada data contoh
+                   sendiri — satu murid tanpa tingkat sudah cukup memunculkannya. */
                 const counts = {};
-                resolvedSantriList.forEach(s => { counts[s.jilid] = (counts[s.jilid] || 0) + 1; });
+                resolvedSantriList.forEach((s) => {
+                    const tingkat = String(s.jilid ?? '').trim() || TANPA_TINGKAT;
+                    counts[tingkat] = (counts[tingkat] || 0) + 1;
+                });
                 setJilidData(Object.keys(counts).map(key => ({ name: key, value: counts[key] })));
 
                 // 2. Fetch Jilid History for these santri. The batch endpoint

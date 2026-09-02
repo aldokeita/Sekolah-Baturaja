@@ -40,7 +40,7 @@ const SantriArchiveDialog = ({ open, onOpenChange, categories = [], title = 'Ars
     return rows.filter((item) => [
       item.nama_lengkap,
       item.nama_panggilan,
-      item.nomor_induk_qiroati,
+      item.nomor_induk,
       item.class_name,
     ].some((value) => String(value || '').toLowerCase().includes(query)));
   }, [rows, search]);

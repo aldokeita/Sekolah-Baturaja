@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -13,6 +13,7 @@ import PaymentStatusPage from '@/pages/PaymentStatusPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { hydrateSchoolIdentity, subscribeSchoolIdentity, getSchoolIdentity } from '@/lib/schoolIdentity';
+import ScrollToTop from '@/components/ScrollToTop';
 import ScrollToTopButton from '@/components/ScrollToTopButton';
 import NewsPage from '@/pages/NewsPageCms';
 import FacilitiesPage from '@/pages/FacilitiesPage';
@@ -24,6 +25,8 @@ import EkstrakurikulerPage from '@/pages/EkstrakurikulerPage';
 import DigitalAttendancePage from '@/pages/DigitalAttendancePage';
 import TvDisplayPage from '@/pages/TvDisplayPage';
 import GatchaGamePage from '@/pages/GatchaGamePage';
+import QuizHafalanPage from '@/pages/QuizHafalanPage';
+import NotFoundPage from '@/pages/NotFoundPage';
 import GalleryPage from '@/pages/GalleryPage';
 import RandomNamePage from '@/pages/RandomNamePage';
 import TopScorePage from '@/pages/TopScorePage';
@@ -32,14 +35,6 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { publicFetch } from '@/lib/apiClient';
 import { enableDeferredFeatures, enableGameFeatures } from '@/lib/featureFlags';
 import { DEFAULT_LOGO_PATH, isLegacyLogoPath } from '@/lib/schoolAssets';
-
-const RouteLogger = () => {
-  const location = useLocation();
-  useEffect(() => {
-    console.log(`App Routing to: ${location.pathname}${location.search}`);
-  }, [location]);
-  return null;
-};
 
 /* ------------------------------------------------------------------ */
 /* Dynamic logo crossfade helper                                      */
@@ -135,10 +130,24 @@ function App() {
   // publik dan seluruh dashboard memakainya. Endpoint-nya terbuka, jadi ini
   // tetap jalan sebelum login. Bila gagal, singgahan atau nilai bawaan dipakai.
   useEffect(() => {
-    // Judul tab diselaraskan dengan identitas tersimpan. index.html statis, jadi
-    // tanpa ini nama sekolah yang diganti pembeli tidak akan terlihat di tab.
-    // Halaman yang memasang <Helmet> sendiri (mis. dashboard) tetap menang.
-    const syncTitle = (identity) => { document.title = identity.name; };
+    /* Judul tab diselaraskan dengan identitas tersimpan. index.html statis, jadi
+     * tanpa ini nama sekolah yang diganti pembeli tidak akan terlihat di tab.
+     *
+     * Halaman yang memasang <Helmet> sendiri harus menang, dan dulu itu hanya
+     * benar secara kebetulan: hidrasi identitas selesai SESUDAH Helmet menulis
+     * judulnya, lalu baris ini menimpanya. Di sebagian besar halaman Helmet
+     * menulis ulang sesudahnya sehingga tidak terlihat; di halaman yang tidak,
+     * judulnya jatuh kembali ke nama sekolah saja.
+     *
+     * Sekarang penimpaan hanya terjadi bila judul yang ada memang judul yang
+     * ditulis baris ini sendiri (atau judul statis dari index.html). Begitu
+     * sebuah halaman memasang judulnya sendiri, baris ini mundur. */
+    let judulDariSini = document.title;
+    const syncTitle = (identity) => {
+      if (document.title !== judulDariSini) return;
+      document.title = identity.name;
+      judulDariSini = identity.name;
+    };
     const unsubscribe = subscribeSchoolIdentity(syncTitle);
     hydrateSchoolIdentity().then(syncTitle).catch(() => syncTitle(getSchoolIdentity()));
     return unsubscribe;
@@ -149,7 +158,7 @@ function App() {
       <AuthProvider>
         <DndProvider backend={HTML5Backend}>
           <Router>
-            <RouteLogger />
+            <ScrollToTop />
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
               {/* Jaring terakhir. Boundary di dalam DashboardPage hanya menangkap
                   error dari komponen dashboard di bawahnya; error yang dilempar
@@ -159,6 +168,14 @@ function App() {
               <Routes>
                 <Route path="/absensi-digital" element={<ProtectedRoute allowedRoles={operationalDisplayRoles}><DigitalAttendancePage /></ProtectedRoute>} />
                 <Route path="/tv-display-mode" element={<ProtectedRoute allowedRoles={operationalDisplayRoles}><TvDisplayPage /></ProtectedRoute>} />
+                {/* QuizHafalanPage sudah lama ada di repositori tapi rutenya tidak
+                    pernah didaftarkan, jadi tombol "Play Quiz" di dashboard guru dan
+                    di layar absensi digital membuang penekannya ke halaman kosong.
+                    Perannya mengikuti layar operasional lain: kuis dijalankan guru
+                    untuk muridnya dan gurulah yang memberi poin, jadi murid tidak
+                    termasuk. Sengaja DI LUAR pagar enableGameFeatures — ini alat
+                    mengajar, bukan permainan hadiah seperti Gatcha. */}
+                <Route path="/quiz-hafalan" element={<ProtectedRoute allowedRoles={operationalDisplayRoles}><QuizHafalanPage /></ProtectedRoute>} />
                 {enableGameFeatures ? (
                   <>
                     <Route path="/gatcha-game" element={<ProtectedRoute><GatchaGamePage /></ProtectedRoute>} />
@@ -202,6 +219,11 @@ function App() {
                         {/* Cek status PPDB pakai nomor pendaftaran. Publik dengan
                             sengaja — orang tua calon murid tidak punya akun. */}
                         <Route path="/cek-pendaftaran" element={<CekPendaftaranPage />} />
+                        {/* Penampung terakhir. Tanpa baris ini alamat yang tidak
+                            dikenal menghasilkan navbar dan footer dengan badan
+                            halaman KOSONG — pengunjung tidak diberi tahu bahwa ia
+                            salah alamat, dan tidak diberi jalan keluar. */}
+                        <Route path="*" element={<NotFoundPage />} />
                       </Routes>
                     </main>
                   </PublicLayout>

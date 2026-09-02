@@ -8,6 +8,7 @@ import { ArrowLeft, Gamepad2, Star, Sparkles, Crown, UserCheck, Gift, RefreshCw,
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import useKembali from '@/hooks/useKembali';
 import { Helmet } from 'react-helmet';
 import { useTheme } from '@/contexts/ThemeContext';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
@@ -15,6 +16,8 @@ import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 const GatchaGamePage = () => {
   const sekolah = useSchoolIdentity();
   const navigate = useNavigate();
+  // Kembali ke tempat asal penekan; lihat src/hooks/useKembali.js.
+  const kembali = useKembali('/absensi-digital');
   const {
     isDark,
     toggleTheme
@@ -177,7 +180,7 @@ const GatchaGamePage = () => {
 
                 {/* Header */}
                 <div className="relative z-10 p-4 md:p-6 flex justify-between items-center">
-                    <Button variant="ghost" onClick={() => navigate('/absensi-digital')} className={`${isDark ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'}`}>
+                    <Button variant="ghost" onClick={kembali} className={`${isDark ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'}`}>
                         <ArrowLeft className="w-6 h-6 mr-2" /> Kembali
                     </Button>
                     <div className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md ${isDark ? 'bg-white/10 border border-white/10' : 'bg-white/50 border border-slate-200 shadow-sm'}`}>

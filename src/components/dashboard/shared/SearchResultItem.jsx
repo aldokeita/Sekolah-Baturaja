@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Users, BookOpen, DollarSign, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { labelStafRole } from '@/lib/staf';
 
 const getStatusColor = (status, category) => {
   if (!status) return "bg-slate-100 text-slate-700 border-slate-200";
@@ -45,14 +46,14 @@ const SearchResultItem = ({ item, category, onSelect, isSelected }) => {
     switch (category) {
       case 'santri':
         title = item.nama_lengkap || 'Data tidak lengkap';
-        subtitle = `NIQ: ${item.nomor_induk_qiroati || '-'} | Jilid: ${item.jilid || '-'}`;
+        subtitle = `NIQ: ${item.nomor_induk || '-'} | Jilid: ${item.jilid || '-'}`;
         status = item.status;
         avatarUrl = item.foto_url;
         fallback = title.charAt(0);
         break;
       case 'guru':
         title = item.nama || 'Data tidak lengkap';
-        subtitle = item.jabatan || 'Guru';
+        subtitle = labelStafRole(item.jabatan || 'Guru');
         status = item.status_guru || 'Aktif';
         avatarUrl = item.foto_url;
         fallback = title.charAt(0);

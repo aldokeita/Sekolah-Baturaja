@@ -47,7 +47,7 @@ func (h *MMQHandler) Routes() chi.Router {
 func (h *MMQHandler) ListSchedules(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.db.Query(r.Context(), `
 		SELECT `+mmqScheduleCols+`
-		FROM mmq_schedule
+		FROM rapat_guru_jadwal
 		WHERE is_active = true
 		ORDER BY day_of_week, start_time
 	`)
@@ -67,7 +67,7 @@ func (h *MMQHandler) SchedulesByDay(w http.ResponseWriter, r *http.Request) {
 	day := chi.URLParam(r, "day")
 	rows, err := h.db.Query(r.Context(), `
 		SELECT `+mmqScheduleCols+`
-		FROM mmq_schedule
+		FROM rapat_guru_jadwal
 		WHERE day_of_week = $1 AND is_active = true
 		ORDER BY start_time
 	`, day)
@@ -83,7 +83,7 @@ func (h *MMQHandler) SchedulesByDay(w http.ResponseWriter, r *http.Request) {
 	jsonData(w, out)
 }
 
-// mmqScheduleCols mengikuti kolom nyata public.mmq_schedule
+// mmqScheduleCols mengikuti kolom nyata public.rapat_guru_jadwal
 // (20260624001000_mmq_core.sql). Tabel ini TIDAK punya kolom description.
 const mmqScheduleCols = `id::text, day_of_week, start_time::text, end_time::text, location, is_active`
 
@@ -131,7 +131,7 @@ func (h *MMQHandler) CreateAttendance(w http.ResponseWriter, r *http.Request) {
 	// Cek duplikat: satu guru satu jadwal satu tanggal.
 	var existing string
 	err := h.db.QueryRow(r.Context(), `
-		SELECT id FROM mmq_attendance
+		SELECT id FROM rapat_guru_absensi
 		WHERE schedule_id = $1 AND guru_id = $2 AND attendance_date = $3
 		LIMIT 1
 	`, body.ScheduleID, guruID, body.AttendanceDate).Scan(&existing)
@@ -143,7 +143,7 @@ func (h *MMQHandler) CreateAttendance(w http.ResponseWriter, r *http.Request) {
 
 	var id string
 	err = h.db.QueryRow(r.Context(), `
-		INSERT INTO mmq_attendance (schedule_id, guru_id, attendance_date, status, notes)
+		INSERT INTO rapat_guru_absensi (schedule_id, guru_id, attendance_date, status, notes)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`, body.ScheduleID, guruID, body.AttendanceDate, body.Status, body.Notes).Scan(&id)
@@ -189,7 +189,7 @@ func (h *MMQHandler) UpdateAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	args = append(args, id)
-	q := "UPDATE mmq_attendance SET " + strings.Join(sets, ", ") + " WHERE id = $" + itoa(i)
+	q := "UPDATE rapat_guru_absensi SET " + strings.Join(sets, ", ") + " WHERE id = $" + itoa(i)
 
 	if _, err := h.db.Exec(r.Context(), q, args...); err != nil {
 		jsonError(w, "gagal memperbarui absensi", http.StatusInternalServerError)
@@ -201,7 +201,7 @@ func (h *MMQHandler) UpdateAttendance(w http.ResponseWriter, r *http.Request) {
 func (h *MMQHandler) ListAttendance(w http.ResponseWriter, r *http.Request) {
 	q := `
 		SELECT id, schedule_id, guru_id, attendance_date, check_in_timestamp, status, notes
-		FROM mmq_attendance
+		FROM rapat_guru_absensi
 		WHERE 1=1
 	`
 	args := []any{}
@@ -272,7 +272,7 @@ func (h *MMQHandler) CreateNotulensi(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "schedule_id dan tanggal wajib diisi", http.StatusBadRequest)
 		return
 	}
-	// judul NOT NULL + mmq_notulensi_judul_not_blank.
+	// judul NOT NULL + rapat_guru_notulensi_judul_not_blank.
 	body.Judul = strings.TrimSpace(body.Judul)
 	if body.Judul == "" {
 		jsonError(w, "judul wajib diisi", http.StatusBadRequest)
@@ -304,7 +304,7 @@ func (h *MMQHandler) CreateNotulensi(w http.ResponseWriter, r *http.Request) {
 
 	var id string
 	err := h.db.QueryRow(r.Context(), `
-		INSERT INTO mmq_notulensi (schedule_id, tanggal, judul, isi, notulen_id, created_by)
+		INSERT INTO rapat_guru_notulensi (schedule_id, tanggal, judul, isi, notulen_id, created_by)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id::text
 	`, body.ScheduleID, body.Tanggal, body.Judul, body.Isi, notulenID, createdBy).Scan(&id)
@@ -316,13 +316,13 @@ func (h *MMQHandler) CreateNotulensi(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MMQHandler) ListNotulensi(w http.ResponseWriter, r *http.Request) {
-	// Kolom nyata mmq_notulensi: id, schedule_id, tanggal, judul, isi, notulen_id,
+	// Kolom nyata rapat_guru_notulensi: id, schedule_id, tanggal, judul, isi, notulen_id,
 	// created_at, updated_at, created_by, updated_by. Nama notulen di-join dari guru
 	// karena MmqSection.jsx membaca item.notulen?.nama.
 	rows, err := h.db.Query(r.Context(), `
 		SELECT n.id::text, n.schedule_id::text, n.tanggal::text, n.judul, n.isi,
 		       n.notulen_id::text, n.created_by::text, g.nama
-		FROM mmq_notulensi n
+		FROM rapat_guru_notulensi n
 		LEFT JOIN guru g ON g.id = n.notulen_id
 		ORDER BY n.tanggal DESC
 	`)

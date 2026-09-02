@@ -8,7 +8,7 @@ import { toast } from '@/components/ui/use-toast';
 
 import SantriManagement from '../admin/SantriManagement';
 import GuruManagement from '../admin/GuruManagement';
-import MMQManagement from '../admin/MMQManagement';
+import RapatGuruManagement from '../admin/RapatGuruManagement';
 import TahfizhConfiguration from '../admin/TahfizhConfiguration';
 import PaymentSystem from '../admin/PaymentSystem';
 import PaymentRecap from '../admin/PaymentRecap';
@@ -16,8 +16,10 @@ import PaymentHistory from '../admin/PaymentHistory';
 import ContentManagement from '../admin/ContentManagement';
 import PpdbRegistrations from '../admin/PpdbRegistrations';
 import LoginLogs from '../admin/LoginLogs';
+import WaNotifications from '../admin/WaNotifications';
 import ExpenseManagement from '../admin/ExpenseManagement';
 import ClassManagement from '../admin/ClassManagement';
+import KenaikanKelas from '../admin/KenaikanKelas';
 import JadwalPelajaran from '../admin/JadwalPelajaran';
 import AttendanceRecap from '../admin/AttendanceRecap';
 import GuruAttendanceRecap from '../admin/GuruAttendanceRecap';
@@ -46,8 +48,9 @@ const renderModule = (value) => {
     case 'santri': return <SantriManagement />;
     case 'ppdb': return <PpdbRegistrations />;
     case 'kelas': return <ClassManagement />;
+    case 'kenaikan-kelas': return <KenaikanKelas />;
     case 'jadwal-pelajaran': return <JadwalPelajaran />;
-    case 'rapat-guru': return <MMQManagement />;
+    case 'rapat-guru': return <RapatGuruManagement />;
     case 'metode-mengaji': return <TahfizhConfiguration />;
     case 'guru': return <GuruManagement />;
     case 'rekap-absensi': return <AttendanceRecap />;
@@ -65,6 +68,7 @@ const renderModule = (value) => {
     case 'game-config': return <GameConfiguration />;
     case 'backup': return <BackupRestoreManagement />;
     case 'logs': return <LoginLogs />;
+    case 'wa-notifikasi': return <WaNotifications />;
     default: return null;
   }
 };
@@ -203,7 +207,7 @@ const DashboardWorkspace = ({ title, subtitle, tabs }) => {
       <div className="sdnb-dash__orb sdnb-dash__orb--b" aria-hidden="true" />
       <div className="sdnb-dash__orb sdnb-dash__orb--c" aria-hidden="true" />
 
-      <div className="sdnb-dash__content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-20">
+      <div className="sdnb-dash__content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-8 sm:pt-10">
 
       {/* Global Search Section — below navbar */}
       <div className="mb-6">

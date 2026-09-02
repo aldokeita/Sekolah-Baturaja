@@ -41,17 +41,17 @@ const PpdbBody = (vals = {}) => {
         <a href="/" style={{ position: "relative", display: "flex", alignItems: "center", gap: "12px", color: "inherit" }}>
           <div style={{ width: "40px", height: "40px", borderRadius: "13px", background: "linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "13px", boxShadow: "0 10px 22px -8px rgba(110,120,220,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>{inisialLogo}</div>
           <div style={{ lineHeight: "1.15" }}>
-            <div style={{ fontSize: "15px", fontWeight: "800", letterSpacing: "-.01em", color: "#1b1c28" }}>{namaSekolah}</div>
-            <div style={{ fontSize: "11px", fontWeight: "500", color: "#6c718f" }}>Formulir SPMB {tahunAjaran}</div>
+            <div style={{ fontSize: "15px", fontWeight: "800", letterSpacing: "-.01em", color: "var(--sdnb-teks-judul)" }}>{namaSekolah}</div>
+            <div style={{ fontSize: "11px", fontWeight: "500", color: "var(--sdnb-teks-pendamping)" }}>Formulir SPMB {tahunAjaran}</div>
           </div>
         </a>
         <div style={{ flex: "1" }}></div>
         <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 14px", borderRadius: "12px", fontSize: "12.5px", fontWeight: "600", color: "#3d4166", background: "rgba(255,255,255,.6)", border: "1px solid rgba(255,255,255,.9)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 14px", borderRadius: "12px", fontSize: "12.5px", fontWeight: "600", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.6)", border: "1px solid rgba(255,255,255,.9)" }}>
             <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 4px rgba(34,197,94,.18)" }}></span>
             {labelGelombang}
           </div>
-          <a className="shine hx-1myuu2z" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "11px 18px", borderRadius: "14px", fontSize: "13.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", boxShadow: "0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)" }}>
+          <a className="shine hx-1myuu2z" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "11px 18px", borderRadius: "14px", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", boxShadow: "0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"></path><path d="m11 18-6-6 6-6"></path></svg>
             Kembali ke beranda
           </a>
@@ -60,9 +60,9 @@ const PpdbBody = (vals = {}) => {
     </div>
 
     <div className="ppdb-pad" style={{ maxWidth: "1240px", margin: "0 auto", padding: "26px 28px 0" }}>
-      <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>SPMB {tahunAjaran}</div>
-      <h1 style={{ margin: "12px 0 0", fontSize: "44px", lineHeight: "1.06", letterSpacing: "-.035em", fontWeight: "800", color: "#171827", maxWidth: "720px" }}>Formulir pendaftaran <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>murid baru</span></h1>
-      <p style={{ margin: "16px 0 0", maxWidth: "620px", fontSize: "15px", lineHeight: "1.65", color: "#535878", textWrap: "pretty" }}>{pengantar}</p>
+      <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-teks)" }}>SPMB {tahunAjaran}</div>
+      <h1 style={{ margin: "12px 0 0", fontSize: "44px", lineHeight: "1.06", letterSpacing: "-.035em", fontWeight: "800", color: "var(--sdnb-teks-judul)", maxWidth: "720px" }}>Formulir pendaftaran <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>murid baru</span></h1>
+      <p style={{ margin: "16px 0 0", maxWidth: "620px", fontSize: "15px", lineHeight: "1.65", color: "var(--sdnb-teks-pendamping)", textWrap: "pretty" }}>{pengantar}</p>
     </div>
 
     {/* Kelas `ppdb-kolom` dan `ppdb-grid` ditambahkan tangan supaya tata letaknya
@@ -82,7 +82,7 @@ const PpdbBody = (vals = {}) => {
                 <div style={__dcs(st.dot)}>{st.num}</div>
                 <div>
                   <div className="stlabel" style={__dcs(st.title)}>{st.label}</div>
-                  <div className="sthint" style={{ fontSize: "11px", color: "#7b7fa0" }}>{st.hint}</div>
+                  <div className="sthint" style={{ fontSize: "11px", color: "var(--sdnb-teks-pendamping)" }}>{st.hint}</div>
                 </div>
               </div>
             </React.Fragment>))}
@@ -96,31 +96,31 @@ const PpdbBody = (vals = {}) => {
 
           {(isStep1) && (<>
             <div style={{ position: "relative" }}>
-              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "#1b1c2c" }}>Data diri calon murid</h2>
-              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "#5e6386" }}>Tulis sesuai kartu keluarga. Nama tidak boleh disingkat.</p>
+              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "var(--sdnb-teks-judul)" }}>Data diri calon murid</h2>
+              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "var(--sdnb-teks-pendamping)" }}>Tulis sesuai kartu keluarga. Nama tidak boleh disingkat.</p>
               <div className="ppdb-grid" style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Nama lengkap</label>
-                  <input onInput={h.nama} defaultValue={d.nama} placeholder="Contoh: Naila Rahmadani" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Nama lengkap</label>
+                  <input onInput={h.nama} defaultValue={d.nama} placeholder="Contoh: Naila Rahmadani" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>NISN <span style={{ fontWeight: "500", color: "#8a8ea8" }}>(bila ada)</span></label>
-                  <input onInput={h.nisn} defaultValue={d.nisn} placeholder="10 digit" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>NISN <span style={{ fontWeight: "500", color: "var(--sdnb-teks-pendamping)" }}>(bila ada)</span></label>
+                  <input onInput={h.nisn} defaultValue={d.nisn} placeholder="10 digit" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>NIK</label>
-                  <input onInput={h.nik} defaultValue={d.nik} placeholder="16 digit" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>NIK</label>
+                  <input onInput={h.nik} defaultValue={d.nik} placeholder="16 digit" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Tempat lahir</label>
-                  <input onInput={h.tempat} defaultValue={d.tempat} placeholder="Baturaja" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Tempat lahir</label>
+                  <input onInput={h.tempat} defaultValue={d.tempat} placeholder="Baturaja" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Tanggal lahir</label>
-                  <input onInput={h.lahir} defaultValue={d.lahir} type="date" style={{ width: "100%", padding: "12px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Tanggal lahir</label>
+                  <input onInput={h.lahir} defaultValue={d.lahir} type="date" style={{ width: "100%", padding: "12px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Jenis kelamin</label>
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Jenis kelamin</label>
                   <div style={{ display: "flex", gap: "10px" }}>
                     {(genders || []).map((g, $index) => (<React.Fragment key={$index}>
                       <button className="shine" onClick={g.pick} style={__dcs(g.style)}>{g.label}</button>
@@ -128,16 +128,16 @@ const PpdbBody = (vals = {}) => {
                   </div>
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Alamat tempat tinggal</label>
-                  <input onInput={h.alamat} defaultValue={d.alamat} placeholder="Jalan, RT/RW, kelurahan, kecamatan" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Alamat tempat tinggal</label>
+                  <input onInput={h.alamat} defaultValue={d.alamat} placeholder="Jalan, RT/RW, kelurahan, kecamatan" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Nomor WhatsApp</label>
-                  <input onInput={h.hp} defaultValue={d.hp} placeholder="0812xxxxxxx (nomor orang tua)" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Nomor WhatsApp</label>
+                  <input onInput={h.hp} defaultValue={d.hp} placeholder="0812xxxxxxx (nomor orang tua)" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Email</label>
-                  <input onInput={h.email} defaultValue={d.email} placeholder="nama@email.com" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Email</label>
+                  <input onInput={h.email} defaultValue={d.email} placeholder="nama@email.com" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
               </div>
             </div>
@@ -145,30 +145,30 @@ const PpdbBody = (vals = {}) => {
 
           {(isStep2) && (<>
             <div style={{ position: "relative" }}>
-              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "#1b1c2c" }}>Asal TK &amp; jalur pendaftaran</h2>
-              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "#5e6386" }}>Anak yang belum pernah bersekolah tetap dapat mendaftar. Kosongkan bagian asal TK bila tidak ada.</p>
+              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "var(--sdnb-teks-judul)" }}>Asal TK &amp; jalur pendaftaran</h2>
+              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "var(--sdnb-teks-pendamping)" }}>Anak yang belum pernah bersekolah tetap dapat mendaftar. Kosongkan bagian asal TK bila tidak ada.</p>
               <div className="ppdb-grid" style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Nama TK atau RA asal</label>
-                  <input onInput={h.sekolah} defaultValue={d.sekolah} placeholder="TK Pertiwi Baturaja" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Nama TK atau RA asal</label>
+                  <input onInput={h.sekolah} defaultValue={d.sekolah} placeholder="TK Pertiwi Baturaja" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>NPSN TK atau RA</label>
-                  <input onInput={h.npsn} defaultValue={d.npsn} placeholder="8 digit" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>NPSN TK atau RA</label>
+                  <input onInput={h.npsn} defaultValue={d.npsn} placeholder="8 digit" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Usia per 1 Juli {tahunAwal}</label>
-                  <input onInput={h.nilai} defaultValue={d.nilai} placeholder="Contoh: 6 tahun 4 bulan" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Usia per 1 Juli {tahunAwal}</label>
+                  <input onInput={h.nilai} defaultValue={d.nilai} placeholder="Contoh: 6 tahun 4 bulan" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ display: "block", marginBottom: "10px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Jalur pendaftaran</label>
+                  <label style={{ display: "block", marginBottom: "10px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Jalur pendaftaran</label>
                   <div className="ppdb-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "12px" }}>
                     {(jalur || []).map((j, $index) => (<React.Fragment key={$index}>
                       <div className="shine" onClick={j.pick} style={__dcs(j.style)}>
                         <div style={__dcs(j.mark)}></div>
                         <div>
-                          <div style={{ fontSize: "14px", fontWeight: "700", color: "#1e2035" }}>{j.label}</div>
-                          <div style={{ marginTop: "3px", fontSize: "11.5px", lineHeight: "1.5", color: "#6b7093" }}>{j.desc}</div>
+                          <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--sdnb-teks-judul)" }}>{j.label}</div>
+                          <div style={{ marginTop: "3px", fontSize: "11.5px", lineHeight: "1.5", color: "var(--sdnb-teks-pendamping)" }}>{j.desc}</div>
                         </div>
                       </div>
                     </React.Fragment>))}
@@ -181,16 +181,16 @@ const PpdbBody = (vals = {}) => {
                     administratif, bukan jarak. */}
                 {(wilayahOpsi || []).length > 0 && (
                   <div style={{ gridColumn: "span 2" }}>
-                    <label htmlFor="ppdb-wilayah" style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Wilayah tempat tinggal</label>
-                    <select id="ppdb-wilayah" value={wilayahNilai} onChange={wilayahPilih} style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>
+                    <label htmlFor="ppdb-wilayah" style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Wilayah tempat tinggal</label>
+                    <select id="ppdb-wilayah" value={wilayahNilai} onChange={wilayahPilih} style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>
                       <option value="">— Pilih wilayah —</option>
                       {(wilayahOpsi || []).map((w, $index) => (<option key={$index} value={w}>{w}</option>))}
                     </select>
-                    <div style={{ marginTop: "6px", fontSize: "11.5px", lineHeight: "1.5", color: "#6b7093" }}>Sesuai kartu keluarga. Dipakai untuk menilai jalur Domisili.</div>
+                    <div style={{ marginTop: "6px", fontSize: "11.5px", lineHeight: "1.5", color: "var(--sdnb-teks-pendamping)" }}>Sesuai kartu keluarga. Dipakai untuk menilai jalur Domisili.</div>
                   </div>
                 )}
                 <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ display: "block", marginBottom: "10px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Program pendukung yang diminati</label>
+                  <label style={{ display: "block", marginBottom: "10px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Program pendukung yang diminati</label>
                   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                     {(minat || []).map((m, $index) => (<React.Fragment key={$index}>
                       <button className="shine" onClick={m.pick} style={__dcs(m.style)}>{m.label}</button>
@@ -208,24 +208,24 @@ const PpdbBody = (vals = {}) => {
                   centang. Halaman publik memang tidak menerima unggahan: endpoint
                   unggah ada di balik login. Jadi kalimatnya diselaraskan dengan apa
                   yang sebenarnya terjadi. */}
-              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "#1b1c2c" }}>Orang tua & kesiapan berkas</h2>
-              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "#5e6386" }}>Centang berkas yang sudah Anda siapkan. Berkas aslinya dibawa saat daftar ulang, tidak diunggah di sini. Yang belum siap dapat menyusul ke tata usaha.</p>
+              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "var(--sdnb-teks-judul)" }}>Orang tua & kesiapan berkas</h2>
+              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "var(--sdnb-teks-pendamping)" }}>Centang berkas yang sudah Anda siapkan. Berkas aslinya dibawa saat daftar ulang, tidak diunggah di sini. Yang belum siap dapat menyusul ke tata usaha.</p>
               <div className="ppdb-grid" style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Nama ayah</label>
-                  <input onInput={h.ayah} defaultValue={d.ayah} placeholder="Nama lengkap ayah" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Nama ayah</label>
+                  <input onInput={h.ayah} defaultValue={d.ayah} placeholder="Nama lengkap ayah" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Nama ibu</label>
-                  <input onInput={h.ibu} defaultValue={d.ibu} placeholder="Nama lengkap ibu" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Nama ibu</label>
+                  <input onInput={h.ibu} defaultValue={d.ibu} placeholder="Nama lengkap ibu" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Pekerjaan orang tua</label>
-                  <input onInput={h.kerja} defaultValue={d.kerja} placeholder="Contoh: Wiraswasta" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Pekerjaan orang tua</label>
+                  <input onInput={h.kerja} defaultValue={d.kerja} placeholder="Contoh: Wiraswasta" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "#4a4f74" }}>Nomor WhatsApp wali</label>
-                  <input onInput={h.hpwali} defaultValue={d.hpwali} placeholder="0813xxxxxxx" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "#22243c", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
+                  <label style={{ display: "block", marginBottom: "7px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)" }}>Nomor WhatsApp wali</label>
+                  <input onInput={h.hpwali} defaultValue={d.hpwali} placeholder="0813xxxxxxx" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", fontFamily: "inherit", fontSize: "14px", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.62)", border: "1px solid rgba(255,255,255,.9)", outline: "none", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }} />
                 </div>
               </div>
               <div className="ppdb-grid" style={{ marginTop: "26px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
@@ -235,8 +235,8 @@ const PpdbBody = (vals = {}) => {
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"></path></svg>
                     </div>
                     <div style={{ flex: "1", minWidth: "0" }}>
-                      <div style={{ fontSize: "13.5px", fontWeight: "700", color: "#1e2035" }}>{b.label}</div>
-                      <div style={{ marginTop: "2px", fontSize: "11.5px", color: "#6b7093" }}>{b.note}</div>
+                      <div style={{ fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)" }}>{b.label}</div>
+                      <div style={{ marginTop: "2px", fontSize: "11.5px", color: "var(--sdnb-teks-pendamping)" }}>{b.note}</div>
                     </div>
                   </div>
                 </React.Fragment>))}
@@ -246,13 +246,13 @@ const PpdbBody = (vals = {}) => {
 
           {(isStep4) && (<>
             <div style={{ position: "relative" }}>
-              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "#1b1c2c" }}>Tinjau dan kirim</h2>
-              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "#5e6386" }}>Periksa kembali sebelum mengirim. Setelah terkirim, perubahan hanya bisa lewat tata usaha.</p>
+              <h2 style={{ margin: "0", fontSize: "22px", fontWeight: "800", letterSpacing: "-.022em", color: "var(--sdnb-teks-judul)" }}>Tinjau dan kirim</h2>
+              <p style={{ margin: "8px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "var(--sdnb-teks-pendamping)" }}>Periksa kembali sebelum mengirim. Setelah terkirim, perubahan hanya bisa lewat tata usaha.</p>
               <div style={{ marginTop: "22px", display: "flex", flexDirection: "column", gap: "10px" }}>
                 {(review || []).map((r, $index) => (<React.Fragment key={$index}>
                   <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "20px", padding: "13px 16px", borderRadius: "14px", background: "rgba(255,255,255,.55)", border: "1px solid rgba(255,255,255,.9)" }}>
-                    <span style={{ fontSize: "12.5px", fontWeight: "600", color: "#6b7093" }}>{r.k}</span>
-                    <span style={{ fontSize: "13.5px", fontWeight: "700", color: "#1e2035", textAlign: "right" }}>{r.v}</span>
+                    <span style={{ fontSize: "12.5px", fontWeight: "600", color: "var(--sdnb-teks-pendamping)" }}>{r.k}</span>
+                    <span style={{ fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", textAlign: "right" }}>{r.v}</span>
                   </div>
                 </React.Fragment>))}
               </div>
@@ -260,7 +260,7 @@ const PpdbBody = (vals = {}) => {
                 <div style={__dcs(setujuBox)}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
                 </div>
-                <span style={{ fontSize: "13px", lineHeight: "1.55", color: "#3f4468" }}>Saya menyatakan seluruh data yang diisi benar dan bersedia menerima sanksi pembatalan bila terbukti tidak sesuai.</span>
+                <span style={{ fontSize: "13px", lineHeight: "1.55", color: "var(--sdnb-teks-badan)" }}>Saya menyatakan seluruh data yang diisi benar dan bersedia menerima sanksi pembatalan bila terbukti tidak sesuai.</span>
               </div>
               {/* Penolakan dari server ditampilkan di sini. Dulu kegagalan pengiriman
                   ditelan diam-diam dan layar "terkirim" tetap muncul, sehingga orang
@@ -289,7 +289,7 @@ const PpdbBody = (vals = {}) => {
               <div style={{ width: "66px", height: "66px", borderRadius: "22px", background: "linear-gradient(140deg,#8ee6c4,#6fd0e8)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 18px 36px -14px rgba(70,190,180,.8),inset 0 1px 0 rgba(255,255,255,.85)" }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
               </div>
-              <h2 style={{ margin: "22px 0 0", fontSize: "26px", fontWeight: "800", letterSpacing: "-.025em", color: "#1b1c2c" }}>
+              <h2 style={{ margin: "22px 0 0", fontSize: "26px", fontWeight: "800", letterSpacing: "-.025em", color: "var(--sdnb-teks-judul)" }}>
                 {sudahTerdaftar ? "Pendaftaran sudah tercatat" : "Pendaftaran terkirim"}
               </h2>
               {/* Nomor pendaftaran datang DARI SERVER. Sebelumnya nomornya dikarang di
@@ -297,19 +297,19 @@ const PpdbBody = (vals = {}) => {
                   juga menjanjikan konfirmasi WhatsApp yang tidak pernah dikirim —
                   keduanya membuat orang tua menyimpan nomor yang tidak berarti apa pun
                   bagi tata usaha. */}
-              <p style={{ margin: "10px 0 0", maxWidth: "520px", fontSize: "14.5px", lineHeight: "1.65", color: "#535878" }}>
+              <p style={{ margin: "10px 0 0", maxWidth: "520px", fontSize: "14.5px", lineHeight: "1.65", color: "var(--sdnb-teks-pendamping)" }}>
                 {sudahTerdaftar
                   ? "Nama dan tanggal lahir ini sudah terdaftar sebelumnya, jadi pendaftaran tidak digandakan. Nomornya tetap "
                   : "Nomor pendaftaran Anda "}
-                <strong style={{ color: "var(--sekolah-aksen-pekat)" }}>{nomorPendaftaran || "—"}</strong>
+                <strong style={{ color: "var(--sekolah-aksen-teks)" }}>{nomorPendaftaran || "—"}</strong>
                 . Catat nomor ini — dengan nomor itu beserta tanggal lahir ananda, Anda bisa{" "}
-                <a href="/cek-pendaftaran" style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: 700 }}>memeriksa status pendaftaran</a>
+                <a href="/cek-pendaftaran" style={{ color: "var(--sekolah-aksen-teks)", fontWeight: 700 }}>memeriksa status pendaftaran</a>
                 {" "}kapan saja.
               </p>
               <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <a className="shine bukti-sembunyi-cetak" href="/" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 24px", borderRadius: "15px", fontSize: "14px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 20px 40px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)" }}>Kembali ke beranda</a>
-                <button className="shine bukti-sembunyi-cetak" onClick={() => window.print()} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Cetak bukti</button>
-                <button className="shine bukti-sembunyi-cetak" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Isi formulir lain</button>
+                <button className="shine bukti-sembunyi-cetak" onClick={() => window.print()} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Cetak bukti</button>
+                <button className="shine bukti-sembunyi-cetak" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "14px 24px", borderRadius: "15px", border: "1px solid rgba(255,255,255,.9)", cursor: "pointer", fontFamily: "inherit", fontSize: "14px", fontWeight: "700", color: "var(--sdnb-teks-badan)", background: "rgba(255,255,255,.62)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.95)" }}>Isi formulir lain</button>
               </div>
             </div>
           </>)}
@@ -317,7 +317,7 @@ const PpdbBody = (vals = {}) => {
           <div style={__dcs(navStyle)}>
             <button className="shine" onClick={prev} style={__dcs(prevStyle)}>Kembali</button>
             <div style={{ flex: "1" }}></div>
-            <span style={{ fontSize: "12.5px", color: "#7b7fa0" }}>{stepCounter}</span>
+            <span style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>{stepCounter}</span>
             <button className="shine hx-yf6msz" onClick={next} style={__dcs(nextStyle)}>
               {nextLabel}
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
@@ -330,41 +330,41 @@ const PpdbBody = (vals = {}) => {
       <div className="ppdb-rail" style={{ display: "flex", flexDirection: "column", gap: "20px", position: "sticky", top: "112px" }}>
 
         <div style={{ position: "relative", overflow: "hidden", padding: "24px", borderRadius: "24px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
-          <div style={{ position: "relative", fontSize: "12px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "#8a8ea8" }}>Jadwal</div>
+          <div style={{ position: "relative", fontSize: "12px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>Jadwal</div>
           {/* Tahap pertama ditandai bulatan bergradasi, sisanya pucat — penanda
               tahap yang sedang berjalan, mengikuti rancangan aslinya. */}
           <div style={{ position: "relative", marginTop: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
             {(jadwal || []).map((t, $index) => (
             <div key={$index} style={{ display: "flex", gap: "12px" }}>
               <div style={{ flex: "none", width: "9px", height: "9px", marginTop: "5px", borderRadius: "50%", background: $index === 0 ? "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))" : "rgba(120,132,255,.35)", boxShadow: $index === 0 ? "0 0 0 4px rgba(120,132,255,.16)" : "none" }}></div>
-              <div><div style={{ fontSize: "13.5px", fontWeight: "700", color: "#1e2035" }}>{t.when}</div><div style={{ fontSize: "12px", color: "#6b7093" }}>{t.what}</div></div>
+              <div><div style={{ fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)" }}>{t.when}</div><div style={{ fontSize: "12px", color: "var(--sdnb-teks-pendamping)" }}>{t.what}</div></div>
             </div>
             ))}
           </div>
         </div>
 
         <div style={{ position: "relative", overflow: "hidden", padding: "24px", borderRadius: "24px", background: "rgba(255,255,255,.5)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.75)", boxShadow: "0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))", pointerEvents: "none" }} />
-          <div style={{ position: "relative", fontSize: "12px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "#8a8ea8" }}>Yang perlu disiapkan</div>
-          <div style={{ position: "relative", marginTop: "14px", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#3f4468" }}>
+          <div style={{ position: "relative", fontSize: "12px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>Yang perlu disiapkan</div>
+          <div style={{ position: "relative", marginTop: "14px", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "var(--sdnb-teks-badan)" }}>
             {(syarat || []).map((s, $index) => (
-            <div key={$index} style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-pekat)", fontWeight: "800" }}>&bull;</span>{s}</div>
+            <div key={$index} style={{ display: "flex", gap: "9px", alignItems: "flex-start" }}><span style={{ color: "var(--sekolah-aksen-teks)", fontWeight: "800" }}>&bull;</span>{s}</div>
             ))}
           </div>
         </div>
 
-        <div style={{ position: "relative", overflow: "hidden", padding: "24px", borderRadius: "24px", background: "linear-gradient(135deg,rgba(120,132,255,.9),rgba(160,120,240,.85) 48%,rgba(240,150,196,.85))", border: "1px solid rgba(255,255,255,.55)", boxShadow: "0 30px 60px -24px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(168deg,rgba(255,255,255,.4),rgba(255,255,255,0))", pointerEvents: "none" }} />
+        <div style={{ position: "relative", overflow: "hidden", padding: "24px", borderRadius: "24px", background: "var(--sdnb-ajakan)", border: "1px solid rgba(255,255,255,.55)", boxShadow: "0 30px 60px -24px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)" }}><div aria-hidden="true" style={{ position: "absolute", top: "0", left: "0", right: "0", height: "55%", background: "linear-gradient(168deg,rgba(255,255,255,.4),rgba(255,255,255,0))", pointerEvents: "none" }} />
           <div style={{ position: "relative", fontSize: "16px", fontWeight: "800", letterSpacing: "-.02em", color: "#fff" }}>Butuh bantuan?</div>
           <p style={{ position: "relative", margin: "8px 0 0", fontSize: "13px", lineHeight: "1.6", color: "rgba(255,255,255,.9)" }}>Panitia SPMB melayani pertanyaan setiap hari kerja pukul 07.30&ndash;15.00 di (0735) 320145.</p>
-          <a className="shine" href="#bantuan" style={{ position: "relative", overflow: "hidden", marginTop: "16px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "11px 18px", borderRadius: "13px", fontSize: "13px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.9)", boxShadow: "0 14px 30px -14px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)" }}>Hubungi panitia</a>
+          <a className="shine" href="#bantuan" style={{ position: "relative", overflow: "hidden", marginTop: "16px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "11px 18px", borderRadius: "13px", fontSize: "13px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.9)", boxShadow: "0 14px 30px -14px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)" }}>Hubungi panitia</a>
         </div>
 
       </div>
     </div>
 
     <div className="ppdb-pad" style={{ maxWidth: "1240px", margin: "0 auto", padding: "56px 28px 44px" }}>
-      <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.7)", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", fontSize: "12px", color: "#70759a" }}>
+      <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.7)", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", fontSize: "12px", color: "var(--sdnb-teks-pendamping)" }}>
         <div>&copy; {tahunAwal} {namaSekolah} &middot; Panitia SPMB {tahunAjaran}</div>
-        <a className="hx-1kdf62l" href="/" style={{ color: "#70759a" }}>Beranda</a>
+        <a className="hx-1kdf62l" href="/" style={{ color: "var(--sdnb-teks-pendamping)" }}>Beranda</a>
       </div>
     </div>
 

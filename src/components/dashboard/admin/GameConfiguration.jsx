@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
-import { Save, Plus, Trash2, Percent, Gamepad2, Trophy, X, RefreshCw, BarChart2, User, UserCheck, Sparkles, Clock3, Settings2, MessageSquare, Link2, ExternalLink, ShieldCheck, Receipt } from 'lucide-react';
+import { Save, Plus, Trash2, Percent, Gamepad2, Trophy, X, RefreshCw, BarChart2, User, UserCheck, Sparkles, Clock3, Settings2, MessageSquare, Link2, ExternalLink, ShieldCheck, Receipt, GraduationCap } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { doaHarian, bacaanShalat, suratPendek } from '@/data/islamicContent';
 import { motion } from 'framer-motion';
@@ -17,17 +17,20 @@ import { createDefaultSantriLevelConfig, normalizeLevelConfigShape } from '@/lib
 import { DEFAULT_WHATSAPP_TEMPLATES, fetchWhatsAppTemplates, saveWhatsAppTemplates } from '@/lib/whatsappTemplateAdapters';
 import { fetchWhatsAppGroupLinks, isValidWhatsAppGroupLink, saveWhatsAppGroupLinks, validateWhatsAppGroupLinks, WHATSAPP_JILID_OPTIONS } from '@/lib/whatsappGroupLinksAdapters';
 import PaymentReceiptEditor from './PaymentReceiptEditor';
+import RaporPredikatSettings from './RaporPredikatSettings';
 
 const GameConfiguration = () => {
     const [activeTab, setActiveTab] = useState('attendance');
     const tabs = [
         { id: 'attendance', label: 'Waktu Absensi', icon: Clock3 },
         { id: 'levels', label: 'Konfigurasi Level', icon: BarChart2 },
+        { id: 'rapor', label: 'Predikat Rapor', icon: GraduationCap },
         { id: 'whatsapp', label: 'Pesan WhatsApp', icon: MessageSquare },
         { id: 'payment-receipt', label: 'Bukti Pembayaran', icon: Receipt },
         ...(enableGameFeatures ? [
             { id: 'gatcha', label: 'Gatcha Game', icon: Gamepad2 },
-            { id: 'quiz', label: 'Quiz Hafalan', icon: Trophy },
+            // "Hafalan" hanya dipakai bila program tahfizh benar-benar berjalan.
+            { id: 'quiz', label: enableTahfizh ? 'Quiz Hafalan' : 'Quiz Kelas', icon: Trophy },
         ] : []),
     ];
 
@@ -83,6 +86,10 @@ const GameConfiguration = () => {
 
                 <TabsContent value="levels" className="animate-in fade-in slide-in-from-bottom-2">
                     <LevelSettings />
+                </TabsContent>
+
+                <TabsContent value="rapor" className="animate-in fade-in slide-in-from-bottom-2">
+                    <RaporPredikatSettings />
                 </TabsContent>
 
                 <TabsContent value="whatsapp" className="animate-in fade-in slide-in-from-bottom-2">
@@ -241,11 +248,15 @@ const QuizSettings = () => {
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
 
-    const defaultQuizData = [
+    // Doa/Surat/Sholat adalah materi program tahfizh. Selama program itu mati,
+    // bank soal dimulai kosong dan diisi sendiri oleh sekolah — dan kategori yang
+    // dihapus benar-benar hilang, tidak dipasang ulang. Lihat QuizHafalanPage.jsx,
+    // yang harus memakai aturan yang sama.
+    const defaultQuizData = enableTahfizh ? [
         { id: 1, label: 'Doa Harian', color: '#3b82f6', items: doaHarian },
         { id: 2, label: 'Surat Pendek', color: '#a855f7', items: suratPendek },
         { id: 3, label: 'Bacaan Shalat', color: '#f59e0b', items: bacaanShalat }
-    ];
+    ] : [];
 
     useEffect(() => {
         const load = async () => {
@@ -316,15 +327,25 @@ const QuizSettings = () => {
     };
 
     const resetToDefaults = () => {
-        if(window.confirm("Reset quiz ke konten standar (Doa, Surat, Sholat)?")) {
+        const pertanyaan = enableTahfizh
+            ? "Reset quiz ke konten standar (Doa, Surat, Sholat)?"
+            : "Kosongkan seluruh bank soal quiz?";
+        if(window.confirm(pertanyaan)) {
             setQuizConfig(defaultQuizData);
-            toast({ title: "Reset Berhasil", description: "Quiz telah direset ke konten standar." });
+            toast({
+                title: "Reset Berhasil",
+                description: enableTahfizh ? "Quiz telah direset ke konten standar." : "Bank soal quiz telah dikosongkan.",
+            });
         }
     }
 
     const addCategory = () => {
         if (!newCategoryName) return;
-        const newId = Math.max(0, ...quizConfig.map(c => c.id)) + 1;
+        // Id yang tersimpan bisa berupa teks ('category-1', 'doa-harian'), dan
+        // Math.max atas teks menghasilkan NaN — dua kategori baru akan berbagi
+        // id NaN yang sama. Hanya id berupa angka yang dihitung.
+        const idAngka = quizConfig.map((c) => Number(c.id)).filter((n) => Number.isFinite(n));
+        const newId = Math.max(0, ...idAngka) + 1;
         setQuizConfig([...quizConfig, { id: newId, label: newCategoryName, color: newCategoryColor, items: [] }]);
         setNewCategoryName('');
     };
@@ -342,7 +363,7 @@ const QuizSettings = () => {
         <div className="game-config-panel game-config-panel--quiz space-y-6">
             <div className="game-config-section-heading">
                 <div>
-                    <h3 className="text-lg font-black flex items-center gap-2"><Sparkles className="w-5 h-5 text-indigo-500" /> Bank Soal Quiz Hafalan</h3>
+                    <h3 className="text-lg font-black flex items-center gap-2"><Sparkles className="w-5 h-5 text-indigo-500" /> Bank Soal {enableTahfizh ? 'Quiz Hafalan' : 'Quiz Kelas'}</h3>
                     <p className="text-sm text-muted-foreground">Kategori dan soal di sini langsung digunakan roda quiz; guru memilih serta menilai murid tanpa RFID.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -362,6 +383,17 @@ const QuizSettings = () => {
                 </Card>
 
                 <div className="md:col-span-2 space-y-4">
+                    {/* Kolom kosong tanpa penjelasan terbaca seperti panel yang
+                        gagal memuat. Roda quiz tidak bisa berputar sampai ada
+                        kategori, jadi keadaan ini perlu dikatakan. */}
+                    {!isLoading && quizConfig.length === 0 && (
+                        <Card>
+                            <CardContent className="py-8 text-center">
+                                <p className="font-bold">Bank soal masih kosong</p>
+                                <p className="mt-1 text-sm text-muted-foreground">Tambahkan kategori di sebelah kiri, lalu isi pertanyaannya. Roda quiz belum bisa dimainkan sebelum ada minimal satu kategori berisi soal.</p>
+                            </CardContent>
+                        </Card>
+                    )}
                     {quizConfig.map(cat => (
                         <Card key={cat.id}>
                             <CardHeader className="pb-2">

@@ -3,6 +3,7 @@ import { createAttendance, fetchAttendance } from '@/lib/attendanceAdapters';
 import { fetchSantriList, fetchSantriByRfid } from '@/lib/dataMasterAdapters';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import useKembali from '@/hooks/useKembali';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Trophy, Crown, Star, Sparkles, CheckCircle } from 'lucide-react';
@@ -14,6 +15,8 @@ import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 const TopScorePage = () => {
     const sekolah = useSchoolIdentity();
     const navigate = useNavigate();
+    // Kembali ke tempat asal penekan; lihat src/hooks/useKembali.js.
+    const kembali = useKembali('/absensi-digital');
     const [students, setStudents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [rfidTag, setRfidTag] = useState('');
@@ -237,7 +240,7 @@ const TopScorePage = () => {
                 <div className="flex items-center justify-between mb-12">
                      <Button
                         variant="ghost"
-                        onClick={() => navigate('/absensi-digital')}
+                        onClick={kembali}
                         className="hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5 mr-2" /> Kembali

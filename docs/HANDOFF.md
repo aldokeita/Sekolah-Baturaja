@@ -1,10 +1,25 @@
 # HANDOFF — Status Migrasi SDN Baturaja
 
-**Diperbarui:** 2026-08-09 · **Branch:** `feat/sederhanakan-tab-konten` · **HEAD:** `6a87a5d`
+**Diperbarui:** 2026-08-19 · **Branch:** `feat/sdnb-migration`
 
-HEAD saat ini berada di `6a87a5d`, dua belas commit di atas `origin/feat/sederhanakan-tab-konten`
-(`60a0fd7`). Branch ini belum di-merge ke `master`; `master` tetap berada di commit `8c80e39`
-pada checkout lokal.
+Pekerjaan berjalan di `feat/sdnb-migration`, dengan dua remote: `origin` (aldokeita) dan
+`upstream` (npdkdev). Branch ini belum di-merge ke `master`.
+
+**Branch ini sebelumnya bernama `feat/vercel-ready`**, diganti pada 2026-08-19 atas permintaan
+pemilik. Proyek ini TIDAK memakai Vercel — tidak pernah; namanya sisa dari produk pendahulu.
+Deployment yang benar: satu VPS, satu domain, Nginx atau Caddy menyajikan `dist/` dan meneruskan
+`/api` ke Go di mesin yang sama. Lihat `SETUP.md`. Seluruh sebutan Vercel di dokumen dan kode sudah
+dicabut, `vercel.json` sudah dihapus, dan `CLAUDE.md` menyatakannya di paragraf pertama supaya tidak
+muncul lagi tiap sesi.
+
+Kalau ada klon lama yang masih memakai nama lama, perbaiki dengan:
+
+```bash
+git fetch --prune origin && git branch -m feat/vercel-ready feat/sdnb-migration && git branch -u origin/feat/sdnb-migration
+```
+
+Dua PR merged (#2, #3) masih menunjuk nama lama di riwayatnya. Itu wajar — GitHub menyimpan catatan
+PR yang sudah merged meski branch-nya dihapus.
 
 Baca file ini lebih dulu sebelum melanjutkan pekerjaan. `git log` menjelaskan *apa* yang berubah;
 file ini menjelaskan *kenapa*, apa yang sudah terbukti jalan, dan apa yang masih berisiko.
@@ -27,6 +42,7 @@ dibongkar tanpa instruksi baru.
 | Modul | Keputusan | Alasan |
 |---|---|---|
 | MMQ | **Dialihfungsikan** jadi "Rapat Guru", bukan dihapus | Sekolah tetap butuh rapat internal guru |
+| **Shift masuk** | **Hanya Pagi & Siang.** Sore, Malam, dan "Pagi 2" dihapus | SD negeri masuk pagi; yang kekurangan ruang kelas membagi rombel jadi dua shift. Sore/Malam adalah jadwal madrasah, tidak pernah terjadi di SD |
 | Pentashih | **Dilabel ulang** jadi "Wakil Kepala Sekolah" | Alur persetujuannya tetap berguna |
 | Hafalan | **Dipertahankan**; rute publik Qiroati dicopot, tapi hafalan tetap hidup di dashboard guru & murid | Sebagian sekolah umum punya program tahfizh |
 | Jilid/Sesi di Data Murid | Filter & kolom dihapus, field tetap ada di balik flag | Jadi isian bebas, bukan dropdown Qiroati |
@@ -372,6 +388,1265 @@ restart dev server manual.
 
 ## 4. Jebakan yang sudah ditemukan
 
+### `X-Total-Count` tidak di-expose CORS — seluruh paginasi lumpuh — SUDAH DIPERBAIKI
+
+Backend mengirim `X-Total-Count`, tapi `corsMiddleware` tidak menyertakan
+`Access-Control-Expose-Headers`. Browser menyembunyikan header itu dari JavaScript, jadi
+`res.headers.get('X-Total-Count')` selalu `null`.
+
+Di `apiClient.js` penjagaannya memperburuk keadaan: `Number(null)` menghasilkan `0`, dan `0` lolos
+`Number.isFinite`, sehingga fallback panjang array **tidak pernah terpakai**. Setiap panel
+berhalaman melaporkan `total = 0`, `totalPages` jatuh ke 1, dan tombol **Berikutnya mati permanen**.
+Baris di halaman kedua ke atas tidak bisa dibuka sama sekali — murid ke-11 benar-benar hilang dari
+panel Data Murid meski ada di basis data.
+
+Terkena: Data Murid, Rekap Absensi Murid, Riwayat Bayar, Pendaftaran SPMB, Log Login.
+
+Dua perbaikan, keduanya diperlukan:
+
+- `backend/main.go` — `Access-Control-Expose-Headers: X-Total-Count`.
+- `src/lib/apiClient.js` — bedakan header hilang dari header bernilai `"0"`; periksa string
+  mentahnya, bukan hasil `Number()`-nya.
+
+Polanya layak diingat: **header respons kustom tidak terbaca lintas asal kecuali di-expose**, dan
+`Number.isFinite` bukan alat untuk mendeteksi nilai yang tidak ada.
+
+### `fetchClassList()` tanpa `includeGuru` mengosongkan kolom guru
+
+`/api/classes` hanya menyertakan data guru bila diminta `include_guru=true`. `SantriManagement`
+memanggilnya tanpa argumen, jadi `cls.guru` selalu `undefined` dan kolom **GURU PENGAMPU** berbunyi
+"Belum ada guru" untuk seluruh murid — padahal wali kelasnya terisi dan Manajemen Kelas
+menampilkannya dengan benar.
+
+Gejalanya menipu karena terlihat seperti data yang belum diisi, bukan permintaan yang kurang lengkap.
+
+### Panel Log Aktivitas Login tidak pernah mencatat apa pun — SUDAH DIPERBAIKI
+
+`recordLoginAttempt` di `src/lib/loginSecurityAdapters.js` diekspor lengkap dengan rate limit di
+sisi backend, tetapi **tidak dipanggil satu berkas pun**. Panelnya hidup dan endpointnya bekerja;
+yang hilang hanya pemanggilnya. Efeknya panel keamanan yang tampak berfungsi padahal isinya beku.
+
+Sekarang `AuthContext.signInWithUsername` memanggilnya di dua cabang: gagal (sebelum melempar error)
+dan berhasil (setelah `apiClient.setTokens`, supaya backend bisa membaca `user_id` dan `role` dari
+Bearer token, bukan dari badan permintaan).
+
+Ikutannya: constraint `login_logs_role_check` hanya mengenal admin/guru/santri/pentashih, sehingga
+sesi `tata_usaha` dan `superadmin` tersimpan dengan role NULL dan tampil "Peran: N/A". Diperluas
+oleh `20260815000700_login_logs_role_lengkap.sql`; daftar di `loginRoleAllowed` (loginlogs.go) harus
+tetap sama persis dengan constraint tersebut.
+
+### Kalender akademik kosong membuat rekap kehadiran salah hitung
+
+`academic_calendar` tidak berisi satu baris pun, jadi 17 Agustus tampil sebagai Hari Efektif.
+Dampaknya bukan kosmetik: `GuruAttendanceRecap` dan Rekap Absensi Murid menurunkan hari efektif dari
+kalender, sehingga setiap libur yang tidak tercatat menaikkan penyebut dan menurunkan persentase
+kehadiran semua orang.
+
+`20260815000800_libur_nasional_tanggal_tetap.sql` menyemai lima libur **bertanggal tetap** untuk
+2026–2030: Tahun Baru Masehi, Hari Buruh, Hari Lahir Pancasila, Hari Kemerdekaan, dan Natal.
+
+Yang **sengaja tidak disemai**: libur yang tanggalnya ditetapkan SKB 3 Menteri tiap tahun — Idul
+Fitri, Idul Adha, Tahun Baru Islam, Maulid Nabi, Isra Mikraj, Imlek, Nyepi, Waisak, Wafat Isa
+Almasih, Kenaikan Isa Almasih, dan seluruh cuti bersama. Tanggalnya mengikuti kalender
+lunar/lunisolar dan baru pasti setelah SKB terbit; menebaknya di migrasi menanam tanggal salah yang
+sulit ditemukan. Sekolah memasukkannya lewat panel Kalender.
+
+### Tidak ada periode ajaran aktif — konsumen ketat diam-diam kosong
+
+Seluruh baris `periode_ajaran` berangkat dengan `is_active = false`. Panel Jadwal Pelajaran
+menutupi keadaan itu karena punya fallback ke periode pertama, jadi pengelola tidak pernah tahu ada
+yang kurang. Konsumen yang menyaring ketat justru kosong terus:
+
+- `TVDisplayPage` panel "Jadwal Hari Ini" mensyaratkan `p.is_active` tanpa fallback — layar lobi
+  selamanya menulis "Tidak ada jadwal untuk hari ini".
+- `ModulNilai`, `ModulKontenKelas`, dan `JadwalSaya` memilih periode aktif lebih dulu; tanpa penanda
+  itu ketiganya bergantung pada urutan baris.
+
+`20260815000900_aktifkan_periode_ajaran.sql` menyalakan satu periode bila belum ada yang aktif, dan
+panel Jadwal kini memasang peringatan bila keadaan itu terulang.
+
+Polanya: **fallback yang ramah di satu panel bisa menyembunyikan keadaan yang mematikan panel lain.**
+
+### Kolom Sesi di Rekap SPP membaca kolom warisan yang sudah dikosongkan
+
+`PaymentRecap` mengambil `santri.sesi_mengaji`. Sejak `20260815000600_santri_sesi_ikut_kelas.sql`
+kolom itu sengaja NULL untuk hampir semua murid, karena shift memang tinggal di kelasnya. Akibatnya
+kolom Sesi kosong melompong. Sekarang panel memuat daftar kelas dan menurunkan shift dari
+`class.sesi`, dengan `sesi_mengaji` tetap didahulukan bila baris muridnya memang mengisi.
+
+Ikutan yang ditemukan bersamaan: `paymentItemsList` di berkas yang sama masih memuat item Qiroati
+(Buku Jilid Pra TK, Buku Jilid 1-6, Gharib & Tajwid) yang tidak pernah lagi muncul di kasir,
+sementara Sarpras dan LKS yang benar-benar dipakai justru tidak terdaftar. Daftar itu harus sejalan
+dengan `paymentItems` di `PaymentSystem.jsx`.
+
+### Pembeli hanya menerima TIGA murid contoh
+
+Dulu `supabase/seed.sql` menyemai delapan murid dan `backend/init/03_dummy_accounts.sql` satu lagi,
+jadi setiap pemasangan baru memberi pembeli sembilan baris contoh yang harus dihapus satu per satu.
+
+Sekarang tepat tiga: dua dari seed (`Murid Contoh Satu`, `Murid Contoh Dua`, keduanya di Kelas 1A)
+dan `Naila Rahmadani` dari `03_dummy_accounts.sql`, yang memegang akun login murid dan ditempatkan
+ke Kelas 2A. Kelas 3A dibiarkan kosong dengan sengaja supaya pembeli melihat tampilan kelas yang
+belum terisi.
+
+Tiga hal yang harus ikut berubah bila jumlahnya diubah lagi:
+
+1. Daftar stub `auth.users` di `backend/init/01_migrate.sh` — ini FK target bagi `user_profiles`,
+   `guru`, dan `santri`. Stub yang tertinggal menyisakan baris `auth.users` tanpa pemilik.
+2. `auth_login_aliases`, `class_memberships`, `attendance`, dan `payments` di seed — semuanya
+   menyebut id murid secara harfiah.
+3. Penempatan Naila ada di `03_dummy_accounts.sql`, BUKAN di seed: seed jalan lebih dulu dan tidak
+   bisa menyebut baris yang belum dibuat. Penempatannya dibungkus `if exists (... classes ...)`
+   supaya pemasangan tanpa seed tetap lolos.
+
+Diverifikasi pada basis data kosong dengan urutan lengkap
+(`00_bootstrap` → migrasi → stub auth → `seed.sql` → `02_auth_columns` → `03_dummy_accounts`):
+tiga murid, semuanya punya kelas, nol baris `auth.users` tanpa pemilik.
+
+### `status_guru` menampung dua kosakata sekaligus
+
+Kolom ini berisi campuran `'Bersertifikat'`/`'Belum Bersertifikat'` (sertifikasi pendidik) DAN
+`'Aktif'`/`'Nonaktif'` (keaktifan kerja) — padahal keaktifan sudah punya kolomnya sendiri,
+`guru.status`. Panel lalu membaca apa pun yang bukan `'Bersertifikat'` sebagai "Belum
+Bersertifikat", sehingga guru bernilai `'Aktif'` tampak belum bersertifikat, dan Administrator serta
+Tata Usaha — yang bukan guru — ikut diberi label itu.
+
+Sekarang: kolom bernama **Sertifikasi**, peran non-mengajar menampilkan `—`, dan nilai di luar
+kosakata sertifikasi tampil `Belum terdata` alih-alih ditebak. Form sertifikasi hanya muncul untuk
+peran `Pengajar`/`Pentashih`, dan nilai bawaannya kosong supaya membuka form tidak mengubah data.
+
+Nilai lama tidak dinormalkan lewat migrasi dengan sengaja: `'Aktif'` tidak memuat informasi
+sertifikasi apa pun, jadi tidak ada yang bisa dipulihkan — sekolah mengisinya sendiri.
+
+### `Progress` mengabaikan `indicatorClassName`
+
+`src/components/ui/progress.jsx` tidak menerima prop itu, jadi `{...props}` menyalurkannya ke elemen
+DOM: warna bilah tidak pernah berlaku dan React memperingatkan setiap render. Satu-satunya pemanggil
+adalah `GuruAttendanceRecap`, yang memakainya untuk mewarnai bilah menurut persentase kehadiran —
+jadi bilahnya selalu berwarna bawaan. Prop-nya sekarang diterima dan digabung ke `Indicator`.
+
+### Kepala Sekolah memakai app_role `pentashih`, dibedakan oleh sebutannya
+
+Setelah dashboard Wakil Kepala Sekolah ditulis ulang jadi panel pengawasan SD (lihat catatan di
+atas), alasan menahan pemetaannya hilang. `getOperationalRoleFromGuruForm` sekarang memetakan peran
+`'Kepala Sekolah'` ke app_role `pentashih` — **bukan** app_role baru.
+
+Alasannya: keduanya mengawasi hal yang persis sama (kehadiran, keterisian kelas, murid yang perlu
+perhatian) dan sama-sama tidak berhak menyunting. Menambah app_role kembar hanya menggandakan
+jumlah tempat yang harus diperiksa ulang di setiap handler Go, dan setiap tempat yang terlewat
+menjadi lubang otorisasi senyap.
+
+Admin dan Tata Usaha tetap didahulukan bila akunnya juga memegang salah satunya.
+
+**Konsekuensi yang harus diingat: `role` saja tidak lagi cukup untuk memberi sebutan.** Kepala
+Sekolah dan wakilnya berbagi satu app_role, jadi setiap tempat yang menerjemahkan peran menjadi
+sebutan harus memakai `isKepalaSekolah` lebih dulu. Sudah dipasang di judul dashboard, kartu profil,
+dan bilah atas. `/api/auth/me` kini ikut mengirim `jabatan` dan `roles` supaya bilah atas punya
+bahan untuk membedakannya — sebelumnya ia hanya menerima `role` dan memanggil kepala sekolah
+"Wakil".
+
+### 'Kepala Sekolah' sebagai sebutan
+
+Struktur sekolah sempat punya Wakil Kepala Sekolah tanpa kepalanya. Peran
+`'Kepala Sekolah'` kini ada di kosakata `guru.roles`, tetapi **tidak** dipetakan ke app_role mana
+pun — `getOperationalRoleFromGuruForm` sengaja tidak menyebutnya. Akun kepala sekolah mengikuti peran
+lain di akunnya (Admin, Tata Usaha, atau Pengajar), sama seperti di sekolah sungguhan kepala sekolah
+tetap guru bersertifikat.
+
+Alasan menahan pemetaan itu: satu-satunya dashboard pengawasan yang ada adalah
+`PentashihDashboard`, dan isinya **masih program Qur'an** — "Penguji & Quality Assurance",
+"pengawasan mutu bacaan", "distribusi tingkat", "calon khotim", distribusi jilid. Mengarahkan kepala
+sekolah dasar umum ke sana akan menyuguhkan materi yang tidak berlaku sama sekali. Keputusan
+dashboard mana yang ia terima belum diambil.
+
+Yang ditentukan peran ini: sebutannya di direktori publik, penanda tangan pada dokumen, dan kutipan
+di halaman Profil. `sebutanStaf` mendahulukan `'Kepala Sekolah'` atas peran lain di akun yang sama —
+tanpa itu `find` mengambil peran mana pun yang lebih dulu tersimpan, sehingga kepala sekolah bisa
+muncul sebagai "Guru". `isKepalaSekolah` juga mengenali dari `jabatan` bebas teks, karena halaman
+Profil publik sudah lama memakai jalur itu dan data sekolah yang sudah terisi tidak boleh berhenti
+dikenali. Wakil kepala sekolah dikecualikan secara eksplisit.
+
+Satu baris kepala sekolah disemai di `03_dummy_accounts.sql`. Tanpa itu kutipan di halaman Profil
+menampilkan **nama sekolah** di tempat nama orang, dan pemasangan pembeli terlihat belum selesai.
+
+Penanda tangan dokumen diubah dari "Wakil Kepala Sekolah" menjadi "Kepala Sekolah" di
+`reportUtils.js` (PDF dan DOCX) serta `SantriDetailModal.jsx` — yang mengesahkan dokumen sekolah
+adalah kepala sekolahnya. Di modal itu sebutannya sempat tercetak dua kali, di baris keterangan dan
+di baris tanda tangan; baris tanda tangan sekarang dikosongkan seperti kolom Orang Tua di sebelahnya.
+
+### Dashboard Wakil Kepala Sekolah ditulis ulang jadi panel pengawasan SD
+
+Isi lamanya adalah panel mutu program Qur'an: "Penguji & Quality Assurance", matriks distribusi
+jilid, pipeline calon khotim & pra-imtihan, dan daftar murid yang lama belum naik jilid. Di sekolah
+dasar umum semuanya tidak berlaku — dan lebih buruk, `levelStats` punya cabang `else dasar++`,
+sehingga **seluruh murid SD yang kolom jilid-nya kosong dilaporkan "Jilid Dasar 100%"**. Angka yang
+salah, bukan sekadar kosakata yang salah.
+
+Sekarang isinya yang benar-benar diawasi seorang wakil kepala sekolah:
+
+- kehadiran hari ini per sekolah dan **per kelas**, dengan wali kelasnya;
+- **murid perlu perhatian** — kehadiran bulan berjalan di bawah 75%, lengkap dengan tautan WA wali;
+- dua peringatan keterisian yang hanya muncul bila memang ada: kelas tanpa wali kelas, dan murid
+  yang belum ditempatkan.
+
+Tiga jebakan yang sudah dibereskan di dalamnya, jangan dibalik lagi:
+
+1. **Baris "tidak hadir" bukan kehadiran.** Admin bisa menandai murid alpa, dan barisnya tetap ada
+   di tabel `attendance`. Tanpa `isExplicitAbsentAttendance` murid yang alpa setiap hari justru
+   terhitung hadir penuh.
+2. **Hitung HARI, bukan BARIS.** Satu murid bisa punya lebih dari satu baris absensi per hari,
+   jadi rekapnya memakai `Set` tanggal.
+3. **Penyebutnya hari efektif kalender akademik**, bukan jumlah hari kalender — akhir pekan dan
+   libur nasional tidak boleh menurunkan persentase siapa pun.
+
+Peran ini tetap **baca saja**: menyunting kehadiran milik admin lewat Rekap Absensi, dijaga
+`CanManage` pada `Update` dan `MarkAbsent`.
+
+### Pentashih boleh membaca absensi seluruh sekolah
+
+`attendance.List` dulu memaku setiap peran di luar `CanManage` ke barisnya sendiri. Pentashih pun
+ikut terkena, padahal ia sudah boleh membaca seluruh kelas beserta rosternya (`classes.go`) dan
+seluruh murid (`santri.go`, policy `santri_pentashih_select`). Akibatnya dashboard pengawasannya
+mustahil dibangun tanpa menaikkannya jadi admin.
+
+Pelebarannya **baca saja** dan hanya untuk peran itu; `Update` dan `MarkAbsent` tetap `CanManage`.
+
+Ikutannya: `/api/attendance` membatasi satu permintaan pada 500 baris dan **tidak** mengirim
+`X-Total-Count`, jadi rentang sebulan untuk seluruh sekolah pasti terpotong diam-diam bila diambil
+sekali jalan. Rekap lintas sekolah wajib lewat `fetchAllAttendance`, yang menyusuri halaman sampai
+halaman pendek — bukan lewat `fetchAttendance` dengan limit besar.
+
+### Rapor dicetak dari HTML, bukan jsPDF
+
+Laporan lain di `src/utils/reportUtils.js` disusun dengan jsPDF. Rapor **tidak**, dan bedanya
+disengaja: rapor harus memakai identitas sekolah termasuk **warna** pilihan pembeli, dan warna itu
+hidup sebagai properti CSS (`--sekolah-aksen*`) yang dipasang `applySchoolIdentity`. Menyusunnya di
+jsPDF berarti menyalin palet ke JavaScript dan menjaga dua sumber warna tetap sama; dengan HTML rapor
+ikut berganti warna sendiri begitu pembeli mengubah identitasnya. Diperiksa di browser: gradasi
+lambang terbaca `linear-gradient(135deg, rgb(100,112,255), rgb(229,143,196))` — tepat
+`accentColor`/`accentColor2`, bukan heks yang ditulis di CSS.
+
+**Lembarnya dirender DUA kali, dan itu bukan kelalaian.** Satu di dalam dialog sebagai pratinjau,
+satu lewat portal ke anak LANGSUNG `body` (`#rapor-cetak-root`) sebagai salinan yang benar-benar
+dicetak. Alasannya: dialog Radix hidup di portalnya sendiri di akhir `body`, dan lembarnya belasan
+tingkat di dalamnya — aturan cetak harus menebak seluruh rantai pembungkus. Dengan akar sendiri di
+`body`, aturannya cukup satu baris: `body > *:not(#rapor-cetak-root) { display: none }`.
+
+Salinan cetak disembunyikan lewat class `.rapor-hanya-cetak`, **bukan** style inline: style inline
+mengalahkan `@media print` kecuali dipaksa `!important`.
+
+`print-color-adjust: exact` dipasang pada lambang dan latar baris tabel. Tanpa itu banyak browser
+membuang latar berwarna saat mencetak, dan lambang bergradasi menjadi teks putih di kertas putih.
+
+Angka yang tercetak diambil dari sumber yang menjadi acuannya — `nilai/summary` dan
+`attendance/recap` — bukan dari tabel rapor tersendiri. Menyalinnya berarti dua angka yang bisa
+berselisih, dan yang tercetak di rapor adalah yang paling tidak boleh salah.
+
+### Catatan wali kelas: HANYA catatannya yang disimpan
+
+`rapor_catatan` (migrasi `20260816000100`) menyimpan satu catatan per murid per periode, dijaga
+`UNIQUE (santri_id, periode_id)` — tanpa itu menyimpan dua kali menghasilkan dua baris dan rapor
+mencetak salah satunya tanpa aturan.
+
+**Nilai dan kehadiran sengaja TIDAK ikut disimpan.** Keduanya tetap dibaca dari `nilai/summary` dan
+`attendance/recap` setiap kali rapor disusun. Menyalinnya ke tabel rapor akan membuat rapor yang
+dicetak ulang berbeda dari data sekolah yang sebenarnya.
+
+Hak tulisnya **lebih sempit** daripada hak baca, dan itu disengaja: catatan rapor adalah penilaian
+pribadi wali kelas, jadi guru mata pelajaran yang kebetulan mengajar di kelas yang sama tidak boleh
+menimpanya. Menulis = wali kelas murid itu + back-office. Membaca = itu semua, plus pengawas dan
+murid yang bersangkutan.
+
+Diuji: tata usaha menulis **200** dan isinya kembali utuh saat dibaca; murid menulis catatan murid
+lain **403**; murid membaca catatan murid lain **403**; murid membaca catatannya sendiri **200**.
+
+Mengosongkan kotak catatan memanggil jalur **DELETE**, bukan menyimpan string kosong — kolomnya
+punya `CHECK (btrim(catatan) <> '')`, jadi menyimpan kosong akan ditolak dan mengosongkan catatan
+terasa gagal tanpa sebab.
+
+### Rapor dinamai "Laporan Kemajuan Belajar", bukan "Rapor"
+
+Riset `docs/51-riset-rapor-resmi-kemendikdasmen.md` menegakkan dua hal dari sumber primer:
+Kemendikdasmen **punya** aplikasi rapor resmi (e-Rapor SD 2025.1, aplikasi lokal, tersambung
+Dapodik), dan pemakaiannya **tidak wajib** — Permendikbudristek 21/2022 tidak menyebut aplikasi apa
+pun, dan Pasal 8 ayat (5) mengakui "rapor **atau bentuk laporan hasil Penilaian lainnya**".
+
+Konsekuensinya untuk produk ini: cetakan kita **sah** sebagai laporan hasil belajar, tetapi **bukan**
+keluaran sistem Kemendikdasmen — dan tidak boleh terbaca seolah-olah begitu.
+
+- Judul lembar memakai **"Laporan Kemajuan Belajar"**, istilah Pasal 8 ayat (1) itu sendiri. Jangan
+  menggantinya menjadi "Rapor", "e-Rapor", atau apa pun yang mengesankan afiliasi.
+- Kaki lembar memuat penafian: dokumen ini terbitan sekolah, rapor resmi mengikuti mekanisme yang
+  ditetapkan sekolah. Penafian itu melindungi sekolah sekaligus produk.
+
+**Jangan membangun integrasi Dapodik.** Web service-nya berjalan lokal di komputer sekolah,
+versinya berganti tiap tahun, dan tidak ada API publik yang stabil untuk pihak ketiga.
+
+### Dua belas komponen minimal BSKAP sudah dipenuhi
+
+Panduan Pembelajaran dan Asesmen BSKAP (Edisi Revisi Ke-3, Juli 2025, hlm. 66) menyebut dua belas
+komponen minimal rapor. Semuanya kini ada di lembar cetak; tiga terakhir ditambahkan oleh migrasi
+`20260816000200`:
+
+| # | Komponen | Sumber |
+|---|---|---|
+| 1–6 | Identitas murid, satuan pendidikan, kelas, semester, mata pelajaran, nilai | sudah ada |
+| 7 | Deskripsi Capaian Kompetensi | `rapor_deskripsi_mapel`, per mata pelajaran |
+| 8 | Deskripsi Capaian Kokurikuler | kolom baru `rapor_catatan.deskripsi_kokurikuler` |
+| 9 | Kegiatan ekstrakurikuler | kolom baru `rapor_catatan.ekstrakurikuler` |
+| 10–11 | Ketidakhadiran, Catatan Wali Kelas | sudah ada |
+| 12 | Tanggapan Orang Tua/Wali | **kotak kosong**, tidak disimpan |
+
+Komponen 12 sengaja tidak punya isian: pada rapor kertas kolom itu ditulis tangan wali murid.
+
+Tambahan: **Fase** (A–F) di kepala rapor, diturunkan dari angka pada nama kelas. Nama kelas tanpa
+angka membuat barisnya **disembunyikan**, bukan ditebak.
+
+Dua jebakan basis data yang sudah dibereskan di migrasi itu:
+
+1. `rapor_catatan.catatan` **tidak lagi NOT NULL**. Murid bisa punya catatan ekstrakurikuler tanpa
+   catatan wali kelas; batasan lama menolak baris semacam itu. Diganti
+   `rapor_catatan_ada_isinya` — setidaknya satu dari tiga kolom terisi.
+2. Kolom narasi menyimpan **NULL** untuk "belum diisi", bukan string kosong. String kosong membuat
+   batasan di atas menganggap barisnya tetap terisi.
+
+Menyimpan deskripsi mata pelajaran memakai **satu transaksi untuk seluruh peta**, bukan satu
+permintaan per mata pelajaran: guru mengisi semuanya dalam satu duduk, dan penyimpanan satuan
+membuat sebagian tersimpan ketika koneksi putus di tengah.
+
+Nama tabel `rapor_catatan` **dipertahankan** meski isinya kini lebih dari catatan. Menggantinya
+memutus data tersimpan demi nama yang lebih rapi — pertukaran yang tidak sepadan.
+
+### Cetak rapor sekelas: konteks bersama diambil sekali
+
+`fetchRapor` untuk satu murid memanggil sembilan endpoint, empat di antaranya
+mengembalikan jawaban yang **sama untuk setiap murid**: daftar periode, daftar kelas, daftar guru,
+dan konfigurasi predikat. Memanggilnya berulang untuk 28 murid berarti 28× daftar kelas dan 28×
+daftar guru.
+
+Karena itu `fetchKonteksRapor()` dipisahkan dan `fetchRapor` menerimanya sebagai argumen ketiga.
+`fetchRaporKelas` mengambil konteks **sekali**, lalu tiap murid hanya menambah empat permintaan
+miliknya sendiri.
+
+Pengambilannya **berkelompok lima**, bukan `Promise.all` atas seluruh kelas: melepas seratus lebih
+permintaan serentak membuat peramban mengantre sendiri — lebih lambat, dan kegagalannya sulit
+dibaca.
+
+Murid yang gagal dimuat **tidak menggagalkan seluruh kelas**; ia dikembalikan dengan `gagal: true`
+dan namanya disebut di dialog. Mencetak 26 dari 28 rapor tanpa memberi tahu dua yang hilang adalah
+kegagalan senyap.
+
+Pemisah halaman memakai `break-before: page` **dan** `page-break-before: always`. Yang kedua bukan
+duplikasi sia-sia — mesin cetak lama hanya mengenal properti lama itu.
+
+Dialog sekelas sengaja **baca saja**. Menyunting 28 rapor dalam satu layar mengundang salah tulis
+pada murid yang salah; pengisian tetap lewat dialog per murid, yang kini punya navigasi antarmurid.
+
+Navigasi itu **meminta persetujuan** bila masih ada isian yang belum disimpan — berpindah murid
+sambil membuang pekerjaan orang tanpa peringatan adalah kegagalan yang sama seperti kehilangan
+catatan dulu.
+
+### Rentang predikat rapor bisa diatur sekolah
+
+Bawaannya A≥90 / B≥80 / C≥70 / D, kebiasaan umum SD Indonesia — tetapi setiap sekolah menetapkan
+KKM-nya sendiri, jadi angkanya tidak boleh tinggal sebagai konstanta. Tersimpan pada kunci
+app-config `rapor_predikat` (sudah ditambahkan ke `validConfigKeys` di `appconfig.go`; kunci di luar
+allowlist ditolak saat tulis), disunting di Konfigurasi → Predikat Rapor.
+
+`normalisasiPredikat` mengurutkan daftar **menurun** menurut `min` dan memaksa ambang terbawah ke 0.
+Keduanya syarat, bukan kerapian: `predikatDari` mengambil `find` pertama yang ambangnya terlampaui,
+jadi daftar yang tersimpan menaik akan memberi predikat TERENDAH kepada setiap nilai, dan tanpa
+ambang nol ada rentang skor yang jatuh tanpa predikat.
+
+Diuji dari ujung ke ujung: dengan ambang diubah menjadi 85/75/60, nilai 88.33 berpindah dari B ke A
+dan 78.67 dari C ke B, termasuk baris rata-rata keseluruhan.
+
+### `attendance/recap` tidak memeriksa hak akses apa pun — SUDAH DIPERBAIKI
+
+Endpoint ini menerima `user_id` mana pun dari siapa pun yang sudah masuk, lalu mengembalikan seluruh
+riwayat kehadiran orang itu. Seorang murid bisa membaca riwayat murid lain. Terlewat karena
+penjagaan lain di berkas yang sama (`List`, `Update`, `MarkAbsent`) sudah ada, sehingga `Recap`
+tampak ikut terjaga.
+
+Aturannya sekarang sama dengan `List`: back-office dan pengawas melihat semua, guru melihat murid
+yang diajarnya dan dirinya sendiri, sisanya hanya dirinya sendiri. Diuji: murid meminta rekap murid
+lain menerima **403**, rekapnya sendiri **200**.
+
+Ikutannya, `guruTeachesSantri` diangkat menjadi fungsi paket di `santri.go` dan metodenya sekarang
+memanggilnya. Dua salinan aturan "guru mana boleh melihat murid mana" akan berselisih begitu salah
+satunya disunting.
+
+### Judul halaman publik WAJIB lewat `JudulHalaman`
+
+Sembilan halaman publik dulu menulis judulnya sebagai teks mati —
+`<title>Prestasi — Sekolah Dasar Negeri Baturaja</title>`. Header halamannya benar karena membaca
+identitas, tapi judulnya tidak; dan justru judul itu yang keluar dari situs: tab peramban, penanda
+buku, hasil pencarian, dan pratinjau tautan saat dibagikan. Pembeli yang sudah mengganti nama
+sekolahnya tetap menyebarkan nama sekolah CONTOH.
+
+`src/components/sdnb/JudulHalaman.jsx` menyusunnya dari `useSchoolIdentity`. Dibuat sebagai komponen,
+bukan sekadar hook yang dipasang di tiap halaman, supaya susunan judulnya ada di **satu** tempat —
+menyalin polanya ke sembilan berkas mengundang salinan kesepuluh yang lupa. `{sekolah}` di dalam
+`deskripsi` diganti nama sekolah.
+
+**Halaman publik baru jangan memakai `<Helmet><title>` langsung.**
+
+### Angka di halaman publik tidak boleh punya nilai contoh
+
+`HomePage` dulu memulai dengan `useState({ siswa: 624, guru: 34 })` dan menyimpan hasilnya sebagai
+`siswa || 624`. `||` menyala pada **nol yang sah**, bukan hanya saat gagal — jadi sekolah yang baru
+memasang dan belum memasukkan murid memasang klaim "624 siswa" dan "34 guru" di halaman depannya.
+
+Sekarang: `null` berarti belum termuat, `0` berarti benar-benar nol. Kartu statistik menampilkan
+tanda pisah selagi `null`, dan baris jumlah murid di hero disembunyikan sampai angkanya didapat.
+Kalimat "Enam ratus lebih anak belajar di sini setiap hari" ikut dicabut dari paragraf hero, dan
+nama sekolah di paragraf itu kini diambil dari identitas.
+
+Aturannya: **jangan pernah memasang bilangan contoh sebagai nilai awal atau fallback untuk angka
+yang seharusnya datang dari data sekolah.** Teks contoh boleh — pembeli menyuntingnya, dan sudah
+jelas itu teks. Angka contoh terbaca sebagai fakta.
+
+### Klaim sekolah di halaman depan kini disunting pembeli
+
+Badge akreditasi dan dua kartu statistik terakhir (persentase lulusan, jumlah prestasi) dulu ditanam
+di kode `HomePage`. Keduanya **fakta per-sekolah tanpa sumber data**, jadi setiap salinan yang
+terjual memasang capaian sekolah CONTOH sebagai capaiannya sendiri — dan pembeli tidak punya cara
+mengubahnya.
+
+Sekarang di `home_content` kunci `badge` dan `stats`, disunting di Konten → Halaman Depan.
+
+**Kosong berarti disembunyikan, bukan jatuh ke bawaan.** Aturan ini sama seperti daftar wilayah SPMB
+dan sengaja berbeda dari blok lain di berkas yang sama: sekolah yang belum terakreditasi tidak boleh
+dipaksa menampilkan akreditasi sekolah contoh. Karena itu `badge` dan `stats` **tidak** memakai
+`normalizeBlok` — fungsi itu memulihkan bawaan saat isinya kosong. Yang dibedakan adalah `undefined`
+(kunci belum pernah disimpan → bawaan benar) dari kosong (pilihan sekolah).
+
+Baris statistik menyusut sendiri: kolom gridnya `2 + jumlah stats`. Dua kartu pertama — murid dan
+guru — datang dari endpoint hitungan dan **tidak** boleh masuk daftar yang disunting.
+
+Diuji dari ujung ke ujung: mengosongkan badge dan menyisakan satu statistik membuat badge hilang dan
+baris menyusut dari empat kolom ke tiga, dengan penghitung tetap benar.
+
+### Berita dan pengumuman contoh disemai sebagai DRAF
+
+Seed dulu menerbitkan "Berita Demo" dan "Pengumuman Demo" berisi "Excerpt … dummy" dengan status
+`published`, sehingga halaman `/berita` setiap pembeli langsung menayangkan dua artikel omong kosong
+kepada calon orang tua murid — dan ikut muncul di halaman depan.
+
+Tetap disemai, bukan dihapus: tanpa satu baris pun panel Berita terlihat rusak pada pemasangan baru
+dan pembeli tidak punya contoh bentuk isian. Yang berubah **statusnya menjadi `draft`**, jadi tidak
+tampil di halaman publik sampai sekolah menerbitkannya sendiri, dan judulnya kini berbunyi seperti
+petunjuk ("Contoh berita sekolah").
+
+### Hasil periksa angka di empat halaman publik sisanya
+
+Pertanyaannya: mana angka yang bersumber data, mana yang tertanam dan tidak bisa diubah pembeli.
+
+| Halaman | Hasil |
+|---|---|
+| Program | **Bersih.** Diturunkan dari daftar program + `content.stats` (disunting) |
+| Ekstrakurikuler | **Bersih.** Seluruhnya diturunkan dari daftar kegiatan yang disunting |
+| Prestasi | **Bersih.** Diturunkan dari daftar prestasi + `content.stats` (disunting) |
+| Fasilitas | **Bercacat** — sudah diperbaiki, lihat di bawah |
+
+Daftar fasilitasnya sendiri sudah bisa disunting (kunci `facilities`, panel Konten → Fasilitas);
+array `F` di `FacilitiesPage` hanya cadangan saat CMS kosong. Yang bercacat adalah dua hal lain.
+
+**Baris ringkasan** memuat empat angka mati: 4200 m² luas lahan, 12 ruang kelas, 10 ruang penunjang,
+24 guru dan staf — fakta sekolah CONTOH, tidak bisa diubah pembeli. Tiga kini diturunkan: ruang kelas
+dan guru dari endpoint hitungan, ruang penunjang dari daftar Fasilitas yang disunting sekolah.
+Kartu yang angkanya belum didapat disembunyikan, bukan ditampilkan nol.
+
+**"Luas lahan" kini field `landArea` di Identitas Sekolah**, sejajar dengan alamat dan jam layanan.
+Bukan brand field, jadi pembeli boleh mengisinya sendiri. Dikosongkan berarti kartunya hilang —
+sekolah yang tidak mencatat luas lahannya tidak dipasangi angka karangan. Disimpan sebagai teks
+supaya "4.200" dan "4200" sama-sama diterima.
+
+**Baris ringkasan itu dirancang mockup untuk latar GELAP, padahal halamannya terang.** Teksnya `#fff`
+dan garis pemisahnya `rgba(255,255,255,.16)` — nyaris tidak terbaca, dan pemisahnya tidak terlihat
+sama sekali. Cacat ini sudah ada sejak awal, hanya tersamar selagi barisnya penuh empat kolom.
+Sekarang barisnya memakai panel kaca yang sama dengan baris statistik Beranda, dengan warna teks
+nada gelap.
+
+**Jumlah kolomnya mengikuti jumlah kartu** (`kolomRingkas`). Sebelumnya dipaku `repeat(4,1fr)` di
+markup, jadi begitu satu kartu hilang tersisa kolom kosong dan garis pemisah menggantung.
+
+**Judul "Sepuluh perhentian"** juga tertanam, sementara daftar di bawahnya mengikuti fasilitas milik
+sekolah — sekolah dengan tiga ruang tetap dijuduli sepuluh. Kini mengikuti jumlah sebenarnya.
+
+### `prefers-reduced-motion` tidak boleh ikut menyembunyikan informasi
+
+`useSdnbMotion` dulu keluar lebih awal ketika pengunjung meminta lebih sedikit gerakan. Masalahnya,
+angka pada markup ditulis `<span data-count="624">0</span>` — nolnya teks nyata, dan animasinyalah
+yang menggantinya. Tanpa animasi angka itu tinggal nol selamanya: halaman depan mengaku punya
+"0 Siswa aktif", "0 Guru", "0% Lulusan". Terkena tujuh halaman.
+
+Sekarang jalur itu menulis nilai akhirnya langsung, tanpa animasi. Yang dikurangi **gerakannya**,
+bukan informasinya. Diuji dengan `matchMedia` yang ditambal: seluruh penghitung menampilkan angka
+benar tanpa digulir sama sekali.
+
+### Penghitung angka mati bila halaman dibuka lewat klik menu — SUDAH DIPERBAIKI
+
+Cacat kedua pada mekanisme yang sama, dan lebih luas daripada yang pertama. `useSdnbMotion`
+memantau tiap `[data-count]` dengan `IntersectionObserver`. Saat halaman dibuka lewat **klik menu**
+alih-alih muat ulang, data susulan tiba sesudah pemantauan dimulai, React mengganti simpul yang
+sama, dan yang dipantau menjadi simpul buangan. Simpul penggantinya berisi `0` bawaan markup dan
+tidak pernah disentuh lagi.
+
+Akibatnya seluruh situs publik menampilkan nol kepada pengunjung yang menjelajah secara wajar:
+"0 program berjalan" tepat di atas daftar enam program, "0 Tahun berdiri", "0 m² luas lahan",
+"0 ruang kelas". Muat ulang halaman menampilkan angka yang benar — itulah sebabnya cacat ini lolos
+berkali-kali: setiap pemeriksaan sebelumnya dilakukan dengan navigasi langsung ke URL.
+
+Perbaikannya: simpul yang sudah dipantau ditandai `__dc`, dan sebuah penjaga memindai ulang tiap
+350 ms selama 8 detik pertama. Simpul pengganti tidak membawa penanda itu, jadi terambil sebagai
+baru. Penjaga berhenti sendiri agar tidak ada timer yang hidup selamanya.
+
+**Cara mengujinya harus lewat klik tautan**, bukan `navigate()` ke URL — jalur muat ulang tidak
+pernah menunjukkan cacat ini.
+
+### Grid halaman publik tidak boleh mematok jumlah kolom
+
+Markup halaman publik diturunkan dari mockup, dan mockup selalu digambar dengan barisnya penuh —
+umumnya empat kartu. Begitu isinya milik sekolah sungguhan jumlahnya bebas, dan kolom yang dipaku
+menyisakan lubang di kanan, kadang lengkap dengan garis pemisah yang menggantung.
+
+Ditemukan nyata di tiga tempat: mozaik ruang di Fasilitas (satu kartu di dalam grid 4×2), baris chip
+di Kontak (tiga chip karena WhatsApp dikosongkan), dan album di Galeri (dua album). Pola yang sama
+ada di belasan tempat lain dan hanya kebetulan tidak terlihat karena datanya pas.
+
+`src/lib/gridKolom.js` menyediakan dua penolong: `kolomUntuk(jumlah, maks)` untuk grid biasa dan
+`kapasitasKolom(lebar, maks)` untuk mozaik, yang menghitung kapasitas dari lebar tiap kartu. Untuk
+mozaik, lebar kartu juga harus dipangkas ke jumlah kolom — kartu `span 2` di dalam grid satu kolom
+akan melebar keluar.
+
+Aturannya: **setiap grid yang isinya berasal dari data sekolah wajib memakai salah satu penolong
+ini.** Yang boleh tetap mematok kolom hanyalah grid yang isinya struktural, misalnya lima hari kerja.
+
+### Tiker dan angka ringkasan Profil boleh dikosongkan sampai habis
+
+`normalizeDaftar` di `profileContent.js` memulihkan bawaan setiap kali daftar tersimpan kosong,
+supaya halaman tidak bolong. Untuk blok naratif itu benar. Untuk **tiker** dan **angka ringkasan**
+itu salah: isinya klaim tentang sekolah — "Terakreditasi A", "Adiwiyata Nasional", "1966",
+"18 rombongan belajar" — dan bawaannya milik sekolah contoh. Sekolah yang menghapusnya mendapatkan
+capaian sekolah lain kembali terbit sebagai capaiannya sendiri, tanpa cara mematikannya.
+
+Keduanya kini lewat `normalizeKlaim`, yang membedakan `undefined` (kunci belum pernah disimpan,
+bawaan memang benar) dari `[]` (pilihan sekolah, dihormati). ProfilePage menyembunyikan seluruh
+baris statistik dan seluruh tikernya ketika kosong, bukan menyisakan panel atau dua garis tanpa isi.
+
+Sejalan dengan `badge` dan `stats` di `homeContent.js`, yang sudah memakai aturan ini lebih dulu.
+
+### Warna aksen tidak boleh dipakai langsung sebagai teks kecil
+
+Warna aksen dipilih sekolah untuk gradasi, tombol, dan judul besar — di sana ia memang harus terang.
+Dipakai sebagai teks 11–13px di atas latar terang, warna yang sama gagal ambang keterbacaan: aksen
+bawaan hanya mencapai rasio **3.56** dari 4.5 yang diminta WCAG AA, dan itu terjadi di hampir setiap
+halaman karena semua label kecil memakainya.
+
+Menurunkan warna aksennya sendiri bukan jawaban — itu mengubah merek sekolah di mana-mana. Palet
+sekarang punya satu turunan khusus, `--sekolah-aksen-teks`: rona dan kejenuhan **persis sama** dengan
+`--sekolah-aksen-pekat`, hanya terangnya diturunkan bertahap sampai lolos ambang terhadap latar
+terang paling gelap yang dipakai halaman publik (#e9edf6). Untuk biru bawaan turunnya hanya 5 poin
+dan mata hampir tidak membedakannya; untuk kuning terang turunnya besar, dan itu memang konsekuensi
+memilih warna terang, bukan tanda hitungannya salah. Diuji dengan enam warna termasuk kuning dan
+putih.
+
+**Aturannya:** `color:` memakai `--sekolah-aksen-teks`; gradasi, latar, garis, dan `WebkitTextStroke`
+tetap memakai `--sekolah-aksen-pekat`. Nilai bawaannya juga tertulis di `:root` `src/index.css` —
+kalau STOP_PALET berubah, samakan keduanya, dan uji pertama di `schoolIdentity.test.js` menguncinya.
+
+### Abu-abu redup halaman publik dinaikkan, abu-abu dashboard TIDAK
+
+Enam nada abu di markup mockup gagal ambang di atas latar terang: `#9aa1d8` (2.12), `#8a8ea8` (2.75),
+`#7b80a4` (3.28), `#70759a` (3.81), `#6d7192` (4.05), `#6b7093` (4.10), ditambah `#6a6f95`, `#7b7fa0`,
+dan `#6c718f` yang menyusul. Semuanya diringkas ke dua nada yang lolos dan tetap menjaga urutan
+terang-gelapnya: **`#63678a`** (4.67) untuk label, dan **`#5f6389`** (4.93) untuk teks pendamping.
+
+Yang **tidak** disentuh: `src/styles/sdnb-dashboard.css` dan `src/styles/admin-dashboard.css`. Nada
+yang sama di sana duduk di atas permukaan **gelap**, jadi angka kontrasnya justru bagus —
+menggelapkannya akan merusak yang sudah benar. Warna redup selalu harus dinilai bersama latarnya,
+bukan sendirian.
+
+Satu pengecualian disengaja: `#6a6f95` pada baris hero Profil berukuran 34px. Teks besar hanya
+butuh 3.0 dan ia sudah 4.18, jadi menggelapkannya cuma mengubah desain tanpa manfaat.
+
+Diperiksa dengan pemindai kontras yang dijalankan sambil menggulir seluruh halaman: **dua belas
+halaman publik, nol pelanggaran** pada permukaan yang bisa diukur. Teks di atas foto dan gradasi
+dilewati pemindai — itu harus dinilai dengan mata.
+
+### Gulungan tidak pernah kembali ke atas saat pindah halaman — SUDAH DIPERBAIKI
+
+`src/components/ScrollToTop.jsx` sudah lama ada di repositori tapi **tidak pernah dipasang**: App
+hanya mengimpor `ScrollToTopButton`, yang namanya mirip tapi pekerjaannya lain (tombol melayang di
+pojok). Akibatnya setiap perpindahan di dalam aplikasi membawa posisi gulungan halaman sebelumnya —
+pengunjung yang menggulir ke tengah Beranda lalu menekan menu "Program" mendarat di tengah halaman
+Program, melewati judul dan pembukanya.
+
+Sekarang dipasang di dalam `<Router>`, dengan dua tambahan:
+
+- **Ulangi sekali pada bingkai berikutnya.** Animasi "muncul saat digulir" mengubah tinggi bagian
+  sesaat setelah cat pertama, dan penjangkaran gulungan bawaan peramban kadang menggeser posisi
+  kembali ke bawah. Tanpa pengulangan ini hasilnya tidak menentu — kadang 0, kadang 347.
+- **Tautan berjangkar diantar, bukan dipaksa ke atas.** `/#faq` sebelumnya tidak bergerak ke mana
+  pun: peramban hanya menangani jangkar saat memuat dokumen, dan tidak ada yang menanganinya pada
+  perpindahan di dalam aplikasi. Bagiannya dicari beberapa kali karena isinya bisa datang belakangan.
+  `.sdnb section[id]` diberi `scroll-margin-top: 104px` supaya judul bagiannya tidak tertutup bilah
+  navigasi yang menempel.
+
+Cacat ini hanya terlihat lewat **klik tautan**. Membuka URL langsung selalu benar.
+
+### Beranda dan halaman Berita tidak boleh saling membantah
+
+Beranda memasang tiga kartu berita karangan lengkap dengan tanggal ketika sekolah belum menerbitkan
+apa pun, sementara halaman Berita di menu yang sama berkata "Belum ada berita". Situs yang sama
+membantah dirinya sendiri, dan yang dipasang di halaman pertama adalah berita yang tidak ada.
+
+`NEWS_FALLBACK` diganti nama menjadi `NEWS_STYLE` supaya perannya jelas: ia HANYA memasok warna
+sampul, warna label kategori, dan teks pengganti untuk artikel yang tidak punya ringkasan sendiri.
+Ia tidak lagi menjadi isi cadangan. Kosong tetap kosong, dan kata-kata keadaan kosongnya disalin
+persis dari halaman Berita.
+
+`newsStatus` dibedakan dari daftar kosong: selagi memuat, "Belum ada berita" belum tentu benar, jadi
+yang tampil "Memuat kabar terbaru…". Deretan pil kategori ikut disembunyikan saat kosong — kategori
+di atas tulisan "Belum ada berita" terbaca seperti halaman rusak.
+
+#### Pil kategori beranda kini penyaring sungguhan — SUDAH DIPERBAIKI
+
+Ketiga pil itu dulu `<span>` mati berlabel tetap "Semua / Prestasi / Kegiatan": menekannya tidak
+melakukan apa-apa, dan labelnya tidak ada hubungannya dengan kategori yang benar-benar dipakai
+sekolah. Sekarang:
+
+- Labelnya **diturunkan dari berita terbitan**, sama seperti halaman Berita (`NewsPageCms.jsx`
+  memakai pola yang sama). Tidak ada daftar kategori yang ditulis di kode.
+- `fetchPublishedNews` di beranda mengambil **12**, bukan 3. Menarik tepat tiga membuat pilihan
+  kategorinya menyusut sampai tak ada gunanya; yang ditampilkan tetap tiga teratas setelah disaring.
+- Deretannya disembunyikan bila `newsCategories.length <= 2`, yaitu bila seluruh berita berada di
+  satu kategori. "Semua" dan satu kategori menyaring kumpulan yang sama persis — tombol yang tidak
+  pernah mengubah apa pun kembali menjadi hiasan.
+- Kategori yang dipilih diperiksa ulang terhadap daftar yang ada (`kategoriAktif`). Tanpa itu,
+  berita yang dimuat ulang bisa menghapus kategori pilihan dan beranda menampilkan nol kartu.
+
+**Jebakan mode gelap yang memakan waktu di sini, catat sebelum menyentuh pil mana pun.** Pil
+terpilih memakai gradien aksen, dan di mode gelap gradiennya HILANG — pil terpilih tak lagi berbeda
+dari yang lain. Penyebabnya dua aturan di `sdnb.css`:
+
+1. `[style*="linear-gradient"][style*="rgba(255"] { background: transparent !important }` — dipasang
+   untuk mencabut sorot putih hiasan. Pil itu cocok bukan karena gradiennya, melainkan karena
+   `box-shadow`-nya memuat `inset 0 1px 0 rgba(255,255,255,.5)`. **Dua pola dalam satu atribut
+   `style` yang sama sudah cukup; keduanya tidak perlu berada di properti yang sama.**
+2. `[style*="color: rgb(255, 255, 255"] { color: inherit !important }`.
+
+Sorot putih itu kini dicabut dari gaya pilnya (pada tinggi 30px memang tak terlihat), dan aturan
+`.sdnb-news-pill--on` memasang kembali gradien dan teks putihnya. Kelasnya **digandakan tiga kali**
+karena aturan (1) memakai `:not()`, sehingga kekhususannya (0,6,2) — satu kelas tunggal kalah, dan
+gejalanya membingungkan: `color` menang sementara `background` kalah.
+
+**Terukur, bukan diperkirakan:** teks putih di atas gradien aksen hanya **3.96** (`--sekolah-aksen`)
+sampai **2.32** (`--sekolah-aksen-ujung`). Itu di bawah 4.5 dan **berlaku untuk seluruh tombol
+ajakan bersampul gradien di situs ini**, bukan pil ini saja — tombol hero 14.5px termasuk. Pemindai
+kontras yang dipakai pada sapuan-sapuan sebelumnya melewati latar gradien, jadi angka nol
+pelanggarannya tidak pernah mencakup permukaan ini.
+
+**Keputusan pemilik: dibiarkan seperti sekarang.** Menaikkannya berarti menggelapkan palet aksen
+sekolah dan mengecat ulang setiap ajakan di situs, dan tampilan yang sekarang sudah disetujui. Jadi
+jangan "memperbaiki" angka ini tanpa diminta — dan jangan pula melaporkannya lagi sebagai temuan
+baru pada sapuan kontras berikutnya. Bila palet aksennya suatu hari diubah, `--sekolah-aksen-teks`
+dan `--sekolah-aksen-teks-gelap` di `src/lib/schoolIdentity.js` sudah menjamin ≥4.5 untuk aksen
+**sebagai teks**; yang tidak dijamin adalah kebalikannya, teks putih **di atas** aksen.
+
+### Label kolom login harus sesuai dengan yang diterima backend — SUDAH DIPERBAIKI
+
+`resolveUser` di `backend/internal/handler/auth.go` mencari murid lewat nomor induk (atau nama
+panggilan), lalu pegawai lewat **email**. Tidak ada jalur NIP dan tidak ada jalur nama pengguna.
+Padahal tab Guru meminta "Nomor induk pegawai" dengan contoh `198703142009`, dan tab Tata usaha
+meminta "Nama pengguna" dengan contoh `tu.baturaja`. Keduanya warisan mockup, dan keduanya membuat
+pegawai yang menuruti labelnya **selalu ditolak** — dua dari lima peran tidak bisa masuk.
+
+Keduanya kini berbunyi "Email" dengan contoh `nama@example.sch.id`. Domain contohnya sengaja netral
+supaya tidak menyodorkan alamat sekolah tertentu sebagai milik pembeli.
+
+Tab peran itu **tidak membatasi** siapa yang boleh masuk — peran sebenarnya ditentukan backend. Ia
+hanya memberi tahu apa yang harus diisi, jadi labelnya wajib jujur.
+
+### Dashboard Murid: empat cacat yang ditemukan lewat pemeriksaan langsung
+
+Semuanya di `src/components/dashboard/SantriDashboard.jsx`.
+
+1. **Satu layar, dua jawaban.** Kartu profil menyebut hari ini "Belum Absen", sementara daftar di
+   bawahnya menyebut hari yang sama **"Alpha"** — tuduhan bolos, padahal jam sekolahnya bisa jadi
+   belum mulai. Keduanya kini memakai kalimat yang sama.
+2. **Status absensi diringkas jadi "Hadir".** Absensi mengenal Hadir, Terlambat, Izin, dan Sakit,
+   tapi daftar teman sekelas menuliskan keempatnya "Hadir" karena hanya memeriksa ada-tidaknya
+   catatan. Sekarang statusnya dipakai apa adanya. Diuji dengan menyisipkan satu catatan Izin: kartu
+   profil dan daftar sama-sama berbunyi "Izin".
+3. **Kolom dipaku empat.** Baris Poin/Level/Sesi memakai `sm:grid-cols-4` padahal isinya tiga saat
+   program tahfizh dimatikan, jadi tersisa satu kotak kosong. Sekarang `auto-fit`, yang melipat
+   jalur tak terpakai — keluarga cacat yang sama dengan grid halaman publik, lihat `gridKolom.js`.
+4. **Kosakata yang salah sasaran.** Judul panelnya "Manajemen Kelas & Absensi Hari Ini" di layar yang
+   dibaca murid dan orang tuanya, padahal tidak ada yang bisa mereka kelola di sana. Menjadi "Teman
+   Sekelas & Kehadiran Hari Ini". Kartu "Sesi" juga hanya tampil bila ada isinya, dan `jilid` teman
+   sekelas hanya tampil bila tahfizh dinyalakan.
+
+Kartu "Sesi" kini **dicabut**, bukan disembunyikan. Sekolah dasar hanya punya satu giliran belajar,
+jadi nilainya selalu "Pagi": sebuah kartu yang tidak pernah membedakan apa pun. Nilainya sendiri
+masih dihitung — `sessionName` tetap dipakai modal absensi, yang memang perlu mencatat sesi
+kehadiran, jadi jangan ikut mencabut variabelnya.
+
+Barisnya memakai `grid-template-columns: repeat(auto-fit, minmax(130px,1fr))`, jadi kolomnya
+menyusut sendiri. Terukur setelah dicabut, dengan tahfizh mati: dua kartu (Poin, Level) dan
+`"284px 284px 0px 0px"` — dua jalur 0px itu implisit dan wajar, bukan kotak kosong menggantung.
+
+### Sandi akun demo pegawai bisa menyimpang dari yang didokumentasikan
+
+Sandi di basis data pengembangan lokal pernah tidak lagi cocok dengan nilai yang tertulis di
+`backend/init/03_dummy_accounts.sql`, sehingga login guru gagal padahal akunnya aktif. Berkas init
+hanya dijalankan saat kontainer pertama kali dibuat, jadi perubahan sesudahnya tidak ikut kembali.
+
+Untuk menyetel ulang satu akun demo (JANGAN dipakai untuk admin atau superadmin — sandi keduanya
+milik penjual dan tidak boleh ada di berkas mana pun):
+
+```sql
+update public.guru
+set password = extensions.crypt('guru123', extensions.gen_salt('bf', 12))
+where email = 'guru@sdnbaturaja.sch.id';
+```
+
+Memastikan sebuah sandi cocok tanpa menampilkannya:
+
+```sql
+select email, (password = extensions.crypt('<sandi>', password)) as cocok from public.guru;
+```
+
+### Pagar `enableTahfizh` harus dipasang di SELURUH jalan masuk, bukan sebagian
+
+`VITE_ENABLE_TAHFIZH` sudah menutup tombol Setoran Muroja'ah di `GuruDashboard.jsx`, lengkap dengan
+komentar yang menjelaskan alasannya — tapi dua jalan masuk lain di berkas dan komponen yang sama
+terlewat, sehingga sekolah dasar umum tetap mendapat perangkat sekolah Qur'an:
+
+- Tabel murid di dashboard guru: kolom **Jilid** (dengan tombol naik/turun jilid) dan kolom
+  **Hafalan** (Doa, Sholat, Surat, Tahfizh).
+- `SantriDetailModal.jsx` sama sekali tidak punya pagarnya: "Tingkat Saat Ini", "Terakhir Naik
+  Tingkat", tombol "Naik Tingkat"/"Turun", dan lencana "N Hari di tingkat …". CLAUDE.md menyebut
+  saklar ini menutup "kolom Tingkat berikut riwayatnya", jadi modal ini memang termasuk.
+
+Semuanya kini dipagari. Datanya tetap utuh; yang disembunyikan hanya jalan masuknya.
+
+**Saat menambah apa pun yang menyebut jilid, tingkat, hafalan, atau muroja'ah, pasang pagarnya di
+tempat yang sama.** Cacat ini muncul dua kali karena pagarnya dipasang per-tombol, bukan per-modul.
+
+Ketiga kalinya adalah **halaman kuis**, dan di sana pagarnya harus dipasang pada SUMBER DATA, bukan
+pada tampilan. `QuizHafalanPage.jsx` punya tiga sumber kategori soal, dan dua di antaranya milik
+program tahfizh:
+
+| Sumber | Pemilik | Dipagari? |
+|---|---|---|
+| `quiz_hafalan_config` (Konfigurasi Game) | sekolah, disunting sendiri | tidak — selalu dipakai |
+| `hafalan_items` (tabel) | program tahfizh (Doa/Surat/Sholat/Tahfizh) | ya |
+| `doaHarian`/`suratPendek`/`bacaanShalat` (`src/data/islamicContent.js`) | program tahfizh | ya |
+
+Selama `VITE_ENABLE_TAHFIZH=false`, bank soal dimulai **kosong** dan halaman mengatakannya
+("Belum ada kategori soal…"), bukan mengisi diri dengan doa dan surat yang tidak diminta sekolah
+umum. Judul yang dibaca orang ikut berubah — "Quiz Kelas", bukan "Quiz Hafalan" — di tiga tempat:
+judul dokumen, judul di kepala halaman, dan tab Konfigurasi Game. **Nama rutenya tetap
+`/quiz-hafalan`**: tautan yang sudah tersebar tidak boleh mati.
+
+#### `requiredCategories` membuat penghapusan oleh administrator tidak pernah berlaku
+
+Cacat kedua di jalur yang sama, dan lebih halus. `QuizHafalanPage.jsx` **dan**
+`GameConfiguration.jsx` sama-sama memasang ulang Doa Harian / Surat Pendek / Bacaan Shalat bila
+ketiganya tidak ditemukan di konfigurasi tersimpan. Akibatnya administrator bisa menghapus sebuah
+kategori, menekan Simpan, memuat ulang — dan kategori itu kembali. Tombol hapusnya bekerja; yang
+membatalkannya adalah kode di kedua sisi.
+
+Sekarang daftar itu hanya wajib selama tahfizh menyala. Diuji sampai tuntas di basis data lokal:
+tambah kategori "Perkalian" berisi satu soal, simpan, muat ulang → hanya "Perkalian" (tanpa
+Doa/Surat/Sholat menyusup); hapus, simpan, muat ulang penuh → tetap kosong.
+
+`addCategory` di panel itu juga memakai `Math.max(0, ...ids)` atas id yang bisa berupa teks
+(`'category-1'`, `'doa-harian'`), yang menghasilkan `NaN` — dua kategori baru akan berbagi id `NaN`
+yang sama. Kini hanya id berupa angka yang dihitung.
+
+### Tata letak Modal Detail Murid: opsi C, dipilih pemilik
+
+Pemilik menolak tampilan lama dan memilih **opsi C — kartu berkelompok, satu alur** dari tiga
+rancangan yang diajukan. Jangan menatanya ulang jadi tab atau kolom menempel tanpa diminta:
+
+- **Tab (opsi A) ditolak dengan alasan yang terukur.** Guru memakai modal ini untuk MENCARI satu
+  fakta, bukan membacanya berurutan. Menaruh data orang tua di tab lain membuat nomor HP — isi yang
+  paling sering dicari — jadi satu klik lebih jauh.
+- **Kolom ringkasan menempel (opsi B) ditolak** karena memakan 190px lebar; sisa ruangnya tinggal
+  dua kolom isi, dan di layar 13 inci terasa sempit. Satu hal dari B tetap diambil: nomor HP ikut ke
+  baris kepala.
+
+Susunannya, dan urutannya disengaja: kepala modal (nama + kelas + nomor induk + status + tingkat +
+nomor HP dalam satu baris) → tombol → **berkas** → **orang tua dan kontak** → **identitas murid** →
+tingkat mengaji. Kontak mendahului identitas karena lebih sering dipakai daripada tempat lahir.
+
+**Berkas hanya boleh ada di SATU tempat.** Versi pertama rancangan ini memuat daftar yang kurang di
+panel peringatan lalu mengulanginya di kartu kelengkapan — daftar yang sama dua kali, dan modalnya
+bertambah 98px tanpa memberi tahu apa pun yang baru. Sekarang satu blok memuat keempat berkas, dan
+yang berubah hanya bingkainya: kuning berikut jumlah yang kurang bila ada, kartu biasa bila lengkap.
+
+Tinggi isinya 1484px, naik dari 1392px sebelum penataan. Itu ditukar dengan empat bagian berjudul
+dan satu panel yang menuntut tindakan; sebelumnya 20 label berbobot sama tanpa satu pun judul
+kelompok. Jangan "memperbaiki" angka ini dengan menghapus judul kartunya.
+
+Keadaan berkas TIDAK boleh disampaikan lewat warna saja — tiap pil membawa ikon centang atau silang
+plus teks `sr-only`. Kontras terukur di kedua tema, dengan latar semi-transparan ditumpuk lebih dulu:
+label 7.58 dan 7.40, nilai 14.63 dan 17.33, judul peringatan 8.75 dan 14.99.
+
+### Modal Detail Murid tidak bisa tahu nama kelas sendiri
+
+Baris murid yang dipegang dashboard guru hanya membawa `current_class_id`, dan endpoint detail murid
+juga begitu — tidak ada nama kelas di mana pun yang bisa dibaca modal. Akibatnya modal menulis
+"Kelas: -" untuk murid yang di layar yang sama terdaftar di Kelas 4A, dan yang di tab Komunikasi
+Wali juga tertulis Kelas 4A.
+
+Yang tahu namanya adalah pemanggilnya, karena daftar murid memang dikelompokkan per kelas. Jadi
+`openDetailModal(santri, cls)` menitipkan `className`. Pemanggil lain yang membuka modal ini
+sebaiknya melakukan hal yang sama selama endpointnya belum mengembalikan nama kelas.
+
+### `/quiz-hafalan` ada halamannya tapi tidak pernah didaftarkan — SUDAH DIPERBAIKI
+
+`src/pages/QuizHafalanPage.jsx` lengkap dan berfungsi, tapi rutenya tidak ada di `App.jsx`. Tombol
+"Play Quiz" di dashboard guru dan di layar absensi digital karena itu membuang penekannya ke halaman
+publik tanpa isi — bukan ke pesan kesalahan, melainkan navbar dan footer dengan badan kosong.
+
+Kini terdaftar dengan `operationalDisplayRoles`: kuis dijalankan guru untuk muridnya dan gurulah
+yang memberi poin, jadi murid tidak termasuk. Diuji: murid yang memaksa membuka `/quiz-hafalan`
+dipantulkan kembali ke dashboardnya.
+
+Sengaja **di luar** pagar `enableGameFeatures` — ini alat mengajar, bukan permainan hadiah seperti
+Gatcha, dan pemilik template memutuskan guru selalu boleh memakainya.
+
+### Alamat tak dikenal menghasilkan halaman kosong — SUDAH DIPERBAIKI
+
+Rute penampung di `App.jsx` membungkus halaman publik di dalam `PublicLayout`, tapi di dalamnya
+tidak ada penampung terakhir. Alamat yang tidak cocok dengan satu pun rute menghasilkan navbar di
+atas, footer di bawah, dan **tidak ada apa-apa di antaranya** — pengunjung tidak diberi tahu bahwa
+ia salah alamat, dan tidak diberi jalan keluar.
+
+`src/pages/NotFoundPage.jsx` mengisi tempat itu, memakai gaya halaman publik dan `JudulHalaman`
+supaya judul tabnya ikut nama sekolah pembeli. Alamat yang diminta ikut ditampilkan supaya pengunjung
+bisa mengenali salah ketiknya sendiri dan sekolah punya sesuatu untuk disebut saat dilapori.
+
+### Judul tab: hidrasi identitas menimpa judul halaman
+
+`App.jsx` menyelaraskan `document.title` dengan nama sekolah setiap kali identitas berubah. Hidrasi
+itu selesai **sesudah** Helmet menulis judul halaman, jadi baris itu menimpanya. Di sebagian besar
+halaman Helmet menulis ulang sesudahnya sehingga tidak pernah terlihat — kebetulan, bukan rancangan.
+Di halaman yang tidak menulis ulang, judulnya jatuh kembali ke nama sekolah saja; itulah cara cacat
+ini akhirnya terlihat, lewat halaman 404 yang baru.
+
+Sekarang penimpaan hanya terjadi bila judul yang ada memang judul yang ditulis App sendiri (atau
+judul statis dari `index.html`). Begitu sebuah halaman memasang judulnya sendiri, App mundur.
+
+### Modul permainan menyala secara bawaan — KEPUTUSAN, bukan cacat
+
+Pemilik template memutuskan modul permainan **tetap menyala secara bawaan**. Pembeli yang tidak
+menginginkannya menulis satu baris di `.env`:
+
+```
+VITE_ENABLE_GAME_FEATURES=false
+```
+
+Sesudah itu tombol Play Gatcha dan Acak Nama hilang dari dashboard guru maupun layar absensi, dan
+rutenya berganti menjadi halaman "fitur ditunda". **Play Quiz tetap ada** — ia di luar pagar itu
+secara sengaja, karena alat mengajar, bukan permainan hadiah.
+
+Jangan mengubahnya menjadi mati-secara-bawaan tanpa keputusan baru dari pemilik template.
+
+### `enableGameFeatures` menyala secara BAWAAN
+
+`featureFlags.js` menulis `VITE_ENABLE_GAME_FEATURES !== 'false'` — jadi modul permainan **aktif
+kecuali dimatikan secara eksplisit**, kebalikan dari `enableTahfizh` dan `enableDeferredFeatures`
+yang mati kecuali dinyalakan. Mudah salah baca, dan pernah salah dibaca: tombol Gatcha di dashboard
+guru sempat disangka "tampil padahal saklarnya mati", padahal saklarnya memang menyala.
+
+Tombol Gatcha dan Acak Nama di `GuruDashboard.jsx` memang belum mengikuti saklarnya sama sekali —
+`DashboardWorkspace.jsx` sudah, jadi dashboard guru yang menyimpang. Sekarang keduanya ikut. Diuji
+dua arah: dengan `VITE_ENABLE_GAME_FEATURES=false` hanya "Play Quiz" yang tersisa.
+
+**Play Quiz sengaja DI LUAR pagar itu**, di dashboard guru maupun di layar absensi digital. Ia alat
+mengajar yang selalu boleh dipakai guru, bukan permainan hadiah — keputusan pemilik template. Di
+layar absensi ia dulu ikut di dalam pagar, jadi mematikan permainan ikut mencabut kuisnya.
+
+### Rekap kehadiran dimulai dari tanggal murid masuk kelas — SUDAH DIPERBAIKI
+
+Rekap menyisir seluruh hari aktif dalam sebulan dan memperlakukan setiap hari tanpa catatan sebagai
+tidak hadir. Masuk akal untuk murid yang memang sudah di kelas, keliru untuk murid pindahan: hari
+sebelum ia tiba ikut dihitung bolos. Satu murid yang baru masuk kelas langsung berbunyi **92,3%
+tidak hadir**.
+
+`class_memberships.start_date` sudah lama ditulis saat mutasi tapi **tidak pernah dikembalikan
+endpoint mana pun**, jadi frontend tidak punya cara mengetahuinya. `Detail` di `santri.go` kini
+mengembalikannya sebagai `class_start_date`, diambil lewat LATERAL join dari keanggotaan yang
+berstatus aktif.
+
+Dipakai tanggal **PINDAH**, bukan tanggal pertama kali murid masuk sekolah — keputusan pemilik
+template. Murid yang pindah kelas di tengah bulan memulai rekap bulan itu dari tanggal pindahnya.
+
+Dua layar ikut: `SantriAbsensiRecap` memulai jendelanya dari tanggal itu, dan matriks kehadiran di
+`SantriDetailModal` memberi hari sebelum itu keadaan tersendiri — "Belum masuk kelas ini", bukan
+libur dan bukan pula bolos — serta mengeluarkannya dari hitungan Tidak Hadir.
+
+Diuji dengan murid yang masuk 12 Agustus: matriks menandai 1–11 sebagai belum masuk, 12–14 sebagai
+Tidak Hadir, dan totalnya turun dari 12 menjadi 3.
+
+Efek sampingnya: bulan tanpa satu pun hari belajar (murid pindah di akhir bulan, atau bulan yang
+libur seluruhnya) dulu berbunyi "0% kehadiran" — kabar buruk padahal tidak ada yang diukur. Sekarang
+tanda hubung. **0% yang sungguhan tetap 0%**, yaitu murid yang punya hari belajar tapi tidak hadir
+sekali pun.
+
+Rapor **tidak** terpengaruh, dulu maupun sekarang: ia memakai ringkasan per status dari backend, yang
+hanya menghitung baris yang benar-benar ada, jadi hari tanpa catatan tidak pernah menjadi alpa di
+sana.
+
+### "Sabtu ikut dihitung" bukan cacat — periksa `academic_calendar_month_settings` dulu
+
+Rekap yang menghitung Sabtu sebagai hari belajar mudah disangka salah. Bawaan sistemnya sudah benar
+(`DEFAULT_SATURDAY_IS_HOLIDAY = true`), tapi sekolah bisa menetapkan lain **per bulan** lewat
+`academic_calendar_month_settings`. Basis data pengembangan ini punya baris untuk Agustus 2026
+dengan `saturday_is_holiday = false`, jadi 13 hari belajar (1–16 Agustus dikurangi hari Minggu)
+memang benar.
+
+Sebelum melaporkan hitungan hari belajar sebagai cacat, periksa tabel itu untuk bulan yang
+bersangkutan.
+
+### Tombol kembali jangan menebak asalnya — pakai `useKembali`
+
+Halaman alat bantu — kuis, gatcha, acak nama, papan skor, mode TV — bisa dibuka dari lebih dari satu
+tempat: dashboard guru, layar absensi digital, atau URL langsung. Kelimanya dulu menulis tujuan
+tombol kembalinya mati, umumnya `/absensi-digital`, karena dulu memang hanya dari sana. Begitu
+tombolnya muncul juga di dashboard guru, guru yang menekannya dari dashboard terlempar ke layar
+absensi — bukan kembali ke tempat ia tadi.
+
+`src/hooks/useKembali.js` menanganinya: `navigate(-1)`, dengan penjaga `useLocation().key !==
+'default'`. Nilai `'default'` hanya muncul pada entri PERTAMA riwayat peramban — halaman dibuka lewat
+URL langsung, tab baru, atau muat ulang — dan di situ `navigate(-1)` akan membuang penekan keluar
+aplikasi, jadi tujuan cadangan yang dipakai.
+
+**Halaman baru yang bisa dicapai dari lebih dari satu tempat wajib memakai hook ini**, bukan menulis
+tujuannya sendiri. Diuji dari dashboard, dari layar absensi, dan lewat URL langsung.
+
+### ENAM aturan cetak, dulu saling meniadakan — SUDAH DIPERBAIKI
+
+Aplikasi ini punya **enam** jalur cetak yang masing-masing perlu menyapu seluruh halaman. Dua berkas
+CSS yang selalu termuat, empat `<style>` sebaris di dalam komponen:
+
+| Sumber | Sasaran yang diselamatkan |
+|---|---|
+| `rapor-cetak.css` | `#rapor-cetak-root` (lembar rapor sekelas) |
+| `cetak-bukti.css` | `.bukti-cetak` (bukti pendaftaran, rekap SPMB) |
+| `PaymentSystem.jsx` | `#receipt-content` (kuitansi pembayaran) |
+| `PaymentProofModal.jsx` | `#payment-proof-content` (bukti bayar) |
+| `PentashihDashboard.jsx` | `#pengawasan-cetak` (laporan pengawasan sekolah) |
+| `SantriDetailModal.jsx` | `#rapor-akademik-cetak` (rapor akademik & karakter) |
+
+Empat yang pertama sudah ada aturannya tapi tanpa pagar, jadi saling membunuh. Yang paling gawat:
+PaymentSystem merender PaymentProofModal, jadi keduanya selalu terpasang bersamaan di panel
+Pembayaran, dan aturan modal memakai `!important` sementara aturan kuitansi tidak — **kuitansi
+pembayaran keluar kosong**.
+
+Dua yang terakhir sebaliknya: isinya sudah lama disiapkan untuk dicetak (puluhan kelas `print:`)
+tapi tombolnya memanggil `window.print()` **polos**, tanpa aturan apa pun yang menyingkirkan
+cangkang di luarnya — yang keluar seluruh layar beserta bilah navigasi dan menu.
+
+Keenamnya kini memakai pola yang sama. **Setiap jalur cetak baru WAJIB dipagari `:has()` pada
+sasarannya sendiri, pengecualiannya ikut dipagari, dan barisnya ditambahkan ke tabel ini.**
+
+Keduanya berlaku bersamaan dan masing-masing membunuh cetakan yang lain: rapor tercetak **kosong**
+karena disembunyikan aturan bukti, dan bukti pendaftaran tercetak **kosong** karena seluruh
+leluhurnya disembunyikan aturan rapor. Halamannya tetap keluar — jumlahnya benar, isinya tidak.
+
+**Kenapa lolos bertahun-tahun:** di server pengembangan Vite hanya memuat CSS milik halaman yang
+pernah dibuka, jadi keduanya jarang bertemu dalam satu sesi. `npm run build` menggabungkan seluruh
+CSS jadi **satu berkas**, sehingga di produksi keduanya SELALU aktif bersamaan. Cacat yang hampir
+tidak mungkin terlihat saat dikembangkan, dan selalu terjadi pada pembeli.
+
+Perbaikannya: tiap aturan penyapu dipagari `:has()` sehingga hanya berlaku bila sasarannya benar-benar
+ada di halaman. `#rapor-cetak-root` selalu ada di DOM tapi kosong selama dialog tertutup, jadi yang
+diperiksa isinya (`:has(#rapor-cetak-root .rapor-lembar)`), bukan keberadaannya.
+
+**Jebakan yang muncul saat memperbaikinya, dan hampir lolos lagi:** `:has()` mewarisi bobot
+argumennya, jadi `body:has(.bukti-cetak) *` berkekuatan (0,1,1) sedangkan pengecualian `.bukti-cetak`
+hanya (0,1,0) — kalah, meski keduanya `!important`. Sebelum dipagari, penyapunya cuma `body *`
+(0,0,1) sehingga pengecualian polos masih menang. **Memasang pagar tanpa menaikkan bobot
+pengecualiannya justru membuat bukti tercetak kosong.** Pengecualiannya kini ikut dipagari.
+
+**Cara mengujinya tanpa mencetak sungguhan:** salin kedua blok `@media print` ke sebuah `<style>`
+sementara tanpa media query, lalu baca `getComputedStyle().visibility` pada wadah rapor dan blok
+bukti. `visibility: hidden` bersama `display: block` adalah tanda khas halaman kosong yang tetap
+keluar dari mesin cetak.
+
+### Menguji aturan cetak: awas transisi CSS
+
+Cara mengujinya tanpa mencetak sungguhan ada di bagian sebelumnya — salin aturannya ke `<style>`
+sementara tanpa media query, lalu baca `getComputedStyle().visibility`.
+
+**Beri jeda minimal 300 ms sebelum membaca.** Elemen ber-`transition-all` (banyak tombol memakainya,
+mis. `.school-shine-button`) menahan nilai lamanya selama transisi berjalan, dan transisi menang atas
+`!important` di kaskade. Membaca setelah 80 ms memberi "visible" untuk elemen yang sebenarnya sudah
+tersembunyi — kesimpulan salah yang tampak seperti kegagalan kaskade.
+
+### Cetak rapor sekelas sudah diuji pada beban sebenarnya
+
+28 murid dalam satu kelas: **1,0 detik**, 145 panggilan ke server, semuanya berhasil, 56 lembar
+terbentuk (28 pratinjau + 28 salinan cetak), tanpa error konsol dan tanpa murid yang gagal.
+Pemuatan berkelompok lima-lima di `fetchRaporKelas` bekerja seperti rancangannya. Beban bukan
+masalah; yang bermasalah hanya stylesheet cetaknya di atas.
+
+### Style inline mengalahkan aturan sembunyi — periksa dengan `getComputedStyle`
+
+Bilah navigasi publik punya aturan `@media (max-width: 940px) { .nav-login { display: none } }`
+sejak lama, lengkap dengan komentar yang menjelaskan maksudnya. Aturannya **tidak pernah berlaku**:
+tombol-tombolnya memasang `display` lewat `style` inline (warisan markup mockup), dan style inline
+mengalahkan aturan stylesheet biasa. Akibatnya di layar 375px bilahnya meluber sampai 509px —
+tombol Dashboard, Keluar, dan Daftar SPMB terpotong di tepi kanan, satu huruf menggantung.
+
+Halaman tidak ikut menggulir mendatar karena terpotong pembungkusnya, jadi cacat ini tidak terlihat
+dari lebar dokumen. **Yang membuktikannya `getComputedStyle(el).display`, bukan keberadaan
+aturannya di berkas CSS.**
+
+Sekarang ketiganya memakai `!important`, dan tombol Keluar diberi kelas `nav-login` yang tadinya
+tidak ia punya. Ketiganya tetap ada di dalam menu hamburger.
+
+### Baris penyaring dashboard: `auto-fit`, bukan tiga kolom tetap
+
+`.admin-filter-selects` dipaku `repeat(3, 1fr)` padahal beberapa panel hanya punya satu penyaring —
+satu kotak selebar sepertiga baris dengan dua petak kosong di kanannya, paling kentara di ponsel
+tempat kotaknya menciut jadi 95px. Keluarga cacat yang sama dengan grid halaman publik (lihat
+`src/lib/gridKolom.js`) dan baris statistik dashboard murid.
+
+### Mode gelap dashboard: warna warisan hitam-di-atas-hitam — SUDAH DIPERBAIKI
+
+`.sdnb-dash` memasang `color: #1b1c28` sebagai heks mati. Warna itu diwarisi **setiap** teks
+dashboard yang tidak memasang warnanya sendiri, dan di mode gelap ia tetap hitam di atas latar
+hitam: nama murid, judul kartu, dan angka rekap mencapai rasio **1.01** — praktis tidak terlihat.
+
+Aturan pembalik mode gelap yang sudah ada hanya menyasar kelas Tailwind tertentu
+(`[class~="text-slate-800"]` dan kawan-kawan), jadi teks yang tidak punya kelas warna sama sekali
+tidak pernah tersentuh. Sekarang `.sdnb-dash` memakai `hsl(var(--admin-text-primary))`, yang
+tokennya sudah punya nilai gelap dan terang.
+
+**Perbaikan kontras mode terang WAJIB diperiksa ulang di mode gelap — keduanya bergerak ke arah
+berlawanan.** Nada gelap yang menyelamatkan lencana status di mode terang justru menjatuhkannya ke
+2.80 di mode gelap; tautan WA hijau tua turun ke 2.58; turunan baca aksen turun ke 2.91. Ketiganya
+kini punya pasangan mode gelapnya sendiri.
+
+Warna yang dipasang lewat **style inline** tidak bisa ikut berganti tema. Untuk itu nilainya
+dititipkan ke properti kustom (`--avatar-inisial`) yang didefinisikan dua kali, satu per tema.
+
+### Mode gelap halaman publik: DUA mekanisme, satu hidup satu mati
+
+Ini sumber kebingungan yang mahal, jadi catat baik-baik.
+
+**Yang MATI:** tujuh aturan `filter: invert(...)` yang ditulis sebagai
+`.sdnb-<halaman> .th-content`. Susunan aslinya terbalik — `.th-content` dipasang PublicLayout
+sebagai **leluhur** kelas halaman, bukan keturunannya — jadi ketujuhnya tidak pernah berlaku sekali
+pun. Sudah dicabut.
+
+**Yang HIDUP:** blok besar di bagian bawah `sdnb.css` yang bekerja dengan **selektor atribut**:
+
+```css
+html[data-theme="dark"] body .sdnb.sdnb [style*="background: rgba(255"] { background: var(--sdnb-dark-surface) !important }
+html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(27, 28, 44"]  { … }
+```
+
+Ia mencocokkan **teks literal atribut `style`**. Permukaan kaca putih dijadikan permukaan gelap,
+dan warna teks sebaris tertentu dinormalkan. Inilah mode gelap publik yang sesungguhnya, dan ia
+memang direncanakan.
+
+**Konsekuensi penting untuk pekerjaan warna:** begitu warna teks sebaris diganti menjadi
+`var(--sdnb-teks-…)`, atribut `style` tidak lagi memuat `color: rgb(...)`, sehingga aturan
+pencocokan atribut itu **berhenti cocok**. Penamaan token dan aturan `[style*=…]` mengurus hal yang
+sama, jadi tokennya harus punya nilai gelap sendiri — dan sekarang punya. Aturan
+`[style*="color: rgb(...)"]` yang menyasar nada yang sudah ditokenkan kini menjadi mati; dibiarkan
+karena masih ada warna sebaris dekoratif yang memakainya, tapi jangan dijadikan acuan.
+
+**Jangan** menambahkan token "teks di atas putih" yang tidak ikut berganti tema: permukaan putih itu
+**ikut dijadikan gelap** oleh aturan di atas, jadi teks di atasnya memang harus ikut menjadi terang.
+Ini sempat dicoba dan salah.
+
+### Mode gelap dashboard: setiap perbaikan mode terang perlu pasangannya
+
+Sapuan mode gelap pada keempat dashboard menemukan enam kegagalan, dan **lima di antaranya adalah
+perbaikan mode terang dari sapuan sebelumnya** yang menjadi terlalu gelap di latar gelap. Ini pola,
+bukan kebetulan — catat sebagai aturan kerja:
+
+> **Menurunkan terang sebuah warna untuk mode terang hampir selalu merusaknya di mode gelap.
+> Ukur kedua tema sebelum menyatakan selesai.**
+
+Yang diperbaiki, semuanya dengan menaikkan terang tanpa mengubah rona:
+
+| tempat | mode terang | mode gelap | sebelum |
+|---|---|---|---|
+| garis grafik pengeluaran | `#b91c1c` | `#f87171` | 2.71 |
+| huruf awal avatar kartu guru | `#1d4ed8` / `#be185d` | `#93c5fd` / `#f9a8d4` | 2.80 |
+| huruf awal avatar kepala sekolah | `text-purple-700` | `dark:text-purple-300` | 2.68 |
+| keadaan kosong Manajemen Kelas | `text-slate-600` | `dark:text-slate-300` | 2.47 |
+| status "Belum absen" murid | `text-gray-600` | `dark:text-gray-300` | 2.41 |
+| angka tanggal kalender murid | `text-slate-600` | `dark:text-slate-300` | 3.13 |
+
+Satu temuan bukan warisan: label `text-primary` di Pengaturan TV. Di mode gelap `--primary`
+dipetakan ke `--admin-accent` (72% terang) dan sebagai teks di atas kartu hanya mencapai 4.34.
+**Jangan pakai `text-primary` untuk teks di atas kartu** — pakai `--admin-aksen-teks`, yang bernilai
+turunan baca aksen di mode terang dan 78% terang di mode gelap (5.05).
+
+Nilai grafik dipasang lewat token karena Recharts memakai warna `stroke` **untuk garisnya DAN untuk
+teks legendanya**, jadi warna garis harus lolos ambang teks, bukan ambang garis.
+
+### Teks di atas foto dan gradasi: mata, bukan pemindai
+
+Pemindai kontras **melewati** teks yang latarnya foto atau gradasi — latarnya bukan warna tunggal,
+jadi tidak ada satu angka yang bisa dibandingkan. Bagian ini harus diperiksa dengan mata, dan
+sekali diperiksa hasilnya begini.
+
+**Yang benar-benar gagal, dan sudah diperbaiki:**
+
+Panel ajakan SPMB (Beranda, Profil, formulir SPMB) memakai gradasi pastel dengan tulisan putih.
+Terukur di ketiga titik sapuannya, di ujung pink: judul 38px **1.95**, paragraf 15px **1.81**,
+tombol sekunder **1.72** — dari 3.0 dan 4.5 yang diminta. Ronanya dipertahankan, nadanya dipertua
+(`--sdnb-ajakan`), dan tombol sekundernya memakai lapisan tinta gelap alih-alih putih 18%
+(`--sdnb-ajakan-tombol`). Sekarang 5.99–6.73 dan 8.26–8.89.
+
+Hero Fasilitas: bagian **tengah** kerudung fotonya paling tipis (34%) — dan justru di situ eyebrow
+dan label "Perhentian" duduk. Dengan foto halaman sekolah yang terang, putih hanya 2.38 dan eyebrow
+violet pucat 1.33. Tengahnya dinaikkan ke 62% dan eyebrow-nya dijadikan `#e6e8ff`: 5.67 dan 4.69,
+sementara foto gelap tetap 18.83 — jadi foto gelap tidak dirugikan.
+
+**Cara mengujinya:** data contoh kebetulan memakai foto gelap, yang menyembunyikan cacat ini.
+Ganti sementara latar `.kb` dengan gradasi terang (`#f6f7fb`→`#fdfdff`) untuk menirukan foto
+halaman sekolah pukul sepuluh siang. Itu kasus terburuk yang akan diunggah pembeli.
+
+**Yang dibiarkan, sudah dinilai memadai:**
+
+- Huruf bergradasi "percaya diri" (40px): ujung pink-nya melemah dan titik akhirnya nyaris hilang,
+  tapi bentuk hurufnya jelas dan kata-kata awal kalimatnya hitam.
+- "20 Agustus 2026" kuning pucat di atas violet: 2.89 dari 3.0 — nyaris, dan nyaman dibaca.
+
+**Angka bisa MENIPU di sini.** Kalkulator yang memilih titik warna gradasi melaporkan gagal untuk
+hal yang jelas terbaca: tombol putih di atas panel navy (1.04), daftar penghargaan di kartu putih
+beku (2.32), kartu Galeri (2.32). Dua sebabnya: latar harus dihitung mulai dari elemen ITU SENDIRI
+(bukan induknya, kalau tidak tombol putih diukur terhadap panel di belakangnya), dan permukaan
+transparan harus **dikomposit**, bukan diambil titik warnanya. Untuk latar bergradasi, komposit
+setiap titik sapuan lalu ambil yang terburuk — dan tetap konfirmasi dengan mata.
+
+### Ponsel × mode gelap: satu temuan, dan itu memang harus diperiksa sendiri
+
+Kombinasi lebar × tema harus disapu sebagai kombinasi, bukan satu-satu. Sapuan 375px mode gelap
+menemukan satu hal yang tidak muncul di tiga kombinasi lainnya: `--sdnb-dark-accent` (#7c8aff),
+nada aksen mode gelap untuk teks 13px, hanya mencapai **4.44** di atas permukaan gelap paling
+terang (#2b2d45) — dari 4.5. Dinaikkan ke `#8f9bff` (5.31).
+
+Kenapa hanya muncul di sana: di lebar desktop teks itu duduk di kartu foto yang latarnya gambar,
+jadi pemindai melewatinya; di ponsel kartunya menumpuk dan latarnya menjadi permukaan solid, jadi
+terukur.
+
+Sisanya bersih: dua belas halaman publik dan empat dashboard di 375px mode gelap — nol pelanggaran
+kontras, tidak ada halaman yang menggulir mendatar, tabel lebar tetap menggulir di dalam wadahnya.
+
+**Dua pola positif palsu yang berulang** (jangan dilaporkan sebagai cacat):
+- `grid-template-columns` terbaca `"301px 0px"` — jalur 0px itu implisit, akibat satu anak memakai
+  `grid-column: span 2`. `auto-fit` sudah bekerja benar.
+- Tabel lebar dan bilah tab yang melewati tepi layar, sementara `document.scrollWidth` tetap 375 —
+  itu gulir mendatar di dalam wadahnya sendiri, memang begitu rancangannya.
+
+### Cara mengukur kontras mode gelap dengan benar
+
+Audit biasa tidak cukup. `getComputedStyle` mengembalikan warna **sebelum** filter, jadi kalau ada
+`filter` di leluhur, angkanya salah. Alat yang dipakai menerapkan rantai filter (`invert`,
+`hue-rotate`, `saturate`, `brightness`, `contrast`) ke warna teks DAN latarnya dengan matematika
+spesifikasi CSS, baru menghitung rasionya.
+
+Awas juga **HMR yang basi**: beberapa pengukuran sempat menunjukkan nilai lama sampai halaman dimuat
+ulang penuh. Kalau sebuah angka mengejutkan, muat ulang dulu sebelum menyimpulkan.
+
+### Nilai gelap keempat nama teks publik
+
+| nama | terang | gelap | rasio gelap (terburuk) |
+|---|---|---|---|
+| `--sdnb-teks-judul` | `#1b1c2c` | `#eef0f8` | 11.32 |
+| `--sdnb-teks-badan` | `#33375a` | `#c9cde0` | 8.16 |
+| `--sdnb-teks-pendamping` | `#5f6389` | `#9aa0bd` | 4.99 |
+| `--sdnb-garis` | `#21243f` | `#7e84ae` | 3.56 (ambang 3.0) |
+
+Aksen sekolah ikut punya pasangan gelap: `aksen-teks-gelap` di `schoolIdentity.js`, dihitung dengan
+`terangkanSampaiTerbaca` — kebalikan `gelapkanSampaiTerbaca`, menaikkan terang sampai lolos di atas
+permukaan gelap paling terang (#2e3047). Dipetakan ke `--sekolah-aksen-teks` pada tema gelap dengan
+`!important`, karena nilai terangnya dipasang JavaScript sebagai style inline.
+
+Pil status jam kantor di halaman Kontak juga punya pasangan gelap
+(`--sdnb-status-buka-*`, `--sdnb-status-tutup-*`): hijau tua di atas hijau muda hanya bekerja di
+latar terang; di mode gelap terangnya dibalik.
+
+### Catatan lama yang sudah TIDAK BERLAKU
+
+Bagian ini sempat berbunyi "mode gelap publik memakai pembalikan filter, biarkan apa adanya", dengan
+angka kegagalan di halaman Kontak. Kesimpulan itu **salah dua kali**: pembalikannya memang mati (jadi
+bukan itu mekanismenya), dan angka kegagalannya sebagian muncul karena penamaan token mematikan
+aturan `[style*="color: rgb(...)"]` yang selama ini mengerjakan mode gelap.
+
+Keadaan sebenarnya ada di dua bagian di atas. Seluruh dua belas halaman publik sekarang **nol
+pelanggaran kontras di kedua tema**, diukur sambil menggulir penuh.
+
+### Nada teks halaman publik: tiga nama, bukan 60 nada
+
+Konverter mockup menyalin setiap warna apa adanya ke dalam markup, jadi halaman publik memakai
+**60 nada berbeda untuk tiga peran teks yang sama**. Selisih antar nada sering hanya 1–3% terang —
+tidak ada mata yang bisa membedakan `#171827` dari `#1b1c2c` — tapi masing-masing harus diperiksa
+kontrasnya sendiri. Itu sebabnya sembilan nada gagal ambang bisa bersembunyi di sana sampai disapu
+satu per satu.
+
+Sekarang empat nama di `:root` (`src/styles/sdnb.css`):
+
+| nama | nilai | rasio di atas #e9edf6 | ambang |
+|---|---|---|---|
+| `--sdnb-teks-judul` | `#1b1c2c` | 14.34 | 4.5 (teks) |
+| `--sdnb-teks-badan` | `#33375a` | 9.76 | 4.5 (teks) |
+| `--sdnb-teks-pendamping` | `#5f6389` | 4.93 | 4.5 (teks) |
+| `--sdnb-garis` | `#21243f` | 15.10 | 3.0 (elemen antarmuka) |
+
+`--sdnb-garis` hanya untuk garis pemisah **tegas** di bawah judul bagian — yang 2px. Garis rambut
+(pembatas kartu, garis tabel) memakai `rgba(120,132,200,.2x)`, bukan heks, jadi di luar penamaan ini;
+kalau suatu saat diberi nama juga, itu peran kelima, bukan nama ini yang dipakai ulang.
+
+Nilainya diambil dari nada yang **paling sering dipakai** di tiap peran, jadi mayoritas halaman tidak
+berubah sedikit pun. **361 deklarasi** diganti di 16 berkas; heks di markup publik turun dari 793 ke
+432, nada unik dari 207 ke 176.
+
+**Halaman baru wajib memakai nama ini**, bukan menuliskan nada sendiri. Dengan tiga nama, kontras
+seluruh situs diperiksa dengan melihat tiga angka.
+
+Sapuan kedua menuntaskan bentuk-bentuk yang terlewat pola pertama: warna di dalam **string CSS**
+(`color:#3d4166;` pada gaya berbentuk teks), bentuk **terner** (`color: on ? '#a' : '#b'`), dan
+**atribut SVG** (`stroke="#3d4166"`). Atribut presentasi SVG menerima `var()` — diuji dulu di
+peramban sebelum 16 atribut diganti, dan tidak ada satu ikon pun kehilangan warnanya.
+
+Totalnya: **403 deklarasi** diganti. Heks di markup publik **793 → 390**, nada unik **207 → 160**.
+
+Pemilihan nada memakai penyaring **rona + kejenuhan**, bukan sekadar terang: hanya rona 215–255
+dengan kejenuhan di bawah 45% yang dianggap nada teks netral. Tanpa penyaring itu warna **isyarat**
+ikut terjaring dan diratakan menjadi abu — merah galat `#9e3e58`, hijau "kantor buka" `#1f6b4a`,
+indigo tautan aktif `#4a4fd0`. Ketiganya tetap utuh.
+
+Yang **sengaja tidak** ikut:
+
+- **Nada dekoratif** (gradasi, warna kategori, hamparan foto) — 100 nada. Di sana ragam warna memang
+  bagian desainnya.
+- **Warna isyarat** — merah galat, hijau status, indigo aktif. Meratakannya menjadi abu akan
+  menghapus maknanya.
+- **Sisa 4 kemunculan, 2 nada**: gradasi hero Prestasi (`#141634`, `#20224f`) dan satu
+  `conic-gradient` penampung di halaman kuis. Keduanya dekoratif.
+
+Setelah `--sdnb-garis` ditambahkan: heks di markup publik **793 → 383**, nada unik **207 → 158**.
+
+Nilai gelapnya belum ditetapkan: mode gelap halaman publik memakai pembalikan filter dan pemilik
+template memutuskan membiarkannya. Ketiga nama ini siap dipakai bila keputusan itu berubah.
+
+Inventaris lengkap 207 nada beserta perannya: `docs/inventaris-nada-warna-publik.md`.
+
 ### Migrasi harus benar-benar diterapkan, bukan sekadar ditulis
 
 Migrasi `20260806000400_santri_school_identity.sql` (kolom `nisn`, `nis`, `angkatan`) sempat hanya
@@ -569,9 +1844,47 @@ Pakai murid uji `1234567890`, jangan murid demo, supaya data demo tetap utuh.
 | Tata Usaha | `tatausaha@sdnbaturaja.sch.id` | `tatausaha123` |
 | Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
 | Wakil Kepala Sekolah | `pentashih@sdnbaturaja.sch.id` | `pentashih123` |
-| Murid | `2026041` atau `Naila` | `santri123` |
+| Murid | `Naila` (nama panggilan) | `2026041` — nomor induknya, dia tidak punya NIS |
 
 Sumber: `backend/init/03_dummy_accounts.sql`. Bukan kredensial produksi.
+
+### Login murid: nama panggilan + NIS
+
+Keputusan pemilik. **Nama panggilan** sebagai nama pengguna, **NIS** sebagai sandi. Urutan pengambilan
+sandi: **nis → nisn → nomor_induk**. Jadi sandi Ahmad Fauzan `26001` (NIS), BUKAN `9000000001` (NISN)
+dan bukan `SBR2026001`. `santri123` sudah lama mati.
+
+Urutan itu tertulis di **empat** tempat dan semuanya harus sama. Kalau salah satu digeser sendiri,
+murid yang masuk lewat jalur berbeda mendapat sandi berbeda — tanpa satu pun pesan galat:
+
+| Tempat | Peran |
+|---|---|
+| `insertSantriTx` di `backend/internal/handler/santri.go` | tambah satu murid dan impor massal lewat API |
+| impor Excel di `SantriManagement.jsx` | menyiapkan payload sebelum dikirim |
+| formulir tambah murid di `SantriManagement.jsx` | jalur satu murid dari UI |
+| migrasi `20260823000300` | murid yang sudah ada |
+
+`resolveUser` menerima nisn, nis, nomor_induk, **maupun** nama panggilan sebagai nama pengguna, jadi
+keempatnya tetap bisa dipakai masuk; label di halaman login hanya menyebut yang dipilih pemilik untuk
+diberitahukan ke murid. Nama panggilan kembar aman: semua kandidat dikumpulkan lalu sandinya yang
+memutuskan, dan dua murid tidak mungkin bersandi sama karena nomornya berbeda.
+
+Memeriksa tanpa menampilkan sandi:
+
+```sql
+select nama_lengkap,
+       password = extensions.crypt(coalesce(nullif(trim(nis),''), nullif(trim(nisn),''), nullif(trim(nomor_induk),'')), password) as cocok
+from public.santri where deleted_at is null;
+```
+
+**Jangan pasang ambang panjang sandi di halaman login.** Ambang lama di `LoginPage.jsx` — nama
+pengguna lebih dari 3 huruf, sandi lebih dari 5 karakter — mengunci akun yang sah begitu konvensi ini
+berlaku: nama panggilan "Ani" hanya 3 huruf dan NIS lima angka seperti `26001` tidak akan lolos,
+sehingga tombol Masuk mati walau yang diketik benar. Sekarang cukup keduanya terisi.
+
+**Murid tidak bisa mengganti sandinya sendiri.** `santriSelfEditable` di `santri.go` hanya memuat
+`nama_panggilan`, `no_hp_ortu`, dan `alamat`. Itu juga sebabnya menyetel ulang sandi seluruh murid
+lewat migrasi tidak menghapus pilihan siapa pun — tidak ada pilihan yang bisa dibuat murid.
 
 ### Superadmin sengaja TIDAK ada di tabel itu
 
@@ -1221,6 +2534,892 @@ teks yang bisa berubah akan memecah satu jalur menjadi dua.
 Akibat wajar yang bukan kerusakan: pendaftaran hasil impor punya `jalur_label`
 ("Zonasi") tapi `jalur` kosong, jadi tidak terhitung ke kuota jalur mana pun. Nama
 jalur lama memang tidak punya padanan id yang sah.
+
+---
+
+## Dashboard Guru — rangkaian fitur bertahap
+
+Enam fitur diminta berurutan; tiap fitur diselesaikan, diuji, dan di-commit sendiri
+sebelum lanjut. Bagian ini mencatat yang sudah tuntas.
+
+### 1. Absensi terpusat, dashboard guru baca saja — **Tuntas**
+
+Aturannya: **satu pintu**. Semua absensi dicatat lewat halaman Absensi Digital dengan
+kartu RFID. Dashboard guru hanya menampilkan, tidak pernah menulis. Koreksi absensi
+adalah wewenang admin lewat panel rekap. Tidak ada tabel, endpoint, atau alur absensi
+baru yang dibuat.
+
+**Yang ditemukan rusak sebelum perbaikan.** Empat celah, semuanya di jalur absensi:
+
+| Endpoint | Sebelum | Akibat |
+|---|---|---|
+| `PUT /api/attendance/{id}` | tanpa otorisasi sama sekali | **siapa pun yang login, termasuk santri, bisa mengubah baris absensi mana pun** |
+| `PUT /api/attendance/{id}/absent` | `RequireRole("admin","guru","tata_usaha")` | guru bisa membatalkan kehadiran yang sudah tercatat |
+| `GET /api/attendance` | tanpa scoping | guru bisa membuka rekap guru lain cukup dengan mengganti `user_id` |
+| `AttendanceDetailsModal` | `role === 'guru' || isAdminRole(role)` | tombol koreksi muncul untuk guru |
+
+**Yang dikerjakan.**
+
+- `Update` dan `MarkAbsent` dijaga `middleware.CanManage` **di dalam handler**, bukan di
+  router, supaya `superadmin` ikut tercakup — `RequireRole` di rute lama tidak
+  menyebutkan `superadmin`.
+- `List` disaring berdasarkan akun pemanggil. Guru mendapat
+  `(user_id = $n OR role <> 'guru')`: baris absensi guru hanya miliknya sendiri, tapi
+  baris santri tetap terbaca karena daftar kelasnya membutuhkannya. Peran non-staf lain
+  dikunci ke `user_id` sendiri.
+- `Create` **sengaja dibiarkan terbuka** untuk peran operasional. Kios `/absensi-digital`
+  berjalan di bawah akun staf mana pun yang membukanya (`operationalDisplayRoles` di
+  `App.jsx` memuat `guru` dan `pentashih`), jadi mengunci `Create` akan mematikan absensi
+  pusat — hal yang justru dilarang.
+- `AttendanceDetailsModal` memakai `canManageRole`, cerminan `CanManage` di sisi Go.
+- Komponen baru `src/components/dashboard/shared/AbsensiSaya.jsx`: status hari ini, jam
+  check-in, sesi, rekap bulan berjalan, dan tujuh riwayat terakhir. Murni baca.
+
+**Beda "belum absen" dan "hari libur".** Panel membaca `fetchCalendarContext` dan
+memisahkan keduanya. Tanpa itu hari Minggu akan terbaca sebagai absensi yang terlewat.
+Hitungan "Tidak Hadir" memakai `getActiveCalendarDates` sampai **hari ini saja**, bukan
+seluruh bulan — sisa bulan belum terjadi.
+
+**Bukti uji.** Diuji dengan panggilan API sungguhan memakai akun guru sementara yang
+dibuat lewat API admin lalu dihapus beserta baris absensinya:
+
+| Uji | Hasil |
+|---|---|
+| guru `PUT /attendance/{id}` | 403 |
+| guru `PUT /attendance/{id}/absent` | 403 |
+| admin `PUT /attendance/{id}` | 200 |
+| admin `PUT /attendance/{id}/absent` | 200 |
+| guru minta `user_id` guru lain | 0 baris |
+| guru minta semua baris `role=guru` | hanya dirinya |
+| admin minta semua baris `role=guru` | 3 guru terlihat |
+| guru baca absensi santri | tetap bisa, tanpa regresi |
+
+**Belum diverifikasi:** tampilan panel di browser. Verifikasi itu butuh login dengan akun
+guru, dan agen tidak dapat mengisi field password.
+
+### 2. Modul nilai asesmen mata pelajaran — **Tuntas**
+
+Tabel baru `nilai` (migrasi `20260815000100_nilai_asesmen.sql`, **sudah diterapkan** ke
+Postgres lokal dan diperiksa dengan `\d nilai`).
+
+**Kepemilikan bersandar pada `jadwal_pelajaran`, tidak disalin.** Itu keputusan
+rancangan yang menentukan seluruh modul: `jadwal_pelajaran` adalah satu-satunya sumber
+yang menyatakan guru mana mengajar mata pelajaran apa di kelas mana pada periode berapa.
+Kalau kombinasi itu disalin ke tabel `nilai`, dua sumber kebenaran akan berselisih begitu
+admin memindahkan jadwal — guru yang sudah dicabut tetap memegang nilainya. Karena itu
+`nilai.go` selalu bertanya ulang lewat `guruMengajar()`.
+
+**Aturan hak akses.**
+
+| Peran | Baca | Tulis |
+|---|---|---|
+| admin, tata usaha, superadmin | semua | semua, termasuk memindahkan nilai antar kelas/mapel |
+| guru | hanya kombinasi yang diampunya | hanya kombinasi yang diampunya |
+| murid | hanya nilainya sendiri | tidak sama sekali |
+| peran lain | dikunci ke `santri_id` sendiri | tidak sama sekali |
+
+Peran yang tidak dikenali jatuh ke cakupan **paling sempit**, bukan paling longgar.
+
+Dua penjagaan tambahan yang mudah terlewat:
+
+- **Memindahkan nilai** ke kelas atau mata pelajaran lain berarti memindahkan
+  kepemilikannya, jadi hanya back-office yang boleh. Tanpa ini guru bisa melempar nilai ke
+  kelas yang tidak diampunya lalu kehilangan jejaknya.
+- **Hak diperiksa terhadap baris yang ADA**, bukan terhadap kiriman klien. Kalau yang
+  diperiksa kiriman, guru cukup mengirim `class_id` miliknya untuk menyunting nilai kelas
+  lain.
+- **Keanggotaan kelas divalidasi** saat menyimpan: murid harus benar-benar terdaftar di
+  kelas itu (`class_memberships.status = 'active'` atau `santri.current_class_id`), supaya
+  nilai tidak nyasar ke murid kelas lain hanya karena id-nya diketahui.
+
+**Berkas.** `backend/internal/handler/nilai.go`, terdaftar di `main.go` sebagai
+`/api/nilai`; `src/lib/nilaiAdapters.js`; `src/components/dashboard/shared/ModulNilai.jsx`.
+Dropdown kelas dan mata pelajaran diturunkan dari jadwal guru — penyaringan itu hanya
+kenyamanan, penjagaannya tetap di Go.
+
+**Bukti uji.** Panggilan API sungguhan dengan guru uji yang dibuat lewat API admin, diberi
+satu jadwal (Pendidikan Pancasila / Kelas Demo A), lalu dihapus beserta seluruh barisnya:
+
+| Uji | Hasil |
+|---|---|
+| guru simpan nilai mapel yang diampu | 201 |
+| guru simpan nilai mapel yang **tidak** diampu | 403 |
+| guru simpan nilai untuk kelas lain | 403 |
+| skor 150 | 400 |
+| murid bukan anggota kelas | 400 |
+| jenis asesmen kosong | 400 |
+| guru `LIST` | 1 baris, hanya mapel ampuannya |
+| admin `LIST` | 2 baris, kedua mapel |
+| guru ubah nilainya sendiri | 200 |
+| guru ubah nilai bukan ampuannya | 403 |
+| guru hapus nilai bukan ampuannya | 403 |
+| guru pindahkan nilai ke kelas lain | 403 |
+| guru hapus nilainya sendiri | 200 |
+| ringkasan (`/summary`) | jumlah, rata-rata, min, maks benar |
+
+**Catatan kebersihan data.** Saat menyiapkan uji, `jadwal_pelajaran`
+`d212e593-b36e-414a-8163-6c0f0179d79a` (Pendidikan Pancasila / Kelas Demo A) sempat
+ditugaskan ke guru uji. Nilai `guru_id` aslinya **tidak tercatat di repositori** — tidak
+ada seed jadwal di `supabase/migrations/` maupun `backend/init/` — jadi setelah uji kolom
+itu dikembalikan ke `NULL` (belum ditugaskan), bukan ke nilai semula. Hanya berdampak pada
+basis data pengembangan lokal.
+
+**Belum diverifikasi:** tampilan panel di browser, karena alasan yang sama seperti fitur 1.
+
+### Tata letak dashboard guru — subtab, dan panel absensi dinonaktifkan
+
+Permintaan pemilik: **tabel data murid harus yang pertama terlihat.** Sebelumnya tiga panel
+(jadwal, absensi, nilai) menumpuk di atas tabel dan mendorongnya jauh ke bawah.
+
+- **Jadwal Mengajar** dan **Nilai Asesmen** dipindah ke `Tabs`, ditaruh **di bawah** tabel
+  kelas. Isinya tidak berubah, hanya letak dan pembungkusnya.
+- **Panel `AbsensiSaya` dinonaktifkan** — komponennya masih ada di
+  `src/components/dashboard/shared/AbsensiSaya.jsx` dan tidak dihapus, hanya tidak lagi
+  dirender di `GuruDashboard`. Mengaktifkannya kembali cukup dengan mengimpor dan
+  memasangnya lagi sebagai subtab ketiga.
+
+**Penting — yang TIDAK ikut dinonaktifkan:** seluruh penjagaan backend dari fitur 1 tetap
+berlaku. `Update` dan `MarkAbsent` tetap dijaga `CanManage`, `List` tetap disaring per akun,
+dan `AttendanceDetailsModal` tetap memakai `canManageRole`. Itu perbaikan keamanan, bukan
+fitur tampilan, jadi mematikannya akan membuka kembali lubang yang memungkinkan santri
+mengubah baris absensi mana pun.
+
+Tombol **Absensi** di kartu profil guru (membuka `GuruAttendanceRecap` mode baca) sudah ada
+sejak sebelum rangkaian ini dan tetap dibiarkan.
+
+### 3. Materi, tugas, dan pengumuman kelas — **Tuntas**
+
+Tabel baru `kelas_konten` (migrasi `20260815000200_kelas_konten.sql`, **sudah diterapkan**
+dan diperiksa dengan `\d kelas_konten`). Subtab ketiga: **Materi & Tugas**.
+
+**Kenapa tidak menumpang `announcements`.** Tabel itu memasok situs publik dan punya
+kebijakan baca anonim `announcements_anon_select_published`. Konten kelas yang dititipkan ke
+sana akan **bocor ke halaman Berita** begitu statusnya terbit. Audiensnya berbeda, jadi
+tabelnya berbeda. `kelas_konten` sengaja **tidak punya kebijakan untuk peran `anon`** sama
+sekali.
+
+**Tiga jenis dalam satu tabel:** `materi`, `tugas`, `pengumuman`, dijaga CHECK. Batas
+pengumpulan dijaga CHECK terpisah supaya hanya bisa menempel pada `tugas` — aturan yang sama
+diuji lebih awal di Go agar pesannya jelas, dan di UI agar fieldnya tidak muncul sama sekali.
+
+**Aturan hak akses.**
+
+| Peran | Baca | Tulis |
+|---|---|---|
+| admin, tata usaha, superadmin | semua | semua, termasuk memindahkan antar kelas |
+| guru | kelas yang diajarnya, **termasuk drafnya** | kelas yang diajarnya |
+| murid | **hanya yang terbit, hanya kelasnya** | tidak sama sekali |
+| tanpa sesi sah | ditolak 401 | ditolak |
+
+Pengumuman kelas boleh **tanpa mata pelajaran**. Karena itu `guruPegangKelas()` punya dua
+tingkat: bila kontennya menyebut mata pelajaran, guru harus mengampu mata pelajaran itu di
+kelas tersebut; bila tidak, cukup mengampu apa pun di kelas itu.
+
+**Lampiran adalah TAUTAN, bukan unggahan.** `authorizeFileWrite` di `file.go` mengunci
+bucket `documents` pada tingkat `CanManage`, jadi guru tidak dapat mengunggah berkas. Bucket
+itu memang dirancang untuk arsip dokumen resmi. Permintaan pemilik berbunyi "lampiran **jika**
+storage yang ada mendukungnya" — untuk guru, tidak mendukung. Melonggarkan gate itu berarti
+mengubah keamanan berkas di luar lingkup modul ini, jadi tidak dilakukan. Kolomnya
+`lampiran_url` + `lampiran_nama`, diisi dengan menempel tautan. **Bila unggahan berkas oleh
+guru memang diinginkan, itu keputusan tersendiri** dan perlu perubahan sadar pada
+`authorizeFileWrite`.
+
+**Menerbitkan menstempel tanggal.** `status = 'published'` tanpa `tanggal_publikasi` akan
+diisi `now()`, baik saat membuat maupun saat menerbitkan draf lama (`COALESCE`, jadi tanggal
+terbit pertama tidak tertimpa). Tanpa ini konten terbit tidak akan pernah naik ke urutan
+teratas milik murid. Urutan memakai `COALESCE(tanggal_publikasi, created_at)` supaya draf
+baru tidak tenggelam di daftar guru.
+
+**Berkas.** `backend/internal/handler/kelaskonten.go` (`/api/kelas-konten`);
+`src/lib/kelasKontenAdapters.js`; `src/components/dashboard/shared/ModulKontenKelas.jsx`.
+
+**Bukti uji.** Guru uji dengan satu jadwal di Kelas Demo A; murid sungguhan (Kelas Purnama)
+dipakai untuk menguji lingkup baca. Semua dihapus setelahnya:
+
+| Uji | Hasil |
+|---|---|
+| guru buat materi di kelas yang diajar | 201 |
+| guru buat tugas + batas pengumpulan | 201, terbit tersetempel otomatis |
+| guru buat pengumuman kelas tanpa mata pelajaran | 201 |
+| guru buat konten untuk kelas lain | 403 |
+| guru pakai mata pelajaran yang tidak diampu | 403 |
+| batas pengumpulan pada `materi` | 400 |
+| jenis di luar tiga nilai sah | 400 |
+| judul kosong | 400 |
+| **murid `LIST`** | **1 baris — hanya terbit, hanya kelasnya; draf di kelasnya sendiri tidak terlihat** |
+| guru `LIST` | 3 baris, hanya kelasnya, termasuk drafnya |
+| admin `LIST` | 5 baris |
+| guru terbitkan drafnya | 200, tanggal tersetempel |
+| guru sembunyikan lagi | 200, kembali draf |
+| guru ubah konten kelas lain | 403 |
+| guru hapus konten kelas lain | 403 |
+| status di luar tiga nilai sah | 400 |
+| guru pindahkan ke kelas lain | 403 |
+| guru hapus kontennya sendiri | 200 |
+
+**Catatan kebersihan data.** Sama seperti fitur 2, jadwal `d212e593` sempat ditugaskan ke
+guru uji lalu dikembalikan ke `NULL`.
+
+**Belum diverifikasi:** tampilan di browser, karena alasan yang sama seperti fitur 1 dan 2.
+
+### 4. Komunikasi guru dengan wali murid — **Tuntas**
+
+Subtab keempat: **Komunikasi Wali**. **Tidak ada tabel baru** — kontak wali sudah tersimpan
+di `santri.no_hp_ortu`, `nama_ayah`, `nama_ibu`.
+
+**Tidak ada integrasi luar dan tidak ada kredensial.** Yang dibuat hanya tautan `wa.me`
+berisi pesan yang sudah terisi, dibuka di peramban guru. **Pesannya belum terkirim** saat
+tautan dibuka — guru masih membaca dan menekan kirim sendiri di WhatsApp. Persis seperti
+mengetik nomor di aplikasi WhatsApp sendiri, hanya lebih cepat.
+
+**Kenapa endpoint sendiri, bukan `/api/santri`.** Dua alasan:
+
+1. Cakupan guru di `santri.List` bersandar pada `classes.id_guru` — **wali kelas saja**. Guru
+   mata pelajaran yang mengajar lewat `jadwal_pelajaran` tidak termasuk, padahal ia juga
+   perlu menghubungi wali muridnya. Melebarkan cakupan di sana akan mengubah perilaku Data
+   Murid yang tidak berkaitan dengan permintaan ini.
+2. Kontak wali adalah data pribadi. `/api/kontak-wali` hanya mengembalikan kolom yang
+   benar-benar dipakai untuk menghubungi — bukan seluruh baris murid.
+
+**Cakupan `/api/kontak-wali`.**
+
+| Peran | Hasil |
+|---|---|
+| admin, tata usaha, superadmin | semua murid aktif |
+| guru | murid di kelas yang dipegangnya — sebagai **wali kelas** (`classes.id_guru`) **atau** lewat **jadwal mengajar** (`jadwal_pelajaran.guru_id`) |
+| murid | **403** |
+| peran lain | 403 |
+
+Murid nonaktif tidak masuk daftar: wali mereka bukan lagi tanggung jawab guru kelas berjalan.
+
+**Normalisasi nomor.** `normalizeNomorWa` mengubah `08xx`, `+62 8xx`, dan `8xx` menjadi
+`628xx`, lalu menolak apa pun yang panjangnya di luar 10–15 digit. Nomor yang tidak lolos
+membuat tombolnya nonaktif dan murid itu dihitung di peringatan "belum punya nomor wali",
+alih-alih membuka tautan yang pasti gagal. **Tidak ada nomor yang ditanam di kode.**
+
+**Lima template** (perkenalan, konfirmasi ketidakhadiran, pengingat tugas, apresiasi,
+undangan pertemuan) dengan placeholder `{wali} {murid} {kelas} {guru} {sekolah}`. Disimpan
+sebagai teks biasa di adapter, bukan tabel tersendiri — guru selalu dapat menyunting isinya
+sebelum mengirim, jadi menyimpannya di basis data hanya menambah beban tanpa menambah
+kegunaan. Nama sekolah diambil dari `useSchoolIdentity`, bukan ditulis mati.
+
+**Berkas.** `backend/internal/handler/kontakwali.go` (`/api/kontak-wali`);
+`src/lib/kontakWaliAdapters.js`; `src/components/dashboard/shared/ModulKomunikasiWali.jsx`.
+
+**Bukti uji.** Guru uji diberi satu jadwal di Kelas Purnama (kelas yang punya murid aktif),
+lalu jadwal dan akunnya dihapus:
+
+| Uji | Hasil |
+|---|---|
+| guru yang mengajar Kelas Purnama | 2 baris, hanya Kelas Purnama, nomor wali terbaca |
+| admin | 11 baris, lima kelas |
+| **murid membuka kontak wali** | **403** |
+| guru meminta `class_id` kelas lain secara eksplisit | 0 baris |
+
+**Belum diverifikasi:** tampilan di browser dan perilaku tautan `wa.me` sungguhan, karena
+alasan yang sama seperti fitur sebelumnya.
+
+### 5. Input dan pengelolaan setoran murojaah — **Tuntas**
+
+Panel "Pusat Muroja'ah Kelas" sudah ada di dashboard guru dan **UI-nya sudah lengkap sejak
+dulu** — form pilih murid, kategori, item hafalan, umpan balik, semuanya terpasang. Yang
+tidak ada adalah isinya: dua fungsinya hanya menampilkan toast penolakan.
+
+```js
+// handleManualMurojaahInsert — sebelum
+setIsSubmittingManual(true);
+setIsSubmittingManual(false);
+toast({ title: "Belum tersedia", ... });
+
+// confirmDeleteSubmission — sebelum
+onConfirm: async () => { toast({ title: "Aksi tidak tersedia", ... }); }
+```
+
+**Tiga lubang backend yang ditemukan saat mengaktifkannya.**
+
+| Endpoint | Sebelum | Akibat |
+|---|---|---|
+| `POST /api/academic/murojah` | tanpa pemeriksaan kelas | guru dapat mencatatkan penilaian pada **murid mana pun** cukup dengan mengetahui id-nya |
+| `PUT /api/academic/murojah/{id}` | `RequireRole("admin","guru")` saja | guru mana pun dapat menilai — bahkan menimpa — setoran murid kelas lain; tata usaha & superadmin justru tertutup |
+| `DELETE` | **tidak ada** | tidak ada jalan menghapus sama sekali |
+
+Semuanya kini melewati `pastikanBolehMurojah`, yang bertanya pada `guruPegangSantri`: guru
+berhak bila menjadi **wali kelas** murid itu (`classes.id_guru`) **atau** mengajar di
+kelasnya (`jadwal_pelajaran`). Keanggotaan kelas ikut diperiksa supaya roster dan
+`current_class_id` yang sempat berbeda tidak membuat guru kehilangan muridnya sendiri.
+Penjagaan ditaruh **di dalam handler**, bukan daftar peran di router — daftar peran tidak
+dapat memeriksa apakah muridnya memang murid guru tersebut.
+
+**Pencatatan perubahan: tabel `murojaah_audit`** (migrasi `20260815000300_murojaah_audit.sql`,
+**sudah diterapkan**). Mencatat `buat`, `ubah`, `hapus` beserta aktor, perannya, dan
+perpindahan statusnya.
+
+Dua keputusan rancangan yang penting:
+
+- **Tanpa foreign key ke `murojaah_submissions`.** FK dengan `ON DELETE CASCADE` justru akan
+  ikut menghapus bukti penghapusannya. Catatan hapus harus tetap hidup setelah baris aslinya
+  lenyap.
+- **Menyimpan `data_lama` (jsonb) berisi salinan penuh baris** sebelum dihapus. Itu
+  satu-satunya cara memulihkan setoran yang terhapus keliru. Terbukti pada uji: setelah
+  penghapusan, isi `Al-Fatihah` masih terbaca di `data_lama->>'content'`.
+
+Kegagalan menulis audit **tidak** membatalkan aksi utama — setoran yang sudah tersimpan tidak
+boleh dianggap gagal hanya karena catatannya meleset — tetapi tetap masuk log server.
+
+**Status `perlu_perbaikan` akhirnya bisa dicapai.** Basis data dan backend sudah lama
+menerimanya, tetapi layar penilaian menulis mati `status: 'diterima'`, jadi tidak ada jalan
+menandai setoran perlu diulang. Sekarang ada dua tombol: **Terima Setoran** dan **Perlu
+Perbaikan**. Setoran yang dicatat guru secara tatap muka langsung berstatus `diterima` —
+sudah dinilai di tempat, bukan masuk antrean `menunggu` seperti pengajuan murid.
+
+**Bukti uji.** Guru uji dengan jadwal di Kelas Purnama; murid dalam dan luar kelas itu:
+
+| Uji | Hasil |
+|---|---|
+| guru catat setoran murid kelasnya | 201 |
+| guru catat setoran murid **kelas lain** | 403 |
+| status di luar empat nilai sah | 400 |
+| isi setoran kosong | 400 |
+| guru nilai setoran muridnya | 200 |
+| guru nilai setoran murid kelas lain | 403 |
+| guru hapus setoran murid kelas lain | 403 |
+| guru hapus setoran muridnya | 200 |
+| hapus id tak dikenal | 404 |
+| isi `murojaah_audit` | 4 baris: buat/buat/ubah/hapus, dengan perpindahan status dan salinan penuh pada penghapusan |
+
+**Belum diverifikasi:** tampilan di browser, karena alasan yang sama seperti fitur sebelumnya.
+
+### 6. Normalisasi Rapat Guru — **Tuntas**
+
+Fitur **dipertahankan** sebagai rapat internal sekolah, sesuai keputusan mengikat di bagian
+"Keputusan yang mengikat". Yang dirapikan hanya istilah dan penamaan.
+
+**Garis pemisahnya: apa yang boleh berubah, apa yang tidak.**
+
+| Lapisan | Tindakan | Alasan |
+|---|---|---|
+| Tabel `mmq_schedule`, `mmq_attendance`, `mmq_notulensi` | **TIDAK diganti** | data rapat yang sudah tersimpan harus tetap terbaca |
+| Rute `/api/mmq/*` | **TIDAK diganti** | kontrak backend; mengganti berarti memutus klien yang ada |
+| Nama constraint `mmq_attendance_status_check` | **TIDAK diganti** | dicocokkan apa adanya oleh penerjemah pesan galat |
+| Berkas & pengenal frontend | **Diganti** | inilah yang dibaca dan dirawat orang |
+| Tulisan yang dilihat pengguna | **Diganti** | istilah sekolah umum |
+| Dokumentasi teknis (`AGENTS.md`) | **Diperbarui** | tabelnya menunjuk berkas yang sudah tidak ada |
+
+**Berkas yang diganti nama** (lewat `git mv`, jadi riwayatnya tetap tersambung):
+
+```
+src/lib/mmqAdapters.js                          -> src/lib/rapatGuruAdapters.js
+src/hooks/useMMQAttendance.js                   -> src/hooks/useRapatGuruAttendance.js
+src/components/dashboard/guru/MmqSection.jsx    -> .../guru/RapatGuruSection.jsx
+src/components/dashboard/admin/MMQManagement.jsx     -> .../admin/RapatGuruManagement.jsx
+src/components/dashboard/admin/MMQScheduleForm.jsx   -> .../admin/RapatGuruScheduleForm.jsx
+src/components/dashboard/admin/MMQAttendanceModal.jsx -> .../admin/RapatGuruAttendanceModal.jsx
+```
+
+Seluruh pengenal `MMQ`/`Mmq` di dalamnya ikut berubah, **kecuali** string `/api/mmq` dan
+`mmq_` yang sengaja dilindungi selama penggantian lalu dikembalikan utuh.
+
+**Tulisan yang diperbaiki.** Penggantian mekanis sempat menghasilkan "RapatGuru" tanpa spasi
+di kalimat — semuanya dirapikan jadi "Rapat Guru":
+
+- `GuruManagement.jsx` — "Jadikan sebagai Notulen MMQ" → "Jadikan sebagai Notulen Rapat Guru"
+- `RapatGuruAttendanceModal.jsx` — "Edit Absensi MMQ" → "Edit Absensi Rapat Guru"
+- `rapatGuruAdapters.js` — lima pesan galat, dari "fitur MMQ" jadi "fitur Rapat Guru"
+- `guruAttendance.js` + berkas ujinya — komentar "MMQ-only branch" jadi "meeting-only branch"
+
+Judul dialog guru (`Rapat Guru`), tab `Absensi`/`Notulensi`/`Riwayat`, dan kunci rute
+`rapat-guru` **sudah benar sejak sebelumnya** dan tidak disentuh.
+
+**Bukti uji.** Setelah penggantian, ketiga endpoint diminta ulang dengan akun admin dan data
+lamanya masih terbaca:
+
+| Endpoint | Hasil |
+|---|---|
+| `GET /api/mmq/schedules` | 200, 1 baris |
+| `GET /api/mmq/attendance` | 200, 1 baris |
+| `GET /api/mmq/notulensi` | 200, 1 baris |
+
+`npm run lint` dan `npm run build` bersih.
+
+### Guru mata pelajaran kini melihat murid kelas yang diajarnya
+
+Ditemukan saat verifikasi browser: guru uji yang punya jadwal mengajar melihat **tabel murid
+kosong**. Penyebabnya, roster bersandar pada `classes.id_guru` — **wali kelas** — sedangkan
+subtab Nilai dan Materi bersandar pada `jadwal_pelajaran`. Guru mata pelajaran berhak memberi
+nilai untuk sebuah kelas tetapi tidak dapat melihat muridnya.
+
+**Yang dilebarkan — hanya jalur BACA:**
+
+| Tempat | Sebelum | Sesudah |
+|---|---|---|
+| `classes.List` saat guru menanyakan kelasnya sendiri | `cl.id_guru = $1` | wali kelas **atau** `jadwal_pelajaran` |
+| `santri.List` cakupan guru | wali kelas | wali kelas **atau** jadwal |
+| `santri.Detail` | `guruOwnsSantri` | `guruTeachesSantri` (baru) |
+
+**Yang sengaja TIDAK dilebarkan — jalur TULIS:** `MoveClass` dan `TransferDestinations` tetap
+memakai `guruOwnsSantri` (wali kelas saja). Penempatan murid tetap wewenang wali kelas dan
+admin; menyatukan keduanya akan membuat setiap guru mata pelajaran dapat memindahkan murid
+antar kelas hanya karena mengajar satu jam di sana. Karena itu helper barunya **terpisah**,
+bukan `guruOwnsSantri` yang diubah — tiga pemanggilnya tidak boleh berubah bersamaan.
+
+**Panel admin tidak ikut berubah.** Pelebaran di `classes.List` hanya berlaku ketika
+`id_guru` yang diminta sama dengan akun pemanggil dan perannya guru. Admin yang menyaring
+`id_guru=X` tetap memperoleh arti lama — kelas yang **diwalikan** X — supaya kolom wali kelas
+di panel admin tidak tercampur kelas yang sekadar diajar X.
+
+**Bukti uji.** Guru uji diberi jadwal di Kelas Purnama **tanpa** dijadikan wali kelasnya
+(wali tetap Siti Aminah):
+
+| Uji | Hasil |
+|---|---|
+| daftar kelas miliknya | 1 baris — Kelas Purnama muncul |
+| daftar murid | 2 baris — murid Kelas Purnama terlihat |
+| buka detail murid kelas yang diajar | 200 |
+| buka detail murid kelas lain | 403 |
+| **tujuan transfer murid** | **403** — bukan wali kelas |
+| **pindahkan murid ke kelas lain** | **403** |
+| admin saring `id_guru` = guru mapel | 0 baris — arti lama terjaga |
+| admin saring `id_guru` = Siti Aminah | 1 baris — Kelas Purnama |
+
+#### Dua temuan saat menguji guru mapel di browser
+
+**1. Kebocoran roster antar kelas (sudah lama ada, sudah ditutup).**
+`GET /api/classes?include_santri=true` **tanpa penyaring apa pun** mengembalikan SELURUH
+kelas beserta rosternya kepada guru mana pun — nama setiap murid di sekolah terbaca hanya
+dengan menghapus parameter `id_guru`. Terlihat saat memeriksa data Rina: ia menerima kelima
+kelas padahal hanya mengajar satu.
+
+Ini berselisih dengan `santri.List`, yang sudah lama membatasi guru ke kelasnya sendiri. Dua
+pintu ke data yang sama tidak boleh berbeda aturannya. `classes.List` kini menyaring peran
+`guru` ke kelas yang benar-benar dipegangnya. **Pentashih sengaja tidak dibatasi** — perannya
+memang meninjau murid lintas kelas, sejalan dengan `santri_pentashih_select`.
+
+Terbukti: permintaan yang sama kini mengembalikan 1 kelas untuk Rina, sementara admin tetap
+menerima kelima kelas.
+
+**2. Tombol Transfer menawarkan aksi yang pasti gagal.**
+Karena guru mapel kini melihat kelas yang diajarnya, tombol "Transfer kelas" ikut muncul
+untuk murid yang bukan perwaliannya. Menekannya memanggil `transfer-destinations`, dijawab
+**403** dengan benar — tetapi modalnya menampilkan *"Daftar kelas belum dapat dimuat.
+Periksa koneksi Anda"*, menyalahkan jaringan padahal ini soal hak akses.
+
+Tombolnya kini **dimatikan** bila guru bukan wali kelas, dengan tooltip "Hanya wali kelas
+yang dapat memindahkan murid". Penjagaan backend tidak diubah — yang diperbaiki hanya
+menawarkan aksi yang mustahil lalu berbohong soal sebabnya.
+
+#### Rekap Absensi & Rapat Guru — hasil pemeriksaan
+
+**Rekap Kinerja membocorkan daftar guru (PELANGGARAN, sudah diperbaiki).**
+Tab "Rekap Kinerja" punya dropdown **PILIH GURU PENGAJAR** berisi **seluruh 12 guru**. Seorang
+guru dapat memilih rekannya — bertentangan langsung dengan aturan pemilik: *"Guru hanya dapat
+melihat kinerjanya sendiri dan tidak boleh memilih atau membuka data guru lain."* Ini lolos
+dari audit fitur 1 karena `GuruPerformanceSummary` sama sekali tidak mengenal peran.
+
+Datanya sendiri sebenarnya sudah tertutup — penyaring pada `attendance.List`, `classes.List`,
+dan `santri.List` mengembalikan kosong untuk guru lain. Tetapi membiarkan dropdownnya terisi
+tetap salah dua kali: **membocorkan daftar nama seluruh guru**, dan hasil kosongnya terbaca
+seperti *"guru ini tidak pernah hadir"* padahal artinya *"Anda tidak berhak melihat"*.
+
+Kini bagi peran `guru` dropdownnya **dihapus sama sekali** — bukan diisi satu nama, supaya
+tidak terkesan pembatasan sementara — diganti label "Kinerja Mengajar Anda" dan namanya
+sebagai teks biasa. Terverifikasi di browser: hanya Bulan dan Tahun yang tersisa sebagai
+pilihan.
+
+**Rapat Guru — sehat.** Judul "Rapat Guru", keterangan "Sistem absensi dan notulensi untuk
+guru", jadwal lama termuat (`Jumat 16:00–17:00, Ruang Demo`), dan riwayat notulensi lama
+(`Notulensi Demo, 5/8/2026 oleh Guru Demo A`) tetap terbaca — bukti penggantian nama fitur 6
+tidak memutus data lama. Tab **Notulensi nonaktif** untuk Rina karena ia bukan notulen; itu
+perilaku yang benar.
+
+**Rekap Absensi kini membaca jadwal pelajaran — SUDAH dirombak.**
+Sebelumnya `GuruAttendanceRecap` menurunkan sesi wajib seorang guru dari
+`classes.filter(c => c.id_guru === guru.id)` — **kelas yang diwalikannya**, memakai model sesi
+lama. Guru mata pelajaran tidak mewalikan kelas mana pun, jadi `assignedSessions` kosong dan
+seluruh rekapnya hilang dengan pesan "Tidak ada data guru atau jadwal mengajar ditemukan".
+Bukan akibat penyempitan cakupan kelas — bahkan saat kelima kelas terlihat, tidak satu pun
+ber-`id_guru` miliknya.
+
+Akarnya ketidaksesuaian model: sejak `2a362b6` absensi guru dicatat lewat **jadwal
+pelajaran**, sementara rekapnya masih mengukur **sesi kelas perwalian**.
+
+**Cara kerja sekarang.** Rekap memuat `jadwal_pelajaran` periode aktif dan membangun peta
+`sesiJadwalPerHari`: `{ guruId: { 1: Set('Pagi'), 3: Set('Siang') } }`, kunci hari 1..6
+(Senin..Sabtu) yang kebetulan sama dengan `Date.getDay()` untuk Senin–Sabtu.
+
+Perbedaan penting dari model lama: kewajiban **dijumlahkan per hari**, bukan
+`hari_aktif × jumlah_sesi`. Guru hanya ditagih pada hari yang benar-benar ada jam mengajarnya.
+
+**Tiga jalur, berurutan prioritas:**
+
+1. Ada override manual (`guru_session_overrides`) → pakai itu, tak berubah.
+2. Punya jadwal pelajaran → model jadwal (baru).
+3. Tidak keduanya → model sesi kelas perwalian (lama), tetap utuh untuk sekolah yang masih
+   memakainya.
+
+**Label sesi mengikuti kelas, bukan jam pelajaran — dan itu disengaja.**
+`getTeacherLessonSession` mendahulukan `schedule.sesi` (diwarisi dari kelas) sebelum menebak
+dari `jam_mulai`. Pada data demo, Kelas Purnama bersesi "Sore" padahal jam pelajarannya 07:00,
+jadi rekapnya menulis "Sore". Terlihat janggal, tetapi **fungsi yang sama dipakai kios saat
+mencatat absensi** — kalau rekap memakai aturan berbeda, kewajiban dan catatannya tidak akan
+pernah bertemu. Kejanggalannya ada di data demo, bukan di kode. Mengubahnya berarti mengubah
+cara absensi pusat dicatat, yang dilarang.
+
+**Batas ketelitian yang diketahui.** Nilai petanya `Set`, jadi dua jam pelajaran pada sesi dan
+hari yang sama terhitung **satu** kewajiban. Grid rekap memang berkolom sesi
+(Pagi/Siang/Sore), bukan per jam pelajaran; menghitung per jam berarti merombak tampilannya
+juga. Akibat wajarnya: guru yang mengajar dua jam Pagi lalu hadir di salah satunya tetap
+terbaca 100% untuk hari itu. Dicatat di komentar kode agar tidak terbaca sebagai bug.
+
+**Bukti uji ujung-ke-ujung** dengan akun Rina (jadwal Senin 07.00, Kelas Purnama):
+
+| Keadaan | Rekap |
+|---|---|
+| belum ada absensi | `0 / 2` · 0% |
+| setelah satu kehadiran dicatat Senin 10 Agu | `1 / 2` · 50% · "Sore 1 Sesi" |
+
+Pembagi `2` benar: Senin aktif hingga 15 Agustus 2026 hanya tanggal 3 dan 10. Baris absensi
+ujinya sudah dihapus setelah verifikasi.
+
+### Shift masuk sekolah: dari sesi madrasah ke dua shift SD — **Tuntas**
+
+Pemilik bertanya apakah konsep "tiap kelas punya jadwal sendiri, ada yang masuk pagi dan ada
+yang masuk siang" sudah diterapkan. Pemeriksaan menunjukkan **rangkanya sudah benar**, yang
+keliru hanya kosakata dan jamnya:
+
+| Konsep | Sebelum |
+|---|---|
+| Tiap kelas punya jadwal mingguan sendiri | **sudah ada** — `jadwal_pelajaran` |
+| Absensi guru mengikuti jam pelajaran | **sudah** — lihat bagian rekap di atas |
+| Kelas ditempatkan di shift | **ada, tapi lima pilihan ala madrasah** |
+| Absensi murid pakai jendela shift kelasnya | **sudah jalan** — tapi jamnya jam mengaji |
+
+`DEFAULT_SESSION_TIMES` memuat Pagi 07.45, **Pagi 2** 10.00, Siang 13.45, **Sore** 15.45, dan
+**Malam** 18.30. Itu jadwal TPQ. Sekolah dasar negeri masuk pagi; sekolah yang kekurangan ruang
+kelas membagi rombelnya jadi shift pagi dan siang, dan berhenti di situ.
+
+**Yang diubah.** Kosakata dipangkas jadi **Pagi (07.00)** dan **Siang (12.30)** — tetap dapat
+disunting pembeli lewat "Konfigurasi Waktu Sesi", angka itu hanya bawaan. Ikut dirapikan:
+`SESSION_MAP` (nilai angka 0..4 jadi 0..1), `inferSessionFromStartTime` di `guruAttendance.js`
+(sebelum 12.00 → Pagi, selebihnya Siang), penebakan sesi di Mode TV, `timeMap` sesi berikutnya
+di halaman absensi, serta urutan dan warna shift di modal transfer murid.
+
+**Nama shift lama tetap terbaca.** `LEGACY_SESSION_ALIASES` memetakan `Pagi 2 → Pagi`,
+`Sore → Siang`, `Malam → Siang` saat dibaca, supaya baris lama tidak jatuh ke null dan merusak
+rekap.
+
+**Migrasi `20260815000400_shift_pagi_siang.sql`** (sudah diterapkan) menempatkan ulang kelas
+berdasarkan **jadwalnya sendiri**, bukan menebak dari nama lamanya: jam pelajaran paling awal
+sebelum 12.00 → Pagi, selebihnya Siang, dan kelas tanpa jadwal → Pagi. Kedelapan kelas demo
+yang semula berlabel "Sore" kini Pagi, cocok dengan jam pelajarannya yang memang 07.00–08.40.
+
+**Baris `attendance` sengaja TIDAK diubah.** Absensi adalah catatan peristiwa yang sudah
+terjadi; menulis ulang label sesinya berarti memalsukan arsip — rekap bulan lalu berubah
+angkanya tanpa ada yang benar-benar hadir atau absen. Empat baris bersesi "Sore" dibiarkan dan
+dibaca lewat alias.
+
+**Jebakan yang sempat terjadi saat menulis migrasinya.** Versi pertama memakai
+`COALESCE((SELECT CASE WHEN min(jam_mulai) < '12:00' ...), 'Pagi')`. Agregat selalu
+mengembalikan satu baris, dan `NULL < TIME` bukan TRUE, jadi kelas **tanpa jadwal** jatuh ke
+`ELSE` dan salah ditandai "Siang" — `COALESCE` tidak pernah kena. Diperbaiki dengan cabang
+`WHEN min(...) IS NULL THEN NULL` eksplisit. Lima kelas yang terlanjur salah sudah dibetulkan.
+
+**Terverifikasi di browser:** rekap Rina yang tadinya menulis "Sore" untuk pelajaran pukul
+07.00 kini menulis **"Pagi"**.
+
+### Nama kelas jadi pola SD — **Tuntas**
+
+Nama kelas demo (Purnama, Cendekia, Harmoni, Pelita, Tunas) lebih mirip nama kelompok
+mengaji daripada rombel sekolah dasar. Diganti ke pola **angka tingkat + huruf rombel**, yang
+lazim di SD negeri dan langsung siap bila sekolah punya kelas paralel (1A dan 1B).
+
+| Sebelum | Sesudah |
+|---|---|
+| Kelas Cendekia | **Kelas 1A** |
+| Kelas Harmoni | **Kelas 2A** |
+| Kelas Pelita | **Kelas 3A** |
+| Kelas Purnama | **Kelas 4A** |
+| Kelas Tunas | **Kelas 5A** |
+| — | **Kelas 6A** (baru, kosong) |
+
+Tingkat enam ditambahkan supaya demo punya enam tingkat lengkap seperti SD sungguhan.
+
+**Tiga kelas demo nonaktif dihapus:** `Kelas Demo A`, `Kelas Demo B`, dan
+`Kelas Tahfizh PTPT Demo`.
+
+**Dua penemuan saat menghapusnya.** `classes` dirujuk sembilan tabel, dan tiga di antaranya
+memakai `NO ACTION`, bukan `CASCADE`:
+
+- `santri.current_class_id` — delapan murid demo nonaktif harus dilepas dulu
+  (`current_class_id = NULL`), tidak dihapus
+- `attendance.class_id` — dua baris absensi seed ikut dibuang
+- `class_mutations.from_class_id` / `to_class_id` — **ini yang menggagalkan percobaan
+  pertama**; ada satu baris riwayat mutasi murid demo antar kelas demo. Transaksi
+  ter-*rollback* utuh, tidak ada kerusakan separuh jalan. Baris itu ikut dihapus karena kelas
+  yang dirujuknya memang dibuang.
+
+**Yang benar-benar dikirim ke pembeli adalah `supabase/seed.sql`, bukan data lokal ini.**
+Kelima kelas berjuluk indah itu ternyata **tidak ada di repositori** — data sisa sesi
+pengembangan terdahulu. Yang di-*seed* justru tiga kelas demo tadi, dan itulah yang dilihat
+pembeli pada instalasi baru. `seed.sql` sudah dirapikan: nama kelas jadi Kelas 1A/2A/3A, shift
+`'Sore'` jadi `'Pagi'`, dan tiga murid berkategori `PTPT` beserta `jilid` "Juz 30/29/28" jadi
+murid biasa berkategori `Anak` — kolom jilid dan sesi mengaji hanya relevan bila program
+tahfizh opsional dinyalakan.
+
+### Sisa warisan LPQ di data contoh — **Tuntas**
+
+**Ada DUA sumber data contoh**, keduanya dijalankan `backend/init/01_migrate.sh`:
+`supabase/seed.sql` (murid, kelas, catatan) dan `backend/init/03_dummy_accounts.sql` (akun
+login tiap peran). Kelima kelas berjuluk indah yang sempat terlihat di basis data lokal
+**tidak ada di keduanya** — murni sisa sesi pengembangan terdahulu.
+
+**Yang dirapikan di `seed.sql`:**
+
+| Sebelum | Sesudah |
+|---|---|
+| `site_name` = "LPQ Al-Fath Maulana" | **baris dihapus** |
+| `nomor_induk_qiroati` = `AFMLOCAL-ANAK-A01` | `nisn` + `nis` sungguhan (`9100000101` / `26101`) |
+| alias login `@auth.lpqalfathmaulana.local` | `@auth.sekolah.local` |
+| jabatan "Pengajar Demo" | "Guru Kelas" |
+| "Pentashih Demo" | "Wakasek Demo" · jabatan "Wakil Kepala Sekolah" |
+| hafalan "Doa Demo"/"Surat Demo", jilid "Pra" | "Doa Harian"/"Surat Pendek", "Tingkat 1" |
+| metode bayar "Demo Manual" | "Tunai" |
+| pengeluaran kategori "Demo" | "Operasional" |
+| rapat 16.00–17.00 "Ruang Demo" | 13.00–14.30 "Ruang Guru" |
+
+`site_name` **dihapus, bukan diganti isinya**: tidak ada satu pun kode yang membacanya. Nama
+sekolah datang dari kunci `school_identity` (`src/lib/schoolIdentity.js`), yang bawaannya sudah
+"Sekolah Dasar Negeri Baturaja". Baris lamanya hanya menitipkan nama lembaga produk terdahulu
+ke basis data setiap pemasangan baru.
+
+Nilai peran `'Pentashih'` di kolom `roles` **tetap dipertahankan** — hanya nama tampilan dan
+jabatannya yang berubah, sesuai keputusan mengikat.
+
+`backend/init/01_migrate.sh` ikut disesuaikan: stub `auth.users` untuk id `...004` memakai
+`wakasek-demo@example.invalid`.
+
+**Jebakan yang sempat terjadi.** Seed dijalankan langsung ke basis data kerja untuk mengujinya,
+padahal basis data itu sudah berisi kelas hasil penggantian nama. Karena kelas seed memakai id
+tetap (blok `b2fa7a20`), hasilnya **kelas ganda** — dua "Kelas 1A", dua "2A", dua "3A".
+Duplikatnya sudah dibuang. Cara menguji seed yang benar adalah pada basis data kosong, dan
+itulah yang akhirnya dipakai.
+
+**Cara verifikasinya.** Basis data `seedtest` dibuat kosong, 66 migrasi dipasang berurutan,
+stub `auth.users` disisipkan, lalu `seed.sql` dijalankan — **tanpa satu pun galat**. Hasil
+pemasangan baru: tiga kelas `Kelas 1A/2A/3A` shift Pagi, delapan murid ber-NISN/NIS tanpa
+jilid, `website_content` hanya berisi kunci `profile`, dan staf berjabatan "Guru Kelas" dan
+"Wakil Kepala Sekolah". Basis data uji dihapus setelahnya.
+
+**Perbaikan ketahanan.** Sisipan `auth_login_aliases` semula memakai
+`on conflict (alias_type, normalized_alias)`. Ada pula batasan unik satu alias aktif per
+pengguna, sehingga menjalankan ulang seed setelah nilai aliasnya berubah menabrak batasan yang
+tidak disebut targetnya. Diganti `on conflict do nothing` tanpa target.
+
+### Nama skema warisan madrasah dibuang — **Tuntas**
+
+Migrasi `20260815000500_rename_legacy_qiroati_and_mmq.sql` (**sudah diterapkan**):
+
+```
+santri.nomor_induk_qiroati  ->  santri.nomor_induk
+mmq_schedule                ->  rapat_guru_jadwal
+mmq_attendance              ->  rapat_guru_absensi
+mmq_notulensi               ->  rapat_guru_notulensi
+```
+
+`ALTER TABLE ... RENAME` mempertahankan seluruh data, indeks, batasan, dan foreign key —
+tidak ada baris yang disalin atau hilang. Migrasi ini **wajib paling akhir**: migrasi
+terdahulu menyebut nama lamanya dan tidak boleh disunting, jadi pada basis data baru semuanya
+berjalan lebih dulu lalu berkas ini mengganti namanya di penghujung.
+
+**Rute `/api/mmq/*` sengaja TIDAK diganti.** Itu kontrak antara frontend dan backend, bukan
+nama skema; menggantinya perkara terpisah.
+
+#### Dua bug lama yang ikut terbongkar
+
+**1. Field NUPTK di panel Data Guru tidak pernah tersimpan.** Formulir menulis ke
+`nomor_induk_qiroati` pada tabel `guru` — kolom yang **tidak pernah ada** di sana; hanya
+`santri` yang memilikinya. Nilainya disaring habis oleh allowlist `guruEditable`, jadi apa pun
+yang diketik admin hilang tanpa pesan dan kolomnya selamanya tampil "-".
+
+Diperbaiki menyeluruh: kolom `guru.nuptk` dibuat, ditambahkan ke `guruEditable` dan
+`guruSafeColumns`, diteruskan `pickGuruProfileFields` (yang juga tidak meneruskannya), dan
+formulirnya menunjuk `nuptk`. Terbukti lewat API: simpan `1987031420091001` lalu baca ulang —
+nilainya kembali utuh.
+
+**2. Penerjemah pesan galat rapat guru tidak pernah aktif.** `rapatGuruAdapters.js` mencocokkan
+nama batasan `mmq_attendance_status_check`. Batasan itu sebenarnya bernama
+`mmq_attendance_status_not_blank` — nama yang dicocokkan tidak pernah ada, jadi cabangnya mati.
+Ketahuan justru karena migrasi rename-nya gagal pada nama yang salah. Kini keduanya memakai
+`rapat_guru_absensi_status_not_blank`.
+
+#### Yang sengaja tidak disentuh
+
+`scripts/*` masih menyebut nama lama — **itu benar**. Semuanya perkakas era Supabase yang
+membaca skema produk terdahulu: `prepare-production-migration.mjs` memuat
+`backup-lpq-full-2026-07-21.json`, dan `validate-production-migration-local.ps1` menolak target
+selain Supabase lokal di port 55321. Nama lama di sana **mendeskripsikan basis data lama**;
+menggantinya justru merusak maksudnya. Begitu pula `supabase/functions/*` (dormant),
+`supabase/schema-production-backup.sql` (cuplikan), dan migrasi terdahulu.
+
+`scripts/validate-migration-order.ps1` juga dibiarkan: ia memeriksa **nama berkas migrasi**,
+bukan nama tabel hidup, dan penjaganya tetap sahih karena migrasi rename berada setelah
+`20260624001000_mmq_core.sql`.
+
+#### Bukti uji
+
+Rantai pemasangan penuh dijalankan di basis data kosong `renametest`:
+`00_bootstrap` → **67 migrasi** → stub `auth.users` → `seed.sql` → `02_auth_columns` →
+`03_dummy_accounts`. **Semua lolos**, ketiga tabel `rapat_guru_*` ada, `santri.nomor_induk`
+dan `guru.nuptk` ada. Basis data uji dihapus setelahnya.
+
+Pada basis data kerja, setelah migrasi diterapkan dan backend dikompilasi ulang:
+
+| Uji | Hasil |
+|---|---|
+| `GET /api/guru`, `/santri`, `/classes`, `/payments`, `/ppdb` | 200 semua |
+| `GET /api/mmq/schedules`, `/attendance`, `/notulensi` | 200, data lama terbaca |
+| **login murid lewat nomor induk** | **OK** — jalur `auth.go` yang kolomnya berganti nama |
+| simpan lalu baca NUPTK | tersimpan dan terbaca |
+
+**Catatan galat uji, bukan cacat migrasi.** Percobaan pertama gagal karena `02_auth_columns.sql`
+terlewat dari urutan uji — urutan sebenarnya `00 → 01 (migrasi + seed) → 02 → 03`.
+
+#### Verifikasi panel Data Guru di browser
+
+Diuji sebagai admin di `localhost:3000`, dan inilah bukti bug NUPTK benar-benar tertutup:
+
+| Langkah | Hasil |
+|---|---|
+| Buka Edit "Andi Pratama, S.Pd." | field `#nuptk` ada, kosong |
+| Isi `1987031420091001`, Simpan Perubahan | tersimpan; basis data memuatnya |
+| **Muat ulang halaman penuh, buka Data Guru** | kolom NO. INDUK menampilkan `1987031420091001` |
+| Cari `19870314` di kotak pencarian | 1 hasil, Andi Pratama |
+| Buka panel Rapat Guru | data lama terbaca, tanpa galat setelah tabelnya berganti nama |
+
+Langkah ketiga yang menentukan: sebelum perbaikan, nilai itu hilang tanpa jejak setelah
+refresh meski notifikasi mengatakan berhasil.
+
+#### Dua sisa LPQ yang baru ketahuan saat verifikasi ini
+
+**Subjudul panel Rapat Guru masih "Majelis Mu'allimil Qur'an — Absensi & Jadwal Guru".**
+Lolos dari normalisasi fitur 6 karena pencarian waktu itu memakai kata "MMQ", bukan
+kepanjangannya. Diganti "Jadwal, absensi, dan notulensi rapat internal guru".
+
+**Satu baris `guru.status_guru` masih bernilai `'Non-Syahadah'`.** Itu sertifikasi guru
+Al-Qur'an, tidak berlaku di SD negeri. Kodenya sudah lama memakai "Belum Bersertifikat"; yang
+tertinggal hanya datanya. Diperbaiki menjadi "Belum Bersertifikat" — hanya data lokal, tidak
+ada perubahan kode.
+
+### Panel Bisyaroh & kategori Qiroati — sebagian besar sudah bersih
+
+**Bisyaroh: tidak ada yang perlu dikerjakan.** `SalaryCalculation.jsx` sudah dihapus.
+Penyebutan yang tersisa hanyalah komentar penjelas di `AdminDashboard.jsx`,
+`DashboardWorkspace.jsx`, `TataUsahaDashboard.jsx`, dan satu baris di
+`admin/AGENTS.md` — dan baris itu berada di bawah judul **"Panel yang sudah dicabut — jangan
+dikembalikan"**. Itu nisan yang sengaja dipasang beserta alasannya, bukan daftar panel hidup.
+Menghapusnya justru menghilangkan peringatan agar panel tanpa penyimpanan itu tidak dibangkitkan
+lagi.
+
+**Kategori Qiroati: yang tersisa hanya data, bukan kode.** Tiga baris `santri.kategori = 'PTPT'`
+— fixture demo nonaktif tanpa kelas, sisa versi seed sebelum dirapikan. Diselaraskan dengan
+`seed.sql` yang baru: nama jadi `Santri Demo C1/C2/C3`, kategori `Anak`, `jilid` dan
+`sesi_mengaji` dikosongkan karena keduanya hanya terpakai bila program tahfizh dinyalakan.
+Seluruh 20 murid kini berkategori `Anak`. Komentar di `SantriManagement.jsx` yang menyebut
+"subCategory era Qiroati" ditulis ulang tanpa jargon itu.
+
+**Yang SENGAJA tidak diubah:** `HAFALAN_SCOPE_PER_KELAS = 'TPQ'` dan
+`HAFALAN_SCOPE_PER_JUZ = 'PTPT'` di `academicAdapters.js`. Keduanya **nilai tersimpan** di
+kolom `hafalan_items.program_scope`, sekelas dengan `'Pentashih'` — mengubahnya memutus data
+hafalan lama. Sudah ada komentar yang menjelaskannya di berkas itu.
+
+### Kategori `'Dewasa'` dicabut — **Tuntas**
+
+Sesuai keputusan mengikat *"Kategori murid & kelas: dihapus seluruhnya. Tidak ada kelas
+dewasa"*. Tidak ada satu pun baris data berkategori `Dewasa`, jadi seluruhnya kode mati.
+
+| Berkas | Yang dicabut |
+|---|---|
+| `DigitalAttendancePage.jsx` | `isAdult`, larik `adultQuotes`, blok `adultStats`, dan **satu cabang tampilan hasil scan penuh** untuk murid dewasa |
+| `DashboardPage.jsx` | prop `isAdult` ke `SantriDashboard` |
+| `SantriDashboard.jsx` | prop `isAdult` beserta varian gaya ungunya di `MurojaahRecorder` |
+| `JilidChangeModal.jsx` | imbuhan judul `(Dewasa)` |
+| `PaymentSystem.jsx` | badge kategori murid |
+| `paymentAdapters.js` | fungsi `formatSantriCategory` |
+| `appConfigAdapters.js` | kunci `ADULT_SESSION` yang tidak dipakai siapa pun |
+
+**Cabang tampilan hasil scan yang dicabut ternyata identik** dengan cabang murid biasa, kecuali
+tidak menampilkan kartu level. Jadi mencabutnya justru **menambah** yang dilihat murid, bukan
+mengurangi.
+
+**Temuan sampingan: layar pembayaran menampilkan "TPQ" kepada pembeli.**
+`formatSantriCategory` memetakan kategori `'Anak'` menjadi label **"TPQ"**, dan `PaymentSystem`
+menampilkannya sebagai badge di bawah nama tiap murid. Jadi panel pembayaran sebuah SD negeri
+memasang istilah lembaga Al-Qur'an di layar. Badge dan fungsinya sama-sama dicabut — pada
+sekolah dengan satu jenis murid, badge kategori memang tidak menerangkan apa pun.
+
+`kategori` di `JilidChangeModal` **tetap dipertahankan**: di sana ia variabel template pesan
+WhatsApp, bukan cabang tampilan.
+
+**Bukti uji.** `npm run lint` dan `npm run build` bersih. Jalur absensi diperiksa ulang lewat
+API: lookup RFID murid mengembalikan `Aisyah Putri (kategori=Anak)`, dan pembacaan absensi
+murid tetap 200.
+
+#### Verifikasi tampilan hasil scan di browser
+
+Diuji di `/absensi-digital` dengan RFID sungguhan. Ahmad Fauzan sudah absen hari ini, jadi
+memindainya menampilkan kartu "sudah tercatat" **tanpa menulis baris baru** — seluruh jalur
+render terlewati tanpa mengubah data.
+
+Kartunya tampil lengkap: nama, sesi, status "Tepat Waktu", jam check-in, **JILID, POIN, LEVEL
+Bronze, HAFALAN**, rekap bulan ini, pesan, dan kutipan. **Kemunculan kartu LEVEL itu buktinya**:
+justru bagian inilah yang dulu ditahan cabang "dewasa". Kartu peringatan juga diperiksa lewat
+Aisyah Putri — di luar jam shift, muncul "Tidak ada sesi absensi yang sedang dibuka saat ini."
+
+**Catatan cara uji:** penekanan Enter sintetis tidak memicu submit implisit form, jadi
+handlernya dipanggil lewat `form.requestSubmit()` di konsol. Jalur kodenya sama persis dengan
+kartu RFID sungguhan; yang berbeda hanya pemicunya.
+
+### Celah migrasi shift yang baru ketahuan — **sudah ditutup**
+
+Verifikasi di atas memunculkan kejanggalan: kartu Ahmad Fauzan tertulis **"Sesi Siang"**
+padahal Kelas 4A bershift Pagi.
+
+Penyebabnya migrasi shift terdahulu (`20260815000400`) hanya menata `classes.sesi` dan
+**melewatkan `santri.sesi_mengaji`**. Sepuluh murid masih bernilai `'Sore'`.
+
+Itu bukan sekadar label yang jelek. `getSantriSession` mendahulukan `sesi_mengaji` sebelum
+jatuh ke shift kelas, dan `'Sore'` kini dipetakan ke `'Siang'` oleh alias — sehingga jendela
+absensi mereka menjadi **11.30–17.00**. Murid kelas pagi yang datang pukul 07.00 akan **ditolak
+karena dianggap di luar jam absensi**.
+
+Migrasi `20260815000600_santri_sesi_ikut_kelas.sql` (**sudah diterapkan**) mengosongkan nilai
+yang bukan shift sah, bukan menebaknya. Dengan `NULL`, `getSantriSession` jatuh ke `class.sesi`
+— dan shift kelas memang satu-satunya sumber yang benar. Menyimpan shift terpisah di baris
+murid justru yang mengundang selisih ini sejak awal.
+
+Terbukti di browser: kartu yang sama kini menulis **"Sesi Pagi"**, dan tidak ada lagi murid
+yang shift-nya berbeda dari kelasnya.
+
+### Verifikasi browser rangkaian dashboard guru — **Selesai**
+
+Seluruh fitur 1–6 diperiksa langsung di `localhost:3000` dengan akun guru sungguhan, bukan
+hanya lewat API. Tabel murid tampil paling atas; empat subtab hadir di bawahnya; panel
+`AbsensiSaya` benar-benar sudah tidak dirender.
+
+Yang terbukti tersimpan dan bertahan setelah muat ulang halaman: **nilai asesmen** (beserta
+ringkasan rata-rata/min/maks), **konten kelas** (buat lalu terbitkan, status berubah
+Draf → Terbit), dan **setoran murojaah manual** (tersimpan `diterima` plus satu baris di
+`murojaah_audit`). Template WhatsApp terisi lengkap — nama wali, nama guru, nama sekolah dari
+identitas, nama murid, dan kelas. Mode gelap dan terang keduanya benar.
+
+**Tidak diuji:** tombol "Buka WhatsApp", karena membuka layanan luar.
+
+**Berkas coret-coretan dihapus.** Empat artefak penelusuran era Supabase menumpuk di `src/`
+dan sudah dibuang: `inspect_mmq_constraint.sql`, `fix_mmq_rls_policies.sql`,
+`inspect_database.sql`, dan `rls_audit_report.md`. Semuanya berisi kueri diagnostik untuk
+"Supabase SQL Editor" — perkakas yang tidak lagi dipakai aplikasi ini — tidak diimpor kode
+mana pun, dan tidak ikut build. Sebutan atasnya masih tertinggal di
+`docs/13-phase-1-5-baseline-result.md` dan `docs/migration/authz-spec.md` sebagai catatan
+sejarah; keduanya memang dokumen arsip, jadi dibiarkan.
 
 Bila daya tampung nol, panel menampilkan ajakan mengisi kapasitas alih-alih tabel
 berisi nol — dan tidak ada pembagian dengan nol.

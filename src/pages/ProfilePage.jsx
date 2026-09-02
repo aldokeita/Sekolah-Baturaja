@@ -10,6 +10,7 @@ import {
   fetchPublicTeachers,
 } from '@/lib/publicContentAdapters';
 import { DEFAULT_PROFILE_CONTENT, fetchProfileContent } from '@/lib/profileContent';
+import { kapasitasKolom, kolomUntuk } from '@/lib/gridKolom';
 import { PRESTASI_CONTENT_KEY, fetchPrestasiContent, normalizePrestasiContent } from '@/lib/prestasiContent';
 import { inisialNama, sebutanStaf } from '@/lib/staf';
 import '@/styles/sdnb.css';
@@ -33,8 +34,8 @@ import '@/styles/sdnb-profil.css';
 const HEADING_FONT = "'Plus Jakarta Sans','Archivo',system-ui,sans-serif";
 const GRAD_TEXT = { background: 'linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' };
 const glass = { background: 'rgba(255,255,255,.5)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.75)' };
-const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' };
-const h2 = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.032em', fontWeight: 800, color: '#171827' };
+const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' };
+const h2 = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.032em', fontWeight: 800, color: 'var(--sdnb-teks-judul)' };
 
 /* Kartu guru: HANYA gradasi latarnya yang tinggal di kode.
  *
@@ -63,6 +64,9 @@ const ORANG_GRADASI = [
  * posisi — jadi jumlah item boleh berubah dan tampilannya tetap konsisten. */
 
 // Gradasi dan ukuran kotak mosaik fasilitas.
+/** Lebar kartu fasilitas dalam satuan kolom, dibaca dari nilai 'span N'. */
+const lebarFasilitas = (span) => Number(String(span).replace(/\D/g, '')) || 1;
+
 const FASILITAS_GAYA = [
   ['linear-gradient(150deg,#c6b6f6,#9fc4f8 60%,#a9eede)', 'span 2', 'span 2'],
   ['linear-gradient(150deg,#ffc9dc,#f2a9c8)', 'span 1', 'span 1'],
@@ -174,7 +178,7 @@ const TiltCard = ({ style, label, imageUrl }) => (
   <div className="tilt" style={style}>
     {imageUrl && <img src={imageUrl} alt={`${label} — foto kartu pembuka`} style={{ position: 'absolute', inset: 0, zIndex: 0, width: '100%', height: '100%', objectFit: 'cover' }} onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
     <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%)' }} />
-    <div style={{ position: 'absolute', left: 14, bottom: 14, zIndex: 1, padding: '7px 12px', borderRadius: 11, fontSize: 11.5, fontWeight: 700, color: '#2c2f4d', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>{label}</div>
+    <div style={{ position: 'absolute', left: 14, bottom: 14, zIndex: 1, padding: '7px 12px', borderRadius: 11, fontSize: 11.5, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>{label}</div>
   </div>
 );
 
@@ -418,6 +422,9 @@ const ProfilePage = () => {
         : isi.hero.badgeLabel;
   const kepalaAvatarUrl = String(isi.quoteAvatarUrl || kepalaSekolah?.foto || '').trim();
   const capaianTeratas = (prestasi.records || []).slice(0, 3);
+  const kolomFasilitas = kapasitasKolom(
+    isi.facilities.map((_, i) => lebarFasilitas(FASILITAS_GAYA[i % FASILITAS_GAYA.length][1])),
+  );
 
   return (
     <div className="sdnb-profil">
@@ -434,17 +441,17 @@ const ProfilePage = () => {
           <div data-reveal="0">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 44, height: 2, background: 'linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))' }} />
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>{isi.hero.kicker}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' }}>{isi.hero.kicker}</span>
             </div>
-            <h1 style={{ margin: '22px 0 0', fontFamily: HEADING_FONT, lineHeight: .98, letterSpacing: '-.045em', color: '#171827' }}>
+            <h1 style={{ margin: '22px 0 0', fontFamily: HEADING_FONT, lineHeight: .98, letterSpacing: '-.045em', color: 'var(--sdnb-teks-judul)' }}>
               <span style={{ display: 'block', fontSize: 34, fontWeight: 500, color: '#6a6f95', letterSpacing: '-.02em' }}>{isi.hero.titleTop}</span>
               <span style={{ display: 'block', fontSize: 74, fontWeight: 800 }}>{isi.hero.titleMain}</span>
               <span style={{ display: 'block', fontSize: 74, fontWeight: 800, ...GRAD_TEXT, background: 'linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))' }}>{isi.hero.titleAccent}</span>
             </h1>
-            <p style={{ margin: '26px 0 0', maxWidth: 470, fontSize: 16, lineHeight: 1.68, color: '#535878', textWrap: 'pretty' }}>{isi.hero.story}</p>
+            <p style={{ margin: '26px 0 0', maxWidth: 470, fontSize: 16, lineHeight: 1.68, color: 'var(--sdnb-teks-pendamping)', textWrap: 'pretty' }}>{isi.hero.story}</p>
             <div style={{ marginTop: 30, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               <a href="#visi" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '14px 24px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 22px 44px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>Visi dan misi</a>
-              <a href="#guru" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '14px 22px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 18px 38px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>Kenali para guru</a>
+              <a href="#guru" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '14px 22px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 18px 38px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>Kenali para guru</a>
             </div>
           </div>
 
@@ -467,48 +474,56 @@ const ProfilePage = () => {
               );
             })}
             <div aria-live="polite" aria-busy={jumlahMurid.status === 'loading'} data-student-count-state={jumlahMurid.status} style={{ position: 'absolute', left: 0, bottom: 70, padding: '14px 18px', borderRadius: 18, background: 'rgba(255,255,255,.58)', backdropFilter: 'blur(24px) saturate(185%)', WebkitBackdropFilter: 'blur(24px) saturate(185%)', border: '1px solid rgba(255,255,255,.85)', boxShadow: '0 24px 50px -20px rgba(55,65,120,.6),inset 0 1px 0 rgba(255,255,255,.95)', animation: 'floaty 9s ease-in-out infinite' }}>
-              <div style={{ fontFamily: HEADING_FONT, fontSize: 28, fontWeight: 800, letterSpacing: '-.03em', color: '#1d1f33' }}>
+              <div style={{ fontFamily: HEADING_FONT, fontSize: 28, fontWeight: 800, letterSpacing: '-.03em', color: 'var(--sdnb-teks-judul)' }}>
                 {angkaHitung(badgeValue)}
               </div>
-              <div style={{ fontSize: 11.5, color: '#6d7192' }}>{badgeLabel}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--sdnb-teks-pendamping)' }}>{badgeLabel}</div>
               {jumlahMurid.error && (
-                <div role="alert" style={{ marginTop: 6, maxWidth: 150, fontSize: 10.5, lineHeight: 1.35, color: '#9b435b' }}>
+                <div role="alert" style={{ marginTop: 6, maxWidth: 150, fontSize: 10.5, lineHeight: 1.35, color: 'var(--sdnb-teks-pendamping)' }}>
                   {jumlahMurid.error}
-                  <button type="button" onClick={() => loadJumlahMurid()} style={{ display: 'block', marginTop: 3, padding: 0, border: 0, background: 'none', color: 'var(--sekolah-aksen-pekat)', font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>Coba lagi</button>
+                  <button type="button" onClick={() => loadJumlahMurid()} style={{ display: 'block', marginTop: 3, padding: 0, border: 0, background: 'none', color: 'var(--sekolah-aksen-teks)', font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>Coba lagi</button>
                 </div>
               )}
             </div>
           </div>
         </div>
 
+        {/* Dua garis tipis tanpa isi terlihat seperti cacat, jadi tikernya hilang
+            seluruhnya bila sekolah menghapus semua tulisannya. */}
+        {isi.ticker.length > 0 && (
         <div className="mq-wrap" style={{ marginTop: 26, overflow: 'hidden', padding: '6px 0', WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)', borderTop: '1px solid rgba(255,255,255,.8)', borderBottom: '1px solid rgba(255,255,255,.8)' }}>
           <div className="mq-track" style={{ padding: '10px 7px' }}>
             {/* Digandakan supaya animasi berjalannya tampak tanpa jeda. */}
             {[...isi.ticker, ...isi.ticker].map((w, i) => (
-              <span key={i} style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 600, color: '#4d5273', whiteSpace: 'nowrap' }}>
+              <span key={i} style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', whiteSpace: 'nowrap' }}>
                 <span aria-hidden="true" style={{ width: 5, height: 5, borderRadius: '50%', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))' }} />
                 {w}
               </span>
             ))}
           </div>
         </div>
+        )}
       </section>
 
       {/* ── STAT BAR ─────────────────────────────────────────────────────── */}
+      {/* Sekolah yang menghapus semua angkanya tidak mendapat panel kosong —
+          seluruh barisnya ikut hilang. */}
+      {isi.stats.length > 0 && (
       <section data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '44px 28px 0' }}>
         {/* Jumlah kolom mengikuti jumlah angka yang diisi pembeli, bukan tetap empat. */}
-        <div className="sdnb-profil-stats" style={{ ...glass, position: 'relative', overflow: 'hidden', display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, isi.stats.length)},1fr)`, borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+        <div className="sdnb-profil-stats" style={{ ...glass, position: 'relative', overflow: 'hidden', display: 'grid', gridTemplateColumns: kolomUntuk(isi.stats.length), borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(168deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           {isi.stats.map((s, i) => (
             <div key={`${s.label}-${i}`} style={{ position: 'relative', padding: '26px 28px' }}>
-              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}>
+              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: 'var(--sdnb-teks-judul)' }}>
                 {angkaHitung(s.value, s.plain)}{s.suffix}
               </div>
-              <div style={{ marginTop: 3, fontSize: 12.5, color: '#63678a' }}>{s.label}</div>
+              <div style={{ marginTop: 3, fontSize: 12.5, color: 'var(--sdnb-teks-pendamping)' }}>{s.label}</div>
             </div>
           ))}
         </div>
       </section>
+      )}
 
       {/* ── CAPAIAN TERATAS ──────────────────────────────────────────────── */}
       <section id="capaian" data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '76px 28px 0' }}>
@@ -517,7 +532,7 @@ const ProfilePage = () => {
             <div style={kicker}>Arsip sekolah</div>
             <h2 style={h2}>Capaian <span style={GRAD_TEXT}>teratas</span></h2>
           </div>
-          <p role={prestasiStatus === 'error' ? 'alert' : undefined} aria-live="polite" style={{ maxWidth: 370, margin: 0, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>
+          <p role={prestasiStatus === 'error' ? 'alert' : undefined} aria-live="polite" style={{ maxWidth: 370, margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>
             {prestasiStatus === 'loading' || prestasiStatus === 'refreshing'
               ? 'Memuat catatan penghargaan…'
               : prestasiStatus === 'error'
@@ -529,7 +544,7 @@ const ProfilePage = () => {
         </div>
 
         {capaianTeratas.length > 0 ? (
-          <div className="sdnb-profile-achievements" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }}>
+          <div className="sdnb-profile-achievements" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: kolomUntuk(capaianTeratas.length, 3), gap: 18 }}>
             {capaianTeratas.map((capaian, i) => (
               <article key={`${capaian.judul}-${i}`} style={{ position: 'relative', minHeight: 270, overflow: 'hidden', borderRadius: 24, background: prestasiGradasi(capaian.bidang), border: '1px solid rgba(255,255,255,.62)', boxShadow: '0 28px 58px -24px rgba(55,65,120,.62),inset 0 1px 0 rgba(255,255,255,.65)' }}>
                 {capaian.foto_url && (
@@ -556,7 +571,7 @@ const ProfilePage = () => {
             ))}
           </div>
         ) : (
-          <div role={prestasiStatus === 'error' ? 'alert' : undefined} aria-busy={prestasiStatus === 'loading'} style={{ ...glass, marginTop: 28, padding: '24px 26px', borderRadius: 20, color: '#5b6082', fontSize: 14 }}>
+          <div role={prestasiStatus === 'error' ? 'alert' : undefined} aria-busy={prestasiStatus === 'loading'} style={{ ...glass, marginTop: 28, padding: '24px 26px', borderRadius: 20, color: 'var(--sdnb-teks-pendamping)', fontSize: 14 }}>
             {prestasiStatus === 'loading' || prestasiStatus === 'refreshing' ? 'Catatan penghargaan sedang dimuat…' : prestasiStatus === 'error' ? prestasiError : 'Belum ada catatan penghargaan.'}
           </div>
         )}
@@ -567,11 +582,11 @@ const ProfilePage = () => {
         <div className="sdnb-profil-quote" style={{ display: 'flex', alignItems: 'flex-start', gap: 24 }}>
           <div aria-hidden="true" style={{ flex: 'none', marginTop: -26, fontFamily: HEADING_FONT, fontSize: 150, lineHeight: .7, fontWeight: 800, background: 'linear-gradient(150deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent', userSelect: 'none' }}>&ldquo;</div>
           <div>
-            <p style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 'clamp(24px,2.6vw,36px)', lineHeight: 1.36, letterSpacing: '-.028em', fontWeight: 700, color: '#22243c', textWrap: 'pretty' }}>
+            <p style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 'clamp(24px,2.6vw,36px)', lineHeight: 1.36, letterSpacing: '-.028em', fontWeight: 700, color: 'var(--sdnb-teks-judul)', textWrap: 'pretty' }}>
               {teksBeraksen(isi.quoteLead)}
             </p>
             {isi.quote.map((paragraf, i) => (
-              <p key={i} style={{ margin: i === 0 ? '26px 0 0' : '16px 0 0', maxWidth: 760, fontSize: 16, lineHeight: 1.72, color: '#535878', textWrap: 'pretty' }}>{paragraf}</p>
+              <p key={i} style={{ margin: i === 0 ? '26px 0 0' : '16px 0 0', maxWidth: 760, fontSize: 16, lineHeight: 1.72, color: 'var(--sdnb-teks-pendamping)', textWrap: 'pretty' }}>{paragraf}</p>
             ))}
           </div>
           <div aria-hidden="true" style={{ flex: 'none', alignSelf: 'flex-end', fontFamily: HEADING_FONT, fontSize: 150, lineHeight: .7, fontWeight: 800, background: 'linear-gradient(150deg,var(--sekolah-aksen-ujung),var(--sekolah-aksen-pekat))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent', userSelect: 'none' }}>&rdquo;</div>
@@ -592,10 +607,10 @@ const ProfilePage = () => {
               memuat "Kepala Sekolah". Kalau sekolah belum mengisinya, yang tampil
               adalah nama sekolah — bukan nama orang karangan seperti versi lama. */}
           <div>
-            <div style={{ fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>
+            <div style={{ fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: 'var(--sdnb-teks-judul)' }}>
               {kepalaSekolah ? kepalaSekolah.nama : sekolah.name}
             </div>
-            <div style={{ marginTop: 3, fontSize: 13.5, color: '#6b7093' }}>
+            <div style={{ marginTop: 3, fontSize: 13.5, color: 'var(--sdnb-teks-pendamping)' }}>
               {kepalaSekolah ? kepalaSekolah.peran : 'Kepala Sekolah'}
             </div>
             <div style={{ marginTop: 10, width: 120, height: 2, background: 'linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))' }} />
@@ -611,21 +626,21 @@ const ProfilePage = () => {
         <div style={{ marginTop: 26, position: 'relative', display: 'inline-flex', padding: 5, borderRadius: 18, background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.9)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95),0 14px 30px -18px rgba(60,70,120,.6)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
           <div style={{ position: 'absolute', top: 5, bottom: 5, left: 5, width: PILL_W, borderRadius: 14, background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung))', boxShadow: '0 14px 28px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.5)', transform: `translateX(${tabIdx * PILL_W}px)`, transition: 'transform .42s cubic-bezier(.5,1.4,.4,1)' }} />
           {[['visi', 'Visi'], ['misi', 'Misi'], ['tujuan', 'Tujuan']].map(([k, label]) => (
-            <button key={k} type="button" onClick={() => setTab(k)} style={{ position: 'relative', zIndex: 1, width: PILL_W, padding: '12px 0', border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, transition: 'color .3s ease', color: tab === k ? '#fff' : '#4a4f74' }}>{label}</button>
+            <button key={k} type="button" onClick={() => setTab(k)} style={{ position: 'relative', zIndex: 1, width: PILL_W, padding: '12px 0', border: 0, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, transition: 'color .3s ease', color: tab === k ? '#fff' : 'var(--sdnb-teks-pendamping)' }}>{label}</button>
           ))}
         </div>
 
         <div style={{ ...glass, marginTop: 20, position: 'relative', overflow: 'hidden', padding: '36px 38px', borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '45%', background: 'linear-gradient(168deg,rgba(255,255,255,.58),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           {tab === 'visi' && (
-            <p className="tabpane" style={{ position: 'relative', margin: 0, maxWidth: 900, fontFamily: HEADING_FONT, fontSize: 26, lineHeight: 1.42, letterSpacing: '-.02em', fontWeight: 700, color: '#22243c', textWrap: 'pretty' }}>{sekolah.vision}</p>
+            <p className="tabpane" style={{ position: 'relative', margin: 0, maxWidth: 900, fontFamily: HEADING_FONT, fontSize: 26, lineHeight: 1.42, letterSpacing: '-.02em', fontWeight: 700, color: 'var(--sdnb-teks-judul)', textWrap: 'pretty' }}>{sekolah.vision}</p>
           )}
           {tab === 'misi' && (
             <div className="tabpane sdnb-profil-misi" style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
               {sekolah.missions.map((t, i) => (
                 <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '16px 18px', borderRadius: 16, background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.9)' }}>
                   <div style={{ flex: 'none', width: 28, height: 28, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, fontWeight: 800, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.5)' }}>{i + 1}</div>
-                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#3f4468' }}>{t}</p>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--sdnb-teks-badan)' }}>{t}</p>
                 </div>
               ))}
             </div>
@@ -635,7 +650,7 @@ const ProfilePage = () => {
               {sekolah.goals.map((t2, i) => (
                 <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                   <div style={{ flex: 'none', marginTop: 6, width: 8, height: 8, borderRadius: '50%', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))' }} />
-                  <p style={{ margin: 0, fontSize: 15, lineHeight: 1.62, color: '#3f4468' }}>{t2}</p>
+                  <p style={{ margin: 0, fontSize: 15, lineHeight: 1.62, color: 'var(--sdnb-teks-badan)' }}>{t2}</p>
                 </div>
               ))}
             </div>
@@ -659,7 +674,7 @@ const ProfilePage = () => {
                 <div className="tl-card lift" style={{ position: 'relative', overflow: 'hidden', padding: 22, borderRadius: 22, background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 24px 52px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
                   <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(166deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
                   <div style={{ position: 'relative', fontFamily: HEADING_FONT, fontSize: 30, fontWeight: 800, letterSpacing: '-.035em', background: `linear-gradient(115deg,${grad})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>{tahun}</div>
-                  <p style={{ position: 'relative', margin: '10px 0 0', fontSize: 13.5, lineHeight: 1.62, color: '#4d5273' }}>{teks}</p>
+                  <p style={{ position: 'relative', margin: '10px 0 0', fontSize: 13.5, lineHeight: 1.62, color: 'var(--sdnb-teks-pendamping)' }}>{teks}</p>
                 </div>
                 <div aria-hidden="true" style={{ flex: 'none', width: 16, height: 16, borderRadius: '50%', margin: i % 2 === 0 ? '26px 0 0' : '0 0 26px', background: `linear-gradient(135deg,${grad})`, border: '3px solid rgba(255,255,255,.95)', boxShadow: '0 0 0 5px rgba(120,132,255,.14),0 8px 18px -6px rgba(80,90,190,.7)' }} />
               </div>
@@ -680,7 +695,7 @@ const ProfilePage = () => {
             <p
               role={stafStatus === 'error' ? 'alert' : undefined}
               aria-live="polite"
-              style={{ margin: '12px 0 0', maxWidth: 440, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}
+              style={{ margin: '12px 0 0', maxWidth: 440, fontSize: 14, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}
             >
               {stafStatus === 'loading'
                 ? 'Memuat daftar guru dan staf…'
@@ -693,7 +708,7 @@ const ProfilePage = () => {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={() => slide(-1)} className="shine h-glass92" aria-label="Sebelumnya" style={{ position: 'relative', overflow: 'hidden', width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.62)', boxShadow: '0 14px 30px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
             </button>
             <button type="button" onClick={() => slide(1)} className="shine" aria-label="Berikutnya" style={{ position: 'relative', overflow: 'hidden', width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 0, background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 16px 34px -14px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.55)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
@@ -722,13 +737,13 @@ const ProfilePage = () => {
                   >
                     <PersonSvg size={120} style={{ position: 'absolute', zIndex: 0, left: '50%', bottom: -6, transform: 'translateX(-50%)' }} />
                   </FotoDenganFallback>
-                  <div style={{ position: 'absolute', left: 14, top: 14, padding: '6px 11px', borderRadius: 10, fontSize: 11, fontWeight: 800, letterSpacing: '.04em', color: '#2c2f4d', background: 'rgba(255,255,255,.62)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>{t.inisial}</div>
+                  <div style={{ position: 'absolute', left: 14, top: 14, padding: '6px 11px', borderRadius: 10, fontSize: 11, fontWeight: 800, letterSpacing: '.04em', color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.62)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>{t.inisial}</div>
                 </div>
                 <div style={{ position: 'relative', padding: '20px 22px 22px' }}>
-                  <div style={{ fontFamily: HEADING_FONT, fontSize: 16, fontWeight: 800, letterSpacing: '-.018em', color: '#1e2035' }}>{t.nama}</div>
-                  <div style={{ marginTop: 4, fontSize: 12.5, fontWeight: 600, color: '#6b7093' }}>{t.peran}</div>
+                  <div style={{ fontFamily: HEADING_FONT, fontSize: 16, fontWeight: 800, letterSpacing: '-.018em', color: 'var(--sdnb-teks-judul)' }}>{t.nama}</div>
+                  <div style={{ marginTop: 4, fontSize: 12.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)' }}>{t.peran}</div>
                   <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,.85)' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--sekolah-aksen-pekat)' }}>Lihat profil
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--sekolah-aksen-teks)' }}>Lihat profil
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
                     </span>
                   </div>
@@ -752,19 +767,23 @@ const ProfilePage = () => {
             <div style={kicker}>Fasilitas</div>
             <h2 style={h2}>Keliling <span style={GRAD_TEXT}>sekolah</span></h2>
           </div>
-          <p style={{ maxWidth: 330, margin: 0, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>Klik salah satu foto untuk memperbesar dan membaca keterangannya.</p>
+          <p style={{ maxWidth: 330, margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>Klik salah satu foto untuk memperbesar dan membaca keterangannya.</p>
         </div>
 
-        <div className="sdnb-profil-fasilitas" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gridAutoRows: 170, gap: 16 }}>
+        {/* Kolom mengikuti kapasitas kartu, bukan empat mati seperti mockup —
+            sekolah yang mengisi dua fasilitas dulu mendapat separuh baris kosong.
+            Lebar kartu ikut dipangkas agar tidak melampaui jumlah kolom. */}
+        <div className="sdnb-profil-fasilitas" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: `repeat(${kolomFasilitas},1fr)`, gridAutoRows: 170, gap: 16 }}>
           {isi.facilities.map((f, i) => {
             const [grad, kolom, baris] = FASILITAS_GAYA[i % FASILITAS_GAYA.length];
+            const lebar = Math.min(lebarFasilitas(kolom), kolomFasilitas);
             return (
-            <div key={`${f.name}-${i}`} onClick={() => setLight(i)} className="gtile" style={{ gridColumn: kolom, gridRow: baris, position: 'relative', overflow: 'hidden', borderRadius: 22, cursor: 'pointer', border: '1px solid rgba(255,255,255,.72)', boxShadow: '0 26px 54px -22px rgba(55,65,120,.58),inset 0 1px 0 rgba(255,255,255,.8)' }}>
+            <div key={`${f.name}-${i}`} onClick={() => setLight(i)} className="gtile" style={{ gridColumn: `span ${lebar}`, gridRow: baris, position: 'relative', overflow: 'hidden', borderRadius: 22, cursor: 'pointer', border: '1px solid rgba(255,255,255,.72)', boxShadow: '0 26px 54px -22px rgba(55,65,120,.58),inset 0 1px 0 rgba(255,255,255,.8)' }}>
               <div className="gfill" style={{ position: 'absolute', inset: 0, background: grad }} />
               <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
-              <div style={{ position: 'absolute', left: 14, bottom: 14, padding: '7px 12px', borderRadius: 11, fontSize: 12, fontWeight: 700, color: '#2c2f4d', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.85)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{f.name}</div>
+              <div style={{ position: 'absolute', left: 14, bottom: 14, padding: '7px 12px', borderRadius: 11, fontSize: 12, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.6)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,.85)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{f.name}</div>
               <div style={{ position: 'absolute', right: 12, top: 12, width: 30, height: 30, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,.85)' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3c4166" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /><path d="M11 8v6" /><path d="M8 11h6" /></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /><path d="M11 8v6" /><path d="M8 11h6" /></svg>
               </div>
             </div>
             );
@@ -777,24 +796,24 @@ const ProfilePage = () => {
         <div style={{ ...glass, position: 'relative', overflow: 'hidden', padding: '30px 32px', borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '45%', background: 'linear-gradient(168deg,rgba(255,255,255,.58),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', ...kicker }}>Identitas</div>
-          <h3 style={{ position: 'relative', margin: '10px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-.022em', color: '#1b1c2c' }}>Data pokok sekolah</h3>
+          <h3 style={{ position: 'relative', margin: '10px 0 0', fontSize: 22, fontWeight: 800, letterSpacing: '-.022em', color: 'var(--sdnb-teks-judul)' }}>Data pokok sekolah</h3>
           <div style={{ position: 'relative', marginTop: 20, display: 'flex', flexDirection: 'column' }}>
             {dataPokok(sekolah, isi.registry).map(([label, nilai]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 20, padding: '13px 2px', borderBottom: '1px solid rgba(255,255,255,.75)' }}>
-                <span style={{ flex: 'none', fontSize: 13, color: '#6b7093' }}>{label}</span>
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1e2035', textAlign: 'right' }}>{nilai}</span>
+                <span style={{ flex: 'none', fontSize: 13, color: 'var(--sdnb-teks-pendamping)' }}>{label}</span>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--sdnb-teks-judul)', textAlign: 'right' }}>{nilai}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ position: 'relative', overflow: 'hidden', padding: '34px 36px', borderRadius: 26, background: 'linear-gradient(135deg,rgba(120,132,255,.9),rgba(160,120,240,.85) 48%,rgba(240,150,196,.85))', border: '1px solid rgba(255,255,255,.55)', boxShadow: '0 30px 62px -24px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)' }}>
+        <div style={{ position: 'relative', overflow: 'hidden', padding: '34px 36px', borderRadius: 26, background: 'var(--sdnb-ajakan)', border: '1px solid rgba(255,255,255,.55)', boxShadow: '0 30px 62px -24px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(168deg,rgba(255,255,255,.4),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           <h3 style={{ position: 'relative', margin: 0, fontFamily: HEADING_FONT, fontSize: 28, lineHeight: 1.18, letterSpacing: '-.028em', fontWeight: 800, color: '#fff' }}>Ingin melihat langsung?</h3>
           <p style={{ position: 'relative', margin: '14px 0 0', fontSize: 15, lineHeight: 1.62, color: 'rgba(255,255,255,.9)' }}>Kunjungan orang tua dibuka setiap Rabu pukul 09.00. Cukup kabari tata usaha sehari sebelumnya, dan seorang guru akan menemani berkeliling.</p>
           <div style={{ position: 'relative', marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Link to="/pendaftaran" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 15, fontSize: 14, fontWeight: 700, color: '#3b3f7a', background: 'rgba(255,255,255,.92)', boxShadow: '0 16px 34px -14px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)' }}>Daftar PPDB</Link>
-            <a href="#kontak" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 15, fontSize: 14, fontWeight: 700, color: '#fff', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.5)' }}>Hubungi sekolah</a>
+            <Link to="/pendaftaran" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 15, fontSize: 14, fontWeight: 700, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.92)', boxShadow: '0 16px 34px -14px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)' }}>Daftar PPDB</Link>
+            <a href="#kontak" className="shine" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderRadius: 15, fontSize: 14, fontWeight: 700, color: '#fff', background: 'var(--sdnb-ajakan-tombol)', border: '1px solid rgba(255,255,255,.5)' }}>Hubungi sekolah</a>
           </div>
         </div>
       </section>
@@ -812,26 +831,26 @@ const ProfilePage = () => {
             <div style={{ padding: '34px 36px 36px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
                 <div>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>{p.peran}</div>
-                  <h3 style={{ margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 28, lineHeight: 1.16, letterSpacing: '-.028em', fontWeight: 800, color: '#1b1c2c' }}>{p.nama}</h3>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' }}>{p.peran}</div>
+                  <h3 style={{ margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 28, lineHeight: 1.16, letterSpacing: '-.028em', fontWeight: 800, color: 'var(--sdnb-teks-judul)' }}>{p.nama}</h3>
                 </div>
                 <button type="button" onClick={closeAll} className="shine" aria-label="Tutup" style={{ position: 'relative', overflow: 'hidden', flex: 'none', width: 38, height: 38, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.7)' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
                 </button>
               </div>
               {/* Deskripsi sekolah, bukan biografi per orang: basis data guru
                   tidak menyimpan biografi, dan versi lama mengarangnya. */}
-              <p style={{ margin: '18px 0 0', fontSize: 15, lineHeight: 1.68, color: '#4a4f74' }}>{sekolah.description}</p>
+              <p style={{ margin: '18px 0 0', fontSize: 15, lineHeight: 1.68, color: 'var(--sdnb-teks-pendamping)' }}>{sekolah.description}</p>
               <div style={{ marginTop: 22, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {p.rincian.map(([k, v]) => (
                   <div key={k} style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#8a8ea8' }}>{k}</div>
-                    <div style={{ marginTop: 5, fontSize: 13.5, fontWeight: 700, color: '#1e2035' }}>{v}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--sdnb-teks-pendamping)' }}>{k}</div>
+                    <div style={{ marginTop: 5, fontSize: 13.5, fontWeight: 700, color: 'var(--sdnb-teks-judul)' }}>{v}</div>
                   </div>
                 ))}
               </div>
               <div style={{ marginTop: 22, display: 'flex', gap: 10 }}>
-                <button type="button" onClick={() => movePerson(-1)} className="shine" style={{ position: 'relative', overflow: 'hidden', padding: '12px 18px', borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: '#33375a', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.65)' }}>Sebelumnya</button>
+                <button type="button" onClick={() => movePerson(-1)} className="shine" style={{ position: 'relative', overflow: 'hidden', padding: '12px 18px', borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: 'var(--sdnb-teks-badan)', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.65)' }}>Sebelumnya</button>
                 <button type="button" onClick={() => movePerson(1)} className="shine" style={{ position: 'relative', overflow: 'hidden', padding: '12px 18px', borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: '#fff', border: 0, background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 14px 30px -14px rgba(95,105,235,.9)' }}>Berikutnya</button>
               </div>
             </div>
@@ -852,18 +871,18 @@ const ProfilePage = () => {
             </div>
             <div style={{ marginTop: 16, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, padding: '18px 22px', borderRadius: 20, background: 'rgba(255,255,255,.68)', backdropFilter: 'blur(26px) saturate(185%)', WebkitBackdropFilter: 'blur(26px) saturate(185%)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 30px 60px -24px rgba(40,50,110,.6)' }}>
               <div>
-                <div style={{ fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>{l.name}</div>
-                <div style={{ marginTop: 5, fontSize: 13.5, lineHeight: 1.6, color: '#565b7d', maxWidth: 520 }}>{l.desc}</div>
+                <div style={{ fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: 'var(--sdnb-teks-judul)' }}>{l.name}</div>
+                <div style={{ marginTop: 5, fontSize: 13.5, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)', maxWidth: 520 }}>{l.desc}</div>
               </div>
               <div style={{ display: 'flex', gap: 9, flex: 'none' }}>
                 <button type="button" onClick={() => moveLight(-1)} className="shine" aria-label="Sebelumnya" style={{ position: 'relative', overflow: 'hidden', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.7)' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                 </button>
                 <button type="button" onClick={() => moveLight(1)} className="shine" aria-label="Berikutnya" style={{ position: 'relative', overflow: 'hidden', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 0, background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                 </button>
                 <button type="button" onClick={closeAll} className="shine" aria-label="Tutup" style={{ position: 'relative', overflow: 'hidden', width: 42, height: 42, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid rgba(255,255,255,.9)', background: 'rgba(255,255,255,.7)' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#404568" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
                 </button>
               </div>
             </div>

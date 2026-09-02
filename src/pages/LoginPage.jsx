@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoginBody from '@/components/sdnb/generated/LoginBody';
 import SiteNav from '@/components/sdnb/SiteNav';
@@ -21,12 +21,30 @@ import '@/styles/login-page.css';
  * Wiring: the mockup's in-memory credential check is replaced by the app's JWT
  * auth (`signInWithUsername`). The role tabs keep their design role — they set
  * the field label and placeholder — while the backend resolves the actual role.
+ * Karena peran sebenarnya ditentukan backend, tab yang dipilih tidak membatasi
+ * siapa yang boleh masuk; ia hanya memberi tahu apa yang harus diisi.
  */
 
+/* Label dan contoh isian tiap tab HARUS sesuai dengan yang benar-benar diterima
+ * backend. `resolveUser` di backend/internal/handler/auth.go mencari murid lewat
+ * nomor induk (atau nama panggilan), lalu pegawai lewat **email** — tidak ada
+ * jalur NIP dan tidak ada jalur nama pengguna.
+ *
+ * Sebelumnya tab Guru meminta "Nomor induk pegawai" dengan contoh 198703142009
+ * dan tab Tata usaha meminta "Nama pengguna" dengan contoh tu.baturaja. Keduanya
+ * dari mockup, dan keduanya tidak pernah bisa masuk: pegawai yang menuruti
+ * labelnya selalu ditolak. Contoh emailnya memakai domain example.sch.id supaya
+ * tidak menyodorkan alamat sekolah tertentu sebagai milik pembeli. */
+/* Murid masuk memakai NAMA PANGGILAN, dan sandinya nomor induknya sendiri.
+ * `resolveUser` menerima nisn, nis, nomor_induk, MAUPUN nama panggilan sebagai
+ * nama pengguna, jadi keempatnya tetap bekerja — label ini menyebut yang dipilih
+ * pemilik untuk diberitahukan ke murid. Nama panggilan yang sama dipakai dua
+ * murid tidak jadi masalah: auth.go mengumpulkan semua kandidat lalu sandinya
+ * yang memutuskan, dan sandi keduanya berbeda karena nomor induknya berbeda. */
 const PERAN = [
-  ['Orang tua', 'Nomor induk murid', 'Contoh: 2026041'],
-  ['Guru', 'Nomor induk pegawai', 'Contoh: 198703142009'],
-  ['Tata usaha', 'Nama pengguna', 'Contoh: tu.baturaja'],
+  ['Orang tua', 'Nama panggilan murid', 'Contoh: Naila'],
+  ['Guru', 'Email', 'Contoh: nama@example.sch.id'],
+  ['Tata usaha', 'Email', 'Contoh: nama@example.sch.id'],
 ];
 
 const LoginPage = () => {
@@ -57,7 +75,13 @@ const LoginPage = () => {
   }, [user, navigate, location.state]);
 
   const cur = PERAN.find((p) => p[0] === peran) || PERAN[0];
-  const siap = akun.trim().length > 3 && sandi.length > 5;
+  /* Cukup keduanya terisi. Ambang lama — nama pengguna lebih dari 3 huruf dan
+   * sandi lebih dari 5 — mengunci akun yang sah begitu murid memakai nama
+   * panggilan dan nomor induk: "Ani" hanya 3 huruf, dan NIS lima angka seperti
+   * 26001 tidak akan pernah lolos, sehingga tombol Masuk tidak bisa ditekan
+   * sama sekali. Panjang sandi yang sah ditentukan backend dan panel admin
+   * (minimal 4 karakter saat dibuat), bukan diterka di halaman login. */
+  const siap = akun.trim().length > 0 && sandi.length > 0;
 
   const masuk = async () => {
     if (!siap || busy) { if (!siap) pesan('Lengkapi akun dan kata sandi'); return; }
@@ -132,10 +156,10 @@ const LoginPage = () => {
 
   return (
     <div className="sdnb sdnb-login">
-      <Helmet>
-        <title>Masuk — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Masuk ke portal Sekolah Dasar Negeri Baturaja untuk orang tua, guru, dan tata usaha." />
-      </Helmet>
+      <JudulHalaman
+        judul="Masuk"
+        deskripsi="Masuk ke portal {sekolah} untuk orang tua, guru, dan tata usaha."
+      />
       <SiteNav />
       {LoginBody(vals)}
     </div>

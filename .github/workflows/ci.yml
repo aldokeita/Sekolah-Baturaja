@@ -1,0 +1,57 @@
+# CI ringkas: frontend (lint + test) dan backend Go (build + vet + test).
+#
+# Sengaja TIDAK menjalankan `npm run build` di sini: tools/build.js adalah
+# wrapper kustom yang belum diverifikasi bekerja tanpa env tertentu. Kalau mau
+# ditambahkan, verifikasi dulu secara lokal, lalu masukkan ke job web.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web (lint + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (0 error; warning tidak memblokir)
+        run: npm run lint
+
+      - name: Test
+        run: npx vitest run --passWithNoTests
+
+  api:
+    name: Backend Go (build + vet + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...

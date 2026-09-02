@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import BirthdayNotificationModal from '@/components/dashboard/shared/BirthdayNotificationModal';
 import * as XLSX from 'xlsx';
 import {
+  bulkInsertGuru,
   createGuru,
   deleteGuru,
   fetchGuruList,
@@ -21,16 +22,43 @@ import {
   pickGuruProfileFields,
   updateGuru,
 } from '@/lib/dataMasterAdapters';
+import ExcelImportDialog from '@/components/dashboard/shared/ExcelImportDialog';
 import { getStorageErrorMessage, resolveAvatarRecords, uploadAvatar } from '@/lib/storageAdapters';
 import { getBirthdaysThisMonth } from '@/lib/birthdayUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdminRole } from '@/lib/roles';
+import { labelStafRole } from '@/lib/staf';
 
-const AVAILABLE_ROLES = ['Pengajar', 'Pentashih', 'Staff Operasional', 'Tata Usaha', 'Admin'];
+// 'Kepala Sekolah' memberi dashboard pengawasan sekolah, sama dengan Wakil Kepala
+// Sekolah; yang membedakan hanya sebutannya. Admin dan Tata Usaha tetap menang
+// bila akunnya juga memegang salah satunya — lihat
+// getOperationalRoleFromGuruForm di src/lib/dataMasterAdapters.js.
+const AVAILABLE_ROLES = ['Kepala Sekolah', 'Pengajar', 'Pentashih', 'Staff Operasional', 'Tata Usaha', 'Admin'];
 
 // Nilai 'Pentashih' tetap dipakai sebagai nilai tersimpan karena resolusi role
 // dan data guru lama bergantung padanya. Yang berubah hanya labelnya.
 const ROLE_LABELS = { Pentashih: 'Wakil Kepala Sekolah' };
+
+// Sertifikasi pendidik hanya berlaku bagi orang yang mengajar. Administrator dan
+// Tata Usaha bukan guru, jadi menandai mereka "Belum Bersertifikat" bukan sekadar
+// label yang keliru — pembaca menyimpulkan ada berkas yang belum diurus padahal
+// pertanyaannya tidak berlaku untuk mereka.
+// Kepala sekolah ikut dihitung mengajar: di sekolah negeri jabatan itu dipegang
+// guru bersertifikat pendidik, jadi kolom Sertifikasi memang berlaku untuknya.
+const PERAN_MENGAJAR = ['Kepala Sekolah', 'Pengajar', 'Pentashih'];
+const mengajar = (guru) => (Array.isArray(guru?.roles) ? guru.roles : []).some((r) => PERAN_MENGAJAR.includes(r));
+
+// Kolom `status_guru` sempat menampung dua kosakata sekaligus: sertifikasi
+// ('Bersertifikat'/'Belum Bersertifikat') dan keaktifan ('Aktif'/'Nonaktif').
+// Keaktifan sudah punya kolomnya sendiri, yaitu `guru.status`, jadi nilai lama
+// itu tidak mengatakan apa pun tentang sertifikasi dan tidak boleh dibaca
+// seolah-olah mengatakannya. Nilai di luar kosakata sertifikasi dianggap belum
+// terdata, bukan diterjemahkan menjadi "Belum Bersertifikat".
+const SERTIFIKASI_SAH = ['Bersertifikat', 'Belum Bersertifikat'];
+const labelSertifikasi = (guru) => {
+  if (!mengajar(guru)) return '—';
+  return SERTIFIKASI_SAH.includes(guru?.status_guru) ? guru.status_guru : 'Belum terdata';
+};
 
 const GuruManagement = () => {
   const { role } = useAuth();
@@ -42,6 +70,7 @@ const GuruManagement = () => {
   const [guruList, setGuruList] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGuru, setEditingGuru] = useState(null);
+  const [isExcelImportOpen, setIsExcelImportOpen] = useState(false);
   const [formData, setFormData] = useState({});
   const [filters, setFilters] = useState({ search: '', isNotulen: 'all', rfidStatus: 'all' });
   const photoInputRef = React.useRef(null);
@@ -83,7 +112,7 @@ const GuruManagement = () => {
   const resetForm = () => {
     setFormData({
       nama: '', jabatan: '', email: '', no_hp: '', alamat: '', rfid_tag: '', is_notulen: false, foto_url: '', avatar_path: '', password: '',
-      roles: [], jenis_kelamin: 'Laki-laki', status_guru: 'Belum Bersertifikat', nomor_induk_qiroati: '', tanggal_lahir: ''
+      roles: [], jenis_kelamin: 'Laki-laki', status_guru: '', nuptk: '', tanggal_lahir: ''
     });
     setEditingGuru(null);
   };
@@ -98,8 +127,8 @@ const GuruManagement = () => {
         password: '',
         roles: guru.roles || [],
         jenis_kelamin: guru.jenis_kelamin || 'Laki-laki',
-        status_guru: guru.status_guru || 'Belum Bersertifikat',
-        nomor_induk_qiroati: guru.nomor_induk_qiroati || '',
+        status_guru: SERTIFIKASI_SAH.includes(guru.status_guru) ? guru.status_guru : '',
+        nuptk: guru.nuptk || '',
         tanggal_lahir: guru.tanggal_lahir || ''
     });
     setIsDialogOpen(true);
@@ -120,7 +149,6 @@ const GuruManagement = () => {
   const handleBackupToExcel = async () => {
     try {
         toast({ title: "Memproses Backup", description: "Sedang menyiapkan data untuk diekspor..." });
-        console.log("Starting Backup to Excel for Guru...");
 
         const allGuru = await fetchGuruList();
 
@@ -136,10 +164,10 @@ const GuruManagement = () => {
             'No Telepon': guru.no_hp || '-',
             'Alamat': guru.alamat || '-',
             'Tanggal Bergabung': guru.created_at ? new Date(guru.created_at).toLocaleDateString('id-ID') : '-',
-            'Status': guru.status_guru || 'Belum Bersertifikat',
-            'Jabatan': guru.jabatan || '-',
-            'Role': guru.roles && guru.roles.length > 0 ? guru.roles.join(', ') : '-',
-            'NUPTK': guru.nomor_induk_qiroati || '-',
+            'Sertifikasi': labelSertifikasi(guru),
+            'Jabatan': labelStafRole(guru.jabatan || '-'),
+            'Role': guru.roles && guru.roles.length > 0 ? guru.roles.map((item) => ROLE_LABELS[item] || item).join(', ') : '-',
+            'NUPTK': guru.nuptk || '-',
             'Jenis Kelamin': guru.jenis_kelamin || '-',
             'Tanggal Lahir': guru.tanggal_lahir ? new Date(guru.tanggal_lahir).toLocaleDateString('id-ID') : '-',
         }));
@@ -282,7 +310,7 @@ const GuruManagement = () => {
             guru.nama.toLowerCase().includes(filters.search.toLowerCase()) ||
             (guru.email && guru.email.toLowerCase().includes(filters.search.toLowerCase())) ||
             (guru.rfid_tag && guru.rfid_tag.includes(filters.search)) ||
-            (guru.nomor_induk_qiroati && guru.nomor_induk_qiroati.includes(filters.search));
+            (guru.nuptk && guru.nuptk.includes(filters.search));
 
         const notulenMatch = filters.isNotulen === 'all' || (filters.isNotulen === 'yes' && guru.is_notulen) || (filters.isNotulen === 'no' && !guru.is_notulen);
         const rfidMatch = filters.rfidStatus === 'all' || (filters.rfidStatus === 'assigned' && guru.rfid_tag) || (filters.rfidStatus === 'unassigned' && !guru.rfid_tag);
@@ -326,9 +354,14 @@ const GuruManagement = () => {
             </div>
             )}
             {isAdmin && (
-              <button onClick={handleAdd} className="admin-panel-primary-btn">
-                  <Plus className="w-4 h-4"/> Tambah Guru
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setIsExcelImportOpen(true)} className="admin-action-cluster-btn">
+                  <Upload className="w-4 h-4"/> Impor Excel
+                </button>
+                <button onClick={handleAdd} className="admin-panel-primary-btn">
+                    <Plus className="w-4 h-4"/> Tambah Guru
+                </button>
+              </div>
             )}
           </div>
       </div>
@@ -362,7 +395,7 @@ const GuruManagement = () => {
               <th className="p-3 text-left w-12 text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>No.</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Nama</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>No. Induk</th>
-              <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Status Guru</th>
+              <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Sertifikasi</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Role</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>Kontak</th>
               <th className="p-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--admin-text-muted))' }}>RFID</th>
@@ -376,15 +409,17 @@ const GuruManagement = () => {
                 <td className="p-3">
                     <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 border cursor-pointer hover:scale-105 transition-transform" style={{ borderColor: 'hsl(var(--admin-border))' }} onClick={() => setPreviewImage(guru.foto_url)}>
-                            <AvatarImage src={guru.foto_url} /><AvatarFallback style={{ backgroundColor: 'hsl(var(--admin-accent-soft))', color: 'hsl(var(--admin-accent))' }} className="text-xs font-bold">{guru.nama.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={guru.foto_url} />{/* Huruf awalnya adalah TEKS di atas latar lembut, jadi memakai turunan
+                                baca aksennya. Aksen mentah hanya mencapai rasio 3.59 pada 12px. */}
+                            <AvatarFallback style={{ backgroundColor: 'hsl(var(--admin-accent-soft))', color: 'var(--avatar-inisial)' }} className="text-xs font-bold">{guru.nama.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <span className="font-medium" style={{ color: 'hsl(var(--admin-text-primary))' }}>{guru.nama}</span>
                     </div>
                 </td>
-                <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--admin-text-secondary))' }}>{guru.nomor_induk_qiroati || '-'}</td>
+                <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--admin-text-secondary))' }}>{guru.nuptk || '-'}</td>
                 <td className="p-3">
-                    <span className={guru.status_guru === 'Bersertifikat' ? 'admin-status-badge admin-status-badge--success' : 'admin-status-badge admin-status-badge--neutral'}>
-                        {guru.status_guru || 'Belum Bersertifikat'}
+                    <span className={guru.status_guru === 'Bersertifikat' && mengajar(guru) ? 'admin-status-badge admin-status-badge--success' : 'admin-status-badge admin-status-badge--neutral'}>
+                        {labelSertifikasi(guru)}
                     </span>
                 </td>
                 <td className="p-3">
@@ -437,7 +472,7 @@ const GuruManagement = () => {
                  <div className="col-span-full font-semibold text-lg border-b pb-2 text-primary">Informasi Pribadi</div>
 
                  <div className="space-y-1.5"><label htmlFor="nama" className="text-xs font-medium uppercase text-muted-foreground">Nama Lengkap</label><Input id="nama" value={formData.nama || ''} onChange={handleInputChange} required /></div>
-                 <div className="space-y-1.5"><label htmlFor="nomor_induk_qiroati" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3"/> NUPTK</label><Input id="nomor_induk_qiroati" value={formData.nomor_induk_qiroati || ''} onChange={handleInputChange} placeholder="Contoh: 123456789" /></div>
+                 <div className="space-y-1.5"><label htmlFor="nuptk" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3"/> NUPTK</label><Input id="nuptk" value={formData.nuptk || ''} onChange={handleInputChange} placeholder="Contoh: 123456789" /></div>
                  <div className="space-y-1.5"><label htmlFor="jabatan" className="text-xs font-medium uppercase text-muted-foreground">Jabatan Utama (Display)</label><Input id="jabatan" value={formData.jabatan || ''} onChange={handleInputChange} /></div>
 
                  <div className="space-y-1.5"><label htmlFor="no_hp" className="text-xs font-medium uppercase text-muted-foreground">No. HP</label><Input id="no_hp" value={formData.no_hp || ''} onChange={handleInputChange} /></div>
@@ -450,12 +485,18 @@ const GuruManagement = () => {
 
                  <div className="space-y-1.5"><label htmlFor="tanggal_lahir" className="text-xs font-medium uppercase text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3"/> Tanggal Lahir</label><Input id="tanggal_lahir" type="date" value={formData.tanggal_lahir || ''} onChange={handleInputChange} /></div>
 
+                 {/* Hanya untuk peran yang mengajar. Nilai bawaannya dikosongkan,
+                     bukan dipaksa 'Belum Bersertifikat': baris lama menyimpan
+                     'Aktif' di kolom ini, dan menampilkannya sebagai "Belum
+                     Bersertifikat" akan mengubah data hanya karena formnya dibuka. */}
+                 {mengajar(formData) && (
                  <div className="space-y-1.5"><label className="text-xs font-medium uppercase text-muted-foreground">Status Sertifikasi</label>
-                    <Select value={formData.status_guru || 'Belum Bersertifikat'} onValueChange={val => setFormData(prev => ({...prev, status_guru: val}))}>
-                        <SelectTrigger><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                    <Select value={SERTIFIKASI_SAH.includes(formData.status_guru) ? formData.status_guru : ''} onValueChange={val => setFormData(prev => ({...prev, status_guru: val}))}>
+                        <SelectTrigger><SelectValue placeholder="Belum terdata" /></SelectTrigger>
                         <SelectContent><SelectItem value="Bersertifikat">Bersertifikat</SelectItem><SelectItem value="Belum Bersertifikat">Belum Bersertifikat</SelectItem></SelectContent>
                     </Select>
                  </div>
+                 )}
 
                  <div className="col-span-full space-y-1.5"><label htmlFor="alamat" className="text-xs font-medium uppercase text-muted-foreground">Alamat</label><Textarea id="alamat" value={formData.alamat || ''} onChange={handleInputChange} /></div>
 
@@ -517,7 +558,7 @@ const GuruManagement = () => {
               </div>
               )}
 
-              <div className="flex items-center space-x-2 pt-2"><Checkbox id="is_notulen" checked={formData.is_notulen} onCheckedChange={handleCheckboxChange} /><label htmlFor="is_notulen" className="text-sm font-medium cursor-pointer">Jadikan sebagai Notulen MMQ</label></div>
+              <div className="flex items-center space-x-2 pt-2"><Checkbox id="is_notulen" checked={formData.is_notulen} onCheckedChange={handleCheckboxChange} /><label htmlFor="is_notulen" className="text-sm font-medium cursor-pointer">Jadikan sebagai Notulen Rapat Guru</label></div>
               <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Menyimpan...' : (editingGuru ? 'Simpan Perubahan' : 'Tambah Guru')}</Button></DialogFooter>
             </form>
         </DialogContent>
@@ -540,6 +581,24 @@ const GuruManagement = () => {
             </div>
         </DialogContent>
       </Dialog>
+
+      <ExcelImportDialog
+        open={isExcelImportOpen}
+        onClose={() => setIsExcelImportOpen(false)}
+        title="Impor Guru"
+        description="Unduh template, isi data guru, lalu unggah. Password kosong akan dibuat acak dan ditampilkan setelah impor."
+        columns={[
+          { header: 'Nama Lengkap*', key: 'nama', required: true, example: 'Budi Santoso' },
+          { header: 'Email*', key: 'email', required: true, example: 'budi@sekolah.sch.id' },
+          { header: 'Password (opsional)', key: 'password', example: '' },
+          { header: 'Role (guru/pentashih/tata_usaha/admin)', key: 'role', example: 'guru' },
+          { header: 'Jabatan', key: 'jabatan', example: 'Guru Kelas' },
+          { header: 'No HP', key: 'no_hp', example: '08123456789' },
+          { header: 'Jenis Kelamin', key: 'jenis_kelamin', example: 'Laki-laki' },
+        ]}
+        submitBulk={bulkInsertGuru}
+        onImported={fetchGuru}
+      />
     </div>
   );
 };

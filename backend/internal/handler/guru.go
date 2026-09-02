@@ -2,8 +2,11 @@ package handler
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math/big"
 	"net/http"
 	"strings"
 
@@ -43,7 +46,7 @@ func (h *GuruHandler) Routes() chi.Router {
 // prevent bcrypt hashes from leaking to the client.
 const guruSafeColumns = `g.id, g.nama, g.email, g.no_hp, g.alamat, g.foto_url,
 	g.rfid_tag, g.jabatan, g.roles, g.is_notulen, g.jenis_kelamin,
-	g.tanggal_lahir, g.status_guru, g.status, g.created_at, g.updated_at,
+	g.tanggal_lahir, g.status_guru, g.status, g.nuptk, g.created_at, g.updated_at,
 	g.deleted_at, g.created_by, g.updated_by, g.avatar_path`
 
 // Columns a client may set/update on guru.
@@ -52,6 +55,12 @@ var guruEditable = map[string]bool{
 	"avatar_path": true, "rfid_tag": true, "jabatan": true, "roles": true,
 	"is_notulen": true, "jenis_kelamin": true, "tanggal_lahir": true,
 	"status_guru": true, "status": true, "password": true,
+	// Panel Data Guru sudah lama punya field "NUPTK", tetapi menuliskannya ke
+	// `nomor_induk_qiroati` — kolom yang tidak pernah ada pada tabel `guru`.
+	// Allowlist ini menyaringnya habis, jadi apa pun yang diketik admin hilang
+	// tanpa pesan dan kolomnya selamanya tampil "-". Kolom `nuptk` dibuat oleh
+	// migrasi 20260815000500 dan sekarang benar-benar tersimpan.
+	"nuptk": true,
 }
 
 // guruCreatable is guruEditable plus id, which Create supplies itself from the
@@ -577,4 +586,178 @@ func insertJilidHistory(ctx context.Context, q querier, santriID string, fromJil
 
 func insertJilidHistoryTx(ctx context.Context, tx pgx.Tx, santriID string, fromJilid *string, toJilid, changedBy string) error {
 	return insertJilidHistory(ctx, tx, santriID, fromJilid, toJilid, changedBy)
+}
+
+// randomPassword membuat sandi awal acak untuk guru yang diimpor tanpa
+// kolom password. Panjang 8 karakter alfanumerik — cukup untuk akun pertama,
+// wajib diganti guru sendiri setelah masuk.
+func randomPassword(n int) (string, error) {
+	const charset = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
+	buf := make([]byte, n)
+	for i := range buf {
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			return "", err
+		}
+		buf[i] = charset[idx.Int64()]
+	}
+	return string(buf), nil
+}
+
+// POST /api/guru/bulk — impor massal guru dari hasil parse Excel frontend.
+//
+// Satu savepoint per baris: baris yang rusak dilaporkan lalu dilewati, bukan
+// menggagalkan seluruh berkas. Password kosong diganti acak dan dikembalikan
+// sekali di respons supaya bisa dibagikan ke guru bersangkutan.
+func (h *GuruHandler) BulkCreate(w http.ResponseWriter, r *http.Request) {
+	if !middleware.IsAdmin(middleware.RoleFromCtx(r.Context())) {
+		jsonError(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	var body struct {
+		Rows []struct {
+			Nama         string `json:"nama"`
+			Email        string `json:"email"`
+			Password     string `json:"password"`
+			Role         string `json:"role"`
+			Jabatan      string `json:"jabatan"`
+			NoHp         string `json:"no_hp"`
+			JenisKelamin string `json:"jenis_kelamin"`
+		} `json:"rows"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<20)).Decode(&body); err != nil {
+		jsonError(w, "request tidak valid", http.StatusBadRequest)
+		return
+	}
+	if len(body.Rows) == 0 {
+		jsonError(w, "data kosong", http.StatusBadRequest)
+		return
+	}
+	if len(body.Rows) > 1000 {
+		jsonError(w, "maksimal 1000 baris per permintaan", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		jsonError(w, "gagal memulai transaksi", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	type failedRow struct {
+		Index int    `json:"index"`
+		Email string `json:"email"`
+		Error string `json:"error"`
+	}
+	type insertedRow struct {
+		Item         map[string]any `json:"item"`
+		PasswordAwal string         `json:"password_awal,omitempty"`
+	}
+	inserted := []insertedRow{}
+	failed := []failedRow{}
+
+	for i, row := range body.Rows {
+		sp := fmt.Sprintf("bulk_guru_%d", i)
+		if _, err := tx.Exec(ctx, "SAVEPOINT "+sp); err != nil {
+			jsonError(w, "gagal menyiapkan simpanan baris", http.StatusInternalServerError)
+			return
+		}
+
+		fail := func(msg string) {
+			_, _ = tx.Exec(ctx, "ROLLBACK TO SAVEPOINT "+sp)
+			failed = append(failed, failedRow{Index: i, Email: strings.TrimSpace(row.Email), Error: msg})
+		}
+
+		nama := strings.TrimSpace(row.Nama)
+		email := strings.ToLower(strings.TrimSpace(row.Email))
+		if nama == "" || email == "" || !strings.Contains(email, "@") || !strings.Contains(email[strings.Index(email, "@"):], ".") {
+			fail("nama dan email wajib diisi dengan format yang benar")
+			continue
+		}
+
+		password := strings.TrimSpace(row.Password)
+		autoPassword := ""
+		if password == "" {
+			password, err = randomPassword(8)
+			if err != nil {
+				fail("gagal membuat password acak")
+				continue
+			}
+			autoPassword = password
+		}
+		if len(password) < 6 {
+			fail("password minimal 6 karakter")
+			continue
+		}
+
+		profileRole := "guru"
+		switch strings.ToLower(strings.TrimSpace(row.Role)) {
+		case "pentashih":
+			profileRole = "pentashih"
+		case "admin":
+			profileRole = "admin"
+		case "tata_usaha":
+			profileRole = "tata_usaha"
+		case "guru", "":
+			profileRole = "guru"
+		default:
+			fail("role tidak valid (guru/pentashih/tata_usaha/admin)")
+			continue
+		}
+
+		profile := map[string]any{
+			"nama": nama, "email": email, "password": password, "status": "active",
+		}
+		if j := strings.TrimSpace(row.Jabatan); j != "" {
+			profile["jabatan"] = j
+		}
+		if hp := strings.TrimSpace(row.NoHp); hp != "" {
+			profile["no_hp"] = hp
+		}
+		if jk := strings.TrimSpace(row.JenisKelamin); jk != "" {
+			profile["jenis_kelamin"] = jk
+		}
+		if err := hashPasswordField(profile); err != nil {
+			fail("gagal memproses password")
+			continue
+		}
+
+		var newID string
+		if err := tx.QueryRow(ctx,
+			`INSERT INTO auth.users (email) VALUES ($1) RETURNING id`, email,
+		).Scan(&newID); err != nil {
+			msg := err.Error()
+			if strings.Contains(msg, "duplicate key") {
+				msg = "email sudah terdaftar"
+			}
+			fail(msg)
+			continue
+		}
+
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO user_profiles (id, role, display_name, email, status)
+			VALUES ($1, $2::public.app_role, $3, $4, 'active')
+		`, newID, profileRole, nama, email); err != nil {
+			fail("gagal membuat profil akun: " + err.Error())
+			continue
+		}
+
+		profile["id"] = newID
+		item, err := insertRowTx(ctx, tx, "guru", profile, guruCreatable)
+		if err != nil {
+			fail("gagal menyimpan guru: " + err.Error())
+			continue
+		}
+		_, _ = tx.Exec(ctx, "RELEASE SAVEPOINT "+sp)
+		inserted = append(inserted, insertedRow{Item: item, PasswordAwal: autoPassword})
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		jsonError(w, "gagal menyimpan data", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+	jsonData(w, map[string]any{"inserted": inserted, "failed": failed})
 }

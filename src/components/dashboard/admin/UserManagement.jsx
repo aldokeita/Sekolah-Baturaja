@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
-import { Edit, Trash2, Search, Key } from 'lucide-react';
+import { Edit, Trash2, Search, Key, RotateCcw } from 'lucide-react';
 import { fetchGuruList, fetchSantriList, updateGuru, updateSantri } from '@/lib/dataMasterAdapters';
 import { useAuth } from '@/contexts/AuthContext';
 import { isAdminRole } from '@/lib/roles';
@@ -44,20 +44,53 @@ const UserManagement = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id, table) => {
-    const displayName = table === 'guru' ? 'Guru' : 'Murid';
-    const resetField = table === 'santri' ? 'nama_panggilan' : 'email';
+  /* Untuk MURID tombol ini mengembalikan sandi ke nomor induknya, bukan
+   * mengosongkannya.
+   *
+   * Sebelumnya ia mengirim `{ nama_panggilan: null, password: null }`, dan itu
+   * bukan reset melainkan penghapusan satu arah: nama panggilan adalah nama
+   * pengguna murid, dan `tryVerify` di auth.go sengaja menolak akun yang tidak
+   * punya sandi. Jadi akunnya mati — dan tidak ada jalan pulih lewat aplikasi,
+   * karena kolom sandi di formulir Data Murid dimatikan saat mengedit. Satu
+   * klik, dan murid itu hanya bisa dihidupkan lewat SQL.
+   *
+   * Urutan nomornya sama dengan `insertSantriTx` di backend: nis, nisn,
+   * nomor_induk. Murid tanpa satu pun nomor tidak disentuh — mengosongkan
+   * sandinya justru mengunci akun, dan itu yang sedang dihindari.
+   *
+   * Guru dibiarkan seperti semula: sandi guru bisa disetel ulang dari panel
+   * Data Guru, jadi bagi mereka pengosongan masih bisa dipulihkan. */
+  const handleDelete = async (user) => {
+    const table = user.table;
 
-    if(window.confirm(`Anda yakin ingin mereset login untuk pengguna ini? Username & Password akan dikosongkan.`)){
-        try {
-            const payload = { [resetField]: null, password: null };
-            if (table === 'santri') await updateSantri(id, payload);
-            else await updateGuru(id, payload);
-            toast({ title: "Berhasil!", description: `Login untuk ${displayName} berhasil direset.` });
-            loadUsers();
-        } catch (error) {
-            toast({ title: "Gagal", description: error.message, variant: "destructive" });
-        }
+    if (table === 'santri') {
+      const induk = String(user.nis || user.nisn || user.nomor_induk || '').trim();
+      if (!induk) {
+        toast({
+          title: 'Tidak bisa dikembalikan',
+          description: 'Murid ini belum punya NIS, NISN, maupun nomor induk, jadi tidak ada sandi bawaan untuk dipakai.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (!window.confirm(`Kembalikan sandi ${user.name} ke nomor induknya? Nama penggunanya tidak berubah.`)) return;
+      try {
+        await updateSantri(user.id, { password: induk });
+        toast({ title: 'Berhasil!', description: `Sandi ${user.name} kembali ke nomor induknya.` });
+        loadUsers();
+      } catch (error) {
+        toast({ title: 'Gagal', description: error.message, variant: 'destructive' });
+      }
+      return;
+    }
+
+    if (!window.confirm('Anda yakin ingin mereset login untuk guru ini? Email & Password akan dikosongkan.')) return;
+    try {
+      await updateGuru(user.id, { email: null, password: null });
+      toast({ title: 'Berhasil!', description: 'Login untuk Guru berhasil direset.' });
+      loadUsers();
+    } catch (error) {
+      toast({ title: 'Gagal', description: error.message, variant: 'destructive' });
     }
   }
 
@@ -153,8 +186,15 @@ const UserManagement = () => {
                   <Button onClick={() => handleEdit(user, 'santri')} size="sm" variant="outline">
                     <Key className="w-4 h-4 mr-2" /> Edit
                   </Button>
-                  <Button onClick={() => handleDelete(user.id, user.table)} size="sm" variant="destructive">
-                    <Trash2 className="w-4 h-4 mr-2" /> Reset
+                  <Button
+                    onClick={() => handleDelete(user)}
+                    size="sm"
+                    variant={user.table === 'santri' ? 'outline' : 'destructive'}
+                    title={user.table === 'santri' ? 'Kembalikan sandi ke nomor induk' : 'Kosongkan email & sandi guru'}
+                  >
+                    {user.table === 'santri'
+                      ? <><RotateCcw className="w-4 h-4 mr-2" /> Reset sandi</>
+                      : <><Trash2 className="w-4 h-4 mr-2" /> Reset</>}
                   </Button>
                 </td>
               </tr>

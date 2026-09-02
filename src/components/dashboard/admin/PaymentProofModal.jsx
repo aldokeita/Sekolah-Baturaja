@@ -112,7 +112,7 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
     const transactionRef = getPaymentReceiptReference(receiptPayment);
     const isPaid = isPaymentPaid(receiptPayment?.status);
     const studentName = receiptPayment?.santri?.nama_lengkap || 'Murid';
-    const studentId = receiptPayment?.santri?.nomor_induk_qiroati || '-';
+    const studentId = receiptPayment?.santri?.nomor_induk || '-';
     const period = formatPaymentPeriod(receiptPayment?.bulan, receiptPayment?.tahun);
     const notes = receiptPayment?.catatan || 'Pembayaran Administrasi';
 
@@ -224,9 +224,16 @@ const PaymentProofModal = ({ isOpen, onClose, payment }) => {
 
     return (
         <>
+        {/* Dipagari `:has()` seperti tiga aturan cetak lainnya — lihat
+            rapor-cetak.css. Tanpa pagar, aturan ini ikut menyembunyikan kuitansi
+            pembayaran di PaymentSystem yang dipasang di layar yang sama, dan
+            karena `!important` di sini melawan aturan tanpa `!important` di sana,
+            kuitansinya keluar kosong. Pengecualiannya ikut dipagari supaya tidak
+            kalah bobot dari penyapunya sendiri. */}
         <style>{`@media print {
-          body * { visibility: hidden !important; }
-          #payment-proof-content, #payment-proof-content * { visibility: visible !important; }
+          body:has(#payment-proof-content) * { visibility: hidden !important; }
+          body:has(#payment-proof-content) #payment-proof-content,
+          body:has(#payment-proof-content) #payment-proof-content * { visibility: visible !important; }
           #payment-proof-content { position: absolute; left: 0; top: 0; width: 100%; max-width: 480px; box-shadow: none; }
         }`}</style>
         <Dialog open={isOpen} onOpenChange={onClose}>

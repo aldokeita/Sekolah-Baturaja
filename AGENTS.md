@@ -132,8 +132,6 @@ Gunakan:
 - `fix/<nama-bug>`
 - `chore/<nama-pekerjaan>`
 
-Push branch agar Vercel membuat Preview Deployment.
-
 Jangan merge ke `master` tanpa persetujuan pengguna.
 
 Perubahan kecil yang eksplisit boleh dilakukan di `master` hanya jika:

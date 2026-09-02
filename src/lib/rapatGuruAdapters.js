@@ -8,13 +8,17 @@ const toDbTime = (value) => {
   return value.length === 5 ? `${value}:00` : value;
 };
 
-export const getMmqErrorMessage = (error) => {
-  if (!error) return 'Terjadi kesalahan pada fitur MMQ.';
+export const getRapatGuruErrorMessage = (error) => {
+  if (!error) return 'Terjadi kesalahan pada fitur Rapat Guru.';
   const message = error.message || '';
-  if (error.code === '23505' || message.toLowerCase().includes('duplicate')) return 'Kehadiran MMQ untuk guru, jadwal, dan tanggal tersebut sudah tercatat.';
-  if (error.code === '42501' || message.toLowerCase().includes('row-level security')) return 'Akses MMQ tidak diizinkan untuk akun ini.';
-  if (message.includes('mmq_attendance_status_check')) return 'Status kehadiran MMQ tidak sesuai aturan database.';
-  return message || 'Terjadi kesalahan pada fitur MMQ.';
+  if (error.code === '23505' || message.toLowerCase().includes('duplicate')) return 'Kehadiran rapat guru untuk guru, jadwal, dan tanggal tersebut sudah tercatat.';
+  if (error.code === '42501' || message.toLowerCase().includes('row-level security')) return 'Akses Rapat Guru tidak diizinkan untuk akun ini.';
+  // Nama batasannya `..._status_not_blank`, BUKAN `..._status_check`. Baris ini
+  // dulu mencocokkan nama yang tidak pernah ada, jadi penerjemahannya tidak
+  // pernah aktif. Tabelnya kini bernama rapat_guru_absensi (migrasi
+  // 20260815000500), dan batasannya ikut berganti nama.
+  if (message.includes('rapat_guru_absensi_status_not_blank')) return 'Status kehadiran rapat guru tidak sesuai aturan database.';
+  return message || 'Terjadi kesalahan pada fitur Rapat Guru.';
 };
 
 const sanitizeSchedulePayload = (payload) => ({
@@ -34,17 +38,17 @@ const sanitizeAttendancePayload = (payload) => ({
   notes: payload.notes || null,
 });
 
-export const fetchMmqSchedules = async () => apiClient.get('/api/mmq/schedules');
+export const fetchRapatGuruSchedules = async () => apiClient.get('/api/mmq/schedules');
 
-export const saveMmqSchedule = async (payload) => {
+export const saveRapatGuruSchedule = async (payload) => {
   const body = sanitizeSchedulePayload(payload);
   if (payload.id) return apiClient.put(`/api/mmq/schedules/${payload.id}`, body);
   return apiClient.post('/api/mmq/schedules', body);
 };
 
-export const deleteMmqSchedule = async (id) => apiClient.delete(`/api/mmq/schedules/${id}`);
+export const deleteRapatGuruSchedule = async (id) => apiClient.delete(`/api/mmq/schedules/${id}`);
 
-export const fetchMmqAttendance = async ({ date } = {}) => {
+export const fetchRapatGuruAttendance = async ({ date } = {}) => {
   const params = date ? `?date=${date}` : '';
   const data = await apiClient.get(`/api/mmq/attendance${params}`);
   return Promise.all((data || []).map(async (record) => ({
@@ -53,25 +57,25 @@ export const fetchMmqAttendance = async ({ date } = {}) => {
   })));
 };
 
-export const saveMmqAttendance = async (payload) => {
+export const saveRapatGuruAttendance = async (payload) => {
   const body = sanitizeAttendancePayload(payload);
   if (payload.id) return apiClient.put(`/api/mmq/attendance/${payload.id}`, body);
   return apiClient.post('/api/mmq/attendance', body);
 };
 
-export const createMmqAttendance = async (payload) => {
+export const createRapatGuruAttendance = async (payload) => {
   return apiClient.post('/api/mmq/attendance', sanitizeAttendancePayload(payload));
 };
 
-export const deleteMmqAttendance = async (id) => apiClient.delete(`/api/mmq/attendance/${id}`);
+export const deleteRapatGuruAttendance = async (id) => apiClient.delete(`/api/mmq/attendance/${id}`);
 
-export const fetchMmqNotulensi = async () => apiClient.get('/api/mmq/notulensi');
+export const fetchRapatGuruNotulensi = async () => apiClient.get('/api/mmq/notulensi');
 
-export const createMmqNotulensi = async ({ schedule_id, tanggal, judul, isi, notulen_id }) => {
+export const createRapatGuruNotulensi = async ({ schedule_id, tanggal, judul, isi, notulen_id }) => {
   return apiClient.post('/api/mmq/notulensi', { schedule_id, tanggal, judul, isi, notulen_id });
 };
 
-export const updateMmqNotulensi = async (id, payload) => {
+export const updateRapatGuruNotulensi = async (id, payload) => {
   return apiClient.put(`/api/mmq/notulensi/${id}`, {
     judul: payload.judul,
     isi: payload.isi,
@@ -80,9 +84,9 @@ export const updateMmqNotulensi = async (id, payload) => {
   });
 };
 
-export const deleteMmqNotulensi = async (id) => apiClient.delete(`/api/mmq/notulensi/${id}`);
+export const deleteRapatGuruNotulensi = async (id) => apiClient.delete(`/api/mmq/notulensi/${id}`);
 
-export const fetchGuruForMmq = async () => {
+export const fetchGuruForRapatGuru = async () => {
   const data = await apiClient.get('/api/guru');
   return resolveAvatarRecords(data, { ownerType: 'guru' });
 };

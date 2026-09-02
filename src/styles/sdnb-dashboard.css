@@ -25,7 +25,24 @@
   /* ── text ─────────────────────────────────────────────────────────────── */
   --admin-text-primary: 236 26% 12%;    /* #171827 */
   --admin-text-secondary: 232 18% 40%;  /* #535878 */
-  --admin-text-muted: 233 15% 50%;      /* #6d7192 */
+  /* Terangnya diturunkan dari 50% ke 45%. Nada ini dipakai untuk teks paling
+     kecil di dashboard — judul kolom tabel 11px, label, keterangan — dan pada
+     50% ia hanya mencapai rasio 4.28 di atas panel terang, dari 4.5 yang diminta
+     WCAG AA. Pada 45% menjadi 5.04, dan urutannya tetap: masih lebih terang dari
+     --admin-text-secondary (40%). */
+  --admin-text-muted: 233 15% 45%;      /* #626684 */
+
+  /* Warna garis grafik pengeluaran. Recharts memakai nilai ini untuk garisnya DAN
+     untuk teks legendanya, jadi ia harus lolos ambang teks — dan karena itu perlu
+     nilai berbeda per tema: merah tua terbaca di latar terang (6.47) tapi jatuh ke
+     2.71 di latar gelap. */
+  --admin-grafik-bahaya: #b91c1c;
+
+  /* Aksen dipakai sebagai TEKS di dashboard. Di mode terang turunan bacanya
+     sudah ada (`--sekolah-aksen-teks`); nama ini menyatukan keduanya supaya
+     satu kelas Tailwind tidak perlu tahu temanya. Jangan pakai `text-primary`
+     untuk teks di atas kartu — di mode gelap nilainya hanya 4.34. */
+  --admin-aksen-teks: var(--sekolah-aksen-teks);
 
   /* ── accents ──────────────────────────────────────────────────────────── */
   --admin-accent: 234 100% 68%;         /* var(--sekolah-aksen-pekat) */
@@ -44,19 +61,30 @@
 
   position: relative;
   min-height: 100vh;
-  font-family: 'Archivo', system-ui, sans-serif;
-  color: #1b1c28;
+  font-family: 'Poppins', system-ui, sans-serif;
+  /* Token, bukan heks mati. Warna ini diwarisi setiap teks dashboard yang tidak
+     memasang warnanya sendiri — dan sebagai #1b1c28 ia tetap hitam di mode
+     gelap, sehingga nama murid, judul kartu, dan angka rekap menjadi hitam di
+     atas latar hitam: rasio 1.01, praktis tidak terlihat. Aturan pembalik di
+     bawah hanya menyasar kelas Tailwind tertentu (`text-slate-800` dan
+     kawan-kawan), jadi teks tanpa kelas warna sama sekali tidak pernah
+     tersentuh. Tokennya sudah punya nilai gelap dan terang. */
+  color: hsl(var(--admin-text-primary));
 }
 
-/* Headings adopt the display face used across the public site. */
+/* Dashboard headings use the Montserrat display face. */
 .sdnb-dash h1,
 .sdnb-dash h2,
-.sdnb-dash h3,
 .sdnb-dash .admin-page-header h1,
 .sdnb-dash .admin-stat-card__value,
 .sdnb-dash .admin-stat-card-value {
-  font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
   letter-spacing: -0.02em;
+}
+
+/* Smaller dashboard headings use the editorial utility face. */
+.sdnb-dash :is(h3, h4, h5, h6) {
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
 }
 
 /* ── background wash + floating orbs (same as the public shell) ──────────── */
@@ -119,20 +147,21 @@ html[data-theme="dark"] .sdnb-dash .admin-form-section {
 }
 .sdnb-dash .admin-nav-pill {
   border-radius: 12px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: #2c2f45;
   transition: background .25s ease, color .25s ease;
 }
 .sdnb-dash .admin-nav-pill:hover { background: rgba(255, 255, 255, .7); color: #4a58e0; }
-.sdnb-dash .admin-nav-pill.active { color: #fff; font-weight: 700; }
+.sdnb-dash .admin-nav-pill.active { color: #fff; font-weight: 600; }
 .sdnb-dash .admin-nav-pill-indicator {
   background: linear-gradient(135deg, var(--sekolah-aksen), var(--sekolah-aksen-tengah) 55%, var(--sekolah-aksen-ujung));
   border-radius: 12px;
   box-shadow: 0 14px 30px -12px rgba(95, 105, 235, .95), inset 0 1px 0 rgba(255, 255, 255, .5);
 }
 .sdnb-dash .admin-nav-group-label {
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
   color: #8a8ea8;
@@ -226,7 +255,7 @@ html[data-theme="dark"] .sdnb-dash {
   --admin-border-subtle: 235 15% 22%;
   --admin-text-primary: 230 30% 96%;
   --admin-text-secondary: 230 16% 76%;
-  --admin-text-muted: 230 13% 60%;
+  --admin-text-muted: 230 13% 68%;
   --admin-accent: 234 100% 72%;
   --admin-accent-muted: 234 70% 62%;
   --admin-accent-soft: 234 30% 18%;
@@ -264,7 +293,7 @@ html[data-theme="dark"] body.school-admin-context {
   --admin-border-subtle: 235 15% 22%;
   --admin-text-primary: 230 30% 96%;
   --admin-text-secondary: 230 16% 76%;
-  --admin-text-muted: 230 13% 60%;
+  --admin-text-muted: 230 13% 68%;
   --admin-accent: 234 100% 72%;
   --admin-accent-muted: 234 70% 62%;
   --admin-accent-soft: 234 30% 18%;
@@ -561,6 +590,76 @@ html[data-theme="dark"] .sdnb-dash .admin-segmented-control-item[data-state="act
 
 html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
   background-color: hsl(var(--admin-border)) !important;
+}
+
+/* Di mode gelap warna aksen sengaja dicerahkan (72% terang, bukan 68%) supaya
+   menonjol di atas permukaan gelap — dan pada nada seterang itu tulisan PUTIH
+   di atasnya hanya mencapai rasio 3.43 dari 4.5 yang diminta WCAG AA. Aksennya
+   dibiarkan terang; yang dibalik hanya tulisannya, menjadi nada gelap serona
+   Hanya berlaku pada elemen yang memakai aksen sebagai LATAR.
+
+   Kedua elemen di bawah memakai nada aksen yang berbeda — tombol panel yang
+   dicerahkan dan lencana topbar yang tidak — jadi nada tulisannya juga berbeda
+   supaya keduanya sama-sama lolos: 5.27 dan 4.62. */
+html[data-theme="dark"] .sdnb-dash .admin-panel-primary-btn {
+  color: hsl(234 45% 12%) !important;
+}
+
+/* Merah tua garis grafik dinaikkan terangnya di mode gelap: 2.71 menjadi 5.38
+   pada permukaan kartu. Ronanya tetap merah, jadi isyaratnya tidak berubah. */
+html[data-theme="dark"] .sdnb-dash,
+html[data-theme="dark"] body.school-admin-context {
+  --admin-grafik-bahaya: #f87171;
+  /* 78% terang, bukan 72% seperti --admin-accent: sebagai teks di atas kartu
+     gelap, 72% hanya mencapai 4.34. Pada 78% menjadi 5.05 di permukaan paling
+     terang. Aksen untuk LATAR tetap 72% supaya tampilannya tidak berubah. */
+  --admin-aksen-teks: hsl(234 100% 78%);
+}
+
+/* Kartu profil guru memakai `--guru-profile-accent-deep` sebagai TEKS di atas
+   permukaan yang terang di mode terang. Di mode gelap permukaannya menjadi
+   gelap dan nada tua itu jatuh ke 2.80 — huruf awal avatar, ikon, dan angka
+   metrik ikut terbawa. Ronanya dipertahankan (biru untuk laki-laki, merah muda
+   untuk perempuan), terangnya dinaikkan: 8.25 dan 8.21 pada permukaan kartu. */
+html[data-theme="dark"] .guru-profile-card {
+  --guru-profile-accent-deep: #93c5fd;
+}
+
+html[data-theme="dark"] .guru-profile-card--female {
+  --guru-profile-accent-deep: #f9a8d4;
+}
+
+/* Nada teks lencana status diturunkan untuk mode terang — dan di mode gelap
+   nada gelap itu justru jadi terlalu gelap di atas latar lencana yang juga
+   gelap (bahaya turun ke 2.80). Di sini ronanya sama, terangnya dinaikkan.
+   Setiap penyesuaian kontras mode terang perlu diperiksa lagi di mode gelap;
+   keduanya bergerak ke arah yang berlawanan. */
+html[data-theme="dark"] .sdnb-dash .admin-status-badge--success {
+  color: var(--sekolah-aksen-muda) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-status-badge--warning {
+  color: hsl(38 92% 66%) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-status-badge--danger {
+  color: hsl(0 84% 72%) !important;
+}
+
+html[data-theme="dark"] .sdnb-dash .admin-status-badge--info {
+  color: hsl(340 80% 74%) !important;
+}
+
+/* Huruf awal avatar dipasang lewat style inline, dan style inline tidak bisa
+   ikut berganti tema — jadi warnanya ditaruh di sebuah properti kustom yang
+   nilainya berbeda per tema. Turunan baca aksen dirancang untuk latar TERANG;
+   di atas latar gelap ia hanya mencapai 2.91, sedangkan aksen mode gelap yang
+   sudah dicerahkan justru pas. */
+.sdnb-dash { --avatar-inisial: var(--sekolah-aksen-teks); }
+html[data-theme="dark"] .sdnb-dash { --avatar-inisial: hsl(234 100% 78%); }
+
+html[data-theme="dark"] .dashboard-topbar__mark {
+  color: hsl(234 45% 8%) !important;
 }
 
 /* Stat cards use the public palette on one solid, readable surface. */

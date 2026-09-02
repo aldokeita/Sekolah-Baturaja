@@ -8,15 +8,26 @@ import { DEFAULT_PPDB_CONTENT, isiPenanda, normalizePpdbContent } from '@/lib/pp
  * prestasi, yang tegas TIDAK diberlakukan untuk murid kelas satu SD. */
 describe('bawaan jalur mengikuti aturan SPMB untuk SD', () => {
   const jalur = DEFAULT_PPDB_CONTENT.jalur;
+  const dibuka = jalur.filter((j) => j.aktif !== false);
 
-  it('memuat tepat tiga jalur: domisili, afirmasi, mutasi', () => {
-    expect(jalur.map((j) => j.id)).toEqual(['domisili', 'afirmasi', 'mutasi']);
+  it('membuka tepat tiga jalur: domisili, afirmasi, mutasi', () => {
+    expect(dibuka.map((j) => j.id)).toEqual(['domisili', 'afirmasi', 'mutasi']);
   });
 
-  it('tidak memuat jalur prestasi maupun zonasi', () => {
-    const semua = JSON.stringify(jalur).toLowerCase();
-    expect(semua).not.toContain('prestasi');
-    expect(semua).not.toContain('zonasi');
+  /* Prestasi TETAP dikirim, tapi MATI. Pembeli template ini bisa saja SMP atau SMA,
+   * dan di sana jalur prestasi wajar — menghapusnya memaksa mereka mengetik ulang
+   * barisnya beserta menebak kuotanya. Yang tidak boleh adalah menyalakannya secara
+   * bawaan: Permendikdasmen No. 3 Tahun 2025 tidak memberlakukannya untuk murid
+   * kelas satu SD. */
+  it('mengirim jalur prestasi dalam keadaan mati', () => {
+    const prestasi = jalur.find((j) => j.id === 'prestasi');
+    expect(prestasi).toBeTruthy();
+    expect(prestasi.aktif).toBe(false);
+    expect(prestasi.kuota).toBe(0);
+  });
+
+  it('tidak memuat jalur zonasi yang sudah dicabut', () => {
+    expect(JSON.stringify(jalur).toLowerCase()).not.toContain('zonasi');
   });
 
   it('memakai kuota yang ditetapkan untuk SD', () => {
@@ -27,8 +38,8 @@ describe('bawaan jalur mengikuti aturan SPMB untuk SD', () => {
 
   // Ketiganya berjumlah 90%, menyisakan ruang gerak; totalnya tidak boleh melebihi
   // 100% karena kursi yang dibagikan akan lebih banyak daripada yang ada.
-  it('total kuota bawaan tidak melebihi seratus persen', () => {
-    expect(jalur.reduce((t, j) => t + j.kuota, 0)).toBeLessThanOrEqual(100);
+  it('total kuota jalur yang dibuka tidak melebihi seratus persen', () => {
+    expect(dibuka.reduce((t, j) => t + j.kuota, 0)).toBeLessThanOrEqual(100);
   });
 
   it('menyebut usia 7 tahun sebagai prioritas, bukan hanya batas 6 tahun', () => {
@@ -136,7 +147,10 @@ describe('normalizePpdbContent', () => {
       const hasil = normalizePpdbContent({
         jalur: [{ name: 'Anak Guru' }, { name: 'Inklusi & Disabilitas' }],
       });
-      expect(hasil.jalur.map((j) => j.id)).toEqual(['anak-guru', 'inklusi-disabilitas']);
+      // 'prestasi' ikut disisipkan dalam keadaan mati oleh lengkapiJalurBawaanMati,
+      // jadi yang diperiksa di sini hanya baris yang benar-benar dikirim pemanggil.
+      expect(hasil.jalur.filter((j) => j.id !== 'prestasi').map((j) => j.id))
+        .toEqual(['anak-guru', 'inklusi-disabilitas']);
     });
 
     it('tidak pernah kosong walau namanya tanpa huruf', () => {
@@ -155,7 +169,7 @@ describe('normalizePpdbContent', () => {
       jalur: [{ name: 'Zonasi' }, { name: '' }],
       timeline: [{ when: '1 Juli', what: 'Mulai' }, { when: '', what: 'tanpa tanggal' }],
     });
-    expect(hasil.jalur).toHaveLength(1);
+    expect(hasil.jalur.filter((j) => j.id !== 'prestasi')).toHaveLength(1);
     expect(hasil.timeline).toHaveLength(1);
   });
 
@@ -167,6 +181,59 @@ describe('normalizePpdbContent', () => {
   // Bawaan tidak boleh memuat program keagamaan: template ini untuk sekolah umum.
   it('bawaan program pendukung tidak memuat program keagamaan', () => {
     expect(DEFAULT_PPDB_CONTENT.minat.join(' ')).not.toMatch(/tahfiz|qur/i);
+  });
+});
+
+/* Saklar per jalur. Yang mati tetap tersimpan lengkap supaya bisa dinyalakan tanpa
+ * mengetik ulang, tetapi tidak boleh muncul di formulir maupun rekap daya tampung. */
+describe('saklar aktif per jalur', () => {
+  it('menganggap baris tanpa field aktif sebagai aktif', () => {
+    // Pemasangan lama menyimpan jalur tanpa `aktif`; jalur yang sudah dipakai
+    // sekolah tidak boleh mendadak hilang dari formulir.
+    const hasil = normalizePpdbContent({ jalur: [{ id: 'domisili', name: 'Domisili', kuota: 70 }] });
+    expect(hasil.jalur.find((j) => j.id === 'domisili').aktif).toBe(true);
+  });
+
+  it('hanya false yang eksplisit yang mematikan', () => {
+    const hasil = normalizePpdbContent({
+      jalur: [
+        { id: 'a', name: 'A', aktif: false },
+        { id: 'b', name: 'B', aktif: true },
+        { id: 'c', name: 'C', aktif: 0 },
+      ],
+    });
+    expect(hasil.jalur.find((j) => j.id === 'a').aktif).toBe(false);
+    expect(hasil.jalur.find((j) => j.id === 'b').aktif).toBe(true);
+    expect(hasil.jalur.find((j) => j.id === 'c').aktif).toBe(true);
+  });
+
+  /* Pemasangan yang sudah berjalan sebelum saklar ini ada tidak punya baris
+   * Prestasi sama sekali. Tanpa penyisipan, pembeli SMP yang memasang lebih dulu
+   * tidak akan pernah melihat saklarnya. */
+  it('menyisipkan jalur bawaan yang mati bila belum ada di daftar tersimpan', () => {
+    const hasil = normalizePpdbContent({
+      jalur: [{ id: 'domisili', name: 'Domisili', kuota: 100 }],
+    });
+    const prestasi = hasil.jalur.find((j) => j.id === 'prestasi');
+    expect(prestasi).toBeTruthy();
+    expect(prestasi.aktif).toBe(false);
+  });
+
+  it('tidak menghidupkan kembali jalur bawaan yang sengaja dihapus sekolah', () => {
+    const hasil = normalizePpdbContent({
+      jalur: [{ id: 'domisili', name: 'Domisili', kuota: 100 }],
+    });
+    expect(hasil.jalur.map((j) => j.id)).not.toContain('afirmasi');
+    expect(hasil.jalur.map((j) => j.id)).not.toContain('mutasi');
+  });
+
+  it('menghormati pilihan sekolah yang sudah menyalakan prestasi', () => {
+    const hasil = normalizePpdbContent({
+      jalur: [{ id: 'prestasi', name: 'Prestasi', kuota: 30, aktif: true }],
+    });
+    expect(hasil.jalur.filter((j) => j.id === 'prestasi')).toHaveLength(1);
+    expect(hasil.jalur[0].aktif).toBe(true);
+    expect(hasil.jalur[0].kuota).toBe(30);
   });
 });
 

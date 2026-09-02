@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { fetchClassList, fetchGuruList, fetchSantriList } from '@/lib/dataMasterAdapters';
 import { fetchAttendance, fetchCalendarContext } from '@/lib/attendanceAdapters';
 import { fetchHafalanProgress } from '@/lib/academicAdapters';
@@ -59,8 +60,19 @@ const CustomProgressTooltip = ({ active, payload, label }) => {
 };
 
 const GuruPerformanceSummary = () => {
+  const { role, user } = useAuth();
+  // Rekap kinerja dibatasi pada akun yang sedang masuk: seorang guru hanya boleh
+  // melihat kinerjanya sendiri, tidak boleh memilih guru lain.
+  //
+  // Data guru lain sebenarnya sudah tertutup di backend — penyaring pada
+  // `attendance.List`, `classes.List`, dan `santri.List` mengembalikan kosong
+  // untuk guru lain. Tapi membiarkan dropdownnya terisi tetap salah dua kali:
+  // ia membocorkan daftar nama seluruh guru, dan hasil kosongnya terbaca seperti
+  // "guru ini tidak pernah hadir" — padahal artinya "Anda tidak berhak melihat".
+  const hanyaDiriSendiri = role === 'guru' && Boolean(user?.id);
+
   const [gurus, setGurus] = useState([]);
-  const [selectedGuru, setSelectedGuru] = useState('all');
+  const [selectedGuru, setSelectedGuru] = useState(hanyaDiriSendiri ? user.id : 'all');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [availableYears] = useState([new Date().getFullYear(), new Date().getFullYear() - 1]);
@@ -76,14 +88,18 @@ const GuruPerformanceSummary = () => {
   useEffect(() => {
     const fetchGurus = async () => {
       try {
-        setGurus(await fetchGuruList());
+        const daftar = await fetchGuruList();
+        // Guru tidak perlu — dan tidak boleh — melihat nama rekannya di sini.
+        setGurus(hanyaDiriSendiri
+          ? (daftar || []).filter((g) => g.id === user.id)
+          : (daftar || []));
       } catch (err) {
         console.error("Error fetching gurus:", err);
         toast({ title: "Error", description: "Gagal mengambil daftar guru.", variant: "destructive" });
       }
     };
     fetchGurus();
-  }, []);
+  }, [hanyaDiriSendiri, user?.id]);
 
   useEffect(() => {
     const fetchPerformanceData = async () => {
@@ -289,7 +305,16 @@ const GuruPerformanceSummary = () => {
       {/* Filters Header */}
       <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row gap-5 items-end md:items-center justify-between">
         <div className="flex-1 w-full max-w-sm">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Pilih Guru Pengajar</label>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">
+            {hanyaDiriSendiri ? 'Kinerja Mengajar Anda' : 'Pilih Guru Pengajar'}
+          </label>
+          {hanyaDiriSendiri ? (
+            // Tanpa dropdown sama sekali — bukan dropdown berisi satu nama, supaya
+            // tidak ada kesan bahwa pilihannya sedang dibatasi sementara.
+            <p className="flex h-11 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-semibold dark:border-slate-800 dark:bg-slate-950">
+              {gurus[0]?.nama || 'Akun Anda'}
+            </p>
+          ) : (
           <Select value={selectedGuru} onValueChange={setSelectedGuru}>
             <SelectTrigger className="w-full h-11 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
               <SelectValue placeholder="Pilih Guru untuk melihat kinerja" />
@@ -301,6 +326,7 @@ const GuruPerformanceSummary = () => {
               ))}
             </SelectContent>
           </Select>
+          )}
         </div>
 
         <div className="flex gap-3 w-full md:w-auto">

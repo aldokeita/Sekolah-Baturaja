@@ -17,6 +17,7 @@ import React from 'react';
 // Aliased: mockups use short loop variables (e.g. sc-for as="s") that would
 // otherwise shadow the style helper inside a map callback.
 import { s as __dcs } from '@/lib/dcStyle';
+import { kolomUntuk } from '@/lib/gridKolom';
 import '@/styles/sdnb-berita.css';
 
 const BeritaBody = (vals = {}) => {
@@ -28,11 +29,11 @@ const BeritaBody = (vals = {}) => {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "44px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></div>
-            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Ruang berita</span>
+            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-teks)" }}>Ruang berita</span>
           </div>
-          <h1 className="heroh1" style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "70px", lineHeight: ".94", letterSpacing: "-.048em", fontWeight: "800", color: "#171827" }}>Kabar dari<br /><span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>halaman sekolah.</span></h1>
+          <h1 className="heroh1" style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "70px", lineHeight: ".94", letterSpacing: "-.048em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>Kabar dari<br /><span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>halaman sekolah.</span></h1>
         </div>
-        <p style={{ maxWidth: "360px", margin: "0", fontSize: "15.5px", lineHeight: "1.68", color: "#4c5175", textWrap: "pretty" }}>Catatan kegiatan, pengumuman resmi, dan hasil rapat sekolah. Ditulis oleh guru dan tata usaha, diperbarui setiap pekan.</p>
+        <p style={{ maxWidth: "360px", margin: "0", fontSize: "15.5px", lineHeight: "1.68", color: "var(--sdnb-teks-pendamping)", textWrap: "pretty" }}>Catatan kegiatan, pengumuman resmi, dan hasil rapat sekolah. Ditulis oleh guru dan tata usaha, diperbarui setiap pekan.</p>
       </div>
 
       <div className="mq-wrap" style={{ marginTop: "30px", position: "relative", overflow: "hidden", borderRadius: "18px", background: "rgba(255,255,255,.5)", border: "1px solid rgba(255,255,255,.8)", boxShadow: "0 16px 36px -20px rgba(55,65,120,.45),inset 0 1px 0 rgba(255,255,255,.95)" }}>
@@ -42,7 +43,7 @@ const BeritaBody = (vals = {}) => {
         <div style={{ padding: "13px 0 13px 132px", WebkitMaskImage: "linear-gradient(90deg,#000 84%,transparent)", maskImage: "linear-gradient(90deg,#000 84%,transparent)" }}>
           <div className={`${tickerCls}`} style={{ display: "flex", gap: "34px", width: "max-content" }}>
             {(ticker || []).map((t, $index) => (<React.Fragment key={$index}>
-              <span style={{ fontSize: "13px", fontWeight: "600", color: "#3f4468", whiteSpace: "nowrap" }}>{t}</span>
+              <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--sdnb-teks-badan)", whiteSpace: "nowrap" }}>{t}</span>
             </React.Fragment>))}
           </div>
         </div>
@@ -56,12 +57,12 @@ const BeritaBody = (vals = {}) => {
           <div style={{ position: "absolute", inset: "0", background: "linear-gradient(to top,rgba(24,28,62,.78),rgba(24,28,62,.12) 58%,rgba(24,28,62,0))" }}></div>
           <div style={{ position: "absolute", left: "0", right: "0", bottom: "0", padding: "38px 40px 34px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <span style={{ padding: "7px 13px", borderRadius: "11px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".09em", textTransform: "uppercase", color: "#2c2f4d", background: "rgba(255,255,255,.85)" }}>{lead.kat}</span>
+              <span style={{ padding: "7px 13px", borderRadius: "11px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.85)" }}>{lead.kat}</span>
               <span style={{ fontSize: "12.5px", fontWeight: "600", color: "rgba(255,255,255,.86)" }}>{lead.tanggal} &middot; {lead.baca} menit baca</span>
             </div>
             <h2 style={{ margin: "18px 0 0", maxWidth: "660px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "40px", lineHeight: "1.08", letterSpacing: "-.036em", fontWeight: "800", color: "#fff", textShadow: "0 4px 24px rgba(18,22,55,.5)", textWrap: "pretty" }}>{lead.judul}</h2>
             <p style={{ margin: "14px 0 0", maxWidth: "620px", fontSize: "14.5px", lineHeight: "1.65", color: "rgba(255,255,255,.9)" }}>{lead.ringkas}</p>
-            <div style={{ marginTop: "22px", display: "inline-flex", alignItems: "center", gap: "9px", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.94)", boxShadow: "0 16px 34px -14px rgba(30,36,90,.7)" }}>Baca selengkapnya
+            <div style={{ marginTop: "22px", display: "inline-flex", alignItems: "center", gap: "9px", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.94)", boxShadow: "0 16px 34px -14px rgba(30,36,90,.7)" }}>Baca selengkapnya
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
             </div>
           </div>
@@ -90,34 +91,34 @@ const BeritaBody = (vals = {}) => {
           </React.Fragment>))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "9px", padding: "10px 15px", borderRadius: "15px", background: "rgba(255,255,255,.66)", border: "1px solid rgba(255,255,255,.92)", minWidth: "246px" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7b80a4" strokeWidth="2.4" strokeLinecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.2-3.2"></path></svg>
-          <input onInput={search} placeholder="Cari berita atau pengumuman" style={{ flex: "1", minWidth: "0", border: "0", outline: "none", background: "transparent", fontFamily: "inherit", fontSize: "13.5px", color: "#2b2e4a" }} />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-pendamping)" strokeWidth="2.4" strokeLinecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.2-3.2"></path></svg>
+          <input onInput={search} placeholder="Cari berita atau pengumuman" style={{ flex: "1", minWidth: "0", border: "0", outline: "none", background: "transparent", fontFamily: "inherit", fontSize: "13.5px", color: "var(--sdnb-teks-badan)" }} />
         </div>
       </div>
 
       <div className="sidewrap" style={{ marginTop: "26px", display: "grid", gridTemplateColumns: "1fr 334px", gap: "26px", alignItems: "start" }}>
         <div>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "16px" }}>
-            <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "26px", letterSpacing: "-.026em", fontWeight: "800", color: "#191b2c" }}>{judulDaftar}</h2>
-            <div style={{ fontSize: "13px", color: "#6d7192", fontVariantNumeric: "tabular-nums" }}>{hitung}</div>
+            <h2 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "26px", letterSpacing: "-.026em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>{judulDaftar}</h2>
+            <div style={{ fontSize: "13px", color: "var(--sdnb-teks-pendamping)", fontVariantNumeric: "tabular-nums" }}>{hitung}</div>
           </div>
 
-          <div className="newsgrid" style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "20px" }}>
+          <div className="newsgrid" style={{ marginTop: "20px", display: "grid", gridTemplateColumns: kolomUntuk((berita || []).length, 2), gap: "20px" }}>
             {(berita || []).map((b, $index) => (<React.Fragment key={$index}>
               <div className="art" onClick={b.open} style={{ position: "relative", overflow: "hidden", borderRadius: "26px", background: "rgba(255,255,255,.56)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.82)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
                 <div style={{ position: "relative", height: "172px", overflow: "hidden" }}>
                   <div className="afill" style={__dcs(b.fill)}></div>
                   <div style={{ position: "absolute", inset: "0", background: "radial-gradient(115% 75% at 22% 10%,rgba(255,255,255,.45),rgba(255,255,255,0) 58%)" }}></div>
-                  <div style={{ position: "absolute", left: "14px", top: "14px", padding: "6px 11px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".08em", textTransform: "uppercase", color: "#2c2f4d", background: "rgba(255,255,255,.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,.9)" }}>{b.kat}</div>
+                  <div style={{ position: "absolute", left: "14px", top: "14px", padding: "6px 11px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,.9)" }}>{b.kat}</div>
                 </div>
                 <div style={{ padding: "20px 22px 22px" }}>
-                  <div style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".05em", textTransform: "uppercase", color: "#8a8ea8" }}>{b.tanggal} &middot; {b.baca} menit</div>
-                  <h3 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "18.5px", lineHeight: "1.22", letterSpacing: "-.022em", fontWeight: "800", color: "#1b1c2c", textWrap: "pretty" }}>{b.judul}</h3>
-                  <p style={{ margin: "10px 0 0", fontSize: "13.5px", lineHeight: "1.62", color: "#565b7d" }}>{b.ringkas}</p>
+                  <div style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".05em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>{b.tanggal} &middot; {b.baca} menit</div>
+                  <h3 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "18.5px", lineHeight: "1.22", letterSpacing: "-.022em", fontWeight: "800", color: "var(--sdnb-teks-judul)", textWrap: "pretty" }}>{b.judul}</h3>
+                  <p style={{ margin: "10px 0 0", fontSize: "13.5px", lineHeight: "1.62", color: "var(--sdnb-teks-pendamping)" }}>{b.ringkas}</p>
                   <div style={{ marginTop: "18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,.85)" }}>
-                    <span style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--sekolah-aksen-pekat)" }}>{b.penulis}</span>
+                    <span style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--sekolah-aksen-teks)" }}>{b.penulis}</span>
                     <span className="aarrow" style={{ width: "34px", height: "34px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3c4166" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7"></path><path d="M9 7h8v8"></path></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-badan)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7"></path><path d="M9 7h8v8"></path></svg>
                     </span>
                   </div>
                 </div>
@@ -127,16 +128,16 @@ const BeritaBody = (vals = {}) => {
 
           {(kosong) && (<>
             <div style={{ marginTop: "20px", padding: "44px 34px", borderRadius: "26px", textAlign: "left", background: "rgba(255,255,255,.5)", border: "1px dashed rgba(120,132,200,.5)" }}>
-              <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "20px", fontWeight: "800", letterSpacing: "-.02em", color: "#1b1c2c" }}>Tidak ada berita yang cocok</div>
-              <p style={{ margin: "10px 0 0", fontSize: "14px", lineHeight: "1.6", color: "#5b6082" }}>Coba kata kunci lain atau pilih kategori Semua.</p>
+              <div style={{ fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "20px", fontWeight: "800", letterSpacing: "-.02em", color: "var(--sdnb-teks-judul)" }}>Tidak ada berita yang cocok</div>
+              <p style={{ margin: "10px 0 0", fontSize: "14px", lineHeight: "1.6", color: "var(--sdnb-teks-pendamping)" }}>Coba kata kunci lain atau pilih kategori Semua.</p>
             </div>
           </>)}
         </div>
 
         <div id="pengumuman" style={{ display: "flex", flexDirection: "column", gap: "18px", position: "sticky", top: "176px" }}>
           <div style={{ position: "relative", overflow: "hidden", padding: "26px 26px 22px", borderRadius: "26px", background: "rgba(255,255,255,.56)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.82)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
-            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>Pengumuman</div>
-            <h3 style={{ margin: "9px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "21px", letterSpacing: "-.024em", fontWeight: "800", color: "#1b1c2c" }}>Agenda terdekat</h3>
+            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-teks)" }}>Pengumuman</div>
+            <h3 style={{ margin: "9px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "21px", letterSpacing: "-.024em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>Agenda terdekat</h3>
             <div style={{ marginTop: "18px", display: "flex", flexDirection: "column", gap: "8px" }}>
               {(agenda || []).map((a, $index) => (<React.Fragment key={$index}>
                 <div className="ann" style={{ display: "flex", gap: "14px", padding: "13px 14px", borderRadius: "16px", background: "rgba(255,255,255,.5)", border: "1px solid rgba(255,255,255,.85)" }}>
@@ -145,8 +146,8 @@ const BeritaBody = (vals = {}) => {
                     <div style={{ fontSize: "9.5px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", opacity: ".85" }}>{a.m}</div>
                   </div>
                   <div style={{ minWidth: "0" }}>
-                    <div style={{ fontSize: "13.5px", fontWeight: "700", letterSpacing: "-.01em", color: "#1e2035", textWrap: "pretty" }}>{a.judul}</div>
-                    <div style={{ marginTop: "4px", fontSize: "12px", color: "#6d7192" }}>{a.jam}</div>
+                    <div style={{ fontSize: "13.5px", fontWeight: "700", letterSpacing: "-.01em", color: "var(--sdnb-teks-judul)", textWrap: "pretty" }}>{a.judul}</div>
+                    <div style={{ marginTop: "4px", fontSize: "12px", color: "var(--sdnb-teks-pendamping)" }}>{a.jam}</div>
                   </div>
                 </div>
               </React.Fragment>))}
@@ -158,18 +159,18 @@ const BeritaBody = (vals = {}) => {
             <p style={{ margin: "12px 0 0", fontSize: "13.5px", lineHeight: "1.6", color: "rgba(255,255,255,.9)" }}>Satu rangkuman setiap Jumat: pengumuman, jadwal, dan kegiatan pekan depan.</p>
             <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <input placeholder="Alamat surel orang tua" style={{ width: "100%", padding: "13px 15px", borderRadius: "14px", border: "1px solid rgba(255,255,255,.5)", outline: "none", background: "rgba(255,255,255,.2)", fontFamily: "inherit", fontSize: "13.5px", color: "#fff" }} />
-              <button className="shine" style={{ position: "relative", overflow: "hidden", padding: "13px 18px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13.5px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.94)", boxShadow: "0 14px 30px -14px rgba(30,36,90,.7)" }}>Berlangganan</button>
+              <button className="shine" style={{ position: "relative", overflow: "hidden", padding: "13px 18px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.94)", boxShadow: "0 14px 30px -14px rgba(30,36,90,.7)" }}>Berlangganan</button>
             </div>
             <div style={{ marginTop: "14px", fontSize: "11.5px", color: "rgba(255,255,255,.78)" }}>Alamat surel hanya dipakai untuk kabar sekolah.</div>
           </div>
 
           <div style={{ padding: "24px 26px", borderRadius: "26px", background: "rgba(255,255,255,.5)", border: "1px solid rgba(255,255,255,.82)", boxShadow: "0 22px 48px -22px rgba(55,65,120,.45),inset 0 1px 0 rgba(255,255,255,.95)" }}>
-            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "#8a8ea8" }}>Arsip</div>
+            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>Arsip</div>
             <div style={{ marginTop: "16px", display: "flex", flexDirection: "column" }}>
               {(arsip || []).map((r, $index) => (<React.Fragment key={$index}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", padding: "11px 2px", borderBottom: "1px solid rgba(255,255,255,.8)" }}>
-                  <span style={{ fontSize: "13.5px", fontWeight: "600", color: "#3f4468" }}>{r.bulan}</span>
-                  <span style={{ fontSize: "12px", fontWeight: "700", color: "#7b80a4", fontVariantNumeric: "tabular-nums" }}>{r.n}</span>
+                  <span style={{ fontSize: "13.5px", fontWeight: "600", color: "var(--sdnb-teks-badan)" }}>{r.bulan}</span>
+                  <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-pendamping)", fontVariantNumeric: "tabular-nums" }}>{r.n}</span>
                 </div>
               </React.Fragment>))}
             </div>
@@ -188,7 +189,7 @@ const BeritaBody = (vals = {}) => {
           </button>
           <div style={{ position: "absolute", left: "0", right: "0", bottom: "0", padding: "30px 34px 26px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <span style={{ padding: "6px 12px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".09em", textTransform: "uppercase", color: "#2c2f4d", background: "rgba(255,255,255,.88)" }}>{artikel.kat}</span>
+              <span style={{ padding: "6px 12px", borderRadius: "10px", fontSize: "10.5px", fontWeight: "800", letterSpacing: ".09em", textTransform: "uppercase", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.88)" }}>{artikel.kat}</span>
               <span style={{ fontSize: "12.5px", fontWeight: "600", color: "rgba(255,255,255,.88)" }}>{artikel.tanggal} &middot; {artikel.baca} menit baca</span>
             </div>
             <h2 style={{ margin: "14px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "32px", lineHeight: "1.12", letterSpacing: "-.032em", fontWeight: "800", color: "#fff", textShadow: "0 3px 20px rgba(18,22,55,.5)", textWrap: "pretty" }}>{artikel.judul}</h2>
@@ -198,28 +199,28 @@ const BeritaBody = (vals = {}) => {
           <div style={{ display: "flex", alignItems: "center", gap: "12px", paddingBottom: "20px", borderBottom: "1px solid rgba(120,132,200,.22)" }}>
             <div style={__dcs(artikel.avatar)}>{artikel.inisial}</div>
             <div>
-              <div style={{ fontSize: "13.5px", fontWeight: "700", color: "#1e2035" }}>{artikel.penulis}</div>
-              <div style={{ fontSize: "12px", color: "#6d7192" }}>{artikel.peran}</div>
+              <div style={{ fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)" }}>{artikel.penulis}</div>
+              <div style={{ fontSize: "12px", color: "var(--sdnb-teks-pendamping)" }}>{artikel.peran}</div>
             </div>
           </div>
-          <p style={{ margin: "22px 0 0", fontSize: "17px", lineHeight: "1.62", fontWeight: "600", color: "#2f3352", textWrap: "pretty" }}>{artikel.ringkas}</p>
+          <p style={{ margin: "22px 0 0", fontSize: "17px", lineHeight: "1.62", fontWeight: "600", color: "var(--sdnb-teks-badan)", textWrap: "pretty" }}>{artikel.ringkas}</p>
           {(artikel.isi || []).map((p, $index) => (<React.Fragment key={$index}>
-            <p style={{ margin: "18px 0 0", fontSize: "15.5px", lineHeight: "1.78", color: "#4a4f74", textWrap: "pretty" }}>{p}</p>
+            <p style={{ margin: "18px 0 0", fontSize: "15.5px", lineHeight: "1.78", color: "var(--sdnb-teks-pendamping)", textWrap: "pretty" }}>{p}</p>
           </React.Fragment>))}
           {(artikel.media || []).length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: "12px", marginTop: "24px" }}>
               {(artikel.media || []).map((media, $index) => (
                 <figure key={media.id || media.url || $index} style={{ margin: "0", overflow: "hidden", borderRadius: "16px", border: "1px solid rgba(120,132,200,.2)" }}>
                   <img src={media.url} alt={media.alt || media.caption || "Media berita"} style={{ display: "block", width: "100%", aspectRatio: "4 / 3", objectFit: "cover" }} />
-                  {media.caption && <figcaption style={{ padding: "8px 10px", fontSize: "12px", color: "#6d7192" }}>{media.caption}</figcaption>}
+                  {media.caption && <figcaption style={{ padding: "8px 10px", fontSize: "12px", color: "var(--sdnb-teks-pendamping)" }}>{media.caption}</figcaption>}
                 </figure>
               ))}
             </div>
           )}
           <div style={{ marginTop: "30px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap", paddingTop: "22px", borderTop: "1px solid rgba(120,132,200,.22)" }}>
-            <div style={{ fontSize: "12.5px", color: "#6d7192" }}>Artikel {artikel.pos}</div>
+            <div style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>Artikel {artikel.pos}</div>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button className="shine" onClick={prev} style={{ position: "relative", overflow: "hidden", padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#33375a", border: "1px solid rgba(120,132,200,.3)", background: "rgba(255,255,255,.7)" }}>Sebelumnya</button>
+              <button className="shine" onClick={prev} style={{ position: "relative", overflow: "hidden", padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "var(--sdnb-teks-judul)", border: "1px solid rgba(120,132,200,.3)", background: "rgba(255,255,255,.7)" }}>Sebelumnya</button>
               <button className="shine" onClick={next} style={{ position: "relative", overflow: "hidden", padding: "12px 18px", borderRadius: "14px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: "700", color: "#fff", border: "0", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)" }}>Berita berikutnya</button>
             </div>
           </div>

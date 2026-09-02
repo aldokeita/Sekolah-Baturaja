@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import ProgramBody from '@/components/sdnb/generated/ProgramBody';
 import { fetchProgramContent, normalizeProgramContent, PROGRAM_CONTENT_KEY } from '@/lib/programContent';
 import {
@@ -130,7 +130,7 @@ const ProgramPage = () => {
     pintas: P.map((p) => ({
       label: p[0],
       href: '#program',
-      style: 'display:inline-flex;align-items:center;padding:10px 16px;border-radius:999px;font-size:12.5px;font-weight:700;color:#3d4166;background:rgba(255,255,255,.68);border:1px solid rgba(255,255,255,.95);box-shadow:0 10px 24px -14px rgba(60,70,120,.6)',
+      style: 'display:inline-flex;align-items:center;padding:10px 16px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--sdnb-teks-badan);background:rgba(255,255,255,.68);border:1px solid rgba(255,255,255,.95);box-shadow:0 10px 24px -14px rgba(60,70,120,.6)',
     })),
 
     angka: [
@@ -176,10 +176,10 @@ const ProgramPage = () => {
 
   return (
     <div className="sdnb-program">
-      <Helmet>
-        <title>Program — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Program pembelajaran, ritme satu hari di sekolah, dan beban jam pelajaran per pekan." />
-      </Helmet>
+      <JudulHalaman
+        judul="Program"
+        deskripsi="Program pembelajaran, ritme satu hari di sekolah, dan beban jam pelajaran per pekan."
+      />
       {ProgramBody(vals)}
     </div>
   );

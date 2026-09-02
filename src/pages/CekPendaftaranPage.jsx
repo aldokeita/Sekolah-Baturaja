@@ -29,13 +29,13 @@ const NADA = {
 
 const kotak = {
   width: '100%', padding: '13px 15px', borderRadius: '14px', fontFamily: 'inherit',
-  fontSize: '14px', color: '#22243c', background: 'rgba(255,255,255,.72)',
+  fontSize: '14px', color: 'var(--sdnb-teks-judul)', background: 'rgba(255,255,255,.72)',
   border: '1px solid rgba(255,255,255,.95)', outline: 'none',
   boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)',
 };
 
 const label = {
-  display: 'block', marginBottom: '7px', fontSize: '12px', fontWeight: 700, color: '#4a4f74',
+  display: 'block', marginBottom: '7px', fontSize: '12px', fontWeight: 700, color: 'var(--sdnb-teks-pendamping)',
 };
 
 const CekPendaftaranPage = () => {
@@ -77,13 +77,13 @@ const CekPendaftaranPage = () => {
       </Helmet>
 
       <main className="sdnb" style={{ maxWidth: '760px', margin: '0 auto', padding: '48px 20px 72px' }}>
-        <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' }}>
           SPMB {sekolah.academicYear}
         </div>
-        <h1 style={{ margin: '12px 0 0', fontSize: '34px', lineHeight: 1.12, letterSpacing: '-.03em', fontWeight: 800, color: '#171827' }}>
+        <h1 style={{ margin: '12px 0 0', fontSize: '34px', lineHeight: 1.12, letterSpacing: '-.03em', fontWeight: 800, color: 'var(--sdnb-teks-judul)' }}>
           Cek status pendaftaran
         </h1>
-        <p style={{ margin: '14px 0 0', maxWidth: '560px', fontSize: '15px', lineHeight: 1.65, color: '#535878' }}>
+        <p style={{ margin: '14px 0 0', maxWidth: '560px', fontSize: '15px', lineHeight: 1.65, color: 'var(--sdnb-teks-pendamping)' }}>
           Masukkan nomor pendaftaran yang Anda terima setelah mengirim formulir, beserta tanggal lahir
           calon murid. Keduanya harus cocok.
         </p>
@@ -172,14 +172,14 @@ const CekPendaftaranPage = () => {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '99px', fontSize: '12.5px', fontWeight: 700, color: '#fff', background: nada.warna }}>
               {nada.judul}
             </div>
-            <h2 style={{ margin: '18px 0 0', fontSize: '22px', fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>
+            <h2 style={{ margin: '18px 0 0', fontSize: '22px', fontWeight: 800, letterSpacing: '-.02em', color: 'var(--sdnb-teks-judul)' }}>
               {hasil.nama_lengkap}
             </h2>
-            <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#6b7093' }}>
+            <p style={{ margin: '6px 0 0', fontSize: '13px', color: 'var(--sdnb-teks-pendamping)' }}>
               {hasil.nomor_pendaftaran} · SPMB {hasil.tahun_ajaran}
               {hasil.jalur_label ? ` · jalur ${hasil.jalur_label}` : ''}
             </p>
-            <p style={{ margin: '16px 0 0', fontSize: '14.5px', lineHeight: 1.65, color: '#4a4f6e' }}>
+            <p style={{ margin: '16px 0 0', fontSize: '14.5px', lineHeight: 1.65, color: 'var(--sdnb-teks-pendamping)' }}>
               {nada.kabar}
             </p>
             {hasil.sudah_jadi_murid && (
@@ -188,7 +188,7 @@ const CekPendaftaranPage = () => {
                 ke tata usaha bila belum menerimanya.
               </p>
             )}
-            <p style={{ margin: '18px 0 0', fontSize: '13px', lineHeight: 1.6, color: '#6b7093' }}>
+            <p style={{ margin: '18px 0 0', fontSize: '13px', lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>
               Ada yang ingin ditanyakan? Hubungi kami di <strong>{sekolah.phone}</strong> pada{' '}
               {sekolah.officeHours}.
             </p>
@@ -203,7 +203,7 @@ const CekPendaftaranPage = () => {
               style={{
                 marginTop: '22px', padding: '12px 22px', borderRadius: '14px',
                 border: '1px solid rgba(255,255,255,.95)', cursor: 'pointer',
-                fontFamily: 'inherit', fontSize: '13.5px', fontWeight: 700, color: '#33375a',
+                fontFamily: 'inherit', fontSize: '13.5px', fontWeight: 700, color: 'var(--sdnb-teks-badan)',
                 background: 'rgba(255,255,255,.72)',
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)',
               }}
@@ -213,8 +213,8 @@ const CekPendaftaranPage = () => {
           </div>
         )}
 
-        <p style={{ marginTop: '26px', fontSize: '13.5px', color: '#6b7093' }}>
-          Belum mendaftar? <Link to="/pendaftaran" style={{ color: 'var(--sekolah-aksen-pekat)', fontWeight: 700 }}>Isi formulir pendaftaran</Link>.
+        <p style={{ marginTop: '26px', fontSize: '13.5px', color: 'var(--sdnb-teks-pendamping)' }}>
+          Belum mendaftar? <Link to="/pendaftaran" style={{ color: 'var(--sekolah-aksen-teks)', fontWeight: 700 }}>Isi formulir pendaftaran</Link>.
         </p>
       </main>
     </>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+import useKembali from '@/hooks/useKembali';
 import { Card } from '@/components/ui/card';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -73,14 +74,12 @@ const RandomNamePage = () => {
         deductions: [-1, -3, -5]
     });
 
-    const handleBackNavigation = () => {
-        if (role === 'guru' || role === 'admin' || role === 'santri') {
-            navigate('/dashboard');
-        } else {
-            // Default fallback if role is undefined or something else (e.g. public access if allowed in future)
-            navigate('/');
-        }
-    };
+    /* Kembali ke tempat asal penekan; lihat src/hooks/useKembali.js. Cadangannya
+     * masih bergantung peran, untuk halaman yang dibuka lewat URL langsung:
+     * pemilik akun punya dashboard, selain itu beranda publik. */
+    const handleBackNavigation = useKembali(
+        role === 'guru' || role === 'admin' || role === 'santri' ? '/dashboard' : '/',
+    );
 
     // --- Fetch Data ---
     useEffect(() => {
@@ -274,7 +273,10 @@ const RandomNamePage = () => {
                     transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 2 }}
                     className={`absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] transition-colors duration-500 ${isDark ? 'bg-cyan-600/10' : 'bg-purple-300/30'}`}
                 />
-                <div className={`absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-150 mix-blend-overlay ${!isDark && 'invert opacity-10'}`}></div>
+                {/* Aset lokal, lihat public/noise.svg. Dulu menunjuk
+                    grainy-gradients.vercel.app yang menjawab 404, jadi lapisan
+                    bintik ini tidak pernah tampil. */}
+                <div className={`absolute inset-0 bg-[url('/noise.svg')] opacity-20 brightness-150 mix-blend-overlay ${!isDark && 'invert opacity-10'}`}></div>
                 <div className={`absolute inset-0 bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] ${
                     isDark
                     ? 'bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)]'

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { publicFetch } from '@/lib/apiClient';
 import { fetchPublishedNews, fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { DEFAULT_HOME_CONTENT, fetchHomeContent } from '@/lib/homeContent';
+import { kolomUntuk } from '@/lib/gridKolom';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
 import useSdnbMotion from '@/hooks/useSdnbMotion';
 import '@/styles/sdnb.css';
@@ -50,9 +51,9 @@ const Before = ({ height, deg = '166deg', alpha = '.62' }) => (
   <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height, background: `linear-gradient(${deg},rgba(255,255,255,${alpha}),rgba(255,255,255,0))`, pointerEvents: 'none' }} />
 );
 
-const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-pekat)' };
-const h2Style = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.03em', fontWeight: 800, color: '#171827' };
-const pill = { padding: '6px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, color: '#3f4570', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.85)' };
+const kicker = { fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--sekolah-aksen-teks)' };
+const h2Style = { margin: '10px 0 0', fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.1, letterSpacing: '-.03em', fontWeight: 800, color: 'var(--sdnb-teks-judul)' };
+const pill = { padding: '6px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.85)' };
 
 const ARROW_R = (size = 16, sw = 2.4) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
@@ -74,7 +75,14 @@ const GALLERY = [
   { caption: 'Halaman bermain', grad: 'linear-gradient(150deg,#b6f0e0,#8fd8ec)', reveal: 320 },
 ];
 
-const NEWS_FALLBACK = [
+/* HANYA gaya kartu berita: warna sampul, warna label kategori, dan contoh isi
+ * yang dipakai bila sebuah artikel tidak punya ringkasan sendiri.
+ *
+ * Dulu daftar ini juga dipakai sebagai ISI cadangan ketika sekolah belum
+ * menerbitkan berita apa pun, dan hasilnya halaman depan memasang tiga berita
+ * karangan lengkap dengan tanggal — sementara halaman Berita di menu yang sama
+ * berkata "Belum ada berita". Situs yang sama membantah dirinya sendiri. */
+const NEWS_STYLE = [
   { media: 'linear-gradient(150deg,#c4b7f7,#93b8f7)', cat: 'Prestasi', catColor: '#4a3ec9', catBg: 'rgba(120,130,255,.16)', date: '12 Juli 2026', title: 'Regu pramuka meraih juara dua lomba tingkat kabupaten', excerpt: 'Delapan murid kelas lima dan enam mengikuti perkemahan tiga hari di Bukit Batu dan pulang membawa piala.' },
   { media: 'linear-gradient(150deg,#ffc6da,#f6a8c6)', cat: 'Kegiatan', catColor: '#a83a70', catBg: 'rgba(246,168,198,.28)', date: '4 Juli 2026', title: 'Pekan literasi menghadirkan pendongeng anak', excerpt: 'Sesi mendongeng dan membaca bersama berlangsung enam hari di perpustakaan dan halaman sekolah.' },
   { media: 'linear-gradient(150deg,#b3eee0,#8ed4ea)', cat: 'Pengumuman', catColor: '#20707f', catBg: 'rgba(142,212,234,.3)', date: '28 Juni 2026', title: 'Jadwal daftar ulang murid baru gelombang pertama', excerpt: 'Daftar ulang dibuka 5 sampai 12 Agustus di ruang tata usaha, pukul 08.00 hingga 14.00.' },
@@ -82,7 +90,7 @@ const NEWS_FALLBACK = [
 
 // Sama seperti PROGRAM_STYLE: hanya gaya, teks dari panel Konten.
 const TESTI_STYLE = [
-  { avatar: 'linear-gradient(140deg,var(--sekolah-aksen-muda),var(--sekolah-aksen-samar))', roleColor: 'var(--sekolah-aksen-pekat)' },
+  { avatar: 'linear-gradient(140deg,var(--sekolah-aksen-muda),var(--sekolah-aksen-samar))', roleColor: 'var(--sekolah-aksen-teks)' },
   { avatar: 'linear-gradient(140deg,#fbcfe8,#f9a8d4)', roleColor: '#d9698f' },
   { avatar: 'linear-gradient(140deg,#a7f3d0,#99f6e4)', roleColor: '#2b9b96' },
   { avatar: 'linear-gradient(140deg,#bfdbfe,#93c5fd)', roleColor: '#4a7fd6' },
@@ -103,10 +111,10 @@ const TestiCard = ({ t }) => (
     </div>
     <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
       <div style={{ position: 'relative', padding: '16px 18px', borderRadius: '18px 18px 18px 6px', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>
-        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.62, color: '#3d4160' }}>&ldquo;{t.quote}&rdquo;</p>
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.62, color: 'var(--sdnb-teks-badan)' }}>&ldquo;{t.quote}&rdquo;</p>
       </div>
       <div style={{ marginTop: 12, paddingLeft: 4 }}>
-        <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-.01em', color: '#1e2035' }}>{t.name}</div>
+        <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-.01em', color: 'var(--sdnb-teks-judul)' }}>{t.name}</div>
         <div style={{ fontSize: 11.5, color: t.roleColor, fontWeight: 600 }}>{t.role}</div>
       </div>
     </div>
@@ -115,11 +123,17 @@ const TestiCard = ({ t }) => (
 
 const HomePage = () => {
   const sekolah = useSchoolIdentity();
-  const [counts, setCounts] = useState({ siswa: 624, guru: 34 });
+  // null = belum termuat. Sengaja BUKAN angka contoh: bilangan bawaan apa pun di
+  // sini akan tercetak sebagai klaim jumlah murid sekolah pembeli.
+  const [counts, setCounts] = useState({ siswa: null, guru: null });
   const [news, setNews] = useState([]);
+  // Dibedakan dari daftar kosong: selagi memuat, "Belum ada berita" belum tentu benar.
+  const [newsStatus, setNewsStatus] = useState('loading');
   const [photos, setPhotos] = useState([]);
   const [buildingPhoto, setBuildingPhoto] = useState('');
   const [open, setOpen] = useState(0);
+  // 'Semua' atau salah satu kategori yang benar-benar ada pada berita terbitan.
+  const [newsFilter, setNewsFilter] = useState('Semua');
   // Bawaan dipakai lebih dulu supaya halaman tidak kosong selagi menunggu server.
   const [isi, setIsi] = useState(DEFAULT_HOME_CONTENT);
 
@@ -127,15 +141,21 @@ const HomePage = () => {
     let mounted = true;
     (async () => {
       const [siswa, guru, newsResult, contentMap, homeContent] = await Promise.all([
-        publicFetch('/api/santri/count').then((d) => d?.total || 0).catch(() => 0),
-        publicFetch('/api/guru/count').then((d) => d?.total || 0).catch(() => 0),
-        fetchPublishedNews({ limit: 3 }).catch(() => []),
+        // null saat gagal, BUKAN 0: nol adalah jawaban sah dari sekolah yang belum
+        // memasukkan murid, dan keduanya harus bisa dibedakan.
+        publicFetch('/api/santri/count').then((d) => Number(d?.total) || 0).catch(() => null),
+        publicFetch('/api/guru/count').then((d) => Number(d?.total) || 0).catch(() => null),
+        // Diambil lebih banyak daripada tiga yang ditampilkan: deretan kategori di
+        // atas kartu menyaring dari kumpulan ini, jadi menarik tepat tiga akan
+        // membuat pilihan kategorinya ikut menyusut sampai tak ada gunanya.
+        fetchPublishedNews({ limit: 12 }).catch(() => []),
         fetchWebsiteContentMap({ keys: ['galleryPhotos', 'schoolBuildingPhoto'], publicOnly: true }).catch(() => ({})),
         fetchHomeContent().catch(() => null),
       ]);
       if (!mounted) return;
-      setCounts({ siswa: siswa || 624, guru: guru || 34 });
+      setCounts({ siswa, guru });
       if (Array.isArray(newsResult)) setNews(newsResult);
+      setNewsStatus('ready');
       if (Array.isArray(contentMap.galleryPhotos)) setPhotos(contentMap.galleryPhotos);
       if (typeof contentMap.schoolBuildingPhoto === 'string') setBuildingPhoto(contentMap.schoolBuildingPhoto);
       if (homeContent) setIsi(homeContent);
@@ -155,10 +175,27 @@ const HomePage = () => {
 
   useSdnbMotion([counts.siswa, counts.guru, news.length, photos.length]);
 
+  // Kategori diambil dari berita yang benar-benar terbit, sama seperti halaman
+  // Berita (lihat NewsPageCms.jsx). Sebelumnya deretan ini tiga label mati —
+  // "Semua", "Prestasi", "Kegiatan" — yang tidak menyaring apa pun dan tidak ada
+  // hubungannya dengan kategori yang dipakai sekolah.
+  const newsCategories = useMemo(() => {
+    const adaKategori = news.map((item) => item.category).filter(Boolean);
+    return ['Semua', ...Array.from(new Set(adaKategori))];
+  }, [news]);
+
+  // Kategori yang dipilih bisa hilang saat berita dimuat ulang; jangan biarkan
+  // halaman menampilkan nol kartu karena menyaring kategori yang sudah tak ada.
+  const kategoriAktif = newsCategories.includes(newsFilter) ? newsFilter : 'Semua';
+
   const newsCards = useMemo(() => {
-    if (news.length === 0) return NEWS_FALLBACK;
-    return news.slice(0, 3).map((item, i) => {
-      const base = NEWS_FALLBACK[i % NEWS_FALLBACK.length];
+    // Kosong tetap kosong. Halaman ini dan halaman Berita harus mengatakan hal
+    // yang sama tentang sekolah yang belum menerbitkan apa pun.
+    const tersaring = kategoriAktif === 'Semua'
+      ? news
+      : news.filter((item) => item.category === kategoriAktif);
+    return tersaring.slice(0, 3).map((item, i) => {
+      const base = NEWS_STYLE[i % NEWS_STYLE.length];
       const d = item.date || item.published_at || item.created_at;
       return {
         ...base,
@@ -171,7 +208,7 @@ const HomePage = () => {
         to: '/berita',
       };
     });
-  }, [news]);
+  }, [news, kategoriAktif]);
 
   const galleryTiles = useMemo(() => GALLERY.map((g, i) => ({ ...g, image: photos[i]?.url || '', caption: photos[i]?.caption || g.caption })), [photos]);
 
@@ -196,15 +233,24 @@ const HomePage = () => {
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section id="beranda" data-reveal="0" className="sdnb-hero" style={{ maxWidth: 1240, margin: '0 auto', padding: '44px 28px 0', display: 'grid', gridTemplateColumns: '1.02fr 1fr', gap: 44, alignItems: 'center' }}>
         <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '7px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, color: '#4b4f78', background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.8)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 10px 24px -14px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
-            <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))' }} />
-            Terakreditasi A · Sekolah Adiwiyata Nasional
-          </div>
-          <h1 style={{ margin: '20px 0 0', fontFamily: HEADING_FONT, fontSize: 60, lineHeight: 1.04, letterSpacing: '-.038em', fontWeight: 800, color: '#171827', textWrap: 'balance' }}>
+          {/* Badge akreditasi datang dari Konten → Halaman Depan. Dikosongkan
+              berarti hilang: sekolah yang belum terakreditasi tidak boleh dipaksa
+              memasang klaim akreditasi sekolah contoh. */}
+          {isi.badge && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '7px 14px', borderRadius: 999, fontSize: 12, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.55)', border: '1px solid rgba(255,255,255,.8)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', boxShadow: '0 10px 24px -14px rgba(60,70,120,.6),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+              <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))' }} />
+              {isi.badge}
+            </div>
+          )}
+          <h1 style={{ margin: '20px 0 0', fontFamily: HEADING_FONT, fontSize: 60, lineHeight: 1.04, letterSpacing: '-.038em', fontWeight: 800, color: 'var(--sdnb-teks-judul)', textWrap: 'balance' }}>
             Belajar dengan <span style={GRAD_TEXT}>tenang</span>,<br />tumbuh dengan<br /><span style={GRAD_TEXT}>percaya diri</span>.
           </h1>
-          <p style={{ margin: '22px 0 0', maxWidth: 480, fontSize: 16, lineHeight: 1.65, color: '#535878', textWrap: 'pretty' }}>
-            Sekolah Dasar Negeri Baturaja mendampingi anak sejak kelas satu lewat <strong style={{ color: '#3b3f6b', fontWeight: 700 }}>kelas kecil</strong>, guru wali yang mengenal setiap murid, dan halaman bermain yang aman. Enam ratus lebih anak belajar di sini setiap hari.
+          <p style={{ margin: '22px 0 0', maxWidth: 480, fontSize: 16, lineHeight: 1.65, color: 'var(--sdnb-teks-pendamping)', textWrap: 'pretty' }}>
+            {/* Nama sekolah dari panel Identitas, bukan teks mati: paragraf ini
+                dulu menyebut sekolah CONTOH sebagai pemilik halaman pembeli.
+                Kalimat "Enam ratus lebih anak" ikut dicabut — itu jumlah karangan,
+                dan jumlah murid yang sebenarnya sudah tampil di bawah. */}
+            {sekolah.name} mendampingi anak sejak kelas satu lewat <strong style={{ color: 'var(--sdnb-teks-badan)', fontWeight: 700 }}>kelas kecil</strong>, guru wali yang mengenal setiap murid, dan halaman bermain yang aman.
           </p>
           <div style={{ marginTop: 30, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             <Link to="/pendaftaran" className="shine h-bright" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))', boxShadow: '0 22px 44px -16px rgba(90,100,235,.95),inset 0 1px 0 rgba(255,255,255,.6)' }}>
@@ -212,7 +258,7 @@ const HomePage = () => {
               Mulai Pendaftaran
               {ARROW_R()}
             </Link>
-            <Link to="/kontak" className="shine h-glass82" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 24px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', boxShadow: '0 18px 38px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+            <Link to="/kontak" className="shine h-glass82" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 9, padding: '15px 24px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', boxShadow: '0 18px 38px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
               <span aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(170deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
               Jadwal Kunjungan Sekolah
             </Link>
@@ -223,8 +269,16 @@ const HomePage = () => {
                 <div key={i} style={{ width: 34, height: 34, borderRadius: '50%', background: g, border: '2px solid rgba(255,255,255,.9)', marginLeft: i === 0 ? 0 : -11 }} />
               ))}
             </div>
-            <div style={{ fontSize: 12.5, lineHeight: 1.45, color: '#5a5f80' }}>
-              <strong style={{ ...GRAD_TEXT, fontWeight: 800 }}><span data-count={counts.siswa}>0</span> siswa</strong> aktif<br />98% lulusan diterima di SMP negeri pilihan
+            <div style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--sdnb-teks-pendamping)' }}>
+              {/* Baris jumlah murid hanya muncul setelah angkanya benar-benar
+                  didapat. Menampilkannya lebih dulu berarti memasang "0 siswa
+                  aktif" di halaman depan selama pemuatan, atau angka karangan. */}
+              {counts.siswa !== null && (
+                <><strong style={{ ...GRAD_TEXT, fontWeight: 800 }}><span data-count={counts.siswa}>0</span> siswa</strong> aktif<br /></>
+              )}
+              {/* Baris kedua mengulang kartu statistik pertama, supaya klaimnya
+                  hanya perlu disunting di satu tempat. */}
+              {isi.stats[0] ? `${isi.stats[0].value}${isi.stats[0].suffix} ${isi.stats[0].label.toLowerCase()}` : null}
             </div>
           </div>
         </div>
@@ -263,17 +317,26 @@ const HomePage = () => {
 
       {/* ── STAT BAR ─────────────────────────────────────────────────────── */}
       <section data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '52px 28px 0' }}>
-        <div className="sdnb-stats" style={{ ...glassCard, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+        {/* Dua kartu pertama datang dari sistem (endpoint hitungan), dua terakhir
+            dari Konten → Halaman Depan. Yang dari sistem tidak boleh disunting,
+            yang dari sekolah tidak boleh ditanam di kode — dan kolomnya menyusut
+            sendiri bila sekolah mengosongkan klaimnya. */}
+        <div className="sdnb-stats" style={{ ...glassCard, display: 'grid', gridTemplateColumns: `repeat(${2 + isi.stats.length},1fr)`, borderRadius: 26, boxShadow: '0 28px 60px -24px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
           <Before height="52%" deg="168deg" alpha=".6" />
           {[
             { count: counts.siswa, label: 'Siswa aktif' },
             { count: counts.guru, label: 'Guru & tenaga kependidikan' },
-            { count: 98, suffix: '%', label: 'Lulusan diterima SMP negeri' },
-            { count: 32, label: 'Prestasi tingkat kabupaten & provinsi' },
+            ...isi.stats.map((s) => ({ count: Number(s.value), suffix: s.suffix, label: s.label })),
           ].map((s) => (
             <div key={s.label} style={{ position: 'relative', padding: '26px 28px' }}>
-              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: '#1d1f33' }}><span data-count={s.count}>0</span>{s.suffix}</div>
-              <div style={{ marginTop: 3, fontSize: 12.5, color: '#63678a' }}>{s.label}</div>
+              {/* Selagi angkanya belum didapat, yang tampil tanda pisah — bukan
+                  nol. Nol adalah pernyataan, dan pernyataan yang salah. */}
+              <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.035em', color: 'var(--sdnb-teks-judul)' }}>
+                {s.count === null
+                  ? <span style={{ color: '#a3a7c4' }}>—</span>
+                  : <><span data-count={s.count}>0</span>{s.suffix}</>}
+              </div>
+              <div style={{ marginTop: 3, fontSize: 12.5, color: 'var(--sdnb-teks-pendamping)' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -286,18 +349,20 @@ const HomePage = () => {
             <div style={kicker}>Program</div>
             <h2 style={h2Style}>Tiga tahap <span style={GRAD_TEXT}>pembelajaran</span></h2>
           </div>
-          <p style={{ maxWidth: 340, margin: 0, fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>Setiap tahap punya cara mengajar, penilaian, dan pendampingan yang berbeda, menyesuaikan usia anak.</p>
+          <p style={{ maxWidth: 340, margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>Setiap tahap punya cara mengajar, penilaian, dan pendampingan yang berbeda, menyesuaikan usia anak.</p>
         </div>
 
-        <div className="sdnb-grid3" style={{ marginTop: 30, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }}>
+        {/* Daftar program disunting sekolah, jadi kolomnya ikut isinya. Dipaku tiga
+            kolom, sekolah yang menulis dua program mendapat sepertiga baris kosong. */}
+        <div className="sdnb-grid3" style={{ marginTop: 30, display: 'grid', gridTemplateColumns: kolomUntuk(programCards.length, 3), gap: 22 }}>
           {programCards.map((p) => (
             <div key={p.title} className="h-lift-shadow" style={{ ...glassCard, padding: 26, borderRadius: 24, boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)', transition: 'transform .25s ease,box-shadow .25s ease' }}>
               <Before height="55%" alpha=".62" />
               <div style={{ position: 'relative', width: 52, height: 52, borderRadius: 16, background: p.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `${p.shadow},inset 0 1px 0 rgba(255,255,255,.85)` }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{p.icon}</svg>
               </div>
-              <h3 style={{ position: 'relative', margin: '18px 0 0', fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: '#1b1c2c' }}>{p.title}</h3>
-              <p style={{ position: 'relative', margin: '9px 0 0', fontSize: 14, lineHeight: 1.6, color: '#5b6082' }}>{p.desc}</p>
+              <h3 style={{ position: 'relative', margin: '18px 0 0', fontFamily: HEADING_FONT, fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', color: 'var(--sdnb-teks-judul)' }}>{p.title}</h3>
+              <p style={{ position: 'relative', margin: '9px 0 0', fontSize: 14, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>{p.desc}</p>
               <div style={{ position: 'relative', marginTop: 18, display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {p.tags.map((t) => <span key={t} style={pill}>{t}</span>)}
               </div>
@@ -313,7 +378,7 @@ const HomePage = () => {
             <div style={kicker}>Galeri</div>
             <h2 style={h2Style}>Suasana <span style={GRAD_TEXT}>sekolah</span></h2>
           </div>
-          <Link to="/profil/galeri" className="shine h-glass85" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderRadius: 14, fontSize: 13.5, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 16px 34px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+          <Link to="/profil/galeri" className="shine h-glass85" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderRadius: 14, fontSize: 13.5, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 16px 34px -18px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
             <span aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(170deg,rgba(255,255,255,.6),rgba(255,255,255,0))', pointerEvents: 'none' }} />
             Lihat semua foto
           </Link>
@@ -332,7 +397,7 @@ const HomePage = () => {
                 {g.image ? <img src={g.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
               </div>
               <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(110% 70% at 25% 12%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%)' }} />
-              <div style={{ position: 'absolute', left: g.big ? 18 : 14, bottom: g.big ? 18 : 14, padding: g.big ? '8px 14px' : '7px 12px', borderRadius: g.big ? 12 : 11, fontSize: g.big ? 12.5 : 11.5, fontWeight: 700, color: '#2c2f4d', background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{g.caption}</div>
+              <div style={{ position: 'absolute', left: g.big ? 18 : 14, bottom: g.big ? 18 : 14, padding: g.big ? '8px 14px' : '7px 12px', borderRadius: g.big ? 12 : 11, fontSize: g.big ? 12.5 : 11.5, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.55)', backdropFilter: 'blur(18px) saturate(180%)', WebkitBackdropFilter: 'blur(18px) saturate(180%)', border: '1px solid rgba(255,255,255,.8)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.95)' }}>{g.caption}</div>
             </Link>
           ))}
         </div>
@@ -345,27 +410,73 @@ const HomePage = () => {
             <div style={kicker}>Berita</div>
             <h2 style={h2Style}>Kabar <span style={GRAD_TEXT}>terbaru</span></h2>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah))', boxShadow: '0 12px 26px -12px rgba(95,105,235,.9),inset 0 1px 0 rgba(255,255,255,.5)' }}>Semua</span>
-            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: '#4a4f74', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Prestasi</span>
-            <span style={{ padding: '8px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, color: '#4a4f74', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}>Kegiatan</span>
+          {/* Disembunyikan saat belum ada berita — deretan kategori di atas
+              tulisan "Belum ada berita" terbaca seperti halaman yang rusak.
+              Disembunyikan juga bila seluruh berita berada di satu kategori:
+              "Semua" dan satu kategori menyaring kumpulan yang sama persis, dan
+              tombol yang tidak pernah mengubah apa pun sama saja dengan hiasan. */}
+          {newsCategories.length > 2 && (
+          <div role="group" aria-label="Saring berita menurut kategori" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {newsCategories.map((kategori) => {
+              const dipilih = kategori === kategoriAktif;
+              return (
+                <button
+                  key={kategori}
+                  type="button"
+                  aria-pressed={dipilih}
+                  onClick={() => setNewsFilter(kategori)}
+                  /* Kelas ini hanya penanda untuk mode gelap: aturan glass di
+                     sdnb.css mengenai pil terpilih karena sorot putih pada
+                     box-shadow-nya, dan mengubah gradiennya jadi transparan. */
+                  className={dipilih ? 'sdnb-news-pill sdnb-news-pill--on' : 'sdnb-news-pill'}
+                  style={dipilih
+                    /* Sorot putih `inset ... rgba(255,255,255,.5)` sengaja TIDAK
+                       dipakai di sini. Aturan mode gelap di sdnb.css mencabut
+                       gradien dari apa pun yang memuat "linear-gradient" dan
+                       "rgba(255" sekaligus — dan pil terpilih pun kehilangan
+                       satu-satunya tanda bahwa ia terpilih. Pada tinggi 30px
+                       sorot itu tidak terlihat; keadaan terpilih terlihat. */
+                    ? { padding: '8px 14px', borderRadius: 999, border: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah))', boxShadow: '0 12px 26px -12px rgba(95,105,235,.9)' }
+                    : { padding: '8px 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.85)' }}
+                >
+                  {kategori}
+                </button>
+              );
+            })}
           </div>
+          )}
         </div>
 
-        <div className="sdnb-grid3" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 22 }}>
+        {newsCards.length === 0 ? (
+          /* Kata-katanya sengaja sama persis dengan halaman Berita. */
+          <div
+            aria-busy={newsStatus === 'loading'}
+            style={{ ...glassCard, marginTop: 28, padding: '30px 32px', borderRadius: 24, boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}
+          >
+            <h3 style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 17, fontWeight: 800, letterSpacing: '-.015em', color: 'var(--sdnb-teks-judul)' }}>
+              {newsStatus === 'loading' ? 'Memuat kabar terbaru…' : 'Belum ada berita'}
+            </h3>
+            {newsStatus === 'ready' && (
+              <p style={{ margin: '9px 0 0', fontSize: 13.5, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>
+                Berita dan pengumuman sekolah akan tampil di sini setelah diterbitkan.
+              </p>
+            )}
+          </div>
+        ) : (
+        <div className="sdnb-grid3" style={{ marginTop: 28, display: 'grid', gridTemplateColumns: kolomUntuk(newsCards.length, 3), gap: 22 }}>
           {newsCards.map((n) => (
             <div key={n.title} className="h-lift" style={{ ...glassCard, borderRadius: 24, boxShadow: '0 26px 56px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)', transition: 'transform .25s ease' }}>
               <div style={{ height: 158, background: n.image ? undefined : n.media }}>
                 {n.image ? <img src={n.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
               </div>
               <div style={{ padding: '20px 22px 24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 11.5, fontWeight: 600, color: '#6d7192' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 11.5, fontWeight: 600, color: 'var(--sdnb-teks-pendamping)' }}>
                   <span style={{ padding: '4px 9px', borderRadius: 8, color: n.catColor, background: n.catBg }}>{n.cat}</span>
                   {n.date}
                 </div>
-                <h3 style={{ margin: '12px 0 0', fontFamily: HEADING_FONT, fontSize: 17, lineHeight: 1.35, fontWeight: 800, letterSpacing: '-.015em', color: '#1b1c2c' }}>{n.title}</h3>
-                <p style={{ margin: '9px 0 0', fontSize: 13.5, lineHeight: 1.6, color: '#5b6082' }}>{n.excerpt}</p>
-                <Link to={n.to || '/berita'} className="shine h-read" style={{ marginTop: 16, position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 13, fontSize: 13, fontWeight: 700, color: '#33375a', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
+                <h3 style={{ margin: '12px 0 0', fontFamily: HEADING_FONT, fontSize: 17, lineHeight: 1.35, fontWeight: 800, letterSpacing: '-.015em', color: 'var(--sdnb-teks-judul)' }}>{n.title}</h3>
+                <p style={{ margin: '9px 0 0', fontSize: 13.5, lineHeight: 1.6, color: 'var(--sdnb-teks-pendamping)' }}>{n.excerpt}</p>
+                <Link to={n.to || '/berita'} className="shine h-read" style={{ marginTop: 16, position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 13, fontSize: 13, fontWeight: 700, color: 'var(--sdnb-teks-badan)', background: 'rgba(255,255,255,.62)', border: '1px solid rgba(255,255,255,.9)', boxShadow: '0 12px 26px -14px rgba(60,70,120,.7),inset 0 1px 0 rgba(255,255,255,.95)' }}>
                   Baca selengkapnya
                   {ARROW_R(14, 2.6)}
                 </Link>
@@ -373,6 +484,7 @@ const HomePage = () => {
             </div>
           ))}
         </div>
+        )}
       </section>
 
       {/* ── TESTIMONI ────────────────────────────────────────────────────── */}
@@ -393,22 +505,22 @@ const HomePage = () => {
         <div style={{ position: 'sticky', top: 110 }}>
           <div style={kicker}>FAQ</div>
           <h2 style={h2Style}>Pertanyaan yang <span style={GRAD_TEXT}>sering diajukan</span></h2>
-          <p style={{ margin: '16px 0 0', fontSize: 14.5, lineHeight: 1.65, color: '#5b6082' }}>Belum menemukan jawabannya? Hubungi tata usaha di (0735) 320145 pada hari kerja pukul 07.30–15.00.</p>
+          <p style={{ margin: '16px 0 0', fontSize: 14.5, lineHeight: 1.65, color: 'var(--sdnb-teks-pendamping)' }}>Belum menemukan jawabannya? Hubungi tata usaha di (0735) 320145 pada hari kerja pukul 07.30–15.00.</p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {faqs.map((f) => (
             <div key={f.q} style={{ ...glassCard, borderRadius: 20, boxShadow: '0 22px 48px -22px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)' }}>
               <Before height="60%" alpha=".6" />
-              <button type="button" onClick={f.toggle} aria-expanded={f.bodyStyle.gridTemplateRows === '1fr'} style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, padding: '20px 22px', background: 'transparent', border: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', fontSize: 15.5, fontWeight: 700, letterSpacing: '-.012em', color: '#1c1e30' }}>
+              <button type="button" onClick={f.toggle} aria-expanded={f.bodyStyle.gridTemplateRows === '1fr'} style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, padding: '20px 22px', background: 'transparent', border: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', fontSize: 15.5, fontWeight: 700, letterSpacing: '-.012em', color: 'var(--sdnb-teks-judul)' }}>
                 {f.q}
                 <span style={f.iconStyle}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a4f78" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--sdnb-teks-pendamping)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                 </span>
               </button>
               <div style={f.bodyStyle}>
                 <div style={{ minHeight: 0, overflow: 'hidden' }}>
-                  <p style={{ margin: 0, padding: '0 22px 22px', fontSize: 14, lineHeight: 1.68, color: '#565b7d' }}>{f.a}</p>
+                  <p style={{ margin: 0, padding: '0 22px 22px', fontSize: 14, lineHeight: 1.68, color: 'var(--sdnb-teks-pendamping)' }}>{f.a}</p>
                 </div>
               </div>
             </div>
@@ -418,18 +530,20 @@ const HomePage = () => {
 
       {/* ── PPDB CTA ─────────────────────────────────────────────────────── */}
       <section id="ppdb" data-reveal="0" style={{ maxWidth: 1240, margin: '0 auto', padding: '76px 28px 0' }}>
-        <div style={{ position: 'relative', overflow: 'hidden', padding: '52px 48px', borderRadius: 30, background: 'linear-gradient(135deg,rgba(120,132,255,.9),rgba(160,120,240,.85) 48%,rgba(240,150,196,.85))', border: '1px solid rgba(255,255,255,.55)', boxShadow: '0 40px 80px -28px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)' }}>
+        <div style={{ position: 'relative', overflow: 'hidden', padding: '52px 48px', borderRadius: 30, background: 'var(--sdnb-ajakan)', border: '1px solid rgba(255,255,255,.55)', boxShadow: '0 40px 80px -28px rgba(80,90,190,.75),inset 0 1px 0 rgba(255,255,255,.6)' }}>
           <div aria-hidden="true" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '58%', background: 'linear-gradient(168deg,rgba(255,255,255,.42),rgba(255,255,255,0))', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 36, flexWrap: 'wrap' }}>
             <div style={{ maxWidth: 560 }}>
               <h2 style={{ margin: 0, fontFamily: HEADING_FONT, fontSize: 38, lineHeight: 1.12, letterSpacing: '-.03em', fontWeight: 800, color: '#fff' }}>
                 Pendaftaran gelombang pertama ditutup <span style={{ background: 'linear-gradient(115deg,#fff5b0,#ffd9ec)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent' }}>20 Agustus 2026</span>
               </h2>
-              <p style={{ margin: '14px 0 0', fontSize: 15, lineHeight: 1.65, color: 'rgba(255,255,255,.88)' }}>Anak berusia minimal enam tahun pada 1 Juli 2026. Siapkan kartu keluarga dan akta kelahiran, seluruh proses dilakukan daring.</p>
+              {/* Putih 92%, bukan 88%: paragraf 15px di atas gradasi ajakan perlu
+                  margin sedikit lebih lega daripada judulnya yang 38px. */}
+              <p style={{ margin: '14px 0 0', fontSize: 15, lineHeight: 1.65, color: 'rgba(255,255,255,.92)' }}>Anak berusia minimal enam tahun pada 1 Juli 2026. Siapkan kartu keluarga dan akta kelahiran, seluruh proses dilakukan daring.</p>
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link to="/pendaftaran" className="shine h-white" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#3b3f7a', background: 'rgba(255,255,255,.9)', boxShadow: '0 20px 40px -16px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)' }}>Isi formulir</Link>
-              <Link to="/pendaftaran" className="shine h-white30" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'rgba(255,255,255,.18)', border: '1px solid rgba(255,255,255,.5)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}>Unduh panduan</Link>
+              <Link to="/pendaftaran" className="shine h-white" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: 'var(--sdnb-teks-pendamping)', background: 'rgba(255,255,255,.9)', boxShadow: '0 20px 40px -16px rgba(40,45,110,.7),inset 0 1px 0 rgba(255,255,255,1)' }}>Isi formulir</Link>
+              <Link to="/pendaftaran" className="shine h-white30" style={{ position: 'relative', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '15px 26px', borderRadius: 16, fontSize: 14.5, fontWeight: 700, color: '#fff', background: 'var(--sdnb-ajakan-tombol)', border: '1px solid rgba(255,255,255,.5)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' }}>Unduh panduan</Link>
             </div>
           </div>
         </div>

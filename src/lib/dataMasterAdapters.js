@@ -60,10 +60,10 @@ export const validateDefaultSppAmount = (value) => {
 };
 
 export const pickSantriProfileFields = (input) => {
-  const nomorInduk = normalizeNomorIndukQiroati(input.nomor_induk_qiroati);
+  const nomorInduk = normalizeNomorIndukQiroati(input.nomor_induk);
 
   return {
-    nomor_induk_qiroati: nomorInduk,
+    nomor_induk: nomorInduk,
     nisn: input.nisn?.trim() || null,
     nis: input.nis?.trim() || null,
     angkatan: input.angkatan?.trim() || null,
@@ -143,6 +143,10 @@ export const pickGuruProfileFields = (input, role = 'guru') => ({
   jenis_kelamin: input.jenis_kelamin || null,
   tanggal_lahir: input.tanggal_lahir || null,
   status_guru: input.status_guru || null,
+  // Field NUPTK di panel Data Guru dulu tidak pernah sampai ke backend: ia
+  // menulis ke `nomor_induk_qiroati`, kolom yang tidak ada pada tabel guru, dan
+  // pemilih field ini pun tidak meneruskannya.
+  nuptk: input.nuptk || null,
   status: input.status || 'active',
 });
 
@@ -152,7 +156,19 @@ export const getOperationalRoleFromGuruForm = (input) => {
   // then Pentashih, otherwise a plain teacher account.
   if (roles.includes('Admin')) return 'admin';
   if (roles.includes('Tata Usaha')) return 'tata_usaha';
-  if (roles.includes('Pentashih')) return 'pentashih';
+  // Kepala sekolah memakai app_role `pentashih` — dashboard pengawasan sekolah,
+  // yang sama dengan wakilnya. Bukan app_role baru: keduanya mengawasi hal yang
+  // persis sama (kehadiran, keterisian kelas, murid yang perlu perhatian) dan
+  // sama-sama tidak berhak menyunting. Menambah app_role kembar hanya
+  // menggandakan jumlah tempat yang harus diperiksa ulang di setiap handler.
+  //
+  // Yang membedakan keduanya adalah SEBUTAN, bukan hak akses: judul dashboard dan
+  // kartu profilnya berbunyi "Kepala Sekolah" ketika akunnya memegang sebutan itu
+  // (lihat isKepalaSekolah di src/lib/staf.js).
+  //
+  // Admin dan Tata Usaha tetap didahulukan: kepala sekolah yang juga memegang
+  // salah satunya jelas menginginkan dashboard yang lebih luas.
+  if (roles.includes('Pentashih') || roles.includes('Kepala Sekolah')) return 'pentashih';
   return 'guru';
 };
 
@@ -186,6 +202,17 @@ const buildSantriParams = (filters = {}) => {
 export const fetchSantriList = async (filters = {}) => {
   const data = await apiClient.get(`/api/santri${buildSantriParams(filters)}`);
   return (data || []).map(mapSantriForLegacyUi);
+};
+
+/* Teman sekelas murid yang sedang masuk, beserta status kehadiran hari ini.
+ *
+ * Dipakai HANYA oleh dashboard murid. Daftar murid biasa (/api/santri) mengunci
+ * seorang murid pada barisnya sendiri, sehingga panel "Teman Sekelas" dulu
+ * hanya berisi dirinya sendiri. Endpoint ini mengirim kolom yang tampil saja —
+ * nama, foto, tingkat mengaji, status hari ini. */
+export const fetchClassmates = async () => {
+  const data = await apiClient.get('/api/santri/classmates');
+  return data || [];
 };
 
 // Same filters as fetchSantriList, but also returns the unpaginated total.
@@ -243,8 +270,17 @@ export const fetchClassCount = async () => {
 };
 
 export const bulkInsertSantri = async (payloads) => {
-  const data = await apiClient.post('/api/santri/bulk', payloads);
-  return (data || []).map(mapSantriForLegacyUi);
+  const res = await apiClient.post('/api/santri/bulk', payloads);
+  return {
+    inserted: (res?.inserted || []).map(mapSantriForLegacyUi),
+    failed: res?.failed || [],
+  };
+};
+
+/** Impor massal guru. Respons: { inserted:[{item, password_awal?}], failed:[{index,email,error}] } */
+export const bulkInsertGuru = async (rows) => {
+  const res = await apiClient.post('/api/guru/bulk', { rows });
+  return { inserted: res?.inserted || [], failed: res?.failed || [] };
 };
 
 export const updateSantriJilid = async (id, jilid) => {
@@ -257,6 +293,33 @@ export const updateSantriOrder = async (id, orderInClass) => {
 
 export const moveSantriClass = async ({ santri_id, target_class_id, reason }) => {
   return apiClient.post('/api/santri/move-class', { santri_id, target_class_id, reason });
+};
+
+/* Kenaikan kelas satu tahun ajaran untuk banyak rombel sekaligus.
+ *
+ * `peta` dikirim dari panel, bukan diturunkan backend: sekolah berbeda
+ * kebijakannya — ada yang mempertahankan rombel (2B ke 3B), ada yang mengacak
+ * ulang tiap tahun, ada yang menggabung dua rombel. Panel mengusulkan, admin
+ * menyetujui, backend menjalankan yang disetujui. */
+export const promoteClasses = async ({
+  tahunAjaranAsal,
+  tahunAjaranTujuan,
+  peta,
+  lulusClassIds = [],
+  tinggalSantriIds = [],
+  catatan = '',
+}) => apiClient.post('/api/santri/promote-class', {
+  tahun_ajaran_asal: tahunAjaranAsal,
+  tahun_ajaran_tujuan: tahunAjaranTujuan,
+  peta,
+  lulus_class_ids: lulusClassIds,
+  tinggal_santri_ids: tinggalSantriIds,
+  catatan,
+});
+
+export const fetchPromotionRuns = async () => {
+  const data = await apiClient.get('/api/santri/promotion-runs');
+  return Array.isArray(data) ? data : [];
 };
 
 export const changeSantriCategory = async ({ santri_id, new_category, reason }) => {

@@ -64,7 +64,12 @@ const request = async (method, path, body, opts = {}) => {
   if (!res.ok) throw new Error(json.error || `Request gagal (${res.status})`);
   const data = json.data !== undefined ? json.data : json;
   if (opts.withMeta) {
-    const total = Number(res.headers.get('X-Total-Count'));
+    // Header yang hilang harus dibedakan dari header bernilai "0". `Number(null)`
+    // menghasilkan 0 yang lolos Number.isFinite, jadi memeriksa hasil konversinya
+    // saja membuat fallback panjang data tidak pernah terpakai — dan seluruh
+    // panel berhalaman melaporkan "0 dari 0" ketika header tidak terbaca.
+    const raw = res.headers.get('X-Total-Count');
+    const total = raw === null || raw.trim() === '' ? NaN : Number(raw);
     return { data, total: Number.isFinite(total) ? total : (Array.isArray(data) ? data.length : 0) };
   }
   return data;
@@ -74,6 +79,7 @@ const apiClient = {
   get:    (path, opts)        => request('GET',    path, undefined, opts),
   post:   (path, body, opts)  => request('POST',   path, body, opts),
   put:    (path, body, opts)  => request('PUT',    path, body, opts),
+  patch:  (path, body, opts)  => request('PATCH',  path, body, opts),
   delete: (path, opts)        => request('DELETE', path, undefined, opts),
   setTokens,
   clearTokens,

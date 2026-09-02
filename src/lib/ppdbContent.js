@@ -36,19 +36,33 @@ export const DEFAULT_PPDB_CONTENT = Object.freeze({
    *                         wilayah administratif yang ditetapkan pemerintah
    *                         daerah (kelurahan, kecamatan, atau radius).
    *   "Perpindahan tugas" → sekarang "Mutasi".
-   *   "Prestasi"          → DIBUANG. Aturannya tegas: jalur prestasi tidak
-   *                         diberlakukan untuk penerimaan murid kelas I SD.
-   *                         Template ini untuk SD, jadi memasangnya sebagai
-   *                         bawaan berarti menyarankan jalur yang tidak sah.
+   *   "Prestasi"          → DIMATIKAN, bukan dibuang. Lihat catatan `aktif`.
    *
    * `kuota` adalah persentase daya tampung sekolah. Angka bawaannya persis yang
    * ditetapkan untuk SD: domisili paling sedikit 70%, afirmasi paling sedikit 15%,
    * mutasi paling BANYAK 5% (batas atas, bukan batas bawah). Sekolah tetap bisa
-   * mengubahnya — aturan daerah bisa berbeda, dan sistem tidak menegur. */
+   * mengubahnya — aturan daerah bisa berbeda, dan sistem tidak menegur.
+   *
+   * ── `aktif`: saklar per jalur ────────────────────────────────────────────────
+   *
+   * Jalur yang tidak aktif hilang dari formulir publik dan dari rekap daya tampung,
+   * tetapi tetap tersimpan lengkap dengan kuota dan keterangannya — jadi pembeli
+   * bisa menyalakannya kembali tanpa mengetik ulang.
+   *
+   * Jalur PRESTASI dikirim dalam keadaan MATI. Alasannya bukan selera: Permendikdasmen
+   * No. 3 Tahun 2025 tidak memberlakukan jalur prestasi untuk penerimaan murid kelas I
+   * SD — anak yang baru lulus TK belum punya rapor atau piagam untuk dinilai. Template
+   * ini bawaannya SD, jadi menyalakannya berarti menyarankan jalur yang tidak sah.
+   *
+   * Tetapi pembeli template ini bisa saja SMP atau SMA, dan di sana jalur prestasi
+   * justru wajar. Karena itu barisnya tetap dikirim lengkap — tinggal dinyalakan di
+   * Konten → Informasi Pendaftaran — bukan dihapus dan harus diketik ulang beserta
+   * tebakan kuotanya. */
   jalur: Object.freeze([
-    { id: 'domisili', name: 'Domisili', desc: 'Berdasarkan wilayah tempat tinggal yang ditetapkan pemerintah daerah', kuota: 70 },
-    { id: 'afirmasi', name: 'Afirmasi', desc: 'Untuk keluarga tidak mampu dan penyandang disabilitas', kuota: 15 },
-    { id: 'mutasi', name: 'Mutasi', desc: 'Anak dari orang tua yang dipindahtugaskan', kuota: 5 },
+    { id: 'domisili', name: 'Domisili', desc: 'Berdasarkan wilayah tempat tinggal yang ditetapkan pemerintah daerah', kuota: 70, aktif: true },
+    { id: 'afirmasi', name: 'Afirmasi', desc: 'Untuk keluarga tidak mampu dan penyandang disabilitas', kuota: 15, aktif: true },
+    { id: 'mutasi', name: 'Mutasi', desc: 'Anak dari orang tua yang dipindahtugaskan', kuota: 5, aktif: true },
+    { id: 'prestasi', name: 'Prestasi', desc: 'Berdasarkan nilai rapor atau prestasi akademik dan non-akademik', kuota: 0, aktif: false },
   ]),
 
   /* Wilayah penerimaan untuk jalur Domisili.
@@ -140,6 +154,26 @@ const angkaKuota = (nilai) => {
   return Math.min(100, Math.round(n));
 };
 
+/**
+ * Menyisipkan kembali jalur bawaan yang MATI dan belum ada di daftar tersimpan.
+ *
+ * Pemasangan yang sudah berjalan sebelum saklar `aktif` ada menyimpan daftar jalur
+ * tanpa baris Prestasi sama sekali. Tanpa penyisipan ini, sekolah SMP atau SMA yang
+ * memasang lebih dulu tidak akan pernah melihat saklarnya — ia harus mengetik ulang
+ * barisnya beserta menebak kuotanya, yang justru ingin dihindari.
+ *
+ * Hanya jalur bawaan yang memang MATI yang disisipkan, dan selalu dalam keadaan mati.
+ * Jalur bawaan yang aktif (Domisili, Afirmasi, Mutasi) TIDAK dikembalikan: sekolah
+ * yang sengaja menghapus salah satunya tidak boleh melihatnya muncul lagi.
+ */
+const lengkapiJalurBawaanMati = (daftar) => {
+  const adaId = new Set(daftar.map((j) => j.id));
+  const tambahan = DEFAULT_PPDB_CONTENT.jalur
+    .filter((j) => j.aktif === false && !adaId.has(j.id))
+    .map((j) => ({ ...j }));
+  return tambahan.length > 0 ? [...daftar, ...tambahan] : daftar;
+};
+
 export const normalizePpdbContent = (stored) => {
   const source = stored && typeof stored === 'object' ? stored : {};
   const bawaan = DEFAULT_PPDB_CONTENT;
@@ -148,7 +182,7 @@ export const normalizePpdbContent = (stored) => {
     waveLabel: teks(source.waveLabel) || bawaan.waveLabel,
     intro: teks(source.intro) || bawaan.intro,
 
-    jalur: normalizeDaftar(source.jalur, bawaan.jalur, (row, i) => {
+    jalur: lengkapiJalurBawaanMati(normalizeDaftar(source.jalur, bawaan.jalur, (row, i) => {
       const name = teks(row?.name);
       if (!name) return null;
       return {
@@ -156,8 +190,13 @@ export const normalizePpdbContent = (stored) => {
         name,
         desc: teks(row?.desc),
         kuota: angkaKuota(row?.kuota),
+        // Baris yang tersimpan SEBELUM saklar ini ada tidak punya `aktif`, dan
+        // jalur yang sudah lama dipakai sekolah tidak boleh mendadak menghilang
+        // dari formulir. Karena itu hanya `false` yang eksplisit yang mematikan;
+        // undefined berarti aktif.
+        aktif: row?.aktif !== false,
       };
-    }),
+    })),
 
     /* Wilayah TIDAK memakai normalizeDaftar, dan itu penting: fungsi itu
      * mengembalikan bawaan ketika daftarnya kosong, sedangkan daftar wilayah yang

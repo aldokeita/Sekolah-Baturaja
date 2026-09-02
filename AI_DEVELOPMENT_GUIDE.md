@@ -5,7 +5,9 @@
 ## 0. Status dokumen
 
 - **Project:** SDN Baturaja
-- **Stack utama:** React, Vite, Supabase, GitHub, Vercel
+- **Stack utama:** React, Vite, Go, PostgreSQL, GitHub. **Bukan** Supabase online dan **bukan**
+  Vercel — keduanya warisan produk pendahulu; deployment memakai satu VPS dengan Nginx atau Caddy,
+  lihat `SETUP.md`
 - **Bahasa komunikasi:** Bahasa Indonesia; technical terms boleh tetap dalam bahasa Inggris
 - **Target default:** staging
 - **Default branch stabil:** `master`
@@ -80,8 +82,7 @@ Staging adalah lingkungan uji online yang menyerupai production, tetapi mengguna
 
 Kondisi proyek saat dokumen dibuat:
 
-- frontend staging dideploy melalui Vercel;
-- backend staging memakai Supabase project terpisah;
+- frontend dan API tinggal di satu VPS dengan satu domain;
 - akun dan data dummy dipakai untuk UAT;
 - fitur dapat dan harus dikembangkan penuh di staging;
 - staging bukan alasan untuk menonaktifkan field atau membatasi fitur yang memang dibutuhkan.
@@ -195,7 +196,7 @@ Aturan:
 - gunakan branch fitur untuk perubahan besar;
 - pertahankan data dan route lama;
 - uji desktop dan mobile;
-- gunakan Vercel Preview sebelum merge bila eksperimen visual signifikan.
+- periksa sendiri di peramban lewat `npm run dev` sebelum merge bila eksperimen visual signifikan.
 
 ### 6.3 Full-stack feature
 
@@ -277,13 +278,14 @@ Gunakan branch terpisah untuk:
 
 Perubahan dokumentasi kecil atau hotfix sangat kecil boleh langsung ke `master` bila pengguna memintanya dan worktree bersih.
 
-### 7.4 Vercel Preview
+### 7.4 Pemeriksaan branch non-production
 
-Untuk branch non-production:
+Tidak ada Preview Deployment otomatis — proyek ini tidak memakai layanan yang menyediakannya. Untuk
+branch non-production:
 
 - push branch;
-- gunakan Preview Deployment;
-- uji visual dan fungsi;
+- jalankan `npm run dev` lalu periksa sendiri di peramban;
+- uji visual dan fungsi pada lebar desktop dan ponsel, tema terang dan gelap;
 - jangan merge otomatis;
 - tunggu persetujuan pengguna.
 
@@ -295,14 +297,15 @@ Sebelum merge:
 - test relevan lulus;
 - diff bersih;
 - tidak ada credential;
-- Preview sudah diperiksa bila diperlukan;
-- tidak ada migration yang belum deployed ke staging.
+- sudah diperiksa di peramban bila perubahannya terlihat;
+- tidak ada migration yang belum diterapkan.
 
 ### 7.6 Rollback
 
 Frontend:
 
-- gunakan Vercel rollback/promote deployment lama untuk pemulihan cepat;
+- pemulihan cepat: sajikan kembali folder `dist/` dari build sebelumnya yang diketahui baik, jadi
+  simpan satu salinannya sebelum menimpa;
 - gunakan `git revert <commit>` untuk pembatalan permanen yang menjaga history.
 
 Jangan menggunakan `git reset --hard` atau force-push pada branch bersama.
@@ -588,7 +591,8 @@ Adapter harus:
 ### 13.4 Routes
 
 - pertahankan route publik dan dashboard yang sudah ada;
-- direct-open dan refresh harus bekerja di Vercel;
+- direct-open dan refresh harus bekerja, jadi server web wajib mengarahkan semua alamat ke
+  `index.html`;
 - route guard harus memeriksa auth dan role;
 - jangan hanya menyembunyikan menu bila route tetap dapat dibuka tanpa izin.
 
@@ -765,7 +769,7 @@ Dilarang commit:
 - service-role key;
 - Supabase secret key;
 - GitHub token;
-- Vercel token;
+- kredensial SSH atau akses VPS;
 - session token;
 - private key;
 - `.env*` yang berisi credential.
@@ -1185,11 +1189,11 @@ Panduan ini disusun dengan mengadaptasi dokumentasi resmi dan standar berikut:
 - [About protected branches](https://docs.github.com/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
 - [Best practices for repositories](https://docs.github.com/repositories/creating-and-managing-repositories/best-practices-for-repositories)
 
-### Vercel
+### Server web
 
-- [Deploying Git repositories](https://vercel.com/docs/git)
-- [Deployment environments](https://vercel.com/docs/deployments/environments)
-- [Promoting a Preview Deployment](https://vercel.com/docs/deployments/promote-preview-to-production)
+- [Caddy: static file server](https://caddyserver.com/docs/quick-starts/static-files)
+- [Caddy: reverse proxy](https://caddyserver.com/docs/quick-starts/reverse-proxy)
+- [Nginx: serving static content](https://nginx.org/en/docs/beginners_guide.html)
 
 ### Supabase
 

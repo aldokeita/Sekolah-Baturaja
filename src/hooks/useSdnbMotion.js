@@ -20,11 +20,78 @@ import { useEffect } from 'react';
  */
 export default function useSdnbMotion(deps = []) {
   useEffect(() => {
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const kurangiGerak = Boolean(window.matchMedia)
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let io = null;
     let cio = null;
     const timers = [];
+    let jaga = null;
+
+    const fmt = (n) => n.toLocaleString('id-ID');
+
+    /** Teks akhir yang seharusnya terbaca pada satu elemen `[data-count]`. */
+    const nilaiAkhir = (el) => {
+      const target = parseFloat(el.getAttribute('data-count'));
+      if (!Number.isFinite(target)) return null;
+      return el.hasAttribute('data-plain') ? String(target) : fmt(target);
+    };
+
+    /**
+     * Penjaga: memindai ulang secara berkala selama beberapa detik pertama.
+     *
+     * Perlu karena hook ini menulis angka langsung ke DOM, sementara React bebas
+     * mengganti simpul yang sama ketika data susulan tiba. Saat halaman dibuka
+     * lewat klik menu (bukan reload), penggantian itu terjadi tepat setelah
+     * IntersectionObserver mulai memantau: yang dipantau jadi simpul buangan, dan
+     * simpul barunya tinggal berisi "0" bawaan markup. Akibatnya seluruh situs
+     * mengaku "0 program berjalan", "0 Tahun berdiri", "0 ruang kelas".
+     *
+     * Simpul baru tidak membawa penanda __dc, jadi pemindaian ulang menemukannya
+     * dan memprosesnya lagi. Dihentikan setelah BATAS_JAGA supaya tidak ada timer
+     * yang hidup selamanya.
+     */
+    const BATAS_JAGA = 8000;
+    const JEDA_JAGA = 350;
+    const pasangJaga = (pindai) => {
+      if (jaga) return;
+      jaga = setInterval(pindai, JEDA_JAGA);
+      timers.push(setTimeout(() => { clearInterval(jaga); jaga = null; }, BATAS_JAGA));
+    };
+
+    /**
+     * Menulis angka akhir tanpa animasi.
+     *
+     * Dulu seluruh hook ini keluar lebih awal ketika pengunjung meminta lebih
+     * sedikit gerakan. Masalahnya, angka pada markup ditulis sebagai
+     * `<span data-count="624">0</span>` — nolnya adalah teks nyata, dan
+     * animasinyalah yang menggantinya. Tanpa animasi, angka itu tinggal nol
+     * selamanya: halaman depan mengaku punya "0 Siswa aktif" dan "0 Guru".
+     *
+     * Yang seharusnya dikurangi adalah GERAKANNYA, bukan informasinya.
+     */
+    const tulisLangsung = (tries) => {
+      const nums = Array.from(document.querySelectorAll('[data-count]'));
+      if (!nums.length) {
+        if (tries < 20) timers.push(setTimeout(() => tulisLangsung(tries + 1), 120));
+        return;
+      }
+      nums.forEach((el) => {
+        const akhir = nilaiAkhir(el);
+        if (akhir === null || el.textContent === akhir) return;
+        el.style.fontVariantNumeric = 'tabular-nums';
+        el.textContent = akhir;
+      });
+    };
+
+    if (kurangiGerak) {
+      timers.push(setTimeout(() => tulisLangsung(0), 60));
+      pasangJaga(() => tulisLangsung(20));
+      return () => {
+        timers.forEach(clearTimeout);
+        if (jaga) clearInterval(jaga);
+      };
+    }
 
     const setup = (tries) => {
       const els = Array.from(document.querySelectorAll('[data-reveal]'));
@@ -70,7 +137,6 @@ export default function useSdnbMotion(deps = []) {
         if (tries < 20) timers.push(setTimeout(() => countUp(tries + 1), 120));
         return;
       }
-      const fmt = (n) => n.toLocaleString('id-ID');
       const run = (el) => {
         const target = parseFloat(el.getAttribute('data-count'));
         // `data-plain` (Profil Sekolah) prints the raw number, so a year like
@@ -89,11 +155,21 @@ export default function useSdnbMotion(deps = []) {
         el.textContent = '0';
         requestAnimationFrame(tick);
       };
-      nums.forEach((el) => { el.textContent = '0'; el.style.fontVariantNumeric = 'tabular-nums'; });
-      cio = new IntersectionObserver((entries) => {
-        entries.forEach((e) => { if (e.isIntersecting) { run(e.target); cio.unobserve(e.target); } });
-      }, { threshold: 0.4 });
-      nums.forEach((el) => cio.observe(el));
+      if (!cio) {
+        cio = new IntersectionObserver((entries) => {
+          entries.forEach((e) => { if (e.isIntersecting) { run(e.target); cio.unobserve(e.target); } });
+        }, { threshold: 0.4 });
+      }
+      // __dc menandai simpul yang sudah dipantau. Simpul pengganti dari React
+      // tidak membawanya, jadi pemindaian berikutnya mengambilnya sebagai baru.
+      nums.forEach((el) => {
+        if (el.__dc) return;
+        el.__dc = 1;
+        el.textContent = '0';
+        el.style.fontVariantNumeric = 'tabular-nums';
+        cio.observe(el);
+      });
+      pasangJaga(() => countUp(20));
     };
 
     timers.push(setTimeout(() => setup(0), 60));
@@ -101,6 +177,7 @@ export default function useSdnbMotion(deps = []) {
 
     return () => {
       timers.forEach(clearTimeout);
+      if (jaga) clearInterval(jaga);
       if (io) io.disconnect();
       if (cio) cio.disconnect();
     };

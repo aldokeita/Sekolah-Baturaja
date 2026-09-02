@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet';
+import JudulHalaman from '@/components/sdnb/JudulHalaman';
 import BeritaBody from '@/components/sdnb/generated/BeritaBody';
 import {
   NEWS_CONTENT_UPDATED_EVENT,
@@ -177,7 +177,7 @@ const NewsPageCms = () => {
   if (loading) {
     return (
       <div className="sdnb-berita">
-        <Helmet><title>Berita — Sekolah Dasar Negeri Baturaja</title></Helmet>
+        <JudulHalaman judul="Berita" />
         <section className="mx-auto max-w-5xl px-7 py-16" aria-busy="true" aria-label="Memuat berita">
           <div className="h-10 w-2/3 animate-pulse rounded-lg bg-slate-200/70" />
           <div className="mt-6 h-56 animate-pulse rounded-3xl bg-slate-200/70" />
@@ -190,7 +190,7 @@ const NewsPageCms = () => {
   if (loadError) {
     return (
       <div className="sdnb-berita">
-        <Helmet><title>Berita — Sekolah Dasar Negeri Baturaja</title></Helmet>
+        <JudulHalaman judul="Berita" />
         <section className="mx-auto max-w-3xl px-7 py-20 text-center">
           <h1 className="text-2xl font-bold text-slate-900">Berita belum dapat dimuat</h1>
           <p className="mt-3 text-sm text-slate-600">{loadError}</p>
@@ -203,7 +203,7 @@ const NewsPageCms = () => {
   if (articles.length === 0) {
     return (
       <div className="sdnb-berita">
-        <Helmet><title>Berita — Sekolah Dasar Negeri Baturaja</title></Helmet>
+        <JudulHalaman judul="Berita" />
         <section className="mx-auto max-w-3xl px-7 py-20 text-center">
           <h1 className="text-2xl font-bold text-slate-900">Belum ada berita</h1>
           <p className="mt-3 text-sm text-slate-600">Berita dan pengumuman sekolah akan tampil di sini setelah diterbitkan.</p>
@@ -222,7 +222,7 @@ const NewsPageCms = () => {
       pick: () => setCategory(item),
       style: 'padding:11px 16px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:700;transition:background .3s ease,color .3s ease,box-shadow .3s ease,transform .3s cubic-bezier(.4,1.3,.4,1);' + (category === item
         ? 'border:0;color:#fff;background:linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah-2) 60%,var(--sekolah-aksen-ujung));box-shadow:0 14px 30px -12px rgba(95,105,235,.95),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(-1px)'
-        : 'border:1px solid rgba(255,255,255,.85);color:#3d4166;background:rgba(255,255,255,.5)'),
+        : 'border:1px solid rgba(255,255,255,.85);color:var(--sdnb-teks-badan);background:rgba(255,255,255,.5)'),
     })),
     search: (event) => setQuery(event.target.value),
     unggulanTampil: featured,
@@ -256,10 +256,10 @@ const NewsPageCms = () => {
 
   return (
     <div className="sdnb-berita">
-      <Helmet>
-        <title>Berita — Sekolah Dasar Negeri Baturaja</title>
-        <meta name="description" content="Kabar terbaru, pengumuman, prestasi, dan agenda Sekolah Dasar Negeri Baturaja." />
-      </Helmet>
+      <JudulHalaman
+        judul="Berita"
+        deskripsi="Kabar terbaru, pengumuman, prestasi, dan agenda {sekolah}."
+      />
       {BeritaBody(values)}
     </div>
   );

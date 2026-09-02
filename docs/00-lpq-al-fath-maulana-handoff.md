@@ -1,5 +1,10 @@
 # Handoff LPQ Al-Fath Maulana
 
+> **WARISAN — JANGAN DIIKUTI.** Handoff produk pendahulu, disimpan sebagai catatan sejarah. Yang
+> berlaku sekarang `docs/HANDOFF.md`. Sebutan Vercel dan Supabase online di bawah tidak berlaku:
+> proyek SDN Baturaja memakai satu VPS dengan Nginx atau Caddy plus PostgreSQL lokal — lihat
+> `SETUP.md`.
+
 ## Status template
 
 Repository ini adalah template lokal independen untuk **LPQ Al-Fath Maulana**. Belum ada GitHub remote, Supabase online baru, Vercel project, akun resmi, atau deployment baru. Logo, domain, kontak, alamat, profil, jadwal TPQ, kuota, biaya, persyaratan pendaftaran, sistem pembelajaran, dan aset publik dasar sudah diisi dari informasi resmi lembaga.

@@ -14,17 +14,51 @@
 // Peran internal diterjemahkan ke sebutan yang dipahami orang tua murid.
 // 'Pentashih' tetap dipakai sebagai nilai tersimpan; hanya labelnya berubah.
 export const SEBUTAN_PERAN = {
+  'Kepala Sekolah': 'Kepala Sekolah',
   Pentashih: 'Wakil Kepala Sekolah',
   Pengajar: 'Guru',
   'Tata Usaha': 'Tata Usaha',
 };
 
+/**
+ * Peran 'Kepala Sekolah' terutama adalah SEBUTAN.
+ *
+ * Ia menentukan sebutan orangnya di direktori publik, penanda tangan pada dokumen
+ * sekolah, dan kutipan di halaman Profil. Untuk hak akses ia memakai app_role
+ * `pentashih` — dashboard pengawasan sekolah yang sama dengan wakilnya, karena
+ * keduanya mengawasi hal yang persis sama dan sama-sama tidak berhak menyunting
+ * (lihat getOperationalRoleFromGuruForm di src/lib/dataMasterAdapters.js).
+ *
+ * Admin dan Tata Usaha tetap didahulukan bila akunnya juga memegang salah satunya.
+ */
+export const PERAN_KEPALA_SEKOLAH = 'Kepala Sekolah';
+
+/** True bila akun ini memegang sebutan kepala sekolah, lewat peran atau jabatan. */
+export const isKepalaSekolah = (guru) => {
+  const roles = Array.isArray(guru?.roles) ? guru.roles : [];
+  if (roles.includes(PERAN_KEPALA_SEKOLAH)) return true;
+  // Jabatan bebas teks tetap dihormati: halaman Profil publik sudah lama
+  // mengenali kepala sekolah dari jabatannya, dan data sekolah yang sudah
+  // terisi tidak boleh berhenti dikenali hanya karena ada peran baru.
+  const jabatan = String(guru?.jabatan || '');
+  return /kepala\s+sekolah/i.test(jabatan) && !/wakil/i.test(jabatan);
+};
+
+export const labelStafRole = (value) => String(value ?? '')
+  .trim()
+  .replace(/\bpentashih\b/gi, 'Wakil Kepala Sekolah');
+
 /** Sebutan yang ditampilkan: jabatan bila ada, kalau tidak jatuh ke perannya. */
 export const sebutanStaf = (guru) => {
-  const jabatan = String(guru?.jabatan || '').trim();
+  const jabatan = labelStafRole(guru?.jabatan);
   if (jabatan) return jabatan;
-  const peran = (Array.isArray(guru?.roles) ? guru.roles : []).find(Boolean);
-  return SEBUTAN_PERAN[peran] || peran || 'Staf sekolah';
+  const roles = Array.isArray(guru?.roles) ? guru.roles : [];
+  // Kepala sekolah didahulukan atas peran lain di akun yang sama. Kepala sekolah
+  // hampir selalu juga tercatat sebagai Pengajar, dan tanpa pengurutan ini
+  // `find` mengambil peran mana pun yang lebih dulu tersimpan — sehingga kepala
+  // sekolah bisa muncul sebagai "Guru" di direktori publik.
+  const peran = roles.includes(PERAN_KEPALA_SEKOLAH) ? PERAN_KEPALA_SEKOLAH : roles.find(Boolean);
+  return labelStafRole(SEBUTAN_PERAN[peran] || peran || 'Staf sekolah');
 };
 
 /**

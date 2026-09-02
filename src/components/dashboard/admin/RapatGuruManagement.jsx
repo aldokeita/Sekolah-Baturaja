@@ -8,9 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Search, Calendar, Clock, CheckCircle2, XCircle, Plus, BookOpen, Trash2, Edit, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useMMQAttendance } from '@/hooks/useMMQAttendance';
-import MMQScheduleForm from './MMQScheduleForm';
-import MMQAttendanceModal from './MMQAttendanceModal';
+import { useRapatGuruAttendance } from '@/hooks/useRapatGuruAttendance';
+import RapatGuruScheduleForm from './RapatGuruScheduleForm';
+import RapatGuruAttendanceModal from './RapatGuruAttendanceModal';
 import { formatTimestamp, calculateTimeDifference } from '@/utils/AttendanceStatusLogic';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { resolveAvatarRecords } from '@/lib/storageAdapters';
@@ -19,15 +19,15 @@ const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
 const StatusBadge = ({ status }) => {
     switch (status) {
-        case 'Hadir': return <Badge className="mmq-status-hadir shadow-sm border-none"><CheckCircle2 className="w-3 h-3 mr-1"/> Hadir</Badge>;
-        case 'Terlambat': return <Badge className="mmq-status-terlambat shadow-sm border-none"><Clock className="w-3 h-3 mr-1"/> Terlambat</Badge>;
-        default: return <Badge className="mmq-status-tidak-hadir shadow-sm border-none"><XCircle className="w-3 h-3 mr-1"/> Tidak Hadir</Badge>;
+        case 'Hadir': return <Badge className="RapatGuru-status-hadir shadow-sm border-none"><CheckCircle2 className="w-3 h-3 mr-1"/> Hadir</Badge>;
+        case 'Terlambat': return <Badge className="RapatGuru-status-terlambat shadow-sm border-none"><Clock className="w-3 h-3 mr-1"/> Terlambat</Badge>;
+        default: return <Badge className="RapatGuru-status-tidak-hadir shadow-sm border-none"><XCircle className="w-3 h-3 mr-1"/> Tidak Hadir</Badge>;
     }
 };
 
-const MMQManagement = () => {
+const RapatGuruManagement = () => {
     const { toast } = useToast();
-    const { fetchMMQSchedule, fetchMMQAttendance, saveMMQAttendance, deleteMMQAttendance, updateMMQSchedule, deleteMMQSchedule } = useMMQAttendance();
+    const { fetchRapatGuruSchedule, fetchRapatGuruAttendance, saveRapatGuruAttendance, deleteRapatGuruAttendance, updateRapatGuruSchedule, deleteRapatGuruSchedule } = useRapatGuruAttendance();
 
     const [activeTab, setActiveTab] = useState('history');
 
@@ -48,10 +48,10 @@ const MMQManagement = () => {
     const [editingAttendance, setEditingAttendance] = useState(null);
 
     const loadData = async () => {
-        const scheduleData = await fetchMMQSchedule();
+        const scheduleData = await fetchRapatGuruSchedule();
         if (scheduleData) setSchedules(scheduleData);
 
-        const attendanceData = await fetchMMQAttendance({ date: historyDateFilter });
+        const attendanceData = await fetchRapatGuruAttendance({ date: historyDateFilter });
         if (attendanceData) setAttendances(attendanceData);
 
         const guruData = await fetchGuruList();
@@ -63,7 +63,7 @@ const MMQManagement = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [historyDateFilter]);
 
-    // Derived Data: Guru List with Today's MMQ Status
+    // Derived Data: Guru List with Today's RapatGuru Status
     const guruListWithStatus = gurus.map(guru => {
         const todayAttendance = attendances.find(a => a.guru_id === guru.id && a.attendance_date === new Date().toLocaleDateString('en-CA'));
         return {
@@ -78,7 +78,7 @@ const MMQManagement = () => {
 
     // Handlers
     const handleSaveSchedule = async (data) => {
-        const result = await updateMMQSchedule(data);
+        const result = await updateRapatGuruSchedule(data);
         if (result.success) {
             toast({ title: "Berhasil", description: "Jadwal rapat disimpan." });
             setIsScheduleModalOpen(false);
@@ -90,7 +90,7 @@ const MMQManagement = () => {
 
     const handleDeleteSchedule = async (id) => {
         if (!window.confirm("Hapus jadwal ini?")) return;
-        const result = await deleteMMQSchedule(id);
+        const result = await deleteRapatGuruSchedule(id);
         if (result.success) {
             toast({ title: "Berhasil", description: "Jadwal dihapus." });
             loadData();
@@ -98,7 +98,7 @@ const MMQManagement = () => {
     };
 
     const handleSaveAttendance = async (data) => {
-        const result = await saveMMQAttendance(data);
+        const result = await saveRapatGuruAttendance(data);
         if (result.success) {
             toast({ title: "Berhasil", description: "Kehadiran rapat diperbarui." });
             loadData();
@@ -108,7 +108,7 @@ const MMQManagement = () => {
     };
 
     const handleDeleteAttendance = async (id) => {
-        const result = await deleteMMQAttendance(id);
+        const result = await deleteRapatGuruAttendance(id);
         if (result.success) {
             toast({ title: "Berhasil", description: "Record dihapus." });
             loadData();
@@ -124,7 +124,7 @@ const MMQManagement = () => {
                     </div>
                     <div className="admin-panel-header-text">
                         <h2>Rapat Guru</h2>
-                        <p>Majelis Mu'allimil Qur'an — Absensi & Jadwal Guru</p>
+                        <p>Jadwal, absensi, dan notulensi rapat internal guru</p>
                     </div>
                 </div>
                 <div className="admin-panel-header-actions">
@@ -306,7 +306,7 @@ const MMQManagement = () => {
                     <DialogHeader>
                         <DialogTitle>{editingSchedule ? 'Edit Jadwal Rapat' : 'Tambah Jadwal Rapat'}</DialogTitle>
                     </DialogHeader>
-                    <MMQScheduleForm
+                    <RapatGuruScheduleForm
                         initialData={editingSchedule}
                         onSave={handleSaveSchedule}
                         onCancel={() => setIsScheduleModalOpen(false)}
@@ -314,7 +314,7 @@ const MMQManagement = () => {
                 </DialogContent>
             </Dialog>
 
-            <MMQAttendanceModal
+            <RapatGuruAttendanceModal
                 isOpen={isAttendanceModalOpen}
                 onClose={() => { setIsAttendanceModalOpen(false); setEditingAttendance(null); }}
                 record={editingAttendance}
@@ -325,4 +325,4 @@ const MMQManagement = () => {
     );
 };
 
-export default MMQManagement;
+export default RapatGuruManagement;

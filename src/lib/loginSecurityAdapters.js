@@ -14,7 +14,17 @@ export const deleteLoginLog = async (id) => {
   await apiClient.delete(`/api/login-logs/${id}`);
 };
 
-export const recordLoginAttempt = async ({ username, status, device }) => {
+// Kategori kasar, bukan user-agent mentah. Tabel login_logs sengaja menyimpan
+// user_agent sebagai NULL (lihat komentar di backend/internal/handler/loginlogs.go),
+// jadi yang dikirim cukup satu kata yang bisa dibaca admin.
+export const detectDevice = () => {
+  const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent || '';
+  if (/iPad|Tablet/i.test(ua)) return 'Tablet';
+  if (/Mobi|Android|iPhone/i.test(ua)) return 'Mobile';
+  return 'Desktop';
+};
+
+export const recordLoginAttempt = async ({ username, status, device = detectDevice() }) => {
   if (!username) return false;
   try {
     const headers = { 'Content-Type': 'application/json' };

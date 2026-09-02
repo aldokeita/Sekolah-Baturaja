@@ -5,9 +5,11 @@ export function getCorsHeaders(req: Request): HeadersInit {
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
-  const isVercelPreview = /^https:\/\/[a-z0-9-]+(?:-[a-z0-9-]+)*\.vercel\.app$/i.test(origin);
-
-  const allowOrigin = allowed.includes(origin) || isVercelPreview
+  // Origin yang diizinkan HANYA yang terdaftar di ALLOWED_ORIGINS. Dulu ada pola
+  // tambahan yang mengizinkan setiap host *.vercel.app; proyek ini tidak memakai
+  // Vercel, dan pola sedemikian luas berarti siapa pun yang bisa menerbitkan di
+  // domain itu mendapat izin CORS.
+  const allowOrigin = allowed.includes(origin)
     ? origin
     : env === "production"
       ? allowed[0] ?? "http://localhost:5173"

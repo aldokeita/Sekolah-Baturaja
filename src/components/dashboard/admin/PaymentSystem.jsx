@@ -23,7 +23,6 @@ import {
   checkPaymentDuplicates,
   fetchAllPayments,
   fetchAllSantri,
-  formatSantriCategory,
   getPaymentErrorMessage,
   getSharedDefaultSppAmount,
   monthNameToNumber,
@@ -78,10 +77,9 @@ const SantriSelectorModal = ({ santriList, onSelect, open, onOpenChange, selecte
               <div key={santri.id} onClick={() => onSelect(santri)} className={`relative flex flex-col items-center text-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer border-2 ${selectedSantriIds.has(santri.id) ? 'border-primary' : 'border-transparent'}`}>
                 {selectedSantriIds.has(santri.id) && <div className="absolute top-1 right-1 bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center"><Check className="w-3 h-3"/></div>}
                 <Avatar className="w-20 h-20 mb-2"><AvatarImage src={santri.foto_url} /><AvatarFallback>{santri.nama_lengkap.charAt(0)}</AvatarFallback></Avatar>
+                {/* Badge kategori dicabut: SD negeri hanya punya satu jenis murid,
+                    dan labelnya memetakan 'Anak' menjadi "TPQ". */}
                 <p className="text-sm font-medium leading-tight">{santri.nama_lengkap}</p>
-                <Badge variant={santri.kategori === 'Dewasa' ? 'secondary' : 'outline'} className="mt-1 text-[10px]">
-                    {formatSantriCategory(santri.kategori)}
-                </Badge>
               </div>
             ))}
           </div>
@@ -773,7 +771,7 @@ const PaymentSystem = () => {
       const templates = await fetchWhatsAppTemplates();
       const message = renderWhatsAppTemplate(templates.paymentReceipt, {
         nama_santri: santriNames,
-        nomor_induk: santriWithPhone.nomor_induk_qiroati || '-',
+        nomor_induk: santriWithPhone.nomor_induk || '-',
         rincian: itemsText,
         nominal: `Rp ${totalAmount.toLocaleString('id-ID')}`,
         tanggal: receiptData.timestamp.toLocaleDateString('id-ID'),
@@ -809,7 +807,22 @@ const PaymentSystem = () => {
 
   return (
     <>
-      <style>{`@media print { body * { visibility: hidden; } #receipt-content, #receipt-content * { visibility: visible; } #receipt-content { position: absolute; left: 0; top: 0; width: 100%; } }`}</style>
+      {/* Aturan penyapunya dipagari `:has()` — lihat rapor-cetak.css untuk alasan
+          lengkapnya. Singkatnya: aplikasi ini punya empat aturan cetak yang
+          sama-sama menyembunyikan SELURUH halaman, dan yang aktif bersamaan akan
+          saling membunuh sampai kertasnya keluar kosong. Masing-masing kini hanya
+          berlaku bila sasarannya ada.
+
+          Pengecualiannya ikut dipagari, dan itu wajib: `:has()` mewarisi bobot
+          argumennya, jadi penyapu berpagar mengalahkan pengecualian polos.
+          `!important` juga ditambahkan supaya tidak kalah oleh penyapu milik
+          PaymentProofModal, yang memakainya. */}
+      <style>{`@media print {
+        body:has(#receipt-content) * { visibility: hidden !important; }
+        body:has(#receipt-content) #receipt-content,
+        body:has(#receipt-content) #receipt-content * { visibility: visible !important; }
+        #receipt-content { position: absolute; left: 0; top: 0; width: 100%; }
+      }`}</style>
       <div className="space-y-6">
         <div className="admin-panel-header">
             <div className="flex items-center gap-3">
@@ -994,7 +1007,7 @@ const PaymentSystem = () => {
                       <p className="text-[10px] font-semibold mb-0.5" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.recipientLabel}</p>
                       <p className="text-xs font-bold">{receiptData.santri.map(s => s.nama_lengkap).join(', ')}</p>
                     </>}
-                    {receiptVisibility.studentId !== false && <p className="text-[10px] font-mono mt-1" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.studentIdLabel} {receiptData.santri.map(s => s.nomor_induk_qiroati || s.nis || s.nisn).filter(Boolean).join(', ') || '-'}</p>}
+                    {receiptVisibility.studentId !== false && <p className="text-[10px] font-mono mt-1" style={{ color: receiptVisual.mutedTextColor }}>{receiptContent.studentIdLabel} {receiptData.santri.map(s => s.nomor_induk || s.nis || s.nisn).filter(Boolean).join(', ') || '-'}</p>}
                   </div>
 
                   {isPaymentPaid(receiptData.status) && receiptVisibility.watermark !== false && (

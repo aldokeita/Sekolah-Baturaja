@@ -347,6 +347,26 @@ const JadwalPelajaran = () => {
                 </div>
             )}
 
+            {/* Panel ini punya fallback ke periode pertama, jadi jadwal tetap
+                tampil meski tak ada periode yang ditandai aktif — dan justru itu
+                yang menyembunyikan masalahnya. Konsumen lain menyaring ketat:
+                panel "Jadwal Hari Ini" di layar TV mensyaratkan is_active tanpa
+                fallback, sehingga diam-diam kosong terus. Peringatannya dipasang
+                di sini karena di sinilah periode disunting. */}
+            {!isLoadingMaster && !loadError && periodeList.length > 0 && !periodeList.some((item) => item.is_active) && (
+                <div className="admin-error-state" role="status">
+                    <p className="text-sm font-medium">
+                        Belum ada periode ajaran yang ditandai aktif. Jadwal di layar TV dan pilihan periode
+                        bawaan pada modul Nilai serta Materi Kelas akan kosong sampai salah satu periode diaktifkan.
+                    </p>
+                    {canManage && (
+                        <Button variant="outline" size="sm" onClick={() => setIsPeriodeOpen(true)} className="ml-auto flex-shrink-0">
+                            Atur Periode
+                        </Button>
+                    )}
+                </div>
+            )}
+
             {(isLoadingMaster || isLoadingJadwal) && (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-6" aria-busy="true" aria-label="Memuat jadwal">
                     {HARI_OPTIONS.map((day) => (

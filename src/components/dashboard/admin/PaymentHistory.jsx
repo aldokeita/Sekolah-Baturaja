@@ -178,7 +178,7 @@ const PaymentHistory = () => {
                 No: index + 1,
                 ID_Pembayaran: payment.id,
                 ID_Santri: payment.santri_id,
-                Nomor_Induk_Qiroati: payment.santri?.nomor_induk_qiroati || '',
+                nomor_induk: payment.santri?.nomor_induk || '',
                 Nama_Santri: payment.santri?.nama_lengkap || 'Murid Dihapus',
                 Kategori: payment.santri?.kategori || '',
                 Bulan_Tagihan: payment.bulan ? monthNumberToName(payment.bulan) : '',
@@ -338,8 +338,8 @@ const PaymentHistory = () => {
                                         </td>
                                         <td className="p-3">
                                             <div className="font-medium">{p.santri?.nama_lengkap || 'Murid Dihapus'}</div>
-                                            {p.santri?.nomor_induk_qiroati && (
-                                                <div className="text-[10px] text-muted-foreground">{p.santri.nomor_induk_qiroati}</div>
+                                            {p.santri?.nomor_induk && (
+                                                <div className="text-[10px] text-muted-foreground">{p.santri.nomor_induk}</div>
                                             )}
                                         </td>
                                         <td className="p-3 max-w-xs truncate" title={p.catatan}>{p.catatan || 'Lainnya'}</td>

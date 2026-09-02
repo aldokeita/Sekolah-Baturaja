@@ -150,22 +150,109 @@ dashboard di `http://localhost:3000/login`.
 npm run build
 ```
 
-Hasilnya di folder `dist/`. Unggah ke Vercel, Netlify, atau server web apa pun.
+Hasilnya di folder `dist/`.
 
-Kalau memakai Vercel, `vercel.json` sudah disiapkan. Isi pengaturannya:
+Situs dan API tinggal di **satu VPS dengan satu domain**: Nginx atau Caddy menyajikan `dist/` dan
+meneruskan `/api` ke Go yang berjalan di mesin yang sama. Karena satu domain, peramban tidak pernah
+mengirim permintaan lintas-asal, jadi CORS tidak ikut bermain.
 
-| Kolom | Nilai |
-|---|---|
-| Build Command | `npm run build` |
-| Output Directory | `dist` |
-| Environment Variable | `VITE_API_URL` = alamat API Anda |
+`VITE_API_URL` harus berisi **asal domain situs itu sendiri** — skema dan host saja:
 
-Kalau memakai server web sendiri, arahkan **semua** alamat ke `index.html`. Tanpa itu, halaman
-seperti `/berita` akan menunjukkan "404" saat dimuat ulang.
+```
+VITE_API_URL=https://sekolah.contoh.sch.id
+```
+
+Jangan diisi `/api` dan jangan dikosongkan. `src/lib/apiClient.js` menyusun alamat sebagai
+`${VITE_API_URL}${path}` sementara `path` sudah memuat `/api`, jadi `/api` menghasilkan
+`/api/api/…`; dan nilai kosong jatuh ke bawaan `http://localhost:8080` karena barisnya memakai `||`.
+Tanpa garis miring di akhir, supaya tidak muncul `//api/…`.
+
+Contoh Caddy (`/etc/caddy/Caddyfile`) — HTTPS diurus sendiri oleh Caddy:
+
+```
+sekolah.contoh.sch.id {
+    root * /var/www/sekolah/dist
+    handle /api/* {
+        reverse_proxy localhost:8080
+    }
+    handle /files/* {
+        reverse_proxy localhost:8080
+    }
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+}
+```
+
+Contoh Nginx yang setara:
+
+```nginx
+server {
+    server_name sekolah.contoh.sch.id;
+    root /var/www/sekolah/dist;
+
+    location /api/   { proxy_pass http://127.0.0.1:8080; proxy_set_header Host $host; proxy_set_header X-Forwarded-Proto $scheme; }
+    location /files/ { proxy_pass http://127.0.0.1:8080; proxy_set_header Host $host; proxy_set_header X-Forwarded-Proto $scheme; }
+    location /       { try_files $uri /index.html; }
+}
+```
+
+Tiga hal yang wajib benar:
+
+| Hal | Nilai | Kalau salah |
+|---|---|---|
+| `try_files … /index.html` | fallback semua alamat | `/berita` jadi 404 saat dimuat ulang |
+| `X-Forwarded-Proto` | diteruskan ke API | tautan berkas jadi `http://` di situs `https://` |
+| `/files/` | ikut diteruskan ke API | foto guru dan murid tidak muncul |
 
 **API dan database** perlu server yang menyala terus (VPS). Salin folder proyek ke sana, buat
 `backend/.env` seperti bagian 2 tapi dengan `CORS_ORIGIN` berisi domain situs Anda, lalu jalankan
 `docker compose up -d --build`. Pasang HTTPS di depannya dengan Caddy atau Nginx.
+
+### 6.1 · Backup otomatis
+
+**Lakukan ini sebelum ada data sungguhan.** Sekolah menyimpan data pribadi murid dan riwayat
+pembayaran; satu disk rusak tanpa backup berarti kehilangan permanen.
+
+Panel Backup & Restore di dalam aplikasi **tidak cukup** untuk ini. Ia mengekspor 13 tabel sebagai
+JSON dari peramban, dan jadwal pelajaran, nilai, periode ajaran, `user_profiles`, serta tabel rapor
+tidak termasuk. Ia berguna untuk memindahkan satu tabel, bukan untuk menyelamatkan sekolah.
+
+Skripnya sudah ada di proyek. Jalankan di VPS, dari akar proyek:
+
+```bash
+chmod +x scripts/backup-sekolah.sh
+./scripts/backup-sekolah.sh
+```
+
+Hasilnya dua berkas bercap waktu di folder `backup/`: dump basis data dan arsip berkas unggahan.
+**Keduanya sama pentingnya.** Basis data hanya menyimpan jalur foto, jadi memulihkan dump tanpa
+arsip unggahan menghasilkan sistem yang jalan dengan semua foto hilang, tanpa satu pun pesan galat.
+
+Jadwalkan setiap malam pukul 01.00 lewat cron. Jalankan `crontab -e` lalu tambahkan satu baris —
+ganti `/opt/sekolah` dengan lokasi proyek Anda:
+
+```
+0 1 * * * cd /opt/sekolah && ./scripts/backup-sekolah.sh >> /var/log/backup-sekolah.log 2>&1
+```
+
+Skripnya keluar dengan status gagal bila dump-nya kosong atau rusak, sehingga cron mengirim surel
+dan kegagalannya tidak lewat tanpa disadari. Yang lama dihapus **hanya setelah** yang baru terbukti
+baik, dan bawaannya menyimpan 30 hari. Ubah dengan argumen kedua:
+`./scripts/backup-sekolah.sh backup 60`.
+
+**Satu hal yang skrip ini tidak bisa lakukan untuk Anda:** backup yang hanya tersimpan di server
+yang sama tidak melindungi dari server itu sendiri hilang. Salin folder `backup/` ke luar — Google
+Drive, `rsync` ke komputer sekolah, atau penyimpanan objek. Sebulan sekali, coba pulihkan satu
+backup ke basis data kosong; backup yang belum pernah dicoba belum tentu backup.
+
+Memulihkan:
+
+```bash
+gunzip -c backup/db-20260901-010000.sql.gz | docker compose -f backend/docker-compose.yml exec -T db psql -U postgres -d lpq_db
+docker run --rm --volumes-from "$(docker compose -f backend/docker-compose.yml ps -q api)" -v "$PWD/backup":/backup alpine:3 tar xzf /backup/uploads-20260901-010000.tar.gz -C /app/uploads
+```
 
 ---
 
@@ -196,8 +283,27 @@ Lakukan hal yang sama untuk akun contoh lain yang akan Anda pakai. Semuanya bers
 | Guru | `guru@sdnbaturaja.sch.id` | `guru123` |
 | Wakil Kepala Sekolah | `pentashih@sdnbaturaja.sch.id` | `pentashih123` |
 
-Murid masuk memakai **nomor induk**, bukan email. Murid contoh bernomor `2026041` bersandi
-`santri123`.
+Murid masuk memakai **nama panggilan** sebagai nama pengguna, dan **NIS sebagai sandi**. Bukan email.
+
+Kalau seorang murid belum punya NIS, sandinya diambil dari NISN, lalu dari nomor induk — urutannya
+NIS, NISN, nomor induk. Murid contoh Naila tidak punya NIS, jadi sandinya nomor induknya, `2026041`.
+
+| Murid | Nama pengguna | Sandi |
+|---|---|---|
+| Naila Rahmadani | `Naila` | `2026041` (nomor induk, tidak punya NIS) |
+| Ahmad Fauzan | `Ahmad` | `26001` (NIS) |
+
+Aturan ini berlaku untuk semua murid, bukan hanya yang contoh: murid yang ditambahkan lewat aplikasi
+maupun lewat impor Excel langsung mendapat sandi awal dari nomornya. Nama panggilan diisi otomatis
+dari kata pertama nama lengkap kalau dibiarkan kosong.
+
+**Yang perlu Anda sadari.** Nama panggilan dan NIS keduanya bukan rahasia — keduanya tertulis di
+daftar kelas dan berkas sekolah. Siapa pun yang tahu keduanya bisa masuk sebagai murid itu, dan akun
+murid memuat riwayat pembayaran serta catatan karakter. Ini konvensi yang lazim di sekolah Indonesia,
+tetapi anggaplah akun murid sebagai kemudahan, bukan pengamanan.
+
+Satu hal lagi: **murid belum bisa mengganti sandinya sendiri.** Yang boleh diubah murid hanya nama
+panggilan, nomor HP, dan alamat. Kalau sekolah Anda perlu murid mengganti sandi, itu belum ada.
 
 ### 7.3 · Ganti data contoh
 
@@ -443,7 +549,7 @@ docker compose up -d --build
 | `docker compose up` langsung berhenti | `POSTGRES_PASSWORD` masih kosong | isi di `backend/.env` |
 | API berhenti sendiri saat menyala | `JWT_SECRET` atau `JWT_REFRESH_SECRET` kosong | isi keduanya dengan nilai berbeda |
 | Port 8080 sudah dipakai | ada aplikasi lain di port itu | matikan aplikasi itu, atau ubah `PORT` di `backend/.env` |
-| `/berita` jadi 404 setelah dimuat ulang | server web belum diarahkan ke `index.html` | pakai `vercel.json`, atau atur *fallback* di server web |
+| `/berita` jadi 404 setelah dimuat ulang | server web belum diarahkan ke `index.html` | atur *fallback* ke `index.html` di server web (lihat bagian build) |
 | Data hilang setelah dimatikan | memakai `down -v` | jangan pakai `-v` kecuali memang ingin mengosongkan |
 | Foto guru tidak muncul | API diakses lewat alamat berbeda dari yang menyimpan foto | pastikan `VITE_API_URL` konsisten sejak awal |
 

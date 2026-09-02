@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import BirthdayNotificationModal from '@/components/dashboard/shared/BirthdayNotificationModal';
 import { motion } from 'framer-motion';
 import {
+  bulkInsertSantri,
   changeSantriCategory,
   createSantri,
   fetchClassList,
@@ -38,6 +39,7 @@ import SantriArchiveDialog from '@/components/dashboard/admin/SantriArchiveDialo
 import DataPagination from '@/components/dashboard/shared/DataPagination';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
 import { enableTahfizh } from '@/lib/featureFlags';
+import RaporCetak from '@/components/dashboard/shared/RaporCetak';
 
 const PAGE_SIZE = 10;
 
@@ -456,10 +458,19 @@ const SantriManagement = () => {
             // 16. RFID
             santri.rfid_tag = row[15];
 
-            // Setup Default Password based on Priority
+            /* Sandi awal murid = nomor induknya, NIS didahulukan. Urutannya HARUS
+               sama dengan `insertSantriTx` di backend/internal/handler/santri.go —
+               nis, nisn, nomor_induk — supaya murid yang masuk lewat impor dan
+               murid yang dibuat lewat API tidak berakhir dengan sandi berbeda.
+               Nama panggilan DICABUT dari daftar ini. Ia dulu jadi pilihan
+               terakhir, sehingga murid tanpa nomor bisa mendapat sandi berupa
+               namanya sendiri — jauh lebih mudah diterka daripada nomor induk,
+               dan sekarang nama panggilan justru dipakai sebagai nama pengguna,
+               jadi keduanya akan sama persis. Baris tanpa satu pun nomor
+               ditolak, bukan diberi sandi lemah. */
             if (!santri.password) {
-                 const fallback = santri.nisn || santri.nis || santri.nama_panggilan;
-                 if (!fallback) throw new Error('Password tidak bisa dibuat otomatis — NISN, NIS, atau Nama Panggilan harus diisi minimal satu');
+                 const fallback = santri.nis || santri.nisn || santri.nomor_induk;
+                 if (!fallback) throw new Error('Sandi tidak bisa dibuat otomatis — NIS, NISN, atau Nomor Induk harus diisi minimal satu');
                  santri.password = fallback;
             }
 
@@ -494,6 +505,8 @@ const SantriManagement = () => {
   const [birthdayStudents, setBirthdayStudents] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalSantri, setTotalSantri] = useState(0);
+  // Murid yang rapornya sedang dibuka; null berarti dialognya tertutup.
+  const [raporSantriId, setRaporSantriId] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [formData, setFormData] = useState({
     nama_lengkap: '', nama_panggilan: '', nisn: '', nis: '', angkatan: '', jenis_kelamin: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '',
@@ -533,7 +546,10 @@ const SantriManagement = () => {
 
       const [santriRes, classes, birthdayPool] = await Promise.all([
         fetchSantriPage(santriFilters),
-        fetchClassList(),
+        // includeGuru wajib: tanpanya `classes` tidak membawa objek guru sama
+        // sekali, dan kolom GURU PENGAMPU jatuh ke "Belum ada guru" untuk
+        // seluruh murid meski wali kelasnya sudah terisi.
+        fetchClassList({ includeGuru: true }),
         fetchSantriList({ activeOnly: true, notDeleted: true, limit: 200 }),
       ]);
 
@@ -588,13 +604,31 @@ const SantriManagement = () => {
     }, {});
   }, [classesList]);
 
+  const [bulkImporting, setBulkImporting] = useState(false);
+
   const confirmBulkUpload = async () => {
-      if (!uploadReport?.validData) return;
-      toast({
-          title: "Import massal ditunda",
-          description: "Pembuatan akun murid massal perlu operasi backend atomik agar Auth, profil, alias login, dan membership tetap konsisten.",
-          variant: "destructive"
-      });
+      if (!uploadReport?.validData?.length) return;
+      setBulkImporting(true);
+      try {
+          const { inserted, failed } = await bulkInsertSantri(uploadReport.validData);
+          if (failed.length === 0) {
+              toast({ title: 'Impor selesai', description: `${inserted.length} murid berhasil dibuat beserta akun loginnya.` });
+          } else {
+              const detail = failed.slice(0, 3)
+                  .map(f => `Baris ${f.index + 2}: ${f.error}`)
+                  .join('; ');
+              toast({
+                  title: `${inserted.length} berhasil, ${failed.length} gagal`,
+                  description: detail + (failed.length > 3 ? ' …' : ''),
+                  variant: 'destructive',
+              });
+          }
+          setIsReportOpen(false);
+          loadData();
+      } catch (err) {
+          toast({ title: 'Impor gagal', description: err.message, variant: 'destructive' });
+      }
+      setBulkImporting(false);
   };
 
   const handleDownloadData = async () => {
@@ -694,7 +728,10 @@ const SantriManagement = () => {
         finalFormData.nama_panggilan = finalFormData.nama_lengkap.trim().split(/\s+/)[0] || null;
     }
 
-    if (!finalFormData.password) finalFormData.password = finalFormData.nisn || finalFormData.nis;
+    /* Urutan sama dengan impor Excel di atas dan dengan `insertSantriTx` di
+       backend: nis, nisn, nomor_induk. Sebelumnya nomor_induk terlewat di sini,
+       jadi murid yang hanya punya nomor induk terkirim tanpa sandi. */
+    if (!finalFormData.password) finalFormData.password = finalFormData.nis || finalFormData.nisn || finalFormData.nomor_induk;
 
     if (finalFormData.password && finalFormData.password.length < 4) {
         toast({ title: "Validasi Password Gagal", description: "Password minimal 4 karakter.", variant: "destructive" });
@@ -1078,7 +1115,14 @@ const SantriManagement = () => {
                 <td className="p-3 text-sm font-medium text-foreground">{classGuruMap[santri.current_class_id || santri.id_kelas] || <span className="text-muted-foreground italic text-xs">Belum ada</span>}</td>
                 <td className="p-3"><Badge variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200">{santri.angkatan || '-'}</Badge></td>
                 <td className="p-3"><div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-900 border"><FileCheck className={`w-4 h-4 ${santri.berkas_foto && santri.berkas_akta && santri.berkas_kk && santri.berkas_form ? 'text-green-500' : 'text-slate-300'}`} /></div></td>
-                {canManage && <td className="p-3"><Button onClick={() => handleEdit(santri)} size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 rounded-full"><Edit className="w-4 h-4" /></Button></td>}
+                {canManage && (
+                  <td className="p-3">
+                    <div className="flex items-center gap-1">
+                      <Button onClick={() => handleEdit(santri)} size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 rounded-full" title="Sunting data murid"><Edit className="w-4 h-4" /></Button>
+                      <Button onClick={() => setRaporSantriId(santri.id)} size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-indigo-50 hover:text-indigo-600" title="Cetak rapor"><FileText className="w-4 h-4" /></Button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -1098,9 +1142,20 @@ const SantriManagement = () => {
             setSelectedSantri(new Set());
             setCurrentPage(page);
           }}
-          itemLabel="santri"
+          itemLabel="murid"
         />
       </div>
+
+      {/* Daftar murid halaman ini diteruskan supaya wali kelas bisa berpindah ke
+          murid berikutnya tanpa menutup dialog. Mengisi dua puluh delapan rapor
+          berarti dua puluh delapan kali buka-tutup tanpa ini. */}
+      <RaporCetak
+        santriId={raporSantriId}
+        daftarMurid={sortedAndFilteredSantri.map((s) => ({ id: s.id, nama: s.nama_lengkap }))}
+        onPindahMurid={setRaporSantriId}
+        open={Boolean(raporSantriId)}
+        onOpenChange={(terbuka) => { if (!terbuka) setRaporSantriId(null); }}
+      />
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -1201,7 +1256,12 @@ const SantriManagement = () => {
                             atau NIS (lihat handleSubmit), sama seperti perilaku impor massal.
                             Dulu field ini `required`, sehingga browser memblokir submit tanpa
                             pesan apa pun dan pengisian otomatis itu mustahil tercapai. */}
-                        <div className="admin-edit-field"><label>Password</label><Input type="text" value={formData.password || ''} onChange={(e) => setFormData({ ...formData, password: e.target.value })} disabled={Boolean(editingSantri)} placeholder={editingSantri ? 'Reset password melalui alur admin terpisah' : 'Kosongkan untuk memakai NISN'} /></div>
+                        <div className="admin-edit-field"><label>Password</label><Input type="text" value={formData.password || ''} onChange={(e) => setFormData({ ...formData, password: e.target.value })} disabled={Boolean(editingSantri)}                             /* Kalimat lamanya berbunyi "Reset password melalui alur
+                               admin terpisah" — alur itu tidak pernah dibuat, dan
+                               `/api/auth/reset-password` yang dirujuk adapter juga
+                               tidak ada di backend. Sekarang menyebut tempat yang
+                               benar-benar bisa dituju. */
+                            placeholder={editingSantri ? 'Ubah di Manajemen Login Murid' : 'Kosongkan untuk memakai NIS'} /></div>
                         </div>
                     </div>
                 </div>
@@ -1233,9 +1293,10 @@ const SantriManagement = () => {
       <BulkUploadModal isOpen={isBulkUploadOpen} onClose={() => setIsBulkUploadOpen(false)} onUpload={handleDataProcessing} category="Anak" />
       <UploadReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} report={uploadReport} onConfirm={confirmBulkUpload} />
       <BirthdayNotificationModal isOpen={isBirthdayModalOpen} onClose={() => setIsBirthdayModalOpen(false)} students={birthdayStudents} />
-      {/* Tanpa `categories`: arsip menampilkan semua kategori, mengikuti daftar
-          utama panel ini yang juga tidak menyaring kategori. Dulu prop ini berisi
-          ['Anak', 'TPQ'] / ['PTPT'] mengikuti subCategory era Qiroati. */}
+      {/* Tanpa `categories`: arsip menampilkan semua murid, mengikuti daftar utama
+          panel ini yang juga tidak menyaring kategori. SD negeri hanya punya satu
+          jenis murid — pemisahan kategori berasal dari produk sebelumnya dan sudah
+          dicabut. */}
       <SantriArchiveDialog
         open={isArchiveOpen}
         onOpenChange={setIsArchiveOpen}

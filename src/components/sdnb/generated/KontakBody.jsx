@@ -17,6 +17,7 @@ import React from 'react';
 // Aliased: mockups use short loop variables (e.g. sc-for as="s") that would
 // otherwise shadow the style helper inside a map callback.
 import { s as __dcs } from '@/lib/dcStyle';
+import { kolomUntuk } from '@/lib/gridKolom';
 import '@/styles/sdnb-kontak.css';
 
 const KontakBody = (vals = {}) => {
@@ -28,12 +29,12 @@ const KontakBody = (vals = {}) => {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ width: "44px", height: "2px", background: "linear-gradient(90deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-ujung))" }}></div>
-            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>{copy.heroEyebrow}</span>
+            <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--sekolah-aksen-teks)" }}>{copy.heroEyebrow}</span>
           </div>
-          <h1 className="heroh1" style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "70px", lineHeight: ".94", letterSpacing: "-.048em", fontWeight: "800", color: "#171827" }}>{copy.heroTitle}<br /><span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>{copy.heroAccent}</span></h1>
+          <h1 className="heroh1" style={{ margin: "20px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "70px", lineHeight: ".94", letterSpacing: "-.048em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>{copy.heroTitle}<br /><span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 45%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>{copy.heroAccent}</span></h1>
         </div>
         <div style={{ maxWidth: "360px" }}>
-          <p style={{ margin: "0", fontSize: "15.5px", lineHeight: "1.68", color: "#4c5175", textWrap: "pretty" }}>{copy.heroDescription}</p>
+          <p style={{ margin: "0", fontSize: "15.5px", lineHeight: "1.68", color: "var(--sdnb-teks-pendamping)", textWrap: "pretty" }}>{copy.heroDescription}</p>
           <div style={__dcs(statusStyle)}>
             <span style={__dcs(`position:relative;width:9px;height:9px;flex:none;border-radius:50%;background:${statusDot}`)}>
               <span style={__dcs(`position:absolute;inset:0;border-radius:50%;background:${statusDot};animation:ping 2.2s cubic-bezier(0,.2,.8,1) infinite`)}></span>
@@ -42,15 +43,18 @@ const KontakBody = (vals = {}) => {
         </div>
       </div>
 
-      <div className="chips" style={{ marginTop: "34px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px" }}>
+      {/* Kolom mengikuti jumlah chip, dibatasi empat. Chip WhatsApp hilang bila
+          sekolah tidak mengisinya, dan barisnya dulu tetap empat kolom — sisanya
+          menganga kosong di kanan. */}
+      <div className="chips" style={{ marginTop: "34px", display: "grid", gridTemplateColumns: kolomUntuk((chips || []).length), gap: "16px" }}>
         {(chips || []).map((c, $index) => (<React.Fragment key={$index}>
           <div className="chip" onClick={c.act} style={{ position: "relative", overflow: "hidden", padding: "22px 22px 20px", borderRadius: "24px", background: "rgba(255,255,255,.58)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
             <div style={__dcs(c.icon)}>
               <div style={__dcs(c.glyph)}></div>
             </div>
-            <div style={{ marginTop: "18px", minHeight: "30px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".09em", lineHeight: "1.3", textTransform: "uppercase", color: "#8a8ea8" }}>{c.label}</div>
-            <div style={{ marginTop: "7px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "clamp(14.5px,1.28vw,18px)", fontWeight: "800", letterSpacing: "-.022em", lineHeight: "1.25", overflowWrap: "anywhere", wordBreak: "break-word", color: "#1b1c2c" }}>{c.nilai}</div>
-            <div style={{ marginTop: "10px", fontSize: "12.5px", fontWeight: "600", color: "var(--sekolah-aksen-pekat)" }}>{c.aksi}</div>
+            <div style={{ marginTop: "18px", minHeight: "30px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".09em", lineHeight: "1.3", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>{c.label}</div>
+            <div style={{ marginTop: "7px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "clamp(14.5px,1.28vw,18px)", fontWeight: "800", letterSpacing: "-.022em", lineHeight: "1.25", overflowWrap: "anywhere", wordBreak: "break-word", color: "var(--sdnb-teks-judul)" }}>{c.nilai}</div>
+            <div style={{ marginTop: "10px", fontSize: "12.5px", fontWeight: "600", color: "var(--sekolah-aksen-teks)" }}>{c.aksi}</div>
           </div>
         </React.Fragment>))}
       </div>
@@ -59,12 +63,12 @@ const KontakBody = (vals = {}) => {
       <div id="pesan" style={{ position: "relative", overflow: "hidden", padding: "34px 36px 36px", borderRadius: "30px", background: "rgba(255,255,255,.56)", backdropFilter: "blur(28px) saturate(190%)", WebkitBackdropFilter: "blur(28px) saturate(190%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 32px 68px -26px rgba(55,65,120,.55),inset 0 1px 0 rgba(255,255,255,.95)" }}>
         {(belumKirim) && (<>
           <div>
-            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>{copy.formEyebrow}</div>
-            <h2 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "30px", lineHeight: "1.14", letterSpacing: "-.03em", fontWeight: "800", color: "#171827" }}>{copy.formTitle}</h2>
-            <p style={{ margin: "12px 0 0", maxWidth: "520px", fontSize: "14px", lineHeight: "1.65", color: "#565b7d" }}>{copy.formDescription}</p>
+            <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-teks)" }}>{copy.formEyebrow}</div>
+            <h2 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "30px", lineHeight: "1.14", letterSpacing: "-.03em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>{copy.formTitle}</h2>
+            <p style={{ margin: "12px 0 0", maxWidth: "520px", fontSize: "14px", lineHeight: "1.65", color: "var(--sdnb-teks-pendamping)" }}>{copy.formDescription}</p>
 
             <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#3d4166" }}>{copy.formRoleLabel}</div>
+              <div style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)" }}>{copy.formRoleLabel}</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                 {(peranOpsi || []).map((p, $index) => (<React.Fragment key={$index}>
                   <button onClick={p.pick} style={__dcs(p.style)}>{p.label}</button>
@@ -74,17 +78,17 @@ const KontakBody = (vals = {}) => {
 
             <div className="fld" style={{ marginTop: "22px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
               <div>
-                <div style={{ marginBottom: "7px", fontSize: "12.5px", fontWeight: "700", color: "#3d4166" }}>{copy.nameLabel}</div>
+                <div style={{ marginBottom: "7px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)" }}>{copy.nameLabel}</div>
                 <input onInput={setNama} placeholder={copy.namePlaceholder} />
               </div>
               <div>
-                <div style={{ marginBottom: "7px", fontSize: "12.5px", fontWeight: "700", color: "#3d4166" }}>{copy.contactLabel}</div>
+                <div style={{ marginBottom: "7px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)" }}>{copy.contactLabel}</div>
                 <input onInput={setKontak} placeholder={copy.contactPlaceholder} />
               </div>
             </div>
 
             <div className="fld" style={{ marginTop: "14px" }}>
-              <div style={{ marginBottom: "7px", fontSize: "12.5px", fontWeight: "700", color: "#3d4166" }}>{copy.topicLabel}</div>
+              <div style={{ marginBottom: "7px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)" }}>{copy.topicLabel}</div>
               <select onChange={setTopik}>
                 {(topikOpsi || []).map((t, $index) => (<React.Fragment key={$index}>
                   <option value={t}>{t}</option>
@@ -94,7 +98,7 @@ const KontakBody = (vals = {}) => {
 
             <div className="fld" style={{ marginTop: "14px" }}>
               <div style={{ marginBottom: "7px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
-                <span style={{ fontSize: "12.5px", fontWeight: "700", color: "#3d4166" }}>{copy.messageLabel}</span>
+                <span style={{ fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-badan)" }}>{copy.messageLabel}</span>
                 <span style={__dcs(hitungStyle)}>{hitungPesan}</span>
               </div>
               <textarea onInput={setPesan} rows="5" placeholder={copy.messagePlaceholder}></textarea>
@@ -104,7 +108,7 @@ const KontakBody = (vals = {}) => {
               <button className="shine" onClick={kirim} style={__dcs(tombolStyle)}>{copy.submitLabel}
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
               </button>
-              <div style={{ fontSize: "12.5px", color: "#6d7192" }}>{bantuan}</div>
+              <div style={{ fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>{bantuan}</div>
             </div>
           </div>
         </>)}
@@ -114,11 +118,11 @@ const KontakBody = (vals = {}) => {
             <div style={{ width: "64px", height: "64px", borderRadius: "22px", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 20px 44px -16px rgba(95,105,235,.9),inset 0 1px 0 rgba(255,255,255,.6)", animation: "popin .5s cubic-bezier(.3,1.4,.4,1) both" }}>
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12.5 9.5 18 20 7"></path></svg>
             </div>
-            <h2 style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "28px", lineHeight: "1.16", letterSpacing: "-.028em", fontWeight: "800", color: "#171827" }}>{copy.successTitle}</h2>
-            <p style={{ margin: "12px 0 0", maxWidth: "460px", fontSize: "14.5px", lineHeight: "1.68", color: "#4f5478" }}>{successDescription}</p>
+            <h2 style={{ margin: "24px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "28px", lineHeight: "1.16", letterSpacing: "-.028em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>{copy.successTitle}</h2>
+            <p style={{ margin: "12px 0 0", maxWidth: "460px", fontSize: "14.5px", lineHeight: "1.68", color: "var(--sdnb-teks-pendamping)" }}>{successDescription}</p>
             <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <button className="shine" onClick={reset} style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "13.5px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 16px 34px -14px rgba(95,105,235,.9)" }}>{copy.newMessageLabel}</button>
-              <a className="shine" href="/pendaftaran" style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>{copy.enrollmentButtonLabel}</a>
+              <a className="shine" href="/pendaftaran" style={{ position: "relative", overflow: "hidden", padding: "13px 20px", borderRadius: "15px", fontSize: "13.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.7)", border: "1px solid rgba(255,255,255,.95)" }}>{copy.enrollmentButtonLabel}</a>
             </div>
           </div>
         </>)}
@@ -133,19 +137,19 @@ const KontakBody = (vals = {}) => {
           <div aria-hidden="true" style={{ position: "absolute", left: "12%", bottom: "12%", width: "96px", height: "64px", borderRadius: "10px", background: "rgba(160,200,255,.4)", border: "1px solid rgba(255,255,255,.8)" }}></div>
           <div aria-hidden="true" style={{ position: "absolute", right: "14%", top: "14%", width: "80px", height: "56px", borderRadius: "10px", background: "rgba(180,240,220,.45)", border: "1px solid rgba(255,255,255,.8)" }}></div>
           <div style={{ position: "absolute", left: "50%", top: "47%", transform: "translate(-50%,-100%)", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-            <div style={{ padding: "9px 14px", borderRadius: "13px", fontSize: "12px", fontWeight: "700", color: "#2c2f4d", background: "rgba(255,255,255,.92)", border: "1px solid rgba(255,255,255,1)", boxShadow: "0 16px 34px -14px rgba(55,65,120,.6)", whiteSpace: "nowrap" }}>{petaNama}</div>
+            <div style={{ padding: "9px 14px", borderRadius: "13px", fontSize: "12px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.92)", border: "1px solid rgba(255,255,255,1)", boxShadow: "0 16px 34px -14px rgba(55,65,120,.6)", whiteSpace: "nowrap" }}>{petaNama}</div>
             <div style={{ position: "relative", width: "16px", height: "16px", borderRadius: "50%", background: "linear-gradient(140deg,var(--sekolah-aksen),var(--sekolah-aksen-ujung))", border: "3px solid #fff", boxShadow: "0 8px 18px -6px rgba(80,90,190,.8)" }}>
               <span style={{ position: "absolute", inset: "-3px", borderRadius: "50%", background: "rgba(100,112,255,.5)", animation: "ping 2.4s cubic-bezier(0,.2,.8,1) infinite" }}></span>
             </div>
           </div>
           <div style={{ position: "absolute", left: "16px", right: "16px", bottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", padding: "14px 16px", borderRadius: "20px", background: "rgba(255,255,255,.72)", backdropFilter: "blur(22px) saturate(185%)", WebkitBackdropFilter: "blur(22px) saturate(185%)", border: "1px solid rgba(255,255,255,.95)" }}>
             <div style={{ minWidth: "0" }}>
-              <div style={{ fontSize: "13.5px", fontWeight: "800", letterSpacing: "-.012em", color: "#1b1c2c" }}>{petaBaris1}</div>
-              <div style={{ marginTop: "4px", fontSize: "12px", color: "#6d7192" }}>{petaBaris2}</div>
+              <div style={{ fontSize: "13.5px", fontWeight: "800", letterSpacing: "-.012em", color: "var(--sdnb-teks-judul)" }}>{petaBaris1}</div>
+              <div style={{ marginTop: "4px", fontSize: "12px", color: "var(--sdnb-teks-pendamping)" }}>{petaBaris2}</div>
             </div>
             <div style={{ display: "flex", flex: "none", gap: "8px" }}>
               {petaTautan && (
-                <a className="shine" href={petaTautan} target="_blank" rel="noopener noreferrer" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", padding: "11px 15px", borderRadius: "14px", fontSize: "12.5px", fontWeight: "700", color: "#33375a", background: "rgba(255,255,255,.9)", border: "1px solid rgba(255,255,255,1)", boxShadow: "0 14px 30px -14px rgba(55,65,120,.5)", whiteSpace: "nowrap" }}>{copy.mapButtonLabel}</a>
+                <a className="shine" href={petaTautan} target="_blank" rel="noopener noreferrer" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", padding: "11px 15px", borderRadius: "14px", fontSize: "12.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.9)", border: "1px solid rgba(255,255,255,1)", boxShadow: "0 14px 30px -14px rgba(55,65,120,.5)", whiteSpace: "nowrap" }}>{copy.mapButtonLabel}</a>
               )}
               <button className="shine" onClick={salinAlamat} style={{ position: "relative", overflow: "hidden", flex: "none", padding: "11px 15px", borderRadius: "14px", border: "0", cursor: "pointer", fontFamily: "inherit", fontSize: "12.5px", fontWeight: "700", color: "#fff", background: "linear-gradient(135deg,var(--sekolah-aksen),var(--sekolah-aksen-tengah) 55%,var(--sekolah-aksen-ujung))", boxShadow: "0 14px 30px -14px rgba(95,105,235,.9)", whiteSpace: "nowrap" }}>{labelAlamat}</button>
             </div>
@@ -155,8 +159,8 @@ const KontakBody = (vals = {}) => {
 
         <div style={{ position: "relative", overflow: "hidden", padding: "26px 28px", borderRadius: "26px", background: "rgba(255,255,255,.56)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "14px" }}>
-            <h3 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "20px", letterSpacing: "-.024em", fontWeight: "800", color: "#1b1c2c" }}>{copy.serviceHoursTitle}</h3>
-            <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "#8a8ea8" }}>{copy.serviceHoursSubtitle}</span>
+            <h3 style={{ margin: "0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "20px", letterSpacing: "-.024em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>{copy.serviceHoursTitle}</h3>
+            <span style={{ fontSize: "11.5px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>{copy.serviceHoursSubtitle}</span>
           </div>
           <div style={{ marginTop: "16px", display: "flex", flexDirection: "column" }}>
             {(jam || []).map((j, $index) => (<React.Fragment key={$index}>
@@ -172,24 +176,25 @@ const KontakBody = (vals = {}) => {
 <section style={{ maxWidth: "1240px", margin: "0 auto", padding: "66px 28px 0" }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "24px", flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-pekat)" }}>{copy.directoryEyebrow}</div>
-          <h2 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.1", letterSpacing: "-.032em", fontWeight: "800", color: "#171827" }}>{copy.directoryTitle} <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>{copy.directoryAccent}</span></h2>
+          <div style={{ fontSize: "12px", fontWeight: "700", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--sekolah-aksen-teks)" }}>{copy.directoryEyebrow}</div>
+          <h2 style={{ margin: "10px 0 0", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "38px", lineHeight: "1.1", letterSpacing: "-.032em", fontWeight: "800", color: "var(--sdnb-teks-judul)" }}>{copy.directoryTitle} <span style={{ background: "linear-gradient(115deg,var(--sekolah-aksen-pekat),var(--sekolah-aksen-tengah-2) 48%,var(--sekolah-aksen-ujung))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent" }}>{copy.directoryAccent}</span></h2>
         </div>
-        <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.6", color: "#5b6082" }}>{copy.directoryDescription}</p>
+        <p style={{ maxWidth: "340px", margin: "0", fontSize: "14px", lineHeight: "1.6", color: "var(--sdnb-teks-pendamping)" }}>{copy.directoryDescription}</p>
       </div>
 
-      <div className="people" style={{ marginTop: "30px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "20px" }}>
+      {/* Direktori staf: jumlahnya milik sekolah, jadi kolomnya ikut isinya. */}
+      <div className="people" style={{ marginTop: "30px", display: "grid", gridTemplateColumns: kolomUntuk((orang || []).length), gap: "20px" }}>
         {(orang || []).map((o, $index) => (<React.Fragment key={$index}>
           <div className="pcard" style={{ position: "relative", overflow: "hidden", borderRadius: "26px", background: "rgba(255,255,255,.56)", backdropFilter: "blur(26px) saturate(185%)", WebkitBackdropFilter: "blur(26px) saturate(185%)", border: "1px solid rgba(255,255,255,.85)", boxShadow: "0 26px 56px -24px rgba(55,65,120,.5),inset 0 1px 0 rgba(255,255,255,.95)" }}>
             <div style={__dcs(o.bar)}></div>
             <div style={{ padding: "22px 22px 24px" }}>
               <div style={__dcs(o.avatar)}>{o.inisial}</div>
-              <div style={{ marginTop: "16px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "#8a8ea8" }}>{o.urusan}</div>
-              <div style={{ marginTop: "8px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "16.5px", fontWeight: "800", letterSpacing: "-.018em", color: "#1b1c2c" }}>{o.nama}</div>
-              <div style={{ marginTop: "4px", fontSize: "12.5px", fontWeight: "600", color: "#6b7093" }}>{o.peran}</div>
-              <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,.85)", display: "flex", flexDirection: "column", gap: "7px", fontSize: "12.5px", color: "#4f5478" }}>
+              <div style={{ marginTop: "16px", fontSize: "11.5px", fontWeight: "700", letterSpacing: ".08em", textTransform: "uppercase", color: "var(--sdnb-teks-pendamping)" }}>{o.urusan}</div>
+              <div style={{ marginTop: "8px", fontFamily: "'Plus Jakarta Sans','Archivo',system-ui,sans-serif", fontSize: "16.5px", fontWeight: "800", letterSpacing: "-.018em", color: "var(--sdnb-teks-judul)" }}>{o.nama}</div>
+              <div style={{ marginTop: "4px", fontSize: "12.5px", fontWeight: "600", color: "var(--sdnb-teks-pendamping)" }}>{o.peran}</div>
+              <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,.85)", display: "flex", flexDirection: "column", gap: "7px", fontSize: "12.5px", color: "var(--sdnb-teks-pendamping)" }}>
                 <div>{o.surel}</div>
-                <div style={{ color: "#6d7192" }}>{o.jam}</div>
+                <div style={{ color: "var(--sdnb-teks-pendamping)" }}>{o.jam}</div>
               </div>
             </div>
           </div>
@@ -205,7 +210,7 @@ const KontakBody = (vals = {}) => {
             <p style={{ margin: "16px 0 0", fontSize: "15.5px", lineHeight: "1.66", color: "rgba(255,255,255,.9)" }}>{copy.visitDescription}</p>
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <a className="shine" href="#pesan" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#3b3f7a", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>{copy.visitButtonLabel}</a>
+            <a className="shine" href="#pesan" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "var(--sdnb-teks-judul)", background: "rgba(255,255,255,.94)", boxShadow: "0 18px 38px -16px rgba(30,36,90,.7)" }}>{copy.visitButtonLabel}</a>
             <a className="shine" href="/profil/galeri" style={{ position: "relative", overflow: "hidden", display: "inline-flex", alignItems: "center", gap: "9px", padding: "15px 24px", borderRadius: "16px", fontSize: "14.5px", fontWeight: "700", color: "#fff", background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.5)" }}>{copy.galleryButtonLabel}</a>
           </div>
         </div>

@@ -362,10 +362,14 @@ const PpdbRegistrations = () => {
    * seluruh angkanya nol dan hanya membingungkan. */
   const ringkasanKursi = useMemo(() => {
     const dayaTampung = statistik.daya_tampung || 0;
-    if (!dayaTampung || jalurPpdb.length === 0) return null;
+    // Jalur yang dimatikan sekolah tidak menerima pendaftar, jadi menampilkan
+    // kursinya di sini membuat total kuota terbaca lebih besar daripada yang
+    // benar-benar dibuka.
+    const jalurDibuka = jalurPpdb.filter((j) => j.aktif !== false);
+    if (!dayaTampung || jalurDibuka.length === 0) return null;
     return {
       dayaTampung,
-      baris: jalurPpdb.map((j) => {
+      baris: jalurDibuka.map((j) => {
         const kursi = Math.floor((dayaTampung * (Number(j.kuota) || 0)) / 100);
         const diterima = statistik.diterima_jalur?.[j.id] || 0;
         return { id: j.id, nama: j.name, kuota: Number(j.kuota) || 0, kursi, diterima };

@@ -2,7 +2,7 @@ import apiClient from '@/lib/apiClient';
 import { mapSantriForLegacyUi } from '@/lib/dataMasterAdapters';
 import { resolveAvatarRecords } from '@/lib/storageAdapters';
 
-const ARCHIVE_SELECT = ['id','nama_lengkap','nama_panggilan','nomor_induk_qiroati','kategori','status','deleted_at','archive_reason','current_class_id','sesi_mengaji','jilid','foto_url','avatar_path'].join(',');
+const ARCHIVE_SELECT = ['id','nama_lengkap','nama_panggilan','nomor_induk','kategori','status','deleted_at','archive_reason','current_class_id','sesi_mengaji','jilid','foto_url','avatar_path'].join(',');
 
 export const getFunctionErrorMessage = async (error, fallback) => {
   if (!error) return fallback;

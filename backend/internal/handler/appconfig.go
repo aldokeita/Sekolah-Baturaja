@@ -38,6 +38,11 @@ var validConfigKeys = map[string]struct{}{
 	"random_name_settings":      {},
 	"attendance_session_config": {},
 	"tahfizh_config":            {},
+	// Rentang predikat rapor (A/B/C/D). Setiap sekolah menetapkan KKM-nya sendiri,
+	// jadi angkanya tidak boleh tinggal sebagai konstanta di kode.
+	"rapor_predikat": {},
+	// Saklar & template notifikasi WhatsApp otomatis (lihat internal/wanotify).
+	"wa_notify_config": {},
 }
 
 func (h *AppConfigHandler) Routes() http.Handler {

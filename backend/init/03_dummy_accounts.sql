@@ -5,7 +5,7 @@
 -- Login rules enforced by the Go backend (internal/handler/auth.go):
 --   staff  -> guru.email + guru.password, needs guru.status='active'
 --             AND a matching user_profiles row with status='active'
---   santri -> santri.nomor_induk_qiroati (or nama_panggilan) + santri.password,
+--   santri -> santri.nomor_induk (or nama_panggilan) + santri.password,
 --             needs santri.status='Aktif'
 --
 -- Passwords are hashed with pgcrypto bcrypt ($2a$, cost 12), which is what
@@ -45,6 +45,16 @@ begin
   for r in
     select * from (values
       -- id, email, password, display name, jabatan, roles[], app_role
+      -- Kepala sekolah. app_role-nya `pentashih` -- dashboard pengawasan sekolah
+      -- yang sama dengan wakilnya; yang membedakan hanya sebutannya, yang diambil
+      -- dari peran 'Kepala Sekolah' di kolom roles.
+      --
+      -- Barisnya ada di seed karena halaman Profil publik mengambil nama penanda
+      -- tangan kutipannya dari Data Guru: baris yang jabatannya memuat "Kepala
+      -- Sekolah". Tanpa satu baris pun, halaman Profil pembeli menampilkan nama
+      -- sekolah di tempat nama orang.
+      ('a1fa7a10-0000-0000-0000-000000000010'::uuid, 'kepsek@sdnbaturaja.sch.id',    'kepsek123',
+       'Suryani Hadi, S.Pd., M.M.', 'Kepala Sekolah',    array['Kepala Sekolah', 'Pengajar'], 'pentashih'),
       ('a1fa7a10-0000-0000-0000-000000000011'::uuid, 'tatausaha@sdnbaturaja.sch.id', 'tatausaha123',
        'Lestari Ningsih, A.Md.', 'Tata Usaha',           array['Tata Usaha'],  'tata_usaha'),
       ('a1fa7a10-0000-0000-0000-000000000012'::uuid, 'guru@sdnbaturaja.sch.id',      'guru123',
@@ -130,20 +140,48 @@ end $$;
 -- ── Student account (santri + user_profiles) ─────────────────────────────────
 -- Logs in with the student number, matching the "Nomor induk murid" field on
 -- the login screen.
+--
+-- This is the THIRD and last sample student a buyer receives; the other two come
+-- from supabase/seed.sql. Naila is placed into Kelas 2A here rather than in the
+-- seed because the seed runs first and cannot reference a row this file creates.
+-- Without the placement she shows up under "Murid Belum Masuk Kelas", which
+-- reads like a defect on a fresh install.
+-- Sandinya SAMA DENGAN nomor induknya, mengikuti aturan yang berlaku untuk semua
+-- murid: `insertSantriTx` memberi sandi awal dari nis/nisn/nomor_induk, dan
+-- migrasi 20260823000300 menyamakan murid lama. Naila tidak punya NIS maupun
+-- NISN, jadi yang terpakai nomor induknya. Berkas ini berjalan SETELAH migrasi,
+-- jadi kalau di sini dipakai sandi lain, satu-satunya murid demo akan jadi
+-- pengecualian dari aturannya sendiri — dan itulah yang terjadi sebelumnya
+-- dengan 'santri123'. Jangan kembalikan ke sandi tetap.
+--
+-- Nama penggunanya nama panggilannya, 'Naila'.
 do $$
 declare
   sid uuid := 'a1fa7a10-0000-0000-0000-000000000014';
-  hashed text := extensions.crypt('santri123', extensions.gen_salt('bf', 12));
+  cls uuid := 'b2fa7a20-0000-0000-0000-000000000002';
+  induk text := '2026041';
+  hashed text := extensions.crypt(induk, extensions.gen_salt('bf', 12));
 begin
   insert into auth.users (id, email)
   values (sid, 'murid@sdnbaturaja.sch.id')
   on conflict (id) do update set email = excluded.email;
 
-  insert into public.santri (id, nomor_induk_qiroati, nama_lengkap, nama_panggilan,
-                             kategori, jenis_kelamin, status, password)
-  values (sid, '2026041', 'Naila Rahmadani', 'Naila', 'Anak', 'Perempuan', 'Aktif', hashed)
+  -- `jilid` diisi di sini, BUKAN lewat migrasi. Migrasi berjalan sebelum berkas
+  -- init ini, jadi migrasi apa pun yang mencoba menyetel tingkat Naila akan
+  -- berjalan saat barisnya belum ada dan tidak mengubah apa-apa.
+  --
+  -- 'Jilid 2' menyamai murid Kelas 2A, tempat ia ditaruh bila kelas seed ada.
+  -- Nilai itu terdaftar di tangga yang disetel migrasi 20260823000700 (Jilid 1
+  -- sampai Jilid 6, lalu Al-Qur'an) dan posisinya di tengah, jadi tombol Naik
+  -- maupun Turun Tingkat sama-sama punya tujuan.
+  --
+  -- Sengaja TIDAK masuk daftar `on conflict do update`: kalau sekolah sudah
+  -- menetapkan tingkatnya sendiri, jangan ditimpa tiap container dinyalakan.
+  insert into public.santri (id, nomor_induk, nama_lengkap, nama_panggilan,
+                             kategori, jenis_kelamin, status, password, jilid)
+  values (sid, induk, 'Naila Rahmadani', 'Naila', 'Anak', 'Perempuan', 'Aktif', hashed, 'Jilid 2')
   on conflict (id) do update set
-    nomor_induk_qiroati = excluded.nomor_induk_qiroati,
+    nomor_induk = excluded.nomor_induk,
     nama_lengkap        = excluded.nama_lengkap,
     nama_panggilan      = excluded.nama_panggilan,
     status              = 'Aktif',
@@ -155,6 +193,17 @@ begin
     role         = excluded.role,
     display_name = excluded.display_name,
     status       = 'active';
+
+  -- Kelas 2A hanya ada bila supabase/seed.sql sudah jalan. Pemasangan yang
+  -- melewatkan seed (misalnya basis data produksi yang diisi manual) tetap harus
+  -- lolos, jadi penempatannya dilewati saja kalau kelasnya tidak ada.
+  if exists (select 1 from public.classes where id = cls) then
+    update public.santri set current_class_id = cls where id = sid;
+
+    insert into public.class_memberships (santri_id, class_id, start_date, status, order_in_class)
+    values (sid, cls, current_date, 'active', 1)
+    on conflict do nothing;
+  end if;
 end $$;
 
 -- ── Report ───────────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"log"
@@ -19,12 +20,13 @@ import (
 )
 
 type AuthHandler struct {
-	db  *pgxpool.Pool
-	cfg *config.Config
+	db       *pgxpool.Pool
+	cfg      *config.Config
+	throttle *loginThrottle
 }
 
 func NewAuthHandler(db *pgxpool.Pool, cfg *config.Config) *AuthHandler {
-	return &AuthHandler{db: db, cfg: cfg}
+	return &AuthHandler{db: db, cfg: cfg, throttle: newLoginThrottle(db)}
 }
 
 type loginRequest struct {
@@ -34,7 +36,8 @@ type loginRequest struct {
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// Endpoint publik tanpa auth tidak boleh membaca body tanpa batas.
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&req); err != nil {
 		jsonError(w, "request tidak valid", http.StatusBadRequest)
 		return
 	}
@@ -45,23 +48,21 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, role, hash, err := h.resolveUser(r.Context(), req.Username)
-	if err != nil {
-		jsonError(w, "username atau password salah", http.StatusUnauthorized)
+	ip := clientIP(r)
+	if h.throttle.blocked(r.Context(), ip, req.Username) {
+		jsonError(w, "terlalu banyak percobaan login gagal, coba lagi beberapa menit lagi", http.StatusTooManyRequests)
 		return
 	}
 
-	if err := auth.CheckPassword(hash, req.Password); err != nil {
-		// Self-heal: santri yang passwordnya masih nomor_induk plain
-		if role == "santri" && req.Password == req.Username {
-			if newHash, err := auth.HashPassword(req.Password); err == nil {
-				h.db.Exec(r.Context(), `UPDATE santri SET password = $1 WHERE id = $2`, newHash, userID)
-			}
-		} else {
-			jsonError(w, "username atau password salah", http.StatusUnauthorized)
-			return
-		}
+	userID, role, err := h.resolveUser(r.Context(), req.Username, req.Password)
+	if err != nil {
+		// Hanya percobaan GAGAL yang mengisi counter — login sukses dari
+		// keluarga satu IP tidak pernah bisa ter-kunci (lihat login_limit.go).
+		h.throttle.fail(r.Context(), ip, req.Username)
+		jsonError(w, "username atau password salah", http.StatusUnauthorized)
+		return
 	}
+	h.throttle.clear(r.Context(), req.Username)
 
 	pair, err := auth.IssueTokenPair(
 		userID, role,
@@ -80,7 +81,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		RefreshToken string `json:"refresh_token"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.RefreshToken == "" {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&body); err != nil || body.RefreshToken == "" {
 		jsonError(w, "refresh_token wajib diisi", http.StatusBadRequest)
 		return
 	}
@@ -111,34 +112,35 @@ type userRow struct {
 // resolveUser mencari user di santri (NISN/NIS/panggilan) atau guru (email).
 // Santri dicek duluan; jika tidak ketemu baru coba guru/admin/pentashih.
 //
+// Nama panggilan TIDAK unik — dua murid boleh sama-sama "Adit". Karena itu
+// SEMUA kandidat dikumpulkan lalu diverifikasi satu per satu: password-lah
+// (nomor induk, yang unik) yang menentukan kandidat mana yang benar — bukan
+// LIMIT 1 yang dulu memilih baris secara arbitrer dan bisa menolak kredensial
+// benar karena jatuh ke baris milik murid lain.
+//
 // Kegagalan nyata pada salah satu query (kolom hilang, tabel rusak) TIDAK boleh
 // menghentikan pencarian di tabel lain: santri dan guru adalah dua jalur yang
 // berdiri sendiri. Dulu error apa pun dari query santri langsung menghentikan
 // fungsi ini, sehingga satu migrasi yang belum diterapkan menjatuhkan login
 // SEMUA peran — termasuk admin yang datanya tidak tersentuh.
-func (h *AuthHandler) resolveUser(ctx context.Context, username string) (id, role, hash string, err error) {
-	// Murid login pakai NISN atau NIS. nomor_induk_qiroati tetap diterima sebagai
-	// fallback agar murid lama tidak terkunci sebelum NISN mereka terisi.
-	var row userRow
-	santriErr := h.db.QueryRow(ctx, `
-		SELECT id, 'santri', COALESCE(password,'')
-		FROM santri
-		WHERE (nisn = $1 OR nis = $1 OR nomor_induk_qiroati = $1 OR LOWER(nama_panggilan) = LOWER($1))
-		  AND status = 'Aktif'
-		LIMIT 1
-	`, username).Scan(&row.id, &row.role, &row.hash)
-	if santriErr == nil {
-		return row.id, row.role, row.hash, nil
-	}
-	if errors.Is(santriErr, pgx.ErrNoRows) {
-		// Bukan murid — wajar, lanjut ke guru.
-		santriErr = nil
-	} else {
+func (h *AuthHandler) resolveUser(ctx context.Context, username, password string) (id, role string, err error) {
+	var santriErr error
+
+	candidates, qErr := h.santriCandidates(ctx, username)
+	if qErr != nil {
+		santriErr = qErr
 		// Rusak sungguhan. Dicatat supaya tidak membisu, tapi pencarian diteruskan.
-		log.Printf("resolveUser: query santri gagal: %v", santriErr)
+		log.Printf("resolveUser: query santri gagal: %v", qErr)
+	} else {
+		for _, c := range candidates {
+			if h.tryVerify(ctx, c, password, true) {
+				return c.id, c.role, nil
+			}
+		}
 	}
 
-	// Coba guru/admin/pentashih: login by email
+	// Coba guru/admin/pentashih: login by email (unique index di lower(email)).
+	var row userRow
 	guruErr := h.db.QueryRow(ctx, `
 		SELECT g.id, up.role, COALESCE(g.password,'')
 		FROM guru g
@@ -148,19 +150,87 @@ func (h *AuthHandler) resolveUser(ctx context.Context, username string) (id, rol
 		  AND up.status = 'active'
 		LIMIT 1
 	`, username).Scan(&row.id, &row.role, &row.hash)
-	if guruErr == nil {
-		return row.id, row.role, row.hash, nil
-	}
-	if !errors.Is(guruErr, pgx.ErrNoRows) {
+	switch {
+	case guruErr == nil:
+		if h.tryVerify(ctx, row, password, false) {
+			return row.id, row.role, nil
+		}
+	case !errors.Is(guruErr, pgx.ErrNoRows):
+		// Rusak sungguhan pada jalur guru. Dicatat supaya tidak membisu.
 		log.Printf("resolveUser: query guru gagal: %v", guruErr)
-		return "", "", "", guruErr
+		return "", "", guruErr
 	}
+
 	// Guru memang tidak ada. Bila query santri tadi rusak, laporkan kerusakan itu —
 	// bukan "user tidak ditemukan" yang menyesatkan saat skema sedang bermasalah.
 	if santriErr != nil {
-		return "", "", "", santriErr
+		return "", "", santriErr
 	}
-	return "", "", "", errors.New("user tidak ditemukan")
+	return "", "", errors.New("user tidak ditemukan")
+}
+
+// santriCandidates mengembalikan semua santri Aktif yang cocok dengan username
+// lewat salah satu identitasnya (nisn/nis/nomor_induk/nama_panggilan).
+// ORDER BY id menjaga urutan deterministik supaya mudah direproduksi saat debug.
+func (h *AuthHandler) santriCandidates(ctx context.Context, username string) ([]userRow, error) {
+	rows, err := h.db.Query(ctx, `
+		SELECT id, COALESCE(password,'')
+		FROM santri
+		WHERE (nisn = $1 OR nis = $1 OR nomor_induk = $1 OR LOWER(nama_panggilan) = LOWER($1))
+		  AND status = 'Aktif'
+		ORDER BY id
+		LIMIT 20
+	`, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []userRow
+	for rows.Next() {
+		var c userRow
+		c.role = "santri"
+		if err := rows.Scan(&c.id, &c.hash); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// bcryptHashPrefix menandai kolom password yang sudah berupa hash bcrypt
+// ($2a$/$2b$/$2y$). Nilai lain dianggap warisan plaintext pra-migrasi.
+const bcryptHashPrefix = "$2"
+
+// tryVerify memverifikasi satu kandidat terhadap password yang diketik.
+//
+// Jalur legacy-heal (khusus santri): baris yang masih menyimpan PLAINTEXT
+// diterima hanya bila nilainya persis sama dengan password yang diketik, lalu
+// langsung di-upgrade menjadi hash bcrypt. Setelah ter-hash, jalur ini tidak
+// pernah aktif lagi untuk akun tersebut — password custom TIDAK mungkin ditimpa
+// orang yang sekadar tahu NISN/NIS/nama panggilan (celah takeover yang sudah
+// ditutup). Akun tanpa password sama sekali sengaja tidak di-heal: tetap
+// terkunci sampai admin menetapkan password.
+func (h *AuthHandler) tryVerify(ctx context.Context, row userRow, password string, allowLegacyHeal bool) bool {
+	if strings.HasPrefix(row.hash, bcryptHashPrefix) {
+		return auth.CheckPassword(row.hash, password) == nil
+	}
+	if !allowLegacyHeal || row.hash == "" {
+		return false
+	}
+	if subtle.ConstantTimeCompare([]byte(row.hash), []byte(password)) != 1 {
+		return false
+	}
+	newHash, err := auth.HashPassword(password)
+	if err != nil {
+		log.Printf("self-heal: hash password gagal: %v", err)
+		return false
+	}
+	if _, err := h.db.Exec(ctx, `UPDATE santri SET password = $1 WHERE id = $2`, newHash, row.id); err != nil {
+		log.Printf("self-heal: upgrade password ke bcrypt gagal: %v", err)
+		return false
+	}
+	return true
 }
 
 // VerifyPassword re-checks the logged-in user's own password. Used as a
@@ -176,7 +246,7 @@ func (h *AuthHandler) VerifyPassword(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Password string `json:"password"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Password == "" {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&body); err != nil || body.Password == "" {
 		jsonError(w, "password wajib diisi", http.StatusBadRequest)
 		return
 	}
@@ -206,20 +276,32 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var displayName, email string
+	var displayName, email, jabatan string
+	var roles []string
 	var err error
 	if role == "santri" {
 		err = h.db.QueryRow(r.Context(),
-			`SELECT COALESCE(nama_lengkap,''), COALESCE(nomor_induk_qiroati,'') FROM santri WHERE id = $1`, userID,
+			`SELECT COALESCE(nama_lengkap,''), COALESCE(nomor_induk,'') FROM santri WHERE id = $1`, userID,
 		).Scan(&displayName, &email)
 	} else {
+		// jabatan dan roles ikut dikirim supaya antarmuka bisa membedakan sebutan
+		// yang berbagi app_role yang sama. Kepala Sekolah dan Wakil Kepala Sekolah
+		// sama-sama memakai app_role `pentashih`; tanpa dua kolom ini bilah atas
+		// hanya bisa menebak dari perannya dan menyebut kepala sekolah "Wakil".
+		// Ini profil milik pemanggil sendiri, jadi tidak ada data orang lain yang
+		// ikut terbuka.
 		err = h.db.QueryRow(r.Context(),
-			`SELECT COALESCE(nama,''), COALESCE(email,'') FROM guru WHERE id = $1`, userID,
-		).Scan(&displayName, &email)
+			`SELECT COALESCE(nama,''), COALESCE(email,''), COALESCE(jabatan,''), COALESCE(roles, '{}')
+			   FROM guru WHERE id = $1`, userID,
+		).Scan(&displayName, &email, &jabatan, &roles)
 	}
 	if err != nil {
 		jsonError(w, "profil tidak ditemukan", http.StatusNotFound)
 		return
+	}
+
+	if roles == nil {
+		roles = []string{}
 	}
 
 	jsonOK(w, map[string]any{
@@ -227,6 +309,8 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		"role":         role,
 		"display_name": displayName,
 		"email":        email,
+		"jabatan":      jabatan,
+		"roles":        roles,
 		"status":       "active",
 	})
 }

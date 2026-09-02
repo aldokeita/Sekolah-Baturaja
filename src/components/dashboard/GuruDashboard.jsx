@@ -11,10 +11,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
 import ConfirmationDialog from '@/components/ui/confirmation-dialog';
 import SantriDetailModal from '@/components/dashboard/shared/SantriDetailModal';
-import MmqSection from '@/components/dashboard/guru/MmqSection';
+import RapatGuruSection from '@/components/dashboard/guru/RapatGuruSection';
 import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import GuruAttendanceRecap from '@/components/dashboard/admin/GuruAttendanceRecap';
 import AttendanceDetailsModal from '@/components/dashboard/shared/AttendanceDetailsModal';
+import ModulNilai from '@/components/dashboard/shared/ModulNilai';
+import ModulKontenKelas from '@/components/dashboard/shared/ModulKontenKelas';
+import ModulKomunikasiWali from '@/components/dashboard/shared/ModulKomunikasiWali';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AttendanceStatusIcon from '@/components/dashboard/shared/AttendanceStatusIcon';
 import { fetchGuruDetail, updateGuru, updateSantriJilid } from '@/lib/dataMasterAdapters';
 import { fetchAttendance } from '@/lib/attendanceAdapters';
@@ -29,6 +33,8 @@ import { buildSessionStartTimestamp, calculateTimeDifference, resolveAttendanceR
 import {
   buildHafalanScoreMap,
   DEVELOPMENT_SCORE_OPTIONS,
+  createManualMurojaahSubmission,
+  deleteMurojaahSubmission,
   fetchClassesWithActiveSantriForTeacher,
   fetchHafalanItems,
   fetchHafalanProgress,
@@ -48,6 +54,8 @@ import StudentTransferModal from '@/components/dashboard/guru/StudentTransferMod
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
+import { enableGameFeatures, enableTahfizh } from '@/lib/featureFlags';
+import { labelStafRole } from '@/lib/staf';
 
 const ProfileConstellationScene = lazy(() => import('@/components/dashboard/santri/SantriLevelScene'));
 
@@ -164,9 +172,13 @@ const GuruDashboard = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const [guruData, setGuruData] = useState(null);
-  const [isMmqOpen, setIsMmqOpen] = useState(false);
+  const [isRapatGuruOpen, setIsRapatGuruOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isRecapOpen, setIsRecapOpen] = useState(false);
+  // Subtab dikendalikan, bukan `defaultValue`, karena keempat panel selalu
+  // terpasang dan yang tidak aktif disembunyikan lewat CSS — itu perlu tahu tab
+  // mana yang aktif.
+  const [tabAktif, setTabAktif] = useState('jadwal');
   const [myClasses, setMyClasses] = useState([]);
   const [dailyAttendance, setDailyAttendance] = useState([]);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -263,6 +275,7 @@ const GuruDashboard = () => {
 
   useEffect(() => { fetchGuruData(); }, [fetchGuruData]);
 
+
   const refreshSubmissions = async () => {
       try {
           const data = await fetchMurojaahSubmissions();
@@ -272,8 +285,26 @@ const GuruDashboard = () => {
       }
   };
 
-  const openDetailModal = (santri) => { setSelectedSantri(santri); setIsDetailOpen(true); };
+  /* Nama kelas ikut dititipkan. Baris murid yang dipegang dashboard ini hanya
+   * membawa `current_class_id`, dan endpoint detail murid pun begitu — tidak ada
+   * nama kelas di mana pun yang bisa dibaca modal sendiri. Akibatnya modal
+   * menulis "Kelas: -" untuk murid yang di layar yang sama terdaftar di kelasnya.
+   * Yang tahu nama kelasnya adalah pemanggil ini, karena daftarnya memang
+   * dikelompokkan per kelas. */
+  const openDetailModal = (santri, cls) => {
+    setSelectedSantri(cls?.nama_kelas ? { ...santri, className: cls.nama_kelas } : santri);
+    setIsDetailOpen(true);
+  };
   const openTransferModal = (santri) => setTransferSantri(santri);
+
+  // Sejak guru mata pelajaran ikut melihat kelas yang diajarnya, daftar kelas di
+  // dashboard memuat dua macam: kelas yang diwalikan guru ini, dan kelas yang
+  // sekadar diajarnya. Hanya yang pertama boleh dipindah muridnya — cerminan
+  // guruOwnsSantri di sisi Go.
+  const isWaliKelas = useCallback(
+    (kelas) => Boolean(guruData?.id) && kelas?.id_guru === guruData.id,
+    [guruData?.id],
+  );
   const openHafalanModal = (santri, category) => {
       // Lingkup diturunkan dari jenis materi yang dibuka, bukan dari status murid.
       // Dengan begitu murid mana pun bisa punya hafalan per kelas maupun per juz.
@@ -317,11 +348,19 @@ const GuruDashboard = () => {
     }
   };
 
-  const handleSubmitFeedback = async () => {
+  // Status 'perlu_perbaikan' sudah lama diterima basis data dan backend, tetapi
+  // tidak pernah bisa dicapai dari layar ini karena statusnya ditulis mati
+  // 'diterima'. Sekarang penilainya yang memilih.
+  const handleSubmitFeedback = async (status = 'diterima') => {
     if (!currentSubmission) return;
     try {
-      await updateMurojaahReview({ id: currentSubmission.id, status: 'diterima', feedback, userId: user.id });
-      toast({ title: 'Berhasil', description: 'Umpan balik telah disimpan.' });
+      await updateMurojaahReview({ id: currentSubmission.id, status, feedback, userId: user.id });
+      toast({
+        title: 'Berhasil',
+        description: status === 'perlu_perbaikan'
+          ? 'Setoran ditandai perlu perbaikan.'
+          : 'Umpan balik telah disimpan.',
+      });
       setIsMurojaahOpen(false);
       setCurrentSubmission(null);
       refreshSubmissions();
@@ -330,11 +369,21 @@ const GuruDashboard = () => {
     }
   };
 
-  const confirmDeleteSubmission = (submissionId) => {
+  const confirmDeleteSubmission = (submission) => {
     setConfirmDialog({
-        isOpen: true, title: 'Hapus Setoran', description: 'Apakah Anda yakin ingin menghapus setoran ini?',
+        isOpen: true,
+        title: 'Hapus setoran murojaah?',
+        description: `Setoran "${submission.content}" milik ${submission.santri?.nama_lengkap || 'murid ini'} akan dihapus `
+            + 'dari daftar. Penghapusan tercatat beserta salinan datanya, jadi masih dapat ditelusuri bila keliru.',
         onConfirm: async () => {
-            toast({ title: "Aksi tidak tersedia", description: "Penghapusan setoran murojaah tidak dibuka untuk guru pada fase ini.", variant: "destructive" });
+            try {
+                await deleteMurojaahSubmission(submission.id);
+                toast({ title: 'Terhapus', description: 'Setoran murojaah berhasil dihapus.' });
+                if (currentSubmission?.id === submission.id) setCurrentSubmission(null);
+                await refreshSubmissions();
+            } catch (error) {
+                toast({ title: 'Gagal menghapus', description: getAcademicErrorMessage(error), variant: 'destructive' });
+            }
         }
     });
   };
@@ -346,8 +395,24 @@ const GuruDashboard = () => {
     }
 
     setIsSubmittingManual(true);
-    setIsSubmittingManual(false);
-    toast({ title: "Belum tersedia", description: "Input setoran manual guru ditunda. Murid dapat mengajukan murojaah dari dashboard murid.", variant: "destructive" });
+    try {
+        // Setoran tatap muka sudah dinilai di tempat, jadi langsung berstatus
+        // diterima — bukan masuk antrean 'menunggu' seperti pengajuan murid.
+        await createManualMurojaahSubmission({
+            santriId: manualMurojaahForm.santri_id,
+            type: manualMurojaahForm.category,
+            content: manualMurojaahForm.item_name,
+            feedback: manualMurojaahForm.feedback,
+            status: 'diterima',
+        });
+        toast({ title: "Tersimpan", description: "Setoran murojaah berhasil dicatat." });
+        setManualMurojaahForm({ santri_id: '', category: 'Surat', item_name: '', feedback: '' });
+        await refreshSubmissions();
+    } catch (error) {
+        toast({ title: "Gagal menyimpan", description: getAcademicErrorMessage(error), variant: "destructive" });
+    } finally {
+        setIsSubmittingManual(false);
+    }
   };
 
   const pendingSubmissionsCount = useMemo(() => murojaahSubmissions.filter(sub => sub.status === 'menunggu').length, [murojaahSubmissions]);
@@ -450,9 +515,18 @@ const GuruDashboard = () => {
                 <div className="relative mr-2">
                     <Button variant="outline" size="icon" onClick={() => setIsBirthdayModalOpen(true)} className="relative border-rose-200 bg-rose-50 text-rose-600 shadow-sm hover:-translate-y-0.5 hover:border-rose-300 hover:bg-rose-100 dark:border-rose-400/20 dark:bg-slate-950 dark:text-rose-300 dark:hover:bg-slate-900" title="Ulang Tahun Bulan Ini"><Cake className="w-5 h-5" />{birthdayStudentsThisMonth.length > 0 && <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">{birthdayStudentsThisMonth.length}</span>}</Button>
                 </div>
+                {/* Gatcha dan Acak Nama mengikuti pagar yang sama dengan rutenya.
+                    Tombolnya dulu tampil meski saklarnya mati, jadi pembeli
+                    melihatnya, menekannya, dan mendapat halaman "fitur ditunda".
+                    Play Quiz TIDAK ikut dipagari — ia alat mengajar yang selalu
+                    boleh dipakai guru, dan rutenya pun di luar pagar itu. */}
+                {enableGameFeatures && (
                 <Button onClick={() => navigate('/gatcha-game')} className="border-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-md shadow-violet-500/20 transition-all hover:-translate-y-0.5 hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-lg hover:shadow-violet-500/30"><Gamepad2 className="w-4 h-4 mr-2"/> Play Gatcha</Button>
+                )}
                 <Button onClick={() => navigate('/quiz-hafalan')} className="border-0 bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:from-cyan-500 hover:to-blue-500 hover:shadow-lg hover:shadow-cyan-500/30"><PlayCircle className="w-4 h-4 mr-2"/> Play Quiz</Button>
+                {enableGameFeatures && (
                 <Button onClick={() => navigate('/random-name')} className="border-0 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/20 transition-all hover:-translate-y-0.5 hover:from-amber-400 hover:to-orange-500 hover:shadow-lg hover:shadow-amber-500/30"><Shuffle className="w-4 h-4 mr-2"/> Acak Nama</Button>
+                )}
             </div>
         </div>
         {guruData && (
@@ -475,7 +549,7 @@ const GuruDashboard = () => {
                 <div className="guru-profile-card__eyebrow"><Sparkles className="h-3.5 w-3.5" /> Profil pengajar</div>
                 <div>
                   <h2 className="guru-profile-card__name">{guruData.nama}</h2>
-                  <p className="guru-profile-card__role">{guruData.jabatan}</p>
+                  <p className="guru-profile-card__role">{labelStafRole(guruData.jabatan)}</p>
                 </div>
                 <div className="guru-profile-card__metrics" aria-label="Ringkasan profil guru">
                   <span className="guru-profile-card__metric"><Users className="h-4 w-4" /><strong>{myClasses.length}</strong> kelas</span>
@@ -484,21 +558,93 @@ const GuruDashboard = () => {
               </div>
               <div className="guru-profile-card__actions">
                 <Button onClick={() => setIsEditProfileOpen(true)} variant="outline" className="guru-profile-card__button"><Edit className="mr-2 h-4 w-4" /> Edit Profil</Button>
-                <div className="guru-profile-card__action-pair"><Button onClick={() => setIsMmqOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Rapat Guru</Button><Button onClick={() => setIsRecapOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Absensi</Button></div>
+                <div className="guru-profile-card__action-pair"><Button onClick={() => setIsRapatGuruOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Rapat Guru</Button><Button onClick={() => setIsRecapOpen(true)} size="sm" variant="outline" className="guru-profile-card__button">Absensi</Button></div>
+                {/* Muroja'ah adalah setoran hafalan Al-Qur'an — bagian program
+                    tahfizh opsional, bukan kegiatan wajib sekolah dasar umum.
+                    Saklarnya sudah lama ada tetapi hanya dipasang di panel admin,
+                    sehingga guru di sekolah yang tidak menjalankan tahfizh tetap
+                    melihat pusat penilaian setoran. Datanya tetap utuh; yang
+                    disembunyikan hanya jalan masuknya. */}
+                {enableTahfizh && (
                 <Button onClick={() => setIsMurojaahOpen(true)} size="sm" className="guru-profile-card__button guru-profile-card__button--accent"><Mic className="mr-2 h-4 w-4"/> Setoran Muroja'ah{pendingSubmissionsCount > 0 && <span className="guru-profile-card__notification-dot" aria-label={`${pendingSubmissionsCount} setoran menunggu peninjauan`}></span>}</Button>
+                )}
               </div>
             </div>
           </section>
         )}
-        {/* Jadwal mengajar. Sumbernya endpoint yang sama dengan panel admin,
-            disaring guru_id, dan hanya bisa dibaca — penyuntingan tetap di admin. */}
-        <JadwalSaya
-          guruId={guruData?.id}
-          title="Jadwal Mengajar Saya"
-          emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
-        />
+        {/* Seluruh panel subtab berada DI ATAS panel tabel manajemen murid.
+            Urutan ini diminta pemilik. Sebelumnya kebalikannya, dengan alasan
+            tabel murid harus jadi yang pertama terlihat — jangan tukar kembali
+            tanpa diminta, dan jangan pula menyisipkan panel baru di antara
+            keduanya: subtab dulu, tabel murid sesudahnya. */}
+        {/* KEEMPAT panel selalu terpasang sejak dashboard dirender, dan yang
+            tidak aktif disembunyikan lewat CSS (`forceMount` + kelas `hidden`).
+            Jangan kembalikan ke pemasangan malas.
+            Dua hal terjadi kalau sebuah panel baru dipasang saat diklik:
+            1. Radix mencabut panel tidak aktif, jadi menengok ulang sebuah tab
+               memanggil API-nya lagi dan mengulang keadaan kosong.
+            2. Keadaan muat modulnya lebih TINGGI daripada isi akhirnya, jadi
+               tabel murid di bawahnya turun lalu naik lagi.
+            Terukur pada bukaan pertama Komunikasi Wali: tabel di 890, melompat
+            ke 1110 pada 43ms, lalu balik ke 1046 pada 1992ms. Gerakan balik dua
+            detik kemudian itulah yang terasa bergetar.
+            Karena `if (isLoading) return <spinner>` di atas, Tabs baru dirender
+            setelah muatan dashboard sendiri selesai — memasang keempat modul di
+            sini tidak berebut dengan permintaan utama. Yang dibayar: keempat
+            modul memuat datanya sekali di awal, walau gurunya mungkin tidak
+            membuka semua tab. Itu ditukar dengan perpindahan yang tidak pernah
+            bergetar, dan pemiliknya memilih yang kedua.
+            Aman disembunyikan: tidak satu pun dari keempat modul mengukur lebar
+            DOM (tanpa recharts, ResizeObserver, atau offsetWidth), jadi
+            `display:none` tidak membuat ukurannya salah saat ditampilkan. */}
+        <Tabs value={tabAktif} onValueChange={setTabAktif} className="mt-6 md:mt-8">
+          <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto md:grid-cols-4">
+            <TabsTrigger value="jadwal">Jadwal Mengajar</TabsTrigger>
+            <TabsTrigger value="nilai">Nilai Asesmen</TabsTrigger>
+            <TabsTrigger value="konten">Materi &amp; Tugas</TabsTrigger>
+            <TabsTrigger value="wali">Komunikasi Wali</TabsTrigger>
+          </TabsList>
 
-        <div className="space-y-8">
+          {/* Sengaja TANPA tinggi minimum. Panelnya terukur 162/162/162/318px,
+              jadi memaku tinggi ke yang tertinggi menyisakan 156px ruang kosong
+              di bawah tiga panel — dan angka itu diukur pada basis data yang
+              hampir kosong, sehingga akan salah begitu sekolah punya data
+              sungguhan. Sisa pergerakannya kini satu kali ubah tinggi yang wajar
+              saat berpindah ke panel yang memang lebih tinggi, bukan getar. */}
+          <>
+            <TabsContent forceMount value="jadwal" className={cn('mt-4', tabAktif !== 'jadwal' && 'hidden')}>
+              {/* Sumbernya endpoint yang sama dengan panel admin, disaring guru_id,
+                  dan hanya bisa dibaca — penyuntingan tetap di admin. */}
+              <JadwalSaya
+                guruId={guruData?.id}
+                title="Jadwal Mengajar Saya"
+                emptyText="Belum ada jadwal mengajar untuk periode ini. Jadwal disusun admin di panel Jadwal Pelajaran."
+              />
+            </TabsContent>
+
+            <TabsContent forceMount value="nilai" className={cn('mt-4', tabAktif !== 'nilai' && 'hidden')}>
+              {/* Kelas & mapel diturunkan dari jadwal mengajar; backend menolak
+                  kombinasi yang tidak diampu, bukan sekadar disembunyikan. */}
+              <ModulNilai guruId={guruData?.id} />
+            </TabsContent>
+
+            <TabsContent forceMount value="konten" className={cn('mt-4', tabAktif !== 'konten' && 'hidden')}>
+              {/* Murid hanya membaca yang berstatus terbit; draf tidak pernah bocor.
+                  Konten kelas sengaja tidak menumpang tabel `announcements`, yang
+                  memasok situs publik. */}
+              <ModulKontenKelas guruId={guruData?.id} />
+            </TabsContent>
+
+            <TabsContent forceMount value="wali" className={cn('mt-4', tabAktif !== 'wali' && 'hidden')}>
+              {/* Hanya menyiapkan pesan dan membuka WhatsApp guru; tidak ada pesan
+                  yang terkirim dari sini dan tidak ada kredensial yang disimpan.
+                  Nomor selalu dari basis data, tidak pernah ditanam di kode. */}
+              <ModulKomunikasiWali guruNama={guruData?.nama} />
+            </TabsContent>
+          </>
+        </Tabs>
+
+        <div className="mt-6 space-y-8 md:mt-8">
             {myClasses.map(cls => (
                 <Card key={cls.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300 border-border/50">
                     <CardHeader className={cn("p-4 rounded-t-lg border-b bg-gradient-to-r", headerGradient)}>
@@ -515,8 +661,15 @@ const GuruDashboard = () => {
                                         <th className="py-3 px-4 text-left font-semibold text-foreground/70 w-12">No</th>
                                         <th className="py-3 px-4 text-left font-semibold text-foreground/70">Nama Murid</th>
                                         <th className="py-3 px-4 text-center font-semibold text-foreground/70">Kehadiran</th>
-                                        <th className="py-3 px-4 text-left font-semibold text-foreground/70">Jilid</th>
-                                        <th className="py-3 px-4 text-left font-semibold text-foreground/70">Hafalan</th>
+                                        {/* Kedua kolom ini milik program tahfizh opsional. Pagarnya
+                                            sudah dipasang pada tombol Setoran Muroja'ah di berkas yang
+                                            sama, tapi tabelnya terlewat — sekolah dasar umum yang tidak
+                                            menjalankan tahfizh tetap mendapat kolom Jilid lengkap dengan
+                                            tombol naik-turun, dan kolom Hafalan berisi Doa, Sholat,
+                                            Surat, Tahfizh. Datanya tetap utuh; yang disembunyikan hanya
+                                            jalan masuknya. */}
+                                        {enableTahfizh && <th className="py-3 px-4 text-left font-semibold text-foreground/70">Jilid</th>}
+                                        {enableTahfizh && <th className="py-3 px-4 text-left font-semibold text-foreground/70">Hafalan</th>}
                                         <th className="py-3 px-4 text-left font-semibold text-foreground/70">Aksi</th>
                                     </tr>
                                 </thead>
@@ -559,13 +712,19 @@ const GuruDashboard = () => {
                                                         />
                                                     </div>
                                                 </td>
+                                                {enableTahfizh && (
                                                 <td className="py-3 px-4 flex items-center gap-2 group">
                                                     <span className={cn("px-2 py-1 rounded text-xs font-bold bg-primary/10 text-primary")}>{santri.jilid}</span>
                                                     <div className="flex gap-1 opacity-100">
-                                                        <Button onClick={() => initiateJilidChange(santri, 'up')} size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-green-100 rounded-full" title="Naik Jilid"><ChevronUp className="h-4 w-4 text-green-600" /></Button>
-                                                        <Button onClick={() => initiateJilidChange(santri, 'down')} size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-red-100 rounded-full" title="Turun Jilid"><ChevronDown className="h-4 w-4 text-red-600" /></Button>
+                                                        {/* Judulnya menyebut MENGAJI. Tombol ini tidak menaikkan
+                                                            kelas murid, dan letaknya persis di sebelah kolom kelas,
+                                                            jadi "Naik Tingkat" saja terbaca sebagai kenaikan kelas. */}
+                                                        <Button onClick={() => initiateJilidChange(santri, 'up')} size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-green-100 rounded-full" title="Naik tingkat mengaji (bukan naik kelas)" aria-label={`Naikkan tingkat mengaji ${santri.nama_lengkap}`}><ChevronUp className="h-4 w-4 text-green-600" /></Button>
+                                                        <Button onClick={() => initiateJilidChange(santri, 'down')} size="sm" variant="ghost" className="h-6 w-6 p-0 hover:bg-red-100 rounded-full" title="Turun tingkat mengaji (bukan turun kelas)" aria-label={`Turunkan tingkat mengaji ${santri.nama_lengkap}`}><ChevronDown className="h-4 w-4 text-red-600" /></Button>
                                                     </div>
                                                 </td>
+                                                )}
+                                                {enableTahfizh && (
                                                 <td className="py-3 px-4">
                                                     <div className="flex flex-wrap gap-1">
                                                         {/* Keempatnya terbuka untuk setiap murid. Dulu murid berkategori
@@ -577,23 +736,35 @@ const GuruDashboard = () => {
                                                         <Button size="sm" variant="outline" className="h-7 border-violet-300 text-xs text-violet-700 hover:bg-violet-50 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-950/30" onClick={() => openHafalanModal(santri, 'Tahfizh')}>Tahfizh</Button>
                                                     </div>
                                                 </td>
+                                                )}
                                                 <td className="py-3 px-4">
                                                     <div className="flex items-center gap-1">
-                                                        <Button size="sm" variant="ghost" onClick={() => openDetailModal(santri)} className={cn("text-primary hover:text-primary hover:bg-primary/10")}>Detail</Button>
+                                                        <Button size="sm" variant="ghost" onClick={() => openDetailModal(santri, cls)} className={cn("text-primary hover:text-primary hover:bg-primary/10")}>Detail</Button>
+                                                        {/* Memindahkan murid adalah hak wali kelas dan admin. Guru mata
+                                                            pelajaran melihat kelas ini karena mengajar di sini, dan
+                                                            backend akan menolaknya 403 — jadi tombolnya dimatikan alih-alih
+                                                            menawarkan aksi yang pasti gagal dengan pesan "periksa koneksi". */}
                                                         <TooltipProvider delayDuration={250}>
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        size="icon"
-                                                                        variant="outline"
-                                                                        onClick={() => openTransferModal(santri)}
-                                                                        className="guru-transfer-action h-10 w-10 rounded-xl"
-                                                                        aria-label={`Transfer ${santri.nama_lengkap} ke kelas lain`}
-                                                                    >
-                                                                        <ArrowRightLeft className="h-4 w-4" />
-                                                                    </Button>
+                                                                    <span className="inline-flex">
+                                                                        <Button
+                                                                            size="icon"
+                                                                            variant="outline"
+                                                                            disabled={!isWaliKelas(cls)}
+                                                                            onClick={() => openTransferModal(santri)}
+                                                                            className="guru-transfer-action h-10 w-10 rounded-xl"
+                                                                            aria-label={isWaliKelas(cls)
+                                                                                ? `Transfer ${santri.nama_lengkap} ke kelas lain`
+                                                                                : `Transfer ${santri.nama_lengkap} hanya dapat dilakukan wali kelas`}
+                                                                        >
+                                                                            <ArrowRightLeft className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </span>
                                                                 </TooltipTrigger>
-                                                                <TooltipContent side="top" className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white dark:bg-white dark:text-slate-950">Transfer kelas</TooltipContent>
+                                                                <TooltipContent side="top" className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white dark:bg-white dark:text-slate-950">
+                                                                    {isWaliKelas(cls) ? 'Transfer kelas' : 'Hanya wali kelas yang dapat memindahkan murid'}
+                                                                </TooltipContent>
                                                             </Tooltip>
                                                         </TooltipProvider>
                                                     </div>
@@ -609,6 +780,7 @@ const GuruDashboard = () => {
                 </Card>
             ))}
         </div>
+
       </div>
       <Dialog open={Boolean(previewAvatar)} onOpenChange={(open) => { if (!open) setPreviewAvatar(null); }}>
         <DialogContent className="max-w-md overflow-hidden p-0">
@@ -654,7 +826,9 @@ const GuruDashboard = () => {
         </Dialog>
       )}
 
-      <Dialog open={isMurojaahOpen} onOpenChange={setIsMurojaahOpen}>
+      {/* Dialognya ikut dipagari, bukan hanya tombolnya: tanpa ini modal masih
+          bisa terbuka lewat jalur lain dan menampilkan modul yang sudah dimatikan. */}
+      <Dialog open={enableTahfizh && isMurojaahOpen} onOpenChange={setIsMurojaahOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0">
             <DialogHeader className="p-6 pb-2 border-b">
                 <div className="flex items-center justify-between">
@@ -747,7 +921,10 @@ const GuruDashboard = () => {
                                 <div className="space-y-3 pt-4 border-t border-border">
                                     <label className="font-semibold text-sm">Berikan Umpan Balik / Nilai</label>
                                     <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Tuliskan umpan balik untuk murid ini..." className="min-h-[100px]" />
-                                    <Button onClick={handleSubmitFeedback} className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md"><Send className="w-4 h-4 mr-2"/> Simpan Penilaian</Button>
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        <Button onClick={() => handleSubmitFeedback('diterima')} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md"><Send className="w-4 h-4 mr-2"/> Terima Setoran</Button>
+                                        <Button variant="outline" onClick={() => handleSubmitFeedback('perlu_perbaikan')}>Perlu Perbaikan</Button>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="space-y-2 rounded-xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-400/25 dark:bg-slate-900/70">
@@ -757,7 +934,7 @@ const GuruDashboard = () => {
                             )}
 
                             <div className="pt-8 text-center">
-                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => confirmDeleteSubmission(currentSubmission.id)}>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => confirmDeleteSubmission(currentSubmission)}>
                                     <Trash2 className="w-4 h-4 mr-2" /> Hapus Setoran Ini
                                 </Button>
                             </div>
@@ -773,7 +950,7 @@ const GuruDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      <MmqSection open={isMmqOpen} onOpenChange={setIsMmqOpen} guru={guruData} />
+      <RapatGuruSection open={isRapatGuruOpen} onOpenChange={setIsRapatGuruOpen} guru={guruData} />
       {guruData && <EditGuruProfileModal isOpen={isEditProfileOpen} onOpenChange={setIsEditProfileOpen} guruData={guruData} onProfileUpdate={fetchGuruData} themeColor={themeGradient} />}
       <Dialog open={isRecapOpen} onOpenChange={setIsRecapOpen}><DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto"><DialogHeader><DialogTitle>Rekap Absensi Guru</DialogTitle></DialogHeader><div className="mt-4"><GuruAttendanceRecap isReadOnly={true} /></div></DialogContent></Dialog>
       <AttendanceDetailsModal isOpen={isAttendanceModalOpen} onClose={() => { setIsAttendanceModalOpen(false); setAttendanceDetails(null); }} details={attendanceDetails} onSuccess={fetchGuruData} />

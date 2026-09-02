@@ -11,11 +11,16 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Trophy, CheckCircle, RotateCcw, Users, Smartphone, Monitor, Gamepad2, Sparkles, ArrowLeft, HelpCircle, Search, Sun, Moon, UserCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import useKembali from '@/hooks/useKembali';
 import { useToast } from '@/components/ui/use-toast';
 import { Helmet } from 'react-helmet';
 import useWindowSize from '@/hooks/useWindowSize';
 import { useAuth } from '@/contexts/AuthContext';
 import { doaHarian, bacaanShalat, suratPendek } from '@/data/islamicContent';
+import { enableTahfizh } from '@/lib/featureFlags';
+
+const JUDUL_KUIS = enableTahfizh ? 'Quiz Hafalan Gacha' : 'Quiz Kelas';
+const JUDUL_KUIS_SINGKAT = enableTahfizh ? 'QUIZ HAFALAN' : 'QUIZ KELAS';
 import { useTheme } from '@/contexts/ThemeContext';
 import { resolveAvatarUrl } from '@/lib/storageAdapters';
 import useSchoolIdentity from '@/hooks/useSchoolIdentity';
@@ -55,12 +60,24 @@ const QuizHafalanPage = () => {
 
   const isPracticeMode = role === 'santri';
 
+  // Kembali ke tempat asal penekan; lihat src/hooks/useKembali.js.
+  const keluarDariKuis = useKembali(isPracticeMode ? '/dashboard' : '/absensi-digital');
+
   // Load Config from hafalan_items table
   useEffect(() => {
     const loadConfig = async () => {
+        // Dua sumber, dua pemilik yang berbeda:
+        //   quiz_hafalan_config — bank soal yang disunting sekolah di Konfigurasi
+        //                         Game. Selalu dipakai.
+        //   hafalan_items       — bank hafalan milik PROGRAM TAHFIZH. Hanya
+        //                         dipakai selama program itu menyala; isinya
+        //                         Doa/Surat/Sholat, dan sekolah dasar umum yang
+        //                         mematikan tahfizh tidak memintanya.
+        // Datanya tidak disentuh: menyalakan kembali VITE_ENABLE_TAHFIZH
+        // memunculkan seluruhnya lagi.
         const [configContent, itemsData] = await Promise.all([
             fetchAppConfig('quiz_hafalan_config').catch(() => null),
-            fetchHafalanItems()
+            enableTahfizh ? fetchHafalanItems() : Promise.resolve([])
         ]);
 
         const savedCategories = configContent?.categories;
@@ -86,7 +103,8 @@ const QuizHafalanPage = () => {
             categories = Object.values(categoriesMap);
         }
 
-        if (categories.length === 0) {
+        // Isi cadangan dari kode juga materi tahfizh, dengan alasan yang sama.
+        if (categories.length === 0 && enableTahfizh) {
             categories = [
                 { id: 1, label: 'Doa', color: '#3b82f6', items: doaHarian },
                 { id: 2, label: 'Surat', color: '#a855f7', items: suratPendek },
@@ -115,11 +133,14 @@ const QuizHafalanPage = () => {
             items: Array.isArray(category.items) ? category.items : []
         }));
 
-        const requiredCategories = [
+        // Tiga kategori ini wajib ada HANYA selama program tahfizh menyala. Di
+        // luar itu, memaksakannya kembali berarti penghapusan oleh administrator
+        // tidak pernah berlaku: dihapus di Konfigurasi Game, muncul lagi di sini.
+        const requiredCategories = (enableTahfizh ? [
             { id: 'doa-harian', label: 'Doa Harian', color: '#3b82f6', items: doaHarian },
             { id: 'surat-pendek', label: 'Surat Pendek', color: '#a855f7', items: suratPendek },
             { id: 'bacaan-shalat', label: 'Bacaan Shalat', color: '#f59e0b', items: bacaanShalat }
-        ].filter((required) => !categories.some((category) => category.label === required.label));
+        ] : []).filter((required) => !categories.some((category) => category.label === required.label));
         categories = [...categories, ...requiredCategories];
 
         setQuizCategories(categories);
@@ -269,7 +290,12 @@ const QuizHafalanPage = () => {
 
   const spinWheel = () => {
     if (eligibleItems.length === 0) {
-        toast({ title: "Pilih Kategori", description: "Pilih minimal satu kategori soal sebelum memutar roda.", variant: "destructive" });
+        // Dua sebab yang berbeda butuh dua kalimat yang berbeda: tidak ada
+        // kategori sama sekali bukan kesalahan pemain, dan menyuruhnya "pilih
+        // kategori" saat tidak ada yang bisa dipilih adalah jalan buntu.
+        toast(quizCategories.length === 0
+          ? { title: "Belum Ada Soal", description: "Administrator belum mengisi kategori soal di Konfigurasi Game.", variant: "destructive" }
+          : { title: "Pilih Kategori", description: "Pilih minimal satu kategori soal sebelum memutar roda.", variant: "destructive" });
         return;
     }
 
@@ -427,7 +453,10 @@ const QuizHafalanPage = () => {
 
   return (
     <>
-    <Helmet><title>Quiz Hafalan Gacha - {sekolah.name}</title></Helmet>
+    {/* "Hafalan" adalah kosakata program tahfizh. Nama rutenya tetap
+        /quiz-hafalan — tautan yang sudah tersebar tidak boleh mati — tetapi yang
+        dibaca guru dan murid mengikuti program yang benar-benar dijalankan. */}
+    <Helmet><title>{JUDUL_KUIS} - {sekolah.name}</title></Helmet>
     <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-900'} overflow-hidden flex flex-col relative font-sans selection:bg-purple-500 selection:text-white transition-colors duration-300`}>
 
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -438,8 +467,8 @@ const QuizHafalanPage = () => {
 
       <div className={`relative z-20 p-4 flex justify-between items-center border-b ${isDark ? 'border-white/10 bg-slate-900/50' : 'border-slate-200 bg-white/50'} backdrop-blur-md`}>
           <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" className={isDark ? "text-white hover:bg-white/10" : "text-slate-800 hover:bg-slate-200"} onClick={() => navigate(isPracticeMode ? '/dashboard' : '/absensi-digital')}><ArrowLeft className="w-5 h-5 mr-2" /> Exit</Button>
-              <h1 className="text-xl font-bold tracking-wider flex items-center gap-2"><Gamepad2 className="w-6 h-6 text-purple-400" /> QUIZ HAFALAN {isPracticeMode && "(LATIHAN)"}</h1>
+              <Button variant="ghost" size="sm" className={isDark ? "text-white hover:bg-white/10" : "text-slate-800 hover:bg-slate-200"} onClick={keluarDariKuis}><ArrowLeft className="w-5 h-5 mr-2" /> Exit</Button>
+              <h1 className="text-xl font-bold tracking-wider flex items-center gap-2"><Gamepad2 className="w-6 h-6 text-purple-400" /> {JUDUL_KUIS_SINGKAT} {isPracticeMode && "(LATIHAN)"}</h1>
           </div>
           {!isPracticeMode && (
               <div className="flex items-center gap-2">
@@ -457,7 +486,7 @@ const QuizHafalanPage = () => {
                          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer"></div>
                          <Avatar className="w-32 h-32 mx-auto border-4 border-white shadow-xl mb-4"><AvatarImage src={currentSantri.foto_url} loading="eager" fetchPriority="high" decoding="async" className="object-cover"/><AvatarFallback className="text-4xl text-slate-800 font-bold">{currentSantri.nama_lengkap?.[0]}</AvatarFallback></Avatar>
                          <h2 className={`text-2xl font-bold mb-1 truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentSantri.nama_lengkap}</h2>
-                         <p className={`${isDark ? 'text-white/70' : 'text-slate-500'} mb-4 font-mono`}>{currentSantri.jilid}</p>
+                         {enableTahfizh && <p className={`${isDark ? 'text-white/70' : 'text-slate-500'} mb-4 font-mono`}>{currentSantri.jilid}</p>}
                          <div className={`${isDark ? 'bg-slate-900/50 border-white/10' : 'bg-slate-100 border-slate-200'} rounded-xl p-4 flex justify-around items-center border`}>
                              <div className="text-center"><p className={`text-xs uppercase tracking-widest ${isDark ? 'text-white/50' : 'text-slate-400'} mb-1`}>TOTAL POIN</p><p className="text-4xl font-black text-yellow-400 drop-shadow-lg flex items-center justify-center gap-2"><Trophy className="w-6 h-6" /> {currentSantri.points || 0}</p></div>
                              <div className={`w-px h-10 ${isDark ? 'bg-white/20' : 'bg-slate-300'}`}></div>
@@ -508,7 +537,8 @@ const QuizHafalanPage = () => {
                         <option value="">{isRosterLoading ? 'Memuat murid...' : 'Pilih murid'}</option>
                         {filteredSantri.map((santri) => (
                           <option key={santri.id} value={santri.id}>
-                            {santri.nama_lengkap}{santri.jilid ? ` — ${santri.jilid}` : ''}
+                            {/* `jilid` adalah tingkat mengaji milik program tahfizh. */}
+                            {santri.nama_lengkap}{enableTahfizh && santri.jilid ? ` — ${santri.jilid}` : ''}
                           </option>
                         ))}
                       </select>
@@ -544,7 +574,9 @@ const QuizHafalanPage = () => {
                             );
                           })}
                         </div>
-                        {eligibleItems.length === 0
+                        {quizCategories.length === 0
+                          ? <p className="mt-2 text-xs font-semibold text-rose-500">Belum ada kategori soal. Administrator dapat menambahkannya di Konfigurasi Game.</p>
+                          : eligibleItems.length === 0
                           ? <p className="mt-2 text-xs font-semibold text-rose-500">Pilih minimal satu kategori.</p>
                           : <p className={`mt-2 text-xs ${isDark ? 'text-white/45' : 'text-slate-500'}`}>
                               {eligibleItems.length} soal aktif · maksimal 12 kandidat acak ditampilkan setiap putaran agar tetap terbaca.
@@ -566,12 +598,22 @@ const QuizHafalanPage = () => {
                 {gameState === 'confirm_santri' && (
                     <motion.div key="confirm" initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -50, opacity: 0 }} className="text-center space-y-8">
                         <HelpCircle className="w-24 h-24 text-yellow-400 mx-auto animate-bounce" />
+                        {/* Murid yang berlatih mandiri tidak pernah melihat deretan
+                            kategori, jadi bila belum ada soal sama sekali ia harus
+                            diberi tahu di sini — bukan setelah menekan tombol. */}
+                        {quizCategories.length === 0 ? (
+                        <div>
+                            <h2 className={`text-3xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Belum Ada Soal</h2>
+                            <p className={`${isDark ? 'text-white/70' : 'text-slate-600'} text-base`}>Kategori soal belum diisi. Hubungi guru atau administrator sekolah.</p>
+                        </div>
+                        ) : (
                         <div>
                             <h2 className={`text-3xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Siap untuk Tantangan?</h2>
                             <Button onClick={spinWheel} size="lg" className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-slate-950 font-black text-xl px-8 py-6 rounded-full shadow-lg shadow-orange-500/25 animate-pulse">
                               PUTAR SEKARANG!
                             </Button>
                         </div>
+                        )}
                         {!isPracticeMode && <div className="flex justify-center gap-2 text-sm opacity-55"><UserCheck className="w-4 h-4" /> Guru mengendalikan permainan dari perangkat ini</div>}
                     </motion.div>
                 )}

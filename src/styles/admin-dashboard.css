@@ -14,7 +14,10 @@
   --admin-border-subtle: 230 40% 93%;
   --admin-text-primary: 236 26% 12%;     /* #171827 */
   --admin-text-secondary: 232 18% 40%;
-  --admin-text-muted: 233 15% 50%;
+  /* 45%, bukan 50% — nada ini dipakai untuk teks terkecil di dashboard dan pada
+     50% hanya mencapai rasio 4.28 dari 4.5 yang diminta. Nilainya harus sama
+     dengan salinannya di sdnb-dashboard.css. */
+  --admin-text-muted: 233 15% 45%;
 
   --admin-accent: 234 100% 68%;          /* #5b6cff */
   --admin-accent-muted: 234 70% 60%;
@@ -42,7 +45,7 @@
   --admin-border-subtle: 235 15% 22%;
   --admin-text-primary: 230 30% 96%;
   --admin-text-secondary: 230 16% 76%;
-  --admin-text-muted: 230 13% 60%;
+  --admin-text-muted: 230 13% 68%;
 
   --admin-accent: 234 100% 72%;
   --admin-accent-muted: 234 70% 62%;
@@ -420,7 +423,7 @@
   font-weight: 800;
   color: hsl(var(--admin-text-primary));
   line-height: 1.2;
-  font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
 }
 
 @media (min-width: 768px) {
@@ -591,24 +594,33 @@
   line-height: 1.4;
 }
 
+/* Lencana status memakai warna isyaratnya sebagai LATAR yang sangat pudar dan
+   sebagai TEKS 11px. Warna yang enak sebagai latar hampir selalu terlalu terang
+   sebagai teks: pada nada aslinya keempatnya gagal ambang keterbacaan WCAG AA —
+   sukses 4.17, peringatan 2.13, bahaya 4.20, info 4.29 dari 4.5 yang diminta.
+   Peringatan yang terburuk, dan justru ia menandai tagihan yang perlu ditagih.
+
+   Latarnya dibiarkan memakai nada aslinya supaya lencananya tetap terlihat sama;
+   yang diturunkan hanya nada teksnya. Rona keempatnya tidak berubah, jadi
+   hijau-kuning-merah-biru tetap terbaca sebagai isyarat yang sama. */
 .admin-status-badge--success {
   background-color: hsl(var(--admin-accent-soft));
-  color: hsl(var(--admin-accent));
+  color: var(--sekolah-aksen-teks);
 }
 
 .admin-status-badge--warning {
   background-color: hsl(var(--admin-accent-amber) / 0.12);
-  color: hsl(var(--admin-accent-amber));
+  color: hsl(38 92% 30%);
 }
 
 .admin-status-badge--danger {
   background-color: hsl(0 84% 60% / 0.1);
-  color: hsl(0 84% 55%);
+  color: hsl(0 84% 45%);
 }
 
 .admin-status-badge--info {
   background-color: hsl(var(--admin-accent-secondary) / 0.1);
-  color: hsl(var(--admin-accent-secondary));
+  color: hsl(340 80% 40%);
 }
 
 .admin-status-badge--neutral {
@@ -1066,9 +1078,15 @@
   pointer-events: none;
 }
 
+/* `auto-fit`, bukan tiga kolom tetap. Baris penyaring ini tidak selalu berisi
+   tiga: panel yang hanya punya satu penyaring dulu mendapat satu kotak selebar
+   sepertiga baris dengan dua petak kosong di kanannya — paling kentara di layar
+   ponsel, tempat kotaknya menciut jadi 95px. `auto-fit` melipat jalur yang tidak
+   terpakai. Keluarga cacat yang sama dengan grid halaman publik; lihat
+   src/lib/gridKolom.js. */
 .admin-filter-selects {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
   gap: 0.5rem;
   width: 100%;
 }
@@ -2558,12 +2576,15 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   opacity: 0.7;
 }
 
-/* Noise texture overlay */
+/* Noise texture overlay.
+   Asetnya lokal (public/noise.svg). Dulu menunjuk grainy-gradients.vercel.app,
+   yang menjawab 404 — jadi lapisan bintik ini tidak pernah tampil sama sekali,
+   dan tidak ada pesan galat yang membuatnya terlihat. */
 .attendance-page__bg::after {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+  background-image: url('/noise.svg');
   opacity: 0.15;
   mix-blend-mode: overlay;
 }
@@ -3930,7 +3951,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
 }
 
 .attendance-profile-card--student .attendance-profile-card__quote p {
-  font-family: 'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
   font-size: 0.84rem;
   font-style: italic;
   font-weight: 600;
@@ -5969,10 +5990,14 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   background: rgb(255 255 255 / 0.05) !important;
 }
 
+/* Warna aksen sekolah dipakai di sini sebagai TEKS, bukan latar, jadi yang benar
+   turunan bacanya — `--sekolah-aksen-teks`, rona sama tapi cukup gelap untuk
+   lolos ambang keterbacaan. Aksen mentahnya hanya mencapai rasio 4.07 pada label
+   13px, dari 4.5 yang diminta WCAG AA. Lihat catatan palet di docs/HANDOFF.md. */
 .admin-nav-pill.active,
 .admin-segmented-control-item.active,
 .admin-segmented-control-item[data-state="active"] {
-  color: hsl(var(--admin-accent));
+  color: var(--sekolah-aksen-teks);
   border-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -6568,7 +6593,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
 .dashboard-topbar__name {
   overflow: hidden;
   color: #1b1c28;
-  font-family: 'Plus Jakarta Sans', 'Archivo', system-ui, sans-serif;
+  font-family: 'Montserrat', 'Poppins', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: -.01em;
@@ -6580,7 +6605,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   margin-top: 2px;
   overflow: hidden;
   color: #6c718f;
-  font-family: 'Archivo', system-ui, sans-serif;
+  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 11px;
   font-weight: 500;
   text-overflow: ellipsis;
@@ -6613,6 +6638,51 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   box-shadow: 0 0 0 4px rgb(91 108 255 / 0.14);
 }
 
+.dashboard-public-nav {
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+.dashboard-public-nav__link {
+  display: inline-flex;
+  flex: none;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #2c2f45;
+  background: transparent;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .25s ease, border-color .25s ease, color .25s ease, transform .3s cubic-bezier(.3, 1.3, .4, 1);
+}
+
+.dashboard-public-nav__link:hover {
+  border-color: rgb(255 255 255 / 0.7);
+  color: #4a58e0;
+  background: rgb(255 255 255 / 0.7);
+  transform: translateY(-1px);
+}
+
+.dashboard-public-nav__link.is-active {
+  border-color: rgb(255 255 255 / 0.95);
+  color: #4a4fd0;
+  background: rgb(255 255 255 / 0.72);
+  box-shadow:
+    0 10px 24px -12px rgb(60 70 120 / 0.5),
+    inset 0 1px 0 rgb(255 255 255 / 0.95);
+  font-weight: 700;
+}
+
 .dashboard-topbar__spacer {
   flex: 1;
 }
@@ -6639,7 +6709,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   box-shadow:
     0 10px 24px -12px rgb(60 70 120 / 0.6),
     inset 0 1px 0 rgb(255 255 255 / 0.95);
-  font-family: 'Archivo', system-ui, sans-serif;
+  font-family: 'Poppins', system-ui, sans-serif;
   font-size: 13.5px;
   font-weight: 700;
   text-decoration: none;
@@ -6689,7 +6759,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   width: 100%;
   max-width: 1240px;
   margin: 0 auto;
@@ -6716,8 +6786,8 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   border-radius: 12px;
   color: #2c2f45;
   background: transparent !important;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   line-height: 1.2;
   transition: background .25s ease, border-color .25s ease, color .25s ease;
 }
@@ -6734,6 +6804,7 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
   color: #4a4fd0 !important;
   background: transparent !important;
   box-shadow: none !important;
+  font-weight: 600;
 }
 
 .sdnb-dash .admin-nav-pill-indicator {
@@ -6749,8 +6820,8 @@ body.school-admin-context [cmdk-item][data-selected="true"] {
 
 .sdnb-dash .admin-nav-group-label {
   color: #8a8ea8;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: .12em;
 }
 
@@ -6802,6 +6873,25 @@ html[data-theme="dark"] .dashboard-topbar__context {
 html[data-theme="dark"] .dashboard-topbar__context-dot {
   background: #7c8aff;
   box-shadow: 0 0 0 4px rgb(124 138 255 / 0.18);
+}
+
+html[data-theme="dark"] .dashboard-public-nav__link {
+  border-color: transparent;
+  color: #c1c4d5;
+  background: transparent;
+}
+
+html[data-theme="dark"] .dashboard-public-nav__link:hover {
+  border-color: #4b5070;
+  color: #f3f4fb;
+  background: #2b2d45;
+}
+
+html[data-theme="dark"] .dashboard-public-nav__link.is-active {
+  border-color: #596397;
+  color: #e9ecff;
+  background: #3d456c;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.2);
 }
 
 html[data-theme="dark"] .dashboard-nav-button,
@@ -6876,10 +6966,11 @@ html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
   }
 
   .dashboard-topbar__context,
+  .dashboard-public-nav__link,
   .sdnb-dash .admin-nav-pill {
     padding-left: 10px;
     padding-right: 10px;
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
@@ -6892,9 +6983,32 @@ html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
     gap: 10px;
     min-height: 62px;
     padding: 10px 12px;
+    flex-wrap: wrap;
   }
 
   .dashboard-topbar__context {
+    display: none;
+  }
+  .dashboard-topbar__spacer {
+    display: none;
+  }
+
+  .dashboard-topbar__actions {
+    margin-left: auto;
+  }
+
+  .dashboard-public-nav {
+    order: 3;
+    flex: 1 0 100%;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .dashboard-public-nav::-webkit-scrollbar {
     display: none;
   }
 
@@ -6929,6 +7043,10 @@ html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
   .dashboard-topbar__shell {
     gap: 8px;
     padding: 9px 10px;
+  }
+  .dashboard-public-nav {
+    margin-top: 0;
+    padding: 2px 0;
   }
 
   .dashboard-topbar__mark {
@@ -6969,7 +7087,393 @@ html[data-theme="dark"] .sdnb-dash .admin-nav-group-separator {
 @media (prefers-reduced-motion: reduce) {
   .dashboard-nav-button,
   .dashboard-nav-icon-button,
+  .dashboard-public-nav__link,
   .sdnb-dash .admin-nav-pill {
     transition: none;
   }
+}
+.dashboard-public-nav {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: max-content;
+  transform: translate(-50%, -50%);
+}
+
+.dashboard-public-nav__link {
+  min-height: 0;
+  gap: 6px;
+  padding: 9px 14px;
+  border: 0;
+  line-height: normal;
+  transition: background .25s ease, color .25s ease;
+}
+
+.dashboard-public-nav__link:hover,
+.dashboard-public-nav__link.h-navlink:hover {
+  border-color: transparent;
+  color: #4a58e0;
+  background: rgb(255 255 255 / 0.7);
+  transform: none;
+}
+
+.dashboard-public-nav__link.is-active {
+  border-color: transparent;
+  color: #4a4fd0;
+  background: rgb(255 255 255 / 0.72);
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.dashboard-public-nav .navdd {
+  position: relative;
+}
+
+.dashboard-public-nav .ddmenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 60;
+  padding-top: 11px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity .26s ease, transform .32s cubic-bezier(.22, .9, .28, 1), visibility .26s;
+}
+
+.dashboard-public-nav .navdd:hover .ddmenu,
+.dashboard-public-nav .navdd:focus-within .ddmenu {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.dashboard-public-nav .navdd:hover .ddcaret,
+.dashboard-public-nav .navdd:focus-within .ddcaret {
+  transform: rotate(180deg);
+}
+
+.dashboard-public-nav .ddcaret {
+  transition: transform .3s ease;
+}
+
+.dashboard-public-nav .ddpanel {
+  min-width: 236px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 20px;
+  background: rgb(255 255 255 / 0.86);
+  border: 1px solid rgb(255 255 255 / 0.95);
+  box-shadow: 0 28px 60px -22px rgb(55 65 120 / 0.6), inset 0 1px 0 rgb(255 255 255);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  backdrop-filter: blur(28px) saturate(190%);
+}
+
+.dashboard-public-nav .ddlink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 13px;
+  border-radius: 13px;
+  color: #2f3352;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .25s ease, color .25s ease;
+}
+
+.dashboard-public-nav .ddlink:hover,
+.dashboard-public-nav .ddlink:focus-visible {
+  color: #4a4fd0;
+  background: rgb(120 132 255 / 0.13);
+}
+
+.dashboard-public-nav .ddlink svg {
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+.dashboard-public-nav .ddlink:hover svg,
+.dashboard-public-nav .ddlink:focus-visible svg {
+  opacity: 1;
+  transform: none;
+}
+
+html[data-theme="dark"] .dashboard-public-nav__link {
+  border-color: transparent;
+  color: #c1c4d5;
+  background: transparent;
+}
+
+html[data-theme="dark"] .dashboard-public-nav__link:hover,
+html[data-theme="dark"] .dashboard-public-nav__link.h-navlink:hover {
+  border-color: #4b5070;
+  color: #f3f4fb;
+  background: #2b2d45;
+}
+
+html[data-theme="dark"] .dashboard-public-nav__link.is-active {
+  border-color: #596397;
+  color: #e9ecff;
+  background: #3d456c;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.2);
+}
+
+html[data-theme="dark"] .dashboard-public-nav .ddpanel {
+  background: #2b2d45;
+  border-color: #3b3e58;
+  box-shadow: 0 18px 42px rgb(0 0 0 / 0.36);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-theme="dark"] .dashboard-public-nav .ddlink {
+  color: #c1c4d5;
+}
+
+html[data-theme="dark"] .dashboard-public-nav .ddlink:hover,
+html[data-theme="dark"] .dashboard-public-nav .ddlink:focus-visible {
+  color: #f3f4fb;
+  background: #3d456c;
+}
+
+@media (max-width: 1040px) {
+  .dashboard-public-nav__link {
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 940px) {
+  .dashboard-public-nav {
+    position: relative;
+    top: auto;
+    left: auto;
+    order: 3;
+    flex: 1 0 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-top: 2px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    transform: none;
+  }
+
+  .dashboard-public-nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-public-nav {
+    margin-top: 0;
+    padding: 2px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-public-nav__link,
+  .dashboard-public-nav .ddmenu,
+  .dashboard-public-nav .ddcaret,
+  .dashboard-public-nav .ddlink,
+  .dashboard-public-nav .ddlink svg {
+    transition: none;
+  }
+}
+/* Keep the dashboard public nav visible when the public stylesheet's mobile helper is loaded. */
+.dashboard-topbar .dashboard-public-nav {
+  display: flex;
+}
+
+/* ============================================================================
+   PUBLIC TYPOGRAPHY PARITY — shared dashboard type system
+
+   The dashboard uses Montserrat for display text. Its interface copy uses
+   Poppins while keeping the hierarchy soft and readable
+   so dense admin work stays comfortable without changing the public pages.
+
+   Technical values intentionally keep their existing font-mono treatment
+   (IDs, timestamps, codes, and machine-readable input) for scanability.
+   ========================================================================== */
+
+body.school-admin-context {
+  --sdnb-font-body: 'Poppins', system-ui, sans-serif;
+  --sdnb-font-display: 'Montserrat', 'Poppins', system-ui, sans-serif;
+  --sdnb-font-small-heading: 'Montserrat', 'Poppins', system-ui, sans-serif;
+  --sdnb-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-family: var(--sdnb-font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body.school-admin-context .dashboard-topbar,
+body.school-admin-context .sdnb-dash {
+  font-family: var(--sdnb-font-body);
+}
+
+/* Normalize legacy utility faces without touching intentional monospace data. */
+body.school-admin-context .font-sans:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+body.school-admin-context .font-serif:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
+body.school-admin-context .font-poppins:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+  font-family: var(--sdnb-font-body);
+}
+
+body.school-admin-context .font-mono {
+  font-family: var(--sdnb-font-mono);
+}
+
+/* Display face for every semantic heading, including dialog titles rendered in portals. */
+body.school-admin-context :is(h1, h2, h3, h4, h5, h6),
+body.school-admin-context [role="heading"] {
+  font-family: var(--sdnb-font-display);
+}
+
+body.school-admin-context h1 {
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+body.school-admin-context h2 {
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+body.school-admin-context :is(h3, h4, h5, h6) {
+  font-family: var(--sdnb-font-small-heading);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.012em;
+}
+
+/* Dashboard interface copy: buttons, navigation, forms, tables, and states. */
+body.school-admin-context :is(
+  button,
+  input,
+  textarea,
+  select,
+  option,
+  optgroup,
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  label,
+  [role="button"],
+  [role="tab"],
+  [role="option"],
+  [role="alert"],
+  [role="status"]
+):not(.font-mono) {
+  font-family: var(--sdnb-font-body);
+}
+
+body.school-admin-context :is(
+  input,
+  textarea,
+  select,
+  button[role="combobox"],
+  [data-radix-select-trigger],
+  [data-slot="select-trigger"]
+):not(.font-mono) {
+  line-height: 1.45;
+}
+
+body.school-admin-context :is(input, textarea):not(.font-mono)::placeholder {
+  font-family: var(--sdnb-font-body);
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+body.school-admin-context :is(
+  .admin-btn,
+  .admin-btn-action,
+  .admin-nav-pill,
+  .admin-segmented-control-item,
+  .admin-action-cluster-btn,
+  .admin-panel-primary-btn,
+  .attendance-header__action-btn,
+  .dashboard-public-nav__link,
+  .dashboard-nav-button,
+  .dashboard-nav-icon-button
+) {
+  font-family: var(--sdnb-font-body);
+  line-height: 1.25;
+}
+
+/* Keep the public display face and numeric rhythm for dashboard metrics. */
+body.school-admin-context :is(.admin-stat-card-value, .admin-stat-card__value) {
+  font-family: var(--sdnb-font-display);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+body.school-admin-context :is(
+  .admin-stat-card-label,
+  .admin-section-title,
+  .admin-form-label,
+  .admin-edit-field label,
+  .admin-nav-group-label
+) {
+  font-family: var(--sdnb-font-body);
+  line-height: 1.35;
+}
+
+body.school-admin-context .admin-stat-card-label {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+body.school-admin-context :is(.admin-table-shell, .admin-table-container) :is(th, td) {
+  line-height: 1.45;
+}
+
+body.school-admin-context :is(
+  .admin-panel-header-text h2,
+  .admin-form-section-title,
+  .admin-edit-section-header,
+  .admin-empty-state-title,
+  .admin-loading-title
+) {
+  font-family: var(--sdnb-font-display);
+}
+body.school-admin-context :is(
+  .admin-section-title,
+  .admin-form-section-title,
+  .admin-edit-section-header,
+  .admin-empty-state-title,
+  .admin-loading-title
+) {
+  font-family: var(--sdnb-font-small-heading);
+}
+
+/* Toasts, alerts, dialogs, and other portal content inherit the same system. */
+body.school-admin-context :is(
+  [data-radix-toast-viewport],
+  [data-radix-toast],
+  [data-sonner-toaster],
+  [data-sonner-toast],
+  [role="alert"],
+  [role="status"]
+) {
+  font-family: var(--sdnb-font-body);
+  line-height: 1.45;
 }

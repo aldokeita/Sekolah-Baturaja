@@ -136,7 +136,9 @@ Auth-token-attaching helpers (the JWT read/attach layer): `edgeFunctionAdapters.
 ## 3. Edge Function Responsibilities (and required Go equivalents)
 
 All functions share helpers in `supabase/functions/_shared/`:
-- `cors.ts` — origin allowlist (localhost, `*.vercel.app`, `ALLOWED_ORIGINS`), preflight.
+- `cors.ts` — origin allowlist (localhost plus `ALLOWED_ORIGINS`), preflight. The `*.vercel.app`
+  wildcard that used to be here is gone: this project does not use Vercel, and a pattern that wide
+  granted CORS to anyone who could publish on that domain.
 - `response.ts` — envelope `{ ok: true, data }` / `{ ok: false, error: { code, message } }`.
 - `auth.ts` `getUserFromRequest(req)` — reads `Authorization` header, validates the token
   via service-role `auth.getUser(token)`, returns the user.
@@ -187,7 +189,7 @@ same min-length validation; role check.
 Public (no auth required for failures). Rate-limited via RPC `consume_auth_rate_limit`
 (30/300s). On `status==='success'` and a Bearer header present, resolves user id + role via
 service-role `auth.getUser(token)` + `user_profiles`. Inserts a `login_logs` row (username,
-status, IP, city/country from CF/Vercel headers, device, user agent).
+status, IP, city/country from Cloudflare headers, device, user agent).
 **Go:** login-audit endpoint; must accept optional Bearer to attribute successful logins;
 keep IP/geo header extraction and rate limiting; write to `login_logs`.
 

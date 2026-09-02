@@ -18,10 +18,22 @@
    kertas. */
 
 @media print {
-  body * { visibility: hidden !important; }
+  /* DIPAGARI `:has()`. Aturan `body *` di bawah menyapu SELURUH halaman, termasuk
+     lembar rapor yang dicetak lewat #rapor-cetak-root — dan karena `npm run build`
+     menggabungkan seluruh CSS jadi satu berkas, aturan ini ikut aktif di layar mana
+     pun, bukan hanya di halaman bukti. Akibatnya rapor tercetak kosong. Sekarang ia
+     hanya berlaku bila blok buktinya memang ada di halaman.
+     Pagar kembarannya ada di rapor-cetak.css. */
+  body:has(.bukti-cetak) * { visibility: hidden !important; }
 
-  .bukti-cetak,
-  .bukti-cetak * { visibility: visible !important; }
+  /* Pengecualiannya ikut dipagari, dan itu WAJIB, bukan sekadar simetri.
+     `body:has(.bukti-cetak) *` berkekuatan (0,1,1) karena `:has()` mewarisi bobot
+     argumennya, sedangkan `.bukti-cetak` polos hanya (0,1,0) — kalah, meski
+     sama-sama !important. Sebelum dipagari aturan penyapunya hanya `body *`
+     (0,0,1) sehingga pengecualian polos masih menang. Menambah pagar tanpa
+     menaikkan pengecualiannya membuat bukti tercetak kosong. */
+  body:has(.bukti-cetak) .bukti-cetak,
+  body:has(.bukti-cetak) .bukti-cetak * { visibility: visible !important; }
 
   .bukti-cetak {
     position: absolute !important;

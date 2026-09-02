@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, Clock, BarChart2, GripVertical, FileSpreadsheet, Filter, ArrowRight, Phone, Eye, User, Settings, GraduationCap, ListOrdered } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, History, UserPlus, Users, Check, Clock, BarChart2, GripVertical, FileSpreadsheet, FileText, Filter, ArrowRight, Phone, Eye, User, Settings, GraduationCap, ListOrdered } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,6 +38,8 @@ import {
 } from '@/lib/dataMasterAdapters';
 import { resolveAvatarRecord, resolveAvatarRecords } from '@/lib/storageAdapters';
 import { getTingkatLevels } from '@/lib/tahfizhLevels';
+import { enableTahfizh } from '@/lib/featureFlags';
+import RaporKelasCetak from '@/components/dashboard/shared/RaporKelasCetak';
 
 const ItemTypes = {
   SANTRI: 'santri',
@@ -312,7 +314,10 @@ const DraggableSantri = ({ santri, index, moveSantri, onReorderEnd, hasAttended,
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-medium text-sm truncate">{santri.nama_lengkap}</p>
-          <p className="text-xs text-muted-foreground">{santri.jilid}</p>
+          {/* Jilid adalah tingkat program tahfizh opsional, bukan atribut murid
+              SD. Saat programnya mati, badge ini hanya menampilkan istilah asing
+              di bawah setiap nama murid. */}
+          {enableTahfizh && <p className="text-xs text-muted-foreground">{santri.jilid}</p>}
         </div>
       </div>
       <div className="flex items-center gap-1">
@@ -345,7 +350,7 @@ const DroppableColumn = React.forwardRef(({ title, children, onDrop, icon, isOve
 });
 DroppableColumn.displayName = 'DroppableColumn';
 
-const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete, onShowDetails, onShowPerformance, santriCount, canManage }) => {
+const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete, onShowDetails, onShowPerformance, onCetakRapor, santriCount, canManage }) => {
   const ref = useRef(null);
   const [{ handlerId }, drop] = useDrop({
     accept: ItemTypes.CLASS,
@@ -357,7 +362,7 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
   // Capacity is per class now. Without one declared there is no denominator to
   // compare against, so the card shows the headcount alone and stays neutral.
   const kapasitas = Number(classItem.kapasitas) > 0 ? Number(classItem.kapasitas) : null;
-  let capacityColor = 'text-blue-600 dark:text-emerald-400';
+  let capacityColor = 'text-blue-700 dark:text-emerald-400';
   let borderColor = 'border-blue-500 dark:border-emerald-500';
   if (kapasitas) {
     if (santriCount > kapasitas) { capacityColor = 'text-red-600 dark:text-red-400'; borderColor = 'border-red-500'; }
@@ -371,11 +376,18 @@ const ClassCard = ({ classItem, index, children, onDropSantri, onEdit, onDelete,
     <div ref={ref} data-handler-id={handlerId}>
       <DroppableColumn ref={ref} title={classItem.nama_kelas} onDrop={item => onDropSantri(item, classItem.id)} icon={<Users className="w-5 h-5"/>} capacityText={kapasitas ? `${santriCount}/${kapasitas}` : `${santriCount}`} capacityColor={capacityColor} borderColor={borderColor}>
         <div className="flex justify-between items-start">
-          <div><div className="text-sm text-muted-foreground mb-2">{classItem.guru?.nama || 'Belum ada guru'}{waLink && (<a href={waLink} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-green-600 hover:underline"><Phone className="w-3 h-3 mr-1" /> WA</a>)}</div></div>
+          <div><div className="text-sm text-muted-foreground mb-2">{classItem.guru?.nama || 'Belum ada guru'}{waLink && (<a href={waLink} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-green-800 dark:text-green-400 hover:underline"><Phone className="w-3 h-3 mr-1" /> WA</a>)}</div></div>
         </div>
         <div className="flex justify-end gap-2 mb-2 border-b pb-2 flex-wrap">
           {canManage && (<><Button size="sm" variant="outline" onClick={() => onEdit(classItem)}><Edit className="w-3 h-3"/></Button><Button size="sm" variant="destructive" onClick={() => onDelete(classItem.id)}><Trash2 className="w-3 h-3"/></Button></>)}
-          <div className="flex gap-1 ml-auto"><Button size="sm" onClick={() => onShowDetails(classItem)} title="Detail Kelas"><BarChart2 className="w-3 h-3 mr-1"/> Detail</Button></div>
+          <div className="flex gap-1 ml-auto">
+            {onCetakRapor && santriCount > 0 && (
+              <Button size="sm" variant="outline" onClick={() => onCetakRapor(classItem)} title={`Cetak rapor seluruh murid ${classItem.nama_kelas}`}>
+                <FileText className="w-3 h-3 mr-1"/> Rapor
+              </Button>
+            )}
+            <Button size="sm" onClick={() => onShowDetails(classItem)} title="Detail Kelas"><BarChart2 className="w-3 h-3 mr-1"/> Detail</Button>
+          </div>
         </div>
         {children}
         {(!children || children.length === 0) && <div className="text-center py-8 text-muted-foreground">Tarik murid ke sini</div>}
@@ -411,6 +423,8 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const [isSantriDetailOpen, setIsSantriDetailOpen] = useState(false);
   const [isJilidModalOpen, setIsJilidModalOpen] = useState(false);
   const [isReorderOpen, setIsReorderOpen] = useState(false);
+  // Kelas yang rapor sekelasnya sedang dibuka; null berarti dialognya tertutup.
+  const [kelasRapor, setKelasRapor] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedSantri, setSelectedSantri] = useState(null);
   const [jilidChangeData, setJilidChangeData] = useState(null);
@@ -422,7 +436,9 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const [formData, setFormData] = useState({ nama_kelas: '', sesi: '', id_guru: null, notes: '', kategori });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', description: '', onConfirm: () => {} });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [sessionTimes, setSessionTimes] = useState({ 'Pagi': '08:00', 'Siang': '14:00', 'Sore': '16:00' });
+  // Dua shift masuk sekolah dasar. Daftarnya tetap bisa disunting pembeli lewat
+  // "Konfigurasi Waktu Sesi"; ini hanya keadaan awal.
+  const [sessionTimes, setSessionTimes] = useState({ 'Pagi': '07:00', 'Siang': '12:30' });
   const [sessionFilters, setSessionFilters] = useState(Object.keys(sessionTimes));
 
   const fetchAllData = useCallback(async () => {
@@ -606,7 +622,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
   const resetForm = () => {
       const sessions = Object.keys(sessionTimes);
-      setFormData({ nama_kelas: '', sesi: sessions[0] || '', id_guru: null, notes: '', kapasitas: '', kategori });
+      setFormData({ nama_kelas: '', sesi: sessions[0] || '', id_guru: null, notes: '', kapasitas: '', tingkat: '', kategori });
       setEditingClass(null);
   };
 
@@ -620,6 +636,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
           id_guru: classItem.id_guru,
           notes: classItem.notes || '',
           kapasitas: classItem.kapasitas ?? '',
+          tingkat: classItem.tingkat ?? '',
           kategori
       });
       setIsFormOpen(true);
@@ -715,8 +732,9 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Tolak nama kelas duplikat dalam sesi yang sama (abaikan kelas yang sedang
-    // diedit). Nama sama di sesi berbeda dibolehkan (mis. "Kelas 1A" pagi & sore).
+    // Tolak nama kelas duplikat dalam shift yang sama (abaikan kelas yang sedang
+    // diedit). Nama sama di shift berbeda dibolehkan — sekolah dua shift memang
+    // lazim punya "Kelas 1A" pagi dan "Kelas 1A" siang.
     const namaBaru = (formData.nama_kelas || '').trim().toLowerCase();
     const isDuplicate = classes.some(c =>
       c.id !== editingClass?.id &&
@@ -731,11 +749,16 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
     // Empty string means "no limit declared" — send null so the column stays
     // NULL rather than tripping the kapasitas > 0 check with a 0.
     const parsedKapasitas = parseInt(formData.kapasitas, 10);
+    /* `tingkat` menentukan apakah rombel ini ikut Kenaikan Kelas, dan kosong
+       berarti TIDAK ikut. Karena itu dikirim sebagai null, bukan 0: nol akan
+       menabrak batasan tingkat BETWEEN 1 AND 12. */
+    const parsedTingkat = parseInt(formData.tingkat, 10);
     const classData = {
       nama_kelas: formData.nama_kelas,
       sesi: formData.sesi,
       id_guru: formData.id_guru || null,
       kapasitas: Number.isFinite(parsedKapasitas) && parsedKapasitas > 0 ? parsedKapasitas : null,
+      tingkat: Number.isFinite(parsedTingkat) && parsedTingkat >= 1 && parsedTingkat <= 12 ? parsedTingkat : null,
       kategori,
     };
     if (!editingClass) {
@@ -840,7 +863,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                             Kelas: cls.nama_kelas || '',
                             Guru: cls.guru?.nama || '-',
                             Murid: s.nama_lengkap || '-',
-                            Jilid: s.jilid || '-'
+                            ...(enableTahfizh ? { Jilid: s.jilid || '-' } : {}),
                         });
                     });
                 } else {
@@ -849,7 +872,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                         Kelas: cls.nama_kelas || '',
                         Guru: cls.guru?.nama || '-',
                         Murid: '(Kosong)',
-                        Jilid: '-'
+                        ...(enableTahfizh ? { Jilid: '-' } : {}),
                     });
                 }
             });
@@ -944,7 +967,9 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <DroppableColumn title="Murid Belum Masuk Kelas" onDrop={(item) => handleDropSantri(item, null)} icon={<UserPlus className="w-5 h-5"/>}>
-            <div className="p-2 space-y-2 sticky top-0 bg-background z-10"><Select value={unassignedFilterJilid} onValueChange={setUnassignedFilterJilid}><SelectTrigger className="h-9"><SelectValue placeholder="Filter Jilid"/></SelectTrigger><SelectContent><SelectItem value="all">Semua Jilid</SelectItem>{jilidOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select></div>
+            {enableTahfizh && (
+              <div className="p-2 space-y-2 sticky top-0 bg-background z-10"><Select value={unassignedFilterJilid} onValueChange={setUnassignedFilterJilid}><SelectTrigger className="h-9"><SelectValue placeholder="Filter Jilid"/></SelectTrigger><SelectContent><SelectItem value="all">Semua Jilid</SelectItem>{jilidOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}</SelectContent></Select></div>
+            )}
             {filteredUnassignedSantri.map((santri, index) => <DraggableSantri key={santri.id} index={index} santri={santri} moveSantri={moveSantri} hasAttended={attendanceById.has(santri.id)} onViewDetails={handleViewSantriDetails} />)}
             {filteredUnassignedSantri.length === 0 && <p className="text-center py-8 text-sm text-muted-foreground">Tidak ada murid.</p>}
           </DroppableColumn>
@@ -959,7 +984,7 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {classesBySession[session].map((classItem) => (
-                <ClassCard key={classItem.id} index={classes.findIndex(c => c.id === classItem.id)} classItem={classItem} onDropSantri={handleDropSantri} onEdit={handleEdit} onDelete={confirmDeleteClass} onShowDetails={handleShowPerformance} onShowPerformance={handleShowPerformance} santriCount={(santriByClass[classItem.id] || []).length} canManage={canManage}>
+                <ClassCard key={classItem.id} index={classes.findIndex(c => c.id === classItem.id)} classItem={classItem} onDropSantri={handleDropSantri} onEdit={handleEdit} onDelete={confirmDeleteClass} onShowDetails={handleShowPerformance} onShowPerformance={handleShowPerformance} onCetakRapor={setKelasRapor} santriCount={(santriByClass[classItem.id] || []).length} canManage={canManage}>
                   {(santriByClass[classItem.id] || []).map((santri, santriIndex) => (
                     <DraggableSantri
                         key={santri.id}
@@ -973,8 +998,10 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                   ))}
                 </ClassCard>
               ))}
+              {/* slate-600, bukan slate-400: keadaan kosong pun harus terbaca.
+                  slate-400 hanya mencapai rasio 2.43 dari 4.5 yang diminta. */}
               {classesBySession[session].length === 0 && (
-                  <div className="col-span-full py-8 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
+                  <div className="col-span-full py-8 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-600 dark:text-slate-300">
                       Belum ada kelas untuk sesi {session}.
                   </div>
               )}
@@ -1009,6 +1036,25 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
                   value={formData.kapasitas ?? ''}
                   onChange={e => setFormData({ ...formData, kapasitas: e.target.value })}
                 />
+              </div>
+              <div>
+                <label>Tingkat <span className="text-xs text-muted-foreground font-normal">(kelas berapa)</span></label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="12"
+                  placeholder="Contoh: 2 untuk Kelas 2A dan 2B"
+                  value={formData.tingkat ?? ''}
+                  onChange={e => setFormData({ ...formData, tingkat: e.target.value })}
+                />
+                {/* Angka ini yang dipakai Kenaikan Kelas untuk menyusun usulan
+                    tujuan, bukan nama kelasnya — supaya rombel bernama "2 Melati"
+                    tetap terbaca sebagai tingkat 2. Dikosongkan berarti rombel ini
+                    tidak ikut kenaikan kelas otomatis, misalnya kelompok khusus. */}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Dipakai panel Kenaikan Kelas. Rombel paralel memakai tingkat yang sama:
+                  Kelas 2A dan Kelas 2B keduanya tingkat 2. Kosongkan bila rombel ini tidak ikut kenaikan kelas.
+                </p>
               </div>
               <div><label>Catatan</label><Textarea value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })}/></div>
               <DialogFooter><Button type="submit">Simpan</Button></DialogFooter>
@@ -1057,6 +1103,12 @@ const GenericClassManagement = ({ userRole, kategori = 'Anak', configKey = 'anak
         <SantriDetailModal santri={selectedSantri} isOpen={isSantriDetailOpen} onOpenChange={setIsSantriDetailOpen} onPromote={() => initiateJilidChange(selectedSantri, 'up')} onDemote={() => initiateJilidChange(selectedSantri, 'down')} />
         <JilidChangeModal isOpen={isJilidModalOpen} onClose={() => setIsJilidModalOpen(false)} onConfirm={confirmJilidChange} {...jilidChangeData} kategori={kategori} />
         <ClassPerformanceModal isOpen={isPerformanceOpen} onClose={() => setIsPerformanceOpen(false)} classItem={selectedClass} />
+        <RaporKelasCetak
+          classId={kelasRapor?.id}
+          namaKelas={kelasRapor?.nama_kelas}
+          open={Boolean(kelasRapor)}
+          onOpenChange={(terbuka) => { if (!terbuka) setKelasRapor(null); }}
+        />
         <ConfirmationDialog isOpen={confirmDialog.isOpen} onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })} onConfirm={confirmDialog.onConfirm} title={confirmDialog.title} description={confirmDialog.description} />
 
         <SessionConfigDialog open={isConfigOpen} onOpenChange={setIsConfigOpen} config={sessionTimes} onSave={handleSaveConfig} />

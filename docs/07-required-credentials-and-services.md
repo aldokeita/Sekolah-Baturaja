@@ -13,7 +13,7 @@ Jangan masukkan nilai asli ke repo atau chat. Simpan di dashboard layanan atau `
 | JWT secret atau signing setup | Jika tetap memakai custom login/RPC JWT. Lebih baik hindari jika tidak perlu. |
 | Storage bucket policy/access | Upload dan baca file `avatars`, `website-assets`, `music-files`. |
 | Domain baru | Deployment LPQ Al-Fath Maulana 2. |
-| Hosting/deployment account | Vercel/Netlify/Hostinger/static hosting sesuai pilihan. |
+| VPS | Satu mesin yang menyala terus: Nginx atau Caddy menyajikan `dist/`, Go API dan PostgreSQL di mesin yang sama, satu domain. Lihat `SETUP.md`. |
 | Email/SMS/WhatsApp provider | Jika nanti ada notifikasi resmi. Saat ini WhatsApp lebih banyak berupa link/pesan manual. |
 
 ## Service Supabase yang Perlu Dibuat

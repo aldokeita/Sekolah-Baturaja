@@ -161,19 +161,38 @@ const PpdbContentSettings = () => {
         judul="Jalur Pendaftaran"
         keterangan="Pilihan jalur pada langkah kedua formulir, beserta kuotanya."
         tombol={(
-          <Button type="button" size="sm" variant="outline" onClick={() => tambah('jalur', { id: '', name: '', desc: '', kuota: 0 })}>
+          <Button type="button" size="sm" variant="outline" onClick={() => tambah('jalur', { id: '', name: '', desc: '', kuota: 0, aktif: true })}>
             <Plus className="mr-1 h-4 w-4" /> Tambah jalur
           </Button>
         )}
       >
         <div className="admin-card bg-muted/40 p-3 text-xs text-muted-foreground">
           Bawaannya mengikuti <strong>Permendikdasmen No. 3 Tahun 2025</strong> untuk SD: Domisili
-          paling sedikit 70%, Afirmasi paling sedikit 15%, Mutasi paling banyak 5%. Jalur prestasi
-          tidak diberlakukan untuk murid kelas satu SD. Ubah bila ketentuan daerah Anda berbeda —
-          sistem tidak menegur.
+          paling sedikit 70%, Afirmasi paling sedikit 15%, Mutasi paling banyak 5%. Ubah bila
+          ketentuan daerah Anda berbeda — sistem tidak menegur.
+          <br />
+          <strong>Jalur Prestasi dikirim dalam keadaan mati.</strong> Aturan itu tidak
+          memberlakukannya untuk murid kelas satu SD — anak yang baru lulus TK belum punya rapor
+          atau piagam untuk dinilai. Sekolah jenjang SMP atau SMA tinggal menyalakannya di sini dan
+          mengisi kuotanya.
         </div>
         {isi.jalur.map((j, i) => (
           <Baris key={i} nomor={i + 1} onHapus={() => hapus('jalur', i)}>
+            {/* Saklar diletakkan di baris jalurnya, bukan di tab Konfigurasi:
+                menyalakan jalur hampir selalu dibarengi mengisi kuotanya, dan
+                memisahkan keduanya ke dua tab membuat jalur menyala berkuota nol. */}
+            <label className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-primary"
+                checked={j.aktif !== false}
+                onChange={(e) => ubahBaris('jalur', i, 'aktif', e.target.checked)}
+              />
+              Jalur ini dibuka
+              {j.aktif === false && (
+                <span className="font-normal text-muted-foreground">— tidak muncul di formulir maupun rekap daya tampung</span>
+              )}
+            </label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_9rem]">
               <div className="admin-edit-field">
                 <label htmlFor={`ppdb-jalur-nama-${i}`}>Nama jalur</label>
@@ -197,8 +216,11 @@ const PpdbContentSettings = () => {
             </div>
           </Baris>
         ))}
+        {/* Hanya jalur yang dibuka yang dijumlahkan: jalur mati tidak menerima
+            pendaftar, jadi memasukkan kuotanya membuat total terbaca lebih besar
+            daripada yang benar-benar dialokasikan. */}
         <p className="text-xs text-muted-foreground">
-          Total kuota saat ini <strong>{isi.jalur.reduce((t, j) => t + (Number(j.kuota) || 0), 0)}%</strong>.
+          Total kuota jalur yang dibuka <strong>{isi.jalur.filter((j) => j.aktif !== false).reduce((t, j) => t + (Number(j.kuota) || 0), 0)}%</strong>.
           Persentase dihitung dari daya tampung, yaitu jumlah kapasitas seluruh kelas aktif di
           Manajemen Kelas.
         </p>

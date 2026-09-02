@@ -34,13 +34,14 @@ import {
   JUZ_TAHFIZH_TARGETS,
   progressStatusToComplete
 } from '@/lib/academicAdapters';
-import { fetchSantriDetail, fetchSantriList, updateSantri } from '@/lib/dataMasterAdapters';
+import { fetchClassmates, fetchSantriDetail, updateSantri } from '@/lib/dataMasterAdapters';
 import { fetchAttendance } from '@/lib/attendanceAdapters';
 import JadwalSaya from '@/components/dashboard/shared/JadwalSaya';
 import { fetchWebsiteContentMap } from '@/lib/publicContentAdapters';
 import { deleteAvatar, getStorageErrorMessage, resolveAvatarUrl, uploadAvatar } from '@/lib/storageAdapters';
 import { getSessionName } from '@/utils/sessionMapping';
 import { resolveSantriLevel } from '@/lib/santriLevel';
+import { enableTahfizh } from '@/lib/featureFlags';
 import AvatarPreviewDialog from '@/components/dashboard/shared/AvatarPreviewDialog';
 
 const SantriLevelScene = lazy(() => import('@/components/dashboard/santri/SantriLevelScene'));
@@ -48,11 +49,11 @@ const SantriLevelScene = lazy(() => import('@/components/dashboard/santri/Santri
 /**
  * SANTRI AUTHENTICATION FLOW:
  *
- * 1. Login Trigger: Santri inputs `nomor_induk_qiroati` or `nama_panggilan` as username, plus their password.
+ * 1. Login Trigger: Santri inputs `nomor_induk` or `nama_panggilan` as username, plus their password.
  * 2. Auth Context: LoginPage calls `signInWithUsername(username, password)` from AuthContext.jsx.
  * 3. Auth Call: The context POSTs to `/api/auth/login` on the Go backend.
  * 4. Backend Logic (internal/handler/auth.go):
- *    - `resolveUser` checks the `santri` table by nomor_induk_qiroati or nama_panggilan (active only).
+ *    - `resolveUser` checks the `santri` table by nomor_induk or nama_panggilan (active only).
  *    - Falls back to `guru` + `user_profiles` by email for admin/guru/pentashih.
  *    - A santri whose password is still the plain nomor_induk self-heals to a bcrypt hash on first login.
  *    - On success it returns an access/refresh token pair carrying the user id and role.
@@ -194,7 +195,7 @@ const HafalanSection = ({
   );
 };
 
-const MurojaahRecorder = ({ santriId, hafalanItems, onSubmissionSuccess, isAdult }) => {
+const MurojaahRecorder = ({ santriId, hafalanItems, onSubmissionSuccess }) => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedItem, setSelectedItem] = useState('');
     const [isUploading, setIsUploading] = useState(false);
@@ -234,7 +235,7 @@ const MurojaahRecorder = ({ santriId, hafalanItems, onSubmissionSuccess, isAdult
         }, 1000);
     };
 
-    return (<Card className={cn("lg:col-span-1", isAdult ? "bg-white/80 dark:bg-black/40 border-purple-500/30 backdrop-blur-sm text-gray-800 dark:text-white" : "")}><CardHeader><CardTitle className={cn("flex items-center gap-2", isAdult ? "text-purple-700 dark:text-purple-300" : "text-primary")}><Mic className="w-6 h-6"/> Pojok Muroja'ah</CardTitle></CardHeader><CardContent className="space-y-4"><Select value={selectedCategory} onValueChange={setSelectedCategory}><SelectTrigger className={isAdult ? "bg-white dark:bg-black/50 border-gray-300 dark:border-purple-500/30 text-gray-900 dark:text-white" : ""}><SelectValue placeholder="Pilih Kategori" /></SelectTrigger><SelectContent>{categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent></Select><Select value={selectedItem} onValueChange={setSelectedItem}><SelectTrigger className={isAdult ? "bg-white dark:bg-black/50 border-gray-300 dark:border-purple-500/30 text-gray-900 dark:text-white" : ""}><SelectValue placeholder="Pilih Hafalan" /></SelectTrigger><SelectContent>{filteredItems.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><div className="flex justify-center gap-4"><Button onClick={handleSend} size="lg" disabled={isUploading || !selectedItem} className={isAdult ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}>{isUploading ? 'Mengirim...' : <><Send className="w-4 h-4 mr-2"/> Kirim Setoran</>}</Button></div></CardContent></Card>);
+    return (<Card className="lg:col-span-1"><CardHeader><CardTitle className="flex items-center gap-2 text-primary"><Mic className="w-6 h-6"/> Pojok Muroja'ah</CardTitle></CardHeader><CardContent className="space-y-4"><Select value={selectedCategory} onValueChange={setSelectedCategory}><SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger><SelectContent>{categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent></Select><Select value={selectedItem} onValueChange={setSelectedItem}><SelectTrigger><SelectValue placeholder="Pilih Hafalan" /></SelectTrigger><SelectContent>{filteredItems.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><div className="flex justify-center gap-4"><Button onClick={handleSend} size="lg" disabled={isUploading || !selectedItem}>{isUploading ? 'Mengirim...' : <><Send className="w-4 h-4 mr-2"/> Kirim Setoran</>}</Button></div></CardContent></Card>);
 };
 
 const ClassmatesList = ({ classmates, todayAttendance }) => {
@@ -243,7 +244,11 @@ const ClassmatesList = ({ classmates, todayAttendance }) => {
             <CardHeader className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-t-lg">
                 <CardTitle className="flex items-center gap-2 text-[#112D4E] dark:text-white text-lg">
                     <Users className="w-5 h-5 text-blue-500" />
-                    Manajemen Kelas & Absensi Hari Ini
+                    {/* Judulnya dulu "Manajemen Kelas & Absensi Hari Ini". Yang
+                        membaca layar ini murid dan orang tuanya, dan tidak ada
+                        yang bisa mereka kelola di sini — isinya daftar teman
+                        sekelas beserta kehadiran hari ini, tidak lebih. */}
+                    Teman Sekelas & Kehadiran Hari Ini
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
@@ -251,6 +256,20 @@ const ClassmatesList = ({ classmates, todayAttendance }) => {
                     {classmates.length > 0 ? classmates.map(friend => {
                         const attendance = todayAttendance.find(a => a.user_id === friend.id);
                         const isPresent = !!attendance;
+                        /* Tanpa catatan absensi, baris ini dulu berbunyi "Alpha" —
+                         * tuduhan bolos, padahal jam sekolahnya bisa jadi belum
+                         * mulai. Kartu profil di layar yang sama menyebut hari
+                         * yang sama "Belum Absen", jadi satu layar memberi dua
+                         * jawaban berbeda. Sekarang keduanya sepakat.
+                         *
+                         * Status sebenarnya juga dipakai apa adanya: absensi
+                         * mengenal Hadir, Terlambat, Izin, dan Sakit, dan ketiga
+                         * yang terakhir dulu semuanya tertulis "Hadir".
+                         *
+                         * Nada teksnya gray-600, bukan gray-400 seperti mockup:
+                         * tulisannya 10px dan gray-400 hanya mencapai rasio 2.43
+                         * dari 4.5 yang diminta WCAG AA. */
+                        const statusHariIni = attendance?.status || 'Belum absen';
                         return (
                             <div key={friend.id} className={cn("flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-sm", isPresent ? "bg-green-50 dark:bg-slate-900/75 border-green-200 dark:border-emerald-400/30" : "bg-gray-50 dark:bg-slate-900/60 border-gray-100 dark:border-white/10")}>
                                 <Avatar className="w-10 h-10 border-2 border-white shadow-sm">
@@ -259,17 +278,20 @@ const ClassmatesList = ({ classmates, todayAttendance }) => {
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-semibold text-sm truncate text-gray-800 dark:text-gray-200">{friend.nama_lengkap}</p>
-                                    <p className="text-xs text-muted-foreground truncate">{friend.jilid}</p>
+                                    {/* `jilid` hanya bermakna bila program tahfizh
+                                        opsional dinyalakan; tanpa itu barisnya
+                                        kosong dan cuma menyisakan celah. */}
+                                    {enableTahfizh && <p className="text-xs text-muted-foreground truncate">{friend.jilid}</p>}
                                 </div>
                                 {isPresent ? (
                                     <div className="flex flex-col items-center text-green-600">
                                         <CheckCircleFull className="w-5 h-5" />
-                                        <span className="text-[10px] font-bold">Hadir</span>
+                                        <span className="text-[10px] font-bold">{statusHariIni}</span>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center text-gray-400">
+                                    <div className="flex flex-col items-center text-gray-600 dark:text-gray-300">
                                         <div className="w-5 h-5 rounded-full border-2 border-dashed border-gray-300"></div>
-                                        <span className="text-[10px]">Alpha</span>
+                                        <span className="whitespace-nowrap text-[10px]">{statusHariIni}</span>
                                     </div>
                                 )}
                             </div>
@@ -327,7 +349,7 @@ const EditProfileDialog = ({ isOpen, onOpenChange, santri, onUpdate }) => {
 
     const handleSave = async () => {
         setIsSaving(true);
-        const { nama_panggilan, password, points, jilid, sesi_mengaji, nomor_induk_qiroati, class: classObj, id_kelas, ...allowedData } = formData;
+        const { nama_panggilan, password, points, jilid, sesi_mengaji, nomor_induk, class: classObj, id_kelas, ...allowedData } = formData;
         try {
             await updateSantri(santri.id, allowedData);
             toast({ title: "Berhasil", description: "Profil berhasil diperbarui." });
@@ -370,7 +392,9 @@ const EditProfileDialog = ({ isOpen, onOpenChange, santri, onUpdate }) => {
     );
 };
 
-const SantriDashboard = ({ isAdult = false }) => {
+// Tanpa prop `isAdult`: SD negeri hanya punya satu jenis murid. Pembedaan murid
+// dewasa berasal dari produk sebelumnya dan sudah dicabut.
+const SantriDashboard = () => {
   const { user } = useAuth();
   const [santriData, setSantriData] = useState(null);
   const [hafalan, setHafalan] = useState([]);
@@ -416,7 +440,10 @@ const SantriDashboard = ({ isAdult = false }) => {
 
         const [hafalanRows, submissionRows, attendanceRows] = await Promise.all([
             fetchHafalanProgress([santri.id]).catch(() => null),
-            fetchMurojaahSubmissions({ santriId: santri.id }).catch(() => null),
+            // Adapternya menerima id apa adanya, bukan objek berisi opsi. Dikirim
+            // sebagai objek, query-nya jadi santri_id=[object Object] dan backend
+            // menjawab 500 — riwayat setoran murid selalu kosong.
+            fetchMurojaahSubmissions(santri.id).catch(() => null),
             fetchAttendance({ user_id: santri.id, date: todayStr }).catch(() => null)
         ]);
         const hafalanData = { data: hafalanRows };
@@ -435,12 +462,13 @@ const SantriDashboard = ({ isAdult = false }) => {
         }
 
         if (santri.current_class_id) {
-            // Classmates come from santri.current_class_id, the same column the
-            // class roster endpoints treat as authoritative.
-            const [classmateRows, friendsAttendance] = await Promise.all([
-                fetchSantriList({ classId: santri.current_class_id, activeOnly: true, notDeleted: true, limit: 200 }).catch(() => null),
-                fetchAttendance({ class_id: santri.current_class_id, date: todayStr, limit: 200 }).catch(() => null)
-            ]);
+            /* Rosternya dibaca lewat /api/santri/classmates, bukan daftar murid
+             * biasa. GET /api/santri memang mengunci seorang murid pada barisnya
+             * sendiri, jadi panggilan lama mengembalikan satu baris — dirinya —
+             * dan panel "Teman Sekelas" tampak seolah hanya memuat yang absen.
+             * Absensi hari ini juga ikut dalam jawaban yang sama, karena
+             * /api/attendance mengunci murid dengan cara yang serupa. */
+            const classmateRows = await fetchClassmates().catch(() => null);
             if (classmateRows) {
                 const classmatesWithAvatars = await Promise.all(classmateRows.map(async (mate) => ({
                     ...mate,
@@ -452,8 +480,12 @@ const SantriDashboard = ({ isAdult = false }) => {
                     }),
                 })));
                 setClassmates(classmatesWithAvatars);
+                setClassmatesAttendance(
+                    classmatesWithAvatars
+                        .filter(mate => mate.status_hari_ini)
+                        .map(mate => ({ user_id: mate.id, status: mate.status_hari_ini }))
+                );
             }
-            if (friendsAttendance) setClassmatesAttendance(friendsAttendance);
         }
     }
     if (Array.isArray(itemsResult)) {
@@ -527,14 +559,24 @@ const SantriDashboard = ({ isAdult = false }) => {
               <p className="mt-2 flex items-center justify-center gap-2 text-sm font-semibold text-muted-foreground sm:text-base lg:justify-start">
                 <Users className="h-4 w-4" /> {santriData.class?.nama_kelas || 'Belum masuk kelas'}
               </p>
-              <div className="mt-5 grid grid-cols-2 gap-2 sm:max-w-xl sm:grid-cols-4">
+              {/* `auto-fit` dipakai, bukan jumlah kolom tetap. Barisnya dulu
+                  dipaku empat kolom padahal isinya tiga saat program tahfizh
+                  dimatikan — dan pembeli mendapat satu kotak kosong menggantung
+                  di ujung baris. `auto-fit` melipat jalur yang tidak terpakai,
+                  jadi jumlah kolomnya selalu sama dengan jumlah kartunya. */}
+              <div className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2 sm:max-w-xl">
                 {[
-                  // Kolom `jilid` pada murid kini berarti tingkat mengaji pilihan
-                  // sekolah (lihat tahfizhLevels), bukan jilid Qiroati.
-                  ['Tingkat', santriData.jilid || '-'],
+                  // Kolom `jilid` pada murid berarti tingkat mengaji pilihan
+                  // sekolah (lihat tahfizhLevels), bukan jilid Qiroati — dan
+                  // hanya bermakna bila program tahfizh opsional dinyalakan.
+                  ...(enableTahfizh ? [['Tingkat', santriData.jilid || '-']] : []),
                   ['Poin', santriData.points || 0],
                   ['Level', levelInfo.name],
-                  ['Sesi', sessionName],
+                  /* Kartu "Sesi" DICABUT, bukan disembunyikan. Sekolah dasar
+                   * hanya punya satu giliran belajar, jadi nilainya selalu
+                   * "Pagi": sebuah kartu yang tidak pernah membedakan apa pun.
+                   * Nilainya masih dipakai di modal absensi (sessionName), yang
+                   * memang perlu mencatat sesi kehadiran. */
                 ].map(([label, value]) => (
                   <div key={label} className="min-w-0 rounded-md border border-white/80 bg-slate-100/90 px-3 py-2.5 shadow-[inset_3px_3px_7px_rgba(15,23,42,0.1),inset_-3px_-3px_7px_rgba(255,255,255,0.9)] backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/85 dark:shadow-[inset_3px_3px_7px_rgba(0,0,0,0.4),inset_-3px_-3px_7px_rgba(51,65,85,0.24)]">
                     <p className="text-[10px] font-bold uppercase text-muted-foreground">{label}</p>
@@ -567,9 +609,14 @@ const SantriDashboard = ({ isAdult = false }) => {
             <div className="no-scrollbar overflow-x-auto pb-1">
               <TabsList className="h-auto min-w-max rounded-lg bg-white p-1 shadow-sm dark:border dark:border-white/10 dark:bg-slate-950/80">
                 <TabsTrigger value="overview" className="whitespace-nowrap">Ringkasan</TabsTrigger>
+                {/* Jadwal ditaruh persis di sebelah Ringkasan, atas permintaan
+                    pemilik. Sebelumnya ia terselip di bawah bagian perkembangan
+                    belajar di dalam Ringkasan — murid harus menggulir melewati
+                    hafalan dan karakter untuk melihat jadwal pelajarannya. */}
+                <TabsTrigger value="jadwal" className="whitespace-nowrap">Jadwal Pelajaran</TabsTrigger>
                 <TabsTrigger value="attendance" className="whitespace-nowrap">Rekap Absensi</TabsTrigger>
                 <TabsTrigger value="payments" className="whitespace-nowrap">Riwayat Pembayaran</TabsTrigger>
-                <TabsTrigger value="learning" className="whitespace-nowrap">Muroja'ah & Video</TabsTrigger>
+                {enableTahfizh && <TabsTrigger value="learning" className="whitespace-nowrap">Muroja'ah & Video</TabsTrigger>}
               </TabsList>
             </div>
 
@@ -580,37 +627,50 @@ const SantriDashboard = ({ isAdult = false }) => {
                      <div className="flex items-end justify-between gap-4">
                        <div>
                          <p className="text-xs font-bold uppercase tracking-wider text-primary">Perkembangan belajar</p>
-                         <h2 className="mt-1 text-xl font-black text-foreground sm:text-2xl">Progres hafalan dan karakter</h2>
+                         {/* Judulnya tidak lagi menyebut jadwal: jadwalnya sudah
+                             pindah ke tabnya sendiri, jadi menyebutnya di sini
+                             menjanjikan sesuatu yang tidak ada di bagian ini. */}
+                         <h2 className="mt-1 text-xl font-black text-foreground sm:text-2xl">
+                           {enableTahfizh ? 'Progres hafalan dan karakter' : 'Perkembangan karakter'}
+                         </h2>
                        </div>
                        <BarChart3 className="hidden h-7 w-7 text-primary/60 sm:block" aria-hidden="true" />
                      </div>
-                     {/* Keempat bagian tampil untuk setiap murid, tanpa memandang status.
-                         Dulu murid berkategori PTPT hanya melihat Tahfizh dan yang lain
-                         hanya melihat tiga sisanya. */}
-                     <HafalanSection title="Do'a" category="Doa" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Doa')} hafalanData={hafalan} tone="emerald" />
-                     <HafalanSection title="Sholat" category="Sholat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Sholat')} hafalanData={hafalan} tone="sky" />
-                     <HafalanSection title="Surat" category="Surat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Surat')} hafalanData={hafalan} tone="violet" />
-                     <HafalanSection
-                       title="Hafalan Al-Qur'an per Juz"
-                       category="Tahfizh"
-                       items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Tahfizh')}
-                       hafalanData={hafalan}
-                       tone="violet"
-                       targets={JUZ_TAHFIZH_TARGETS}
-                       titlePrefix=""
-                       isTahfizh
-                     />
-                     {/* Jadwal kelas tempat murid berada, hanya bisa dibaca. */}
-                     <JadwalSaya
-                       classId={santriData.current_class_id || santriData.id_kelas}
-                       title="Jadwal Pelajaran Kelas"
-                       emptyText="Belum ada jadwal pelajaran untuk kelas ini."
-                     />
-
+                     {/* Keempat bagian ini seluruhnya milik program tahfizh opsional:
+                         Do'a, Sholat, Surat, dan hafalan Al-Qur'an per juz. Di sekolah
+                         dasar umum yang tidak menjalankannya, murid melihat ratusan
+                         butir hafalan bertanda "BELUM" yang memang tidak pernah
+                         ditugaskan kepadanya. Datanya tetap tersimpan. */}
+                     {enableTahfizh && (
+                       <>
+                         <HafalanSection title="Do'a" category="Doa" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Doa')} hafalanData={hafalan} tone="emerald" />
+                         <HafalanSection title="Sholat" category="Sholat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Sholat')} hafalanData={hafalan} tone="sky" />
+                         <HafalanSection title="Surat" category="Surat" items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Surat')} hafalanData={hafalan} tone="violet" />
+                         <HafalanSection
+                           title="Hafalan Al-Qur'an per Juz"
+                           category="Tahfizh"
+                           items={(Array.isArray(hafalanItems) ? hafalanItems : []).filter(i => i && i.category === 'Tahfizh')}
+                           hafalanData={hafalan}
+                           tone="violet"
+                           targets={JUZ_TAHFIZH_TARGETS}
+                           titlePrefix=""
+                           isTahfizh
+                         />
+                       </>
+                     )}
                      <SantriDevelopmentProfile santriId={santriData.id} editable={false} collapsible />
                    </div>
                  </div>
              </TabsContent>
+
+            <TabsContent value="jadwal">
+                {/* Jadwal kelas tempat murid berada, hanya bisa dibaca. */}
+                <JadwalSaya
+                  classId={santriData.current_class_id || santriData.id_kelas}
+                  title="Jadwal Pelajaran Kelas"
+                  emptyText="Belum ada jadwal pelajaran untuk kelas ini."
+                />
+            </TabsContent>
 
             <TabsContent value="attendance">
                 <SantriAbsensiRecap />
@@ -620,6 +680,7 @@ const SantriDashboard = ({ isAdult = false }) => {
                 <SantriPaymentHistory />
             </TabsContent>
 
+            {enableTahfizh && (
             <TabsContent value="learning">
               <div className="space-y-5">
                 <div>
@@ -628,7 +689,7 @@ const SantriDashboard = ({ isAdult = false }) => {
                   <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">Kirim setoran hafalan dan buka video panduan tanpa memenuhi halaman ringkasan.</p>
                 </div>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <MurojaahRecorder santriId={santriData.id} hafalanItems={hafalanItems} onSubmissionSuccess={() => initializeData()} isAdult={false} />
+                  <MurojaahRecorder santriId={santriData.id} hafalanItems={hafalanItems} onSubmissionSuccess={() => initializeData()} />
                   <Card className="group overflow-hidden border-none bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-700 text-white shadow-xl">
                     <CardContent className="flex min-h-[250px] flex-col items-start justify-between p-7 sm:p-8">
                       <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/20 bg-white/15 backdrop-blur-sm"><PlayCircle className="h-7 w-7" /></div>
@@ -642,12 +703,14 @@ const SantriDashboard = ({ isAdult = false }) => {
                 </div>
               </div>
             </TabsContent>
+            )}
         </Tabs>
 
         <EditProfileDialog isOpen={isInfoModalOpen} onOpenChange={setIsInfoModalOpen} santri={santriData} onUpdate={initializeData} />
         <AvatarPreviewDialog open={isAvatarPreviewOpen} onOpenChange={setIsAvatarPreviewOpen} imageUrl={santriData.foto_url} name={santriData.nama_lengkap} description="Foto profil murid yang sedang digunakan." />
 
-        <Dialog open={isHafalanModalOpen} onOpenChange={setIsHafalanModalOpen}>
+        {/* Modal video hafalan ikut dipagari bersama tab yang membukanya. */}
+        <Dialog open={enableTahfizh && isHafalanModalOpen} onOpenChange={setIsHafalanModalOpen}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Video Hafalan Murid</DialogTitle><DialogDescription>Pilih kategori video hafalan yang ingin ditonton.</DialogDescription></DialogHeader>
                 <Tabs defaultValue="Jilid 1" className="w-full">

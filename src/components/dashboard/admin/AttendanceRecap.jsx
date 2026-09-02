@@ -407,10 +407,16 @@ const AttendanceRecap = () => {
         setIsDetailOpen(true);
     };
 
+    /* Nada teksnya satu-dua langkah lebih gelap dari pilihan mockup. Di atas latar
+     * -50 yang sangat terang, emerald-600 hanya mencapai rasio 3.60, amber-500
+     * 2.08, dan red-500 3.44 — semuanya di bawah 4.5 yang diminta WCAG AA. Amber
+     * yang terburuk, dan justru ia menandai kehadiran yang perlu diperhatikan.
+     * Nada sekarang: 5.24, 4.86, dan 5.91. Rona ketiganya tidak berubah, jadi
+     * hijau-kuning-merah tetap terbaca sebagai isyarat yang sama. */
     const getAttendanceColorClass = (percentage) => {
-        if (percentage >= 71) return "bg-green-50 text-emerald-600 font-bold border-green-200";
-        if (percentage >= 41) return "bg-yellow-50 text-amber-500 font-bold border-yellow-200";
-        return "bg-red-50 text-red-500 font-bold border-red-200";
+        if (percentage >= 71) return "bg-green-50 text-emerald-700 font-bold border-green-200";
+        if (percentage >= 41) return "bg-yellow-50 text-amber-700 font-bold border-yellow-200";
+        return "bg-red-50 text-red-700 font-bold border-red-200";
     };
 
     if (isLoading) return <div className="admin-table-loading" style={{ position: 'relative', minHeight: '12rem', borderRadius: '0.75rem', border: '1px solid hsl(var(--admin-border))', backgroundColor: 'hsl(var(--admin-surface))' }}><div className="admin-table-loading-spinner"></div><p>Memuat rekap absensi...</p></div>;

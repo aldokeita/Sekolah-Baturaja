@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { inisialNama, sebutanStaf, stafKe } from '@/lib/staf';
+import { inisialNama, isKepalaSekolah, labelStafRole, sebutanStaf, stafKe } from '@/lib/staf';
+import { getOperationalRoleFromGuruForm } from '@/lib/dataMasterAdapters';
 
 describe('sebutanStaf', () => {
+  it('menerjemahkan label Pentashih lama secara case-insensitive', () => {
+    expect(labelStafRole('Pentashih')).toBe('Wakil Kepala Sekolah');
+    expect(labelStafRole('pentashih')).toBe('Wakil Kepala Sekolah');
+    expect(sebutanStaf({ jabatan: 'Pentashih', roles: ['Pentashih'] }))
+      .toBe('Wakil Kepala Sekolah');
+  });
+
   it('memakai jabatan bila diisi', () => {
     expect(sebutanStaf({ jabatan: 'Guru Kelas I', roles: ['Pengajar'] })).toBe('Guru Kelas I');
   });
@@ -17,6 +25,17 @@ describe('sebutanStaf', () => {
     expect(sebutanStaf({ roles: ['Pentashih'] })).toBe('Wakil Kepala Sekolah');
   });
 
+  // Kepala sekolah hampir selalu juga tercatat sebagai Pengajar. Tanpa
+  // pengurutan, `find` mengambil peran mana pun yang lebih dulu tersimpan.
+  it('mendahulukan Kepala Sekolah atas peran lain di akun yang sama', () => {
+    expect(sebutanStaf({ roles: ['Pengajar', 'Kepala Sekolah'] })).toBe('Kepala Sekolah');
+    expect(sebutanStaf({ roles: ['Kepala Sekolah', 'Pengajar'] })).toBe('Kepala Sekolah');
+  });
+
+  it('tetap memakai jabatan yang diisi sekolah meski ada peran kepala sekolah', () => {
+    expect(sebutanStaf({ jabatan: 'Kepala Sekolah', roles: ['Kepala Sekolah'] })).toBe('Kepala Sekolah');
+  });
+
   it('memakai peran apa adanya bila belum ada terjemahannya', () => {
     expect(sebutanStaf({ roles: ['Staff Operasional'] })).toBe('Staff Operasional');
   });
@@ -26,6 +45,51 @@ describe('sebutanStaf', () => {
     expect(sebutanStaf({ jabatan: '   ', roles: [] })).toBe('Staf sekolah');
     expect(sebutanStaf(null)).toBe('Staf sekolah');
     expect(sebutanStaf({ roles: 'bukan array' })).toBe('Staf sekolah');
+  });
+});
+
+describe('isKepalaSekolah', () => {
+  it('mengenali dari peran', () => {
+    expect(isKepalaSekolah({ roles: ['Kepala Sekolah', 'Pengajar'] })).toBe(true);
+  });
+
+  // Data sekolah yang sudah terisi mengenal kepala sekolah hanya dari jabatannya.
+  it('mengenali dari jabatan bebas teks', () => {
+    expect(isKepalaSekolah({ jabatan: 'Kepala Sekolah', roles: [] })).toBe(true);
+    expect(isKepalaSekolah({ jabatan: 'kepala sekolah SDN Baturaja', roles: [] })).toBe(true);
+  });
+
+  // Wakil kepala sekolah BUKAN kepala sekolah — pembedaan ini yang menentukan
+  // siapa yang tampil sebagai penanda tangan kutipan di halaman Profil.
+  it('tidak menganggap wakil kepala sekolah sebagai kepala sekolah', () => {
+    expect(isKepalaSekolah({ jabatan: 'Wakil Kepala Sekolah', roles: ['Pentashih'] })).toBe(false);
+    expect(isKepalaSekolah({ jabatan: 'Wakil Kepala Sekolah Bidang Kurikulum', roles: [] })).toBe(false);
+  });
+
+  it('aman untuk masukan kosong atau bentuk tak terduga', () => {
+    expect(isKepalaSekolah(null)).toBe(false);
+    expect(isKepalaSekolah({})).toBe(false);
+    expect(isKepalaSekolah({ roles: 'bukan array', jabatan: null })).toBe(false);
+  });
+});
+
+describe('getOperationalRoleFromGuruForm — kepala sekolah', () => {
+  it('memberi dashboard pengawasan yang sama dengan wakilnya', () => {
+    expect(getOperationalRoleFromGuruForm({ roles: ['Kepala Sekolah'] })).toBe('pentashih');
+    expect(getOperationalRoleFromGuruForm({ roles: ['Kepala Sekolah', 'Pengajar'] })).toBe('pentashih');
+  });
+
+  // Kepala sekolah yang juga memegang Admin atau Tata Usaha jelas menginginkan
+  // dashboard yang lebih luas; sebutannya tetap tidak berubah.
+  it('mengalah pada Admin dan Tata Usaha', () => {
+    expect(getOperationalRoleFromGuruForm({ roles: ['Kepala Sekolah', 'Admin'] })).toBe('admin');
+    expect(getOperationalRoleFromGuruForm({ roles: ['Kepala Sekolah', 'Tata Usaha'] })).toBe('tata_usaha');
+  });
+
+  it('tidak mengubah pemetaan peran lain', () => {
+    expect(getOperationalRoleFromGuruForm({ roles: ['Pengajar'] })).toBe('guru');
+    expect(getOperationalRoleFromGuruForm({ roles: ['Pentashih'] })).toBe('pentashih');
+    expect(getOperationalRoleFromGuruForm({ roles: [] })).toBe('guru');
   });
 });
 

@@ -23,16 +23,124 @@
 /* ── verbatim: html/body/a/* ─────────────────────────────────────────────── */
 html { scroll-behavior: smooth; }
 
+/* ── Nada teks halaman publik ─────────────────────────────────────────────────
+   Tiga peran, tiga nama. Sebelum ini halaman publik memakai **60 nada berbeda**
+   untuk ketiga peran yang sama — hasil konverter mockup yang menyalin setiap
+   warna apa adanya. Selisih antar nada sering hanya 1–3% terang: tidak ada mata
+   yang bisa membedakan `#171827` dari `#1b1c2c`, tapi masing-masing harus
+   diperiksa kontrasnya sendiri. Itu sebabnya sembilan nada gagal ambang
+   keterbacaan bisa bersembunyi di sana sampai disapu satu per satu.
+
+   Nilai yang dipilih adalah nada yang paling sering dipakai di tiap peran, jadi
+   mayoritas halaman tidak berubah sedikit pun. Rasio terhadap latar terang
+   paling gelap yang dipakai halaman publik (#e9edf6): 14.34, 9.76, dan 4.93 —
+   ketiganya lolos ambang 4.5 untuk teks kecil.
+
+   Nada DEKORATIF (gradasi, warna kategori, hamparan foto) sengaja TIDAK ikut
+   diciutkan: di sana ragam warna memang bagian dari desainnya.
+
+   Halaman baru wajib memakai nama ini, bukan menuliskan nada sendiri. */
+/* Dipasang di `:root`, bukan di `.sdnb`: sebagian halaman publik memakai nada
+   ini dari style inline pada elemen yang berada di luar pembungkus `.sdnb`
+   (mis. lembar cetak dan modal yang dirender lewat portal). */
+:root {
+  --sdnb-teks-judul: #1b1c2c;
+  --sdnb-teks-badan: #33375a;
+  --sdnb-teks-pendamping: #5f6389;
+
+  /* Garis pemisah tegas di bawah judul bagian — yang 2px, bukan garis rambut.
+     Perannya berbeda dari teks: ia elemen antarmuka, jadi ambangnya 3.0 bukan
+     4.5. Nilai ini mencapai 15.1 di atas latar terang, jauh di atas keduanya.
+
+     Garis rambut halaman publik (pembatas kartu, garis tabel) memakai
+     `rgba(120,132,200,.2x)` — bukan heks, jadi tidak ikut penamaan ini. Kalau
+     suatu saat diberi nama juga, itu peran ketiga (`--sdnb-garis-rambut`),
+     bukan nama ini yang dipakai ulang. */
+  --sdnb-garis: #21243f;
+
+  /* Pil status jam kantor di halaman Kontak. Warna isyarat, jadi ronanya harus
+     tetap hijau/ungu — yang berganti per tema hanya terang teks dan latarnya.
+     Versi terangnya adalah nilai asli mockup. */
+  --sdnb-status-buka-teks: #1f6b4a;
+  --sdnb-status-buka-latar: rgba(150, 235, 195, .42);
+  --sdnb-status-tutup-teks: #6b5170;
+  --sdnb-status-tutup-latar: rgba(220, 205, 240, .5);
+
+  /* Gradasi panel ajakan SPMB. Nada mockup-nya pastel (biru muda → violet →
+     pink muda) dan tulisan putih di atasnya TIDAK terbaca: judul 38px hanya
+     mencapai 1.95 di ujung pink, paragraf 15px 1.81, dan tombol sekundernya
+     1.72 — dari 3.0 dan 4.5 yang diminta. Ini ditemukan dengan MATA, bukan oleh
+     pemindai: pemindai melewati latar bergradasi.
+
+     Ronanya dipertahankan — biru, violet, magenta — hanya dipertua sampai
+     tulisan putih lolos di SELURUH sapuan: 5.99–6.73 untuk putih penuh,
+     5.01–5.61 untuk paragraf. */
+  --sdnb-ajakan: linear-gradient(135deg, #4a55c8, #6d3fc0 48%, #a83a70);
+  /* Tombol sekunder di atas panel itu. Putih 18% terlalu tipis (1.72); lapisan
+     tinta gelap memberi 8.26–8.89 tanpa mengubah bentuk tombolnya. */
+  --sdnb-ajakan-tombol: rgba(20, 24, 70, .28);
+}
+
+/* ── Mode gelap ───────────────────────────────────────────────────────────────
+   Sebelum ini mode gelap halaman publik **tidak bekerja di satu halaman pun**
+   kecuali Login. Tujuh aturan `filter: invert(...)` ditulis sebagai
+   `.sdnb-<halaman> .th-content`, padahal susunan aslinya terbalik —
+   `.th-content` adalah LELUHUR `.sdnb-<halaman>`, bukan keturunannya. Ketujuh
+   aturan itu mati sejak ditulis: latarnya menjadi gelap, teksnya tetap warna
+   mode terang, dan judul hero Beranda mencapai rasio **1.04** — hitam di atas
+   hitam. Aturan-aturan mati itu sudah dicabut.
+
+   Sekarang keempat nama punya nilai gelapnya sendiri. Rasio terhadap tiga
+   permukaan gelap yang dipakai halaman publik (#171827 dasar, #252637 kartu,
+   #2e3047 kartu terang):
+
+     judul       15.43 / 13.08 / 11.32   (ambang 4.5)
+     badan       11.11 /  9.42 /  8.16   (ambang 4.5)
+     pendamping   6.80 /  5.77 /  4.99   (ambang 4.5)
+     garis        4.85 /  4.11 /  3.56   (ambang 3.0, elemen antarmuka)
+
+   Diukur pada permukaan paling TERANG di antara ketiganya, bukan pada latar
+   dasar — itu keadaan terburuknya. */
+html[data-theme="dark"] {
+  --sdnb-teks-judul: #eef0f8;
+  --sdnb-teks-badan: #c9cde0;
+  --sdnb-teks-pendamping: #9aa0bd;
+  --sdnb-garis: #7e84ae;
+
+  /* Aksen sekolah sebagai teks juga harus berganti wajah. `--sekolah-aksen-teks`
+     diturunkan untuk latar TERANG; di atas permukaan gelap ia jatuh ke 2.82.
+     Pasangan gelapnya dihitung dari aksen yang sama (rona dan kejenuhan tetap,
+     hanya terangnya naik) di src/lib/schoolIdentity.js.
+
+     `!important` diperlukan karena nilai terang dipasang JavaScript sebagai style
+     inline pada elemen html, dan style inline mengalahkan aturan biasa. */
+  --sekolah-aksen-teks: var(--sekolah-aksen-teks-gelap) !important;
+
+  /* Pil status: hijau tua di atas hijau muda hanya bekerja di latar terang. Di
+     mode gelap latar pudarnya menumpuk di atas permukaan gelap sehingga menjadi
+     hijau tua di atas hijau tua — rasio 1.18. Terangnya dibalik: teks muda di
+     atas latar tua (8.82 dan 7.93). */
+  --sdnb-status-buka-teks: #8fe3b8;
+  --sdnb-status-buka-latar: rgba(24, 74, 52, .55);
+  --sdnb-status-tutup-teks: #d6bce8;
+  --sdnb-status-tutup-latar: rgba(70, 52, 88, .6);
+}
+
 .sdnb {
   margin: 0;
   background: #e9edf6;
   font-family: 'Archivo', system-ui, sans-serif;
-  color: #1b1c28;
+  color: var(--sdnb-teks-judul);
   -webkit-font-smoothing: antialiased;
 }
 .sdnb a { color: #4f46e5; text-decoration: none; }
 .sdnb a:hover { color: #3730a3; }
 .sdnb *, .sdnb *::before, .sdnb *::after { box-sizing: border-box; }
+
+/* Tautan berjangkar (`/#faq`) mendarat tepat di tepi atas layar, padahal bilah
+   navigasi menempel di sana dan menutupi judul bagiannya. Jarak ini memberi
+   ruang untuk bilah itu plus sedikit napas. */
+.sdnb section[id] { scroll-margin-top: 104px; }
 
 /* ── verbatim: nav layout helpers ────────────────────────────────────────── */
 .nav-links { display: flex; align-items: center; justify-content: center; gap: 4px; }
@@ -45,8 +153,24 @@ html { scroll-behavior: smooth; }
 .nav-burger { display: none; }
 @media (max-width: 940px) {
   .nav-links { display: none; }
-  .nav-login { display: none; }
+  /* `!important` wajib: tombol-tombolnya memasang `display` lewat style inline
+     (markup mockup), dan style inline mengalahkan aturan stylesheet biasa.
+     Tanpa ini aturan sembunyinya diam-diam tidak berlaku — bilah navigasi
+     ponsel meluber sampai 509px pada layar 375px, dan tombol Dashboard beserta
+     tombol Keluar terpotong di tepi kanan. */
+  .nav-login { display: none !important; }
   .nav-burger { display: flex; }
+}
+
+/* Di layar ponsel tombol "Daftar SPMB" tidak lagi muat bersama logo, hamburger,
+   dan tombol tema — ia terpotong separuh di tepi kanan, menyisakan satu huruf
+   menggantung. Baris tautan dan tombol Login sudah punya aturan sembunyi di
+   940px, tombol ini terlewat.
+   Tetap ada di dalam menu hamburger, jadi tidak ada yang hilang. */
+@media (max-width: 700px) {
+  /* `!important` wajib: tombolnya memasang `display` lewat style inline (markup
+     mockup), dan style inline mengalahkan aturan stylesheet biasa. */
+  .nav-cta { display: none !important; }
 }
 
 /* ── verbatim: keyframes ─────────────────────────────────────────────────── */
@@ -123,7 +247,7 @@ html { scroll-behavior: smooth; }
 .sdnb-photo-glass-card__content { position: relative; z-index: 1; }
 .sdnb-photo-glass-card__eyebrow,
 .sdnb-photo-glass-card__meta {
-  color: #6d7192;
+  color: #5f6389;
 }
 .sdnb-photo-glass-card__eyebrow {
   font-size: 11px;
@@ -140,7 +264,7 @@ html { scroll-behavior: smooth; }
   line-height: 1;
 }
 .sdnb-photo-glass-card__score {
-  color: var(--sekolah-aksen-pekat);
+  color: var(--sekolah-aksen-teks);
   font-size: 13px;
   font-weight: 700;
 }
@@ -266,8 +390,8 @@ html[data-theme="dark"] .th-content { filter: none; }
 /* translucent on gradient — style-hover="background:rgba(255,255,255,.3)" */
 .h-white30:hover { background: rgba(255, 255, 255, .3); }
 
-/* footer link — style-hover="color:var(--sekolah-aksen-pekat)" */
-.h-flink:hover { color: var(--sekolah-aksen-pekat); }
+/* footer link — style-hover="color:var(--sekolah-aksen-teks)" */
+.h-flink:hover { color: var(--sekolah-aksen-teks); }
 
 /* lift card — style-hover="transform:translateY(-5px)" */
 .h-lift:hover { transform: translateY(-5px); }
@@ -341,7 +465,10 @@ html[data-theme="dark"] body .sdnb.sdnb {
   --sdnb-dark-text: #f3f4fb;
   --sdnb-dark-text-secondary: #c1c4d5;
   --sdnb-dark-text-muted: #9499b2;
-  --sdnb-dark-accent: #7c8aff;
+  /* #8f9bff, bukan #7c8aff: nada ini dipakai untuk teks aksen 13px di atas
+     permukaan gelap yang paling terang (#2b2d45), dan #7c8aff hanya mencapai
+     4.44 dari 4.5 yang diminta. Pada #8f9bff menjadi 5.31. */
+  --sdnb-dark-accent: #8f9bff;
   --sdnb-dark-accent-soft: rgba(91, 108, 255, .16);
   --sdnb-dark-nav-active-bg: #3d456c;
   --sdnb-dark-nav-active-border: #596397;
@@ -522,6 +649,20 @@ html[data-theme="dark"] body .sdnb.sdnb .gtile {
 html[data-theme="dark"] body .sdnb.sdnb [style*="color: transparent"],
 html[data-theme="dark"] body .sdnb.sdnb [style*="color: rgb(255, 255, 255"] {
   color: inherit !important;
+}
+
+/* Pil penyaring berita di halaman depan adalah KENDALI, bukan hiasan: keadaan
+ * terpilih harus tetap terlihat di mode gelap. Dua aturan di atas mengenainya
+ * tanpa sengaja — yang pertama karena sorot putih pada box-shadow-nya membuatnya
+ * cocok dengan pola "linear-gradient + rgba(255", yang kedua karena teksnya
+ * memang putih — sehingga gradiennya hilang dan pil terpilih tak berbeda dari
+ * yang lain. Sorot putih itu sudah dicabut dari gaya pilnya di HomePage.jsx;
+ * kelasnya digandakan tiga kali di sini karena aturan glass memakai :not(),
+ * yang membuat kekhususannya (0,6,2) — sebuah kelas tunggal akan kalah. */
+html[data-theme="dark"] body .sdnb.sdnb .sdnb-news-pill--on.sdnb-news-pill--on.sdnb-news-pill--on {
+  background: linear-gradient(135deg, var(--sekolah-aksen), var(--sekolah-aksen-tengah)) !important;
+  color: #fff !important;
+  border-color: transparent !important;
 }
 
 /* Shared navigation, dropdown, footer links, and mobile sheet. */

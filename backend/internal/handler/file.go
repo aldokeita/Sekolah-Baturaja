@@ -197,7 +197,7 @@ func (h *FileHandler) SignedURL(w http.ResponseWriter, r *http.Request) {
 	if r.TLS != nil {
 		scheme = "https"
 	}
-	// Di belakang reverse proxy (Vercel, nginx) TLS diakhiri di proxy, jadi
+	// Di belakang reverse proxy (Nginx, Caddy) TLS diakhiri di proxy, jadi
 	// skema aslinya hanya diketahui dari header ini.
 	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
 		scheme = forwarded
