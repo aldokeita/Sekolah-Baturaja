@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Users, DollarSign, BookOpen, TrendingDown, BookUser, LogIn, FileText,
   CalendarCheck, Tv, PieChart, Settings, GraduationCap, Calendar,
-  Database, CalendarDays, Inbox, MessageSquare,
+  Database, CalendarDays, Inbox, MessageSquare, ArrowUpRight,
 } from 'lucide-react';
 import DashboardWorkspace from './shared/DashboardWorkspace';
 import { enableBackupRestore, enableTahfizh } from '@/lib/featureFlags';
@@ -15,6 +15,9 @@ const adminTabs = [
   { value: 'ppdb', label: 'Pendaftaran SPMB', icon: Inbox, group: 'data' },
   { value: 'guru', label: 'Data Guru', icon: BookUser, group: 'data' },
   { value: 'kelas', label: 'Manajemen Kelas', icon: BookOpen, group: 'akademik' },
+  // Dipakai sekali setahun, tetapi menyentuh seluruh murid sekaligus — jadi ia
+  // berhak punya tempat sendiri, bukan disembunyikan di dalam Manajemen Kelas.
+  { value: 'kenaikan-kelas', label: 'Kenaikan Kelas', icon: ArrowUpRight, group: 'akademik' },
   { value: 'jadwal-pelajaran', label: 'Jadwal Pelajaran', icon: CalendarDays, group: 'akademik' },
   { value: 'rekap-absensi', label: 'Rekap Murid', icon: CalendarCheck, group: 'akademik' },
   { value: 'rekap-guru', label: 'Rekap Guru', icon: GraduationCap, group: 'akademik' },

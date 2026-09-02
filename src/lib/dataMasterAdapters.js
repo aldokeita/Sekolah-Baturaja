@@ -284,6 +284,33 @@ export const moveSantriClass = async ({ santri_id, target_class_id, reason }) =>
   return apiClient.post('/api/santri/move-class', { santri_id, target_class_id, reason });
 };
 
+/* Kenaikan kelas satu tahun ajaran untuk banyak rombel sekaligus.
+ *
+ * `peta` dikirim dari panel, bukan diturunkan backend: sekolah berbeda
+ * kebijakannya — ada yang mempertahankan rombel (2B ke 3B), ada yang mengacak
+ * ulang tiap tahun, ada yang menggabung dua rombel. Panel mengusulkan, admin
+ * menyetujui, backend menjalankan yang disetujui. */
+export const promoteClasses = async ({
+  tahunAjaranAsal,
+  tahunAjaranTujuan,
+  peta,
+  lulusClassIds = [],
+  tinggalSantriIds = [],
+  catatan = '',
+}) => apiClient.post('/api/santri/promote-class', {
+  tahun_ajaran_asal: tahunAjaranAsal,
+  tahun_ajaran_tujuan: tahunAjaranTujuan,
+  peta,
+  lulus_class_ids: lulusClassIds,
+  tinggal_santri_ids: tinggalSantriIds,
+  catatan,
+});
+
+export const fetchPromotionRuns = async () => {
+  const data = await apiClient.get('/api/santri/promotion-runs');
+  return Array.isArray(data) ? data : [];
+};
+
 export const changeSantriCategory = async ({ santri_id, new_category, reason }) => {
   return apiClient.post('/api/guru/change-category', { santri_id, new_category, reason });
 };

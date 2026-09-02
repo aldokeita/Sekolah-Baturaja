@@ -19,6 +19,7 @@ import LoginLogs from '../admin/LoginLogs';
 import WaNotifications from '../admin/WaNotifications';
 import ExpenseManagement from '../admin/ExpenseManagement';
 import ClassManagement from '../admin/ClassManagement';
+import KenaikanKelas from '../admin/KenaikanKelas';
 import JadwalPelajaran from '../admin/JadwalPelajaran';
 import AttendanceRecap from '../admin/AttendanceRecap';
 import GuruAttendanceRecap from '../admin/GuruAttendanceRecap';
@@ -47,6 +48,7 @@ const renderModule = (value) => {
     case 'santri': return <SantriManagement />;
     case 'ppdb': return <PpdbRegistrations />;
     case 'kelas': return <ClassManagement />;
+    case 'kenaikan-kelas': return <KenaikanKelas />;
     case 'jadwal-pelajaran': return <JadwalPelajaran />;
     case 'rapat-guru': return <RapatGuruManagement />;
     case 'metode-mengaji': return <TahfizhConfiguration />;
