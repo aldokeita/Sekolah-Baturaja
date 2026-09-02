@@ -90,8 +90,23 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "refresh token tidak valid atau kedaluwarsa", http.StatusUnauthorized)
 		return
 	}
+
+	/* Peran dan status dibaca ulang dari database, bukan diambil dari isi token.
+	 *
+	 * Refresh token berumur 30 hari, dan sebelumnya peran di dalamnya dipakai apa
+	 * adanya untuk menerbitkan pasangan token baru. Akibatnya admin yang
+	 * diturunkan perannya tetap admin, dan akun yang dinonaktifkan tetap bisa
+	 * bekerja, sampai tokennya kedaluwarsa sendiri — sebulan setelah haknya
+	 * dicabut. Sekarang pencabutan berlaku pada percobaan refresh berikutnya,
+	 * paling lama satu masa hidup access token. */
+	role, err := h.currentRole(r.Context(), claims.UserID, claims.Role)
+	if err != nil {
+		jsonError(w, "akun tidak aktif", http.StatusUnauthorized)
+		return
+	}
+
 	pair, err := auth.IssueTokenPair(
-		claims.UserID, claims.Role,
+		claims.UserID, role,
 		h.cfg.JWTSecret, h.cfg.JWTRefreshSecret,
 		time.Duration(h.cfg.AccessTokenTTL)*time.Minute,
 		time.Duration(h.cfg.RefreshTokenTTL)*24*time.Hour,
@@ -101,6 +116,63 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonOK(w, pair)
+}
+
+/* currentRole membaca peran dan status akun yang berlaku SEKARANG.
+ *
+ * `claimedRole` hanya menentukan tabel mana yang dibaca — murid di `santri`,
+ * sisanya di `guru` + `user_profiles`. Nilainya tidak pernah dipakai sebagai
+ * jawaban; peran yang dikembalikan selalu yang tersimpan di database.
+ *
+ * Penyaringan statusnya sengaja longgar sebagaimana Data Murid membacanya
+ * (kosong, "Aktif", atau "active" sama-sama dianggap aktif). Kalau di sini
+ * dibuat lebih ketat daripada saat login, murid yang statusnya tertulis dengan
+ * huruf berbeda akan terlempar keluar di tengah pemakaian — mundur yang tidak
+ * ada hubungannya dengan pencabutan hak.
+ *
+ * Kegagalan database dianggap penolakan. Itu memang menutup pintu saat database
+ * bermasalah, tetapi seluruh aplikasi memang tidak bisa bekerja tanpa database,
+ * dan menerbitkan token dari peran yang tidak terbukti lebih buruk daripada
+ * meminta pengguna masuk kembali. */
+func (h *AuthHandler) currentRole(ctx context.Context, userID, claimedRole string) (string, error) {
+	if userID == "" {
+		return "", errors.New("token tanpa user id")
+	}
+
+	if claimedRole == "santri" {
+		var id string
+		err := h.db.QueryRow(ctx, `
+			SELECT id FROM santri
+			WHERE id = $1
+			  AND deleted_at IS NULL
+			  AND (status IS NULL OR status ILIKE 'aktif' OR status ILIKE 'active')
+		`, userID).Scan(&id)
+		if err != nil {
+			if !errors.Is(err, pgx.ErrNoRows) {
+				log.Printf("currentRole: query santri gagal: %v", err)
+			}
+			return "", err
+		}
+		return "santri", nil
+	}
+
+	var role string
+	err := h.db.QueryRow(ctx, `
+		SELECT up.role
+		FROM guru g
+		JOIN user_profiles up ON up.id = g.id
+		WHERE g.id = $1 AND g.status = 'active' AND up.status = 'active'
+	`, userID).Scan(&role)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			log.Printf("currentRole: query guru gagal: %v", err)
+		}
+		return "", err
+	}
+	if role == "" {
+		return "", errors.New("akun tanpa peran")
+	}
+	return role, nil
 }
 
 type userRow struct {

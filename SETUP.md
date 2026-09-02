@@ -210,7 +210,34 @@ Tiga hal yang wajib benar:
 `backend/.env` seperti bagian 2 tapi dengan `CORS_ORIGIN` berisi domain situs Anda, lalu jalankan
 `docker compose up -d --build`. Pasang HTTPS di depannya dengan Caddy atau Nginx.
 
-### 6.1 · Backup otomatis
+### 6.1 · API dan database tidak boleh terbuka ke internet
+
+Ini sudah benar sejak bawaannya, dan bagian ini hanya menjelaskan supaya tidak
+diubah tanpa sengaja.
+
+`backend/docker-compose.yml` mengikat kedua port ke `127.0.0.1` — hanya bisa
+dijangkau dari mesin itu sendiri:
+
+```yaml
+ports:
+  - "${BIND_HOST:-127.0.0.1}:${DB_HOST_PORT:-5432}:5432"
+```
+
+Kalau alamat di depannya dihilangkan, Docker mengikat ke `0.0.0.0` **dan menulis
+aturannya langsung ke iptables** — sehingga `ufw` tidak menghalanginya, meski
+`ufw status` tampak rapi. Akibatnya PostgreSQL sekolah terbuka ke internet, dan
+alamat API bisa dibuka lewat `http://` tanpa terenkripsi, melangkahi seluruh
+penjagaan di Caddy atau Nginx.
+
+Yang perlu menjangkau port ini hanya Caddy atau Nginx di mesin yang sama.
+Container `api` memanggil `db` lewat jaringan internal Docker, bukan lewat port
+yang diterbitkan ini.
+
+`BIND_HOST` **hanya** untuk mesin pengembangan Windows, tempat winnat kadang
+merebut rentang port di loopback sehingga bind ke `127.0.0.1` ditolak sistem.
+Di server, biarkan tidak diisi.
+
+### 6.2 · Backup otomatis
 
 **Lakukan ini sebelum ada data sungguhan.** Sekolah menyimpan data pribadi murid dan riwayat
 pembayaran; satu disk rusak tanpa backup berarti kehilangan permanen.
@@ -576,6 +603,8 @@ docker compose logs --tail 100 api
 | `REFRESH_TOKEN_TTL_DAYS` | tidak | bawaan `30` |
 | `UPLOAD_DIR` | tidak | bawaan `/app/uploads` |
 | `MAX_UPLOAD_MB` | tidak | bawaan `20` |
+| `BIND_HOST` | tidak | bawaan `127.0.0.1`. **Jangan diubah di server** — lihat bagian 6.1 |
+| `DB_HOST_PORT` | tidak | bawaan `5432`. Nomor port database dilihat dari luar container |
 
 `DATABASE_URL` diisi otomatis oleh Docker; jangan disetel sendiri.
 

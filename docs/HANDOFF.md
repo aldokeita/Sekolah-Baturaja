@@ -3,7 +3,44 @@
 **Diperbarui:** 2026-08-19 · **Branch:** `feat/sdnb-migration`
 
 Pekerjaan berjalan di `feat/sdnb-migration`, dengan dua remote: `origin` (aldokeita) dan
-`upstream` (npdkdev). Branch ini belum di-merge ke `master`.
+`upstream` (npdkdev). Sejak 2026-09-02 branch ini **sudah di-merge ke `main`** (merge commit
+`cbdb30a`, bukan fast-forward karena `main` masih memegang tiga merge PR revisi lama). Pohon
+berkas `main` identik dengan branch, dan `main` sudah ada di kedua remote.
+
+## Sisa temuan audit keamanan — belum dikerjakan
+
+Cabang `upstream/feat/paas-template-image` (12 commit, terakhir 2026-08-16, 279 commit di belakang
+`main`) memuat audit keamanan backend Go yang sebagian **belum pernah masuk garis kode ini**.
+Cabangnya sendiri **jangan digabung**: ia mengganti nama `supabase/` menjadi `db/` dan mengubah
+deployment menjadi satu container Go yang menyajikan API sekaligus frontend — bertabrakan dengan
+susunan Caddy + `dist/` di `SETUP.md`. Pakai sebagai bacaan, kerjakan ulang di `main`.
+
+Sudah tertutup di `main` (jangan diambil lagi): auth bypass self-heal login murid, nama panggilan
+ambigu, rate limit login (`login_limit.go`, bersandar Postgres), authz `PUT /api/attendance/{id}`
+dan `POST /api/attendance/calendar`, scoping `GET /api/attendance` dan `GET /api/payments`, IDOR
+`media-player-settings/{id}`, `/api/mmq/*` staf saja, authz unggahan per bucket.
+
+Sudah dikerjakan 2026-09-02 (commit ini): tipe berkas dibaca dari isi bukan header kiriman,
+allowlist ekstensi per bucket, `Content-Type` saat menyajikan diambil dari allowlist bukan dari
+`mime.TypeByExtension`, authz `GET /api/files/signed`, lima header keamanan, refresh token membaca
+peran dan status ulang dari database, pengikatan port Docker ke `127.0.0.1`.
+
+**Masih terbuka, urut kepentingan:**
+
+1. **48 tempat mengirim galat Postgres mentah ke klien** — nama tabel, kolom, constraint, dan nilai
+   yang gagal disimpan. Terbanyak `content.go` (13), `academic.go` (10), `payment.go` (8). Cari
+   dengan `jsonError(w, .*err.Error())` dan `jsonError(w, fmt.Sprintf(...%v..., err)`.
+2. **`SubmitFeedback` di `content.go` tanpa penjagaan** — publik, tanpa batas ukuran body, tanpa
+   rate limit, dan galatnya mentah. Formulir SPMB sudah dibatasi 12/jam; yang ini belum.
+3. **`chimw.RealIP` aktif tanpa syarat** (`main.go`) — `X-Forwarded-For` bisa dipalsukan sehingga
+   kunci per-IP pada throttle login lumpuh. Kunci per-username masih menahan. Taruh di balik
+   `TRUST_PROXY`.
+4. **`corsMiddleware` jatuh ke `"*"` bila `CORS_ORIGIN` kosong** (`main.go:234`). Tidak boleh ada
+   fallback.
+5. **Kunci JWT tidak divalidasi saat start** (`config.go`) — tidak dicek panjang minimal 32 karakter
+   dan tidak dicek harus berbeda antara access dan refresh.
+6. **Kunci penanda tangan berkas sama dengan `JWT_SECRET`** (`main.go:47`, `storage.New`). Turunkan
+   kunci terpisah.
 
 **Branch ini sebelumnya bernama `feat/vercel-ready`**, diganti pada 2026-08-19 atas permintaan
 pemilik. Proyek ini TIDAK memakai Vercel — tidak pernah; namanya sisa dari produk pendahulu.

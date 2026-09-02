@@ -19,6 +19,7 @@ import (
 var (
 	ErrInvalidPath      = errors.New("path tidak valid")
 	ErrInvalidMime      = errors.New("tipe file tidak diizinkan")
+	ErrInvalidExt       = errors.New("ekstensi file tidak diizinkan")
 	ErrFileTooLarge     = errors.New("ukuran file melebihi batas")
 	ErrSignatureExpired = errors.New("link sudah kedaluwarsa")
 )
@@ -41,6 +42,65 @@ var allowedMIME = map[string]map[string]bool{
 	BucketDocuments:     {"application/pdf": true, "image/jpeg": true, "image/png": true, "image/webp": true},
 }
 
+/* allowedExt mengunci EKSTENSI berkas, bukan hanya tipenya.
+ *
+ * Tanpa ini, penyaringan MIME saja tidak cukup: nama berkas ikut menentukan
+ * bagaimana peramban memperlakukan isinya saat berkas itu diambil kembali, dan
+ * ServeFile dulu menyusun Content-Type dari ekstensi. Satu berkas bernama
+ * ".html" atau ".svg" karena itu dijalankan sebagai halaman di alamat API —
+ * dan pada susunan satu domain, alamat API sama dengan alamat situs, tempat
+ * kunci sesi pengguna disimpan.
+ *
+ * Peta ini juga yang dipakai ServeFile untuk menentukan Content-Type, sehingga
+ * tipe yang disajikan tidak pernah berasal dari kiriman pengguna. */
+var allowedExt = map[string]map[string]string{
+	BucketAvatars: {
+		".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
+	},
+	BucketWebsiteAssets: {
+		".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
+		".pdf": "application/pdf",
+	},
+	BucketMusic: {
+		".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
+	},
+	BucketDocuments: {
+		".pdf": "application/pdf",
+		".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
+	},
+}
+
+/* normalizeSniffedMIME menyamakan sebutan yang dipakai http.DetectContentType
+ * dengan sebutan pada allowedMIME. Keduanya tidak selalu memakai nama yang sama
+ * untuk format yang sama — WAV dikenali sebagai "audio/wave" dan OGG sebagai
+ * "application/ogg" — sehingga tanpa penyamaan ini berkas yang sah ikut
+ * tertolak. */
+func normalizeSniffedMIME(sniffed string) string {
+	if i := strings.IndexByte(sniffed, ';'); i >= 0 {
+		sniffed = strings.TrimSpace(sniffed[:i])
+	}
+	switch sniffed {
+	case "audio/wave", "audio/x-wav":
+		return "audio/wav"
+	case "application/ogg", "audio/x-ogg":
+		return "audio/ogg"
+	case "audio/mp3":
+		return "audio/mpeg"
+	}
+	return sniffed
+}
+
+// ExtensionAllowed melaporkan apakah ekstensi path boleh masuk ke bucket ini.
+// Dipakai handler untuk menolak lebih awal, sebelum berkasnya dibaca.
+func ExtensionAllowed(bucket, path string) bool {
+	table := allowedExt[bucket]
+	if table == nil {
+		return true
+	}
+	_, ok := table[strings.ToLower(filepath.Ext(path))]
+	return ok
+}
+
 // privateBuckets wajib signed URL untuk dibaca. Bucket lain dilayani langsung.
 var privateBuckets = map[string]bool{
 	BucketAvatars:   true,
@@ -61,13 +121,32 @@ func New(uploadDir, signSecret string, maxBytes int64) *Store {
 	return &Store{root: uploadDir, signKey: []byte(signSecret), maxBytes: maxBytes}
 }
 
-// Save menyimpan file ke disk. Path harus relative dan aman.
+/* Save menyimpan file ke disk. Path harus relative dan aman.
+ *
+ * `mimeType` WAJIB hasil pembacaan isi berkas (http.DetectContentType), bukan
+ * header Content-Type kiriman klien. Header itu ditulis oleh pengirim dan tidak
+ * dibuktikan apa pun: cukup mengaku "image/png" untuk menyelipkan isi apa saja
+ * melewati penyaringan. */
 func (s *Store) Save(bucket, path string, r io.Reader, mimeType string, size int64) error {
 	if err := s.validatePath(path); err != nil {
 		return err
 	}
-	if allowed := allowedMIME[bucket]; allowed != nil && !allowed[mimeType] {
-		return ErrInvalidMime
+	if !ExtensionAllowed(bucket, path) {
+		return ErrInvalidExt
+	}
+	if allowed := allowedMIME[bucket]; allowed != nil {
+		sniffed := normalizeSniffedMIME(mimeType)
+		if !allowed[sniffed] {
+			/* Berkas audio adalah satu-satunya kelonggaran: MP3 tanpa tag ID3 di
+			 * awalnya tidak punya penanda yang bisa dikenali, sehingga terbaca
+			 * "application/octet-stream". Ekstensinya sudah lolos allowedExt di
+			 * atas, bucket ini hanya bisa diisi staf, dan berkas audio tidak
+			 * dijalankan peramban — jadi ekstensi cukup untuk kasus ini saja. */
+			audioFallback := bucket == BucketMusic && sniffed == "application/octet-stream"
+			if !audioFallback {
+				return ErrInvalidMime
+			}
+		}
 	}
 	if size > s.maxBytes {
 		return ErrFileTooLarge
@@ -134,10 +213,26 @@ func (s *Store) ServeFile(w http.ResponseWriter, r *http.Request, bucket, path s
 		http.NotFound(w, r)
 		return
 	}
-	ext := filepath.Ext(path)
-	if ct := mime.TypeByExtension(ext); ct != "" {
-		w.Header().Set("Content-Type", ct)
+	/* Content-Type diambil dari peta allowedExt milik bucket ini, BUKAN dari
+	 * mime.TypeByExtension. Yang lama menjawab untuk ekstensi apa pun yang
+	 * dikenal sistem — termasuk text/html dan image/svg+xml — sehingga sebuah
+	 * berkas yang lolos masuk lebih dulu akan disajikan sebagai halaman yang
+	 * dijalankan peramban. Berkas lama yang ekstensinya di luar daftar disajikan
+	 * sebagai octet-stream: terunduh, tidak dijalankan.
+	 *
+	 * nosniff menutup sisanya. Tanpa itu peramban boleh mengabaikan Content-Type
+	 * dan menebak sendiri dari isi berkas. */
+	ext := strings.ToLower(filepath.Ext(path))
+	contentType := "application/octet-stream"
+	if table := allowedExt[bucket]; table != nil {
+		if ct, ok := table[ext]; ok {
+			contentType = ct
+		}
+	} else if ct := mime.TypeByExtension(ext); ct != "" {
+		contentType = ct
 	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	http.ServeFile(w, r, full)
 }
 
