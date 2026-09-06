@@ -25,6 +25,11 @@ $fondasi = @(
   "20260624000100_extensions_and_types.sql",
   "20260624000200_user_profiles_and_roles.sql",
   "20260624000300_guru_santri_and_auth_aliases.sql",
+  # Cap waktunya sengaja disisipkan di antara 000300 dan 000400. Kolom sandi
+  # harus ada sebelum migrasi 20260823000200 memakainya; sebelumnya kolom itu
+  # dibuat berkas init yang berjalan SESUDAH seluruh migrasi, sehingga setiap
+  # pemasangan baru gagal di tengah. Lihat kepala berkas migrasinya.
+  "20260624000310_kolom_sandi_guru_dan_santri.sql",
   "20260624000400_classes_memberships_and_mutations.sql",
   "20260624000500_class_assignments.sql",
   "20260624000600_attendance.sql",
